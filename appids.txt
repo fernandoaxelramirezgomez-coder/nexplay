@@ -122,3 +122,29 @@
 546560    # Half-Life: Alyx
 1222670   # The Sims 4
 381210    # Dead by Daylight
+
+
+# ===========================================================================
+# CAPA C - Brecha alta entre expectativa y recepcion (lanzamientos con
+# reaccion negativa fuerte / decepcion publicitada)
+# ===========================================================================
+# Cyberpunk 2077 ya esta en Capa A (appid 1091500); no se duplica aqui.
+#
+# Dos titulos de la lista pedida no tienen appid: se verificaron con la API
+# de Steam (appdetails / busqueda) y no existen en el catalogo:
+#   - Anthem: nunca se vendio en Steam (exclusivo de Origin / EA App).
+#   - The Day Before: se retiro de Steam poco despues de su lanzamiento en
+#     2023 (el estudio, Fntastic, cerro tras el escandalo de reembolsos).
+
+1151340   # Fallout 76
+1294810   # Redfall
+315210    # Suicide Squad: Kill the Justice League
+2853730   # Skull and Bones
+1265780   # The Lord of the Rings: Gollum
+1680880   # Forspoken
+1544020   # The Callisto Protocol
+1938010   # Wild Hearts
+1272080   # PAYDAY 3
+2357570   # Overwatch 2 (el listado de Steam sigue como "Overwatch")
+1063730   # New World (relanzado como "New World: Aeternum")
+2344520   # Diablo IV
