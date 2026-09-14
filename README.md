@@ -1,21 +1,28 @@
-# Nexplay Scoring API
+# NexPlay — API
 
-API en FastAPI que expone un endpoint de scoring de riesgo. Por ahora `scoring.py`
-devuelve un riesgo **simulado** (aleatorio), pero respetando el contrato final de
-request/response, de modo que el modelo real pueda conectarse sin cambiar la API.
+Estima el riesgo de **arrepentimiento temprano** al comprar un videojuego, antes de la
+compra. `Y = 1` si `playtime_at_review < 120` minutos (ventana de reembolso de Steam) y
+`voted_up == 0`. Es una señal proxy: Steam no observa arrepentimiento real.
+
+Contexto completo del proyecto (datos, validación, qué no hacer) en [CLAUDE.md](CLAUDE.md).
 
 ## Estructura
 
 ```
-app/
-  main.py                 # instancia de FastAPI y montaje de routers
-  api/routes/
-    health.py              # GET /api/v1/health
-    scoring.py              # POST /api/v1/scoring/risk
-  models/scoring.py       # contratos Pydantic (request/response)
-  services/scoring.py     # lógica de scoring (hoy simulada)
-  core/config.py          # configuración de la app
+api/
+  main.py       endpoints
+  schemas.py    contratos Pydantic de entrada y salida
+  scoring.py    predicción de riesgo (hoy simulada, firma estable)
+  catalogo.py   búsqueda de juegos (hoy con lista fija)
+modelo/         artefactos entrenados (.pkl) — no versionado, no existe todavía
+datos/          parquet local — no versionado, no existe todavía
+ui/             Gradio — no implementado todavía
 ```
+
+`scoring.py::predecir` devuelve hoy un riesgo simulado (aleatorio), pero respeta el
+contrato final: cuando el modelo real esté entrenado (GroupKFold por `appid`,
+optimizado a PR-AUC), esa función carga el `.pkl` y predice con las mismas entradas y
+salida. Nada fuera de `scoring.py` debe cambiar cuando eso pase.
 
 ## Requisitos
 
@@ -32,54 +39,65 @@ pip install -r requirements.txt
 ## Levantar la API
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn api.main:app --reload
 ```
 
-La API queda disponible en `http://127.0.0.1:8000`.
-
-Documentación interactiva (Swagger UI): `http://127.0.0.1:8000/docs`
+Queda disponible en `http://127.0.0.1:8000` y la documentación interactiva (Swagger UI)
+en `http://127.0.0.1:8000/docs`.
 
 ## Endpoints
 
-### `GET /api/v1/health`
+### `GET /catalogo?q=`
 
-Chequeo de salud del servicio.
+Busca juegos por nombre. Sin `q`, devuelve el catálogo completo.
 
-### `POST /api/v1/scoring/risk`
+### `POST /perfil`
 
-Calcula el riesgo asociado a un usuario/sesión.
+Recibe el formulario de alta declarado por el jugador y devuelve el perfil derivado.
 
-**Request:**
-
-```json
-{
-  "user_id": "user-123",
-  "session_id": "session-abc",
-  "transaction_amount": 150.0,
-  "metadata": { "device_id": "dev-1", "ip": "1.2.3.4" }
-}
-```
-
-**Response:**
+**Request** (`FormularioAlta`):
 
 ```json
 {
-  "user_id": "user-123",
-  "session_id": "session-abc",
-  "risk_score": 42.5,
-  "risk_level": "medium",
-  "factors": [
-    { "name": "device_reputation", "weight": 0.6, "description": "Reputación del dispositivo utilizado" }
-  ],
-  "model_version": "sim-0.1.0",
-  "evaluated_at": "2026-09-13T18:20:00Z"
+  "compras_al_anio": 3,
+  "horas_por_semana": 6,
+  "tolerancia_friccion": "media",
+  "tags_preferidos": ["roguelike", "singleplayer"],
+  "tags_rechazados": ["pvp", "pay to win"],
+  "plataforma": "pc"
 }
 ```
 
-`risk_score` va de 0 (sin riesgo) a 100 (riesgo máximo); `risk_level` es uno de
-`low`, `medium`, `high`, `critical`.
+**Response** (`PerfilJugador`): los mismos campos más `segmento` (`novato`/`veterano`) y
+`disponibilidad` (`baja`/`media`/`alta`), derivados por heurística.
+
+### `POST /prediccion`
+
+Recibe el perfil derivado (el que devolvió `/perfil`) más un `appid`, y devuelve el
+riesgo.
+
+**Request** (`SolicitudPrediccion`): `{ "perfil": {...}, "appid": 1245620 }`
+
+**Response** (`PrediccionRiesgo`):
+
+```json
+{
+  "appid": 1245620,
+  "riesgo": 0.42,
+  "nivel": "medio",
+  "modelo_version": "simulado-0.1"
+}
+```
+
+### `GET /explicacion/{appid}`
+
+Motivos de insatisfacción más frecuentes de ese juego (agregado de reseñas negativas
+tempranas; hoy simulado).
 
 ## Próximos pasos
 
-- Reemplazar `app/services/scoring.py::calculate_risk` por la llamada al modelo
-  real, manteniendo el contrato de `RiskScoreRequest` / `RiskScoreResponse`.
+- Reemplazar `api/catalogo.py` por una consulta sobre `datos/*.parquet` (71 juegos, Capa
+  A + Capa B) en vez de la lista fija.
+- Reemplazar `api/scoring.py::predecir` por la carga del modelo entrenado en `modelo/`,
+  manteniendo el contrato de `PerfilJugador` + `appid` → `PrediccionRiesgo`.
+- Construir `ui/` en Gradio, consumiendo estos cuatro endpoints.
