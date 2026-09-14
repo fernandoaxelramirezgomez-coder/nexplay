@@ -1,6 +1,8 @@
 import logging
+import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from . import catalogo, scoring
 from .schemas import (
@@ -19,6 +21,19 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="NexPlay",
     description="Riesgo de arrepentimiento temprano al comprar un videojuego (señal proxy, no observada).",
+)
+
+# Orígenes de desarrollo (Gradio y Angular locales) siempre permitidos;
+# NEXPLAY_CORS_ORIGENES agrega orígenes adicionales separados por coma.
+_ORIGENES_DEV = ["http://localhost:7860", "http://localhost:4200"]
+_origenes_extra = [o.strip() for o in os.environ.get("NEXPLAY_CORS_ORIGENES", "").split(",") if o.strip()]
+_origenes_permitidos = list(dict.fromkeys(_ORIGENES_DEV + _origenes_extra))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origenes_permitidos,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 _UMBRAL_VETERANO_COMPRAS = 10

@@ -19,10 +19,11 @@ datos/          parquet local — no versionado, no existe todavía
 ui/             Gradio — no implementado todavía
 ```
 
-`scoring.py::predecir` devuelve hoy un riesgo simulado (aleatorio), pero respeta el
-contrato final: cuando el modelo real esté entrenado (GroupKFold por `appid`,
-optimizado a PR-AUC), esa función carga el `.pkl` y predice con las mismas entradas y
-salida. Nada fuera de `scoring.py` debe cambiar cuando eso pase.
+`scoring.py::predecir` devuelve hoy un riesgo simulado (determinista, derivado del hash
+de `appid` + perfil — no aleatorio), pero respeta el contrato final: cuando el modelo
+real esté entrenado (GroupKFold por `appid`, optimizado a PR-AUC), esa función carga el
+`.pkl` y predice con las mismas entradas y salida. Nada fuera de `scoring.py` debe
+cambiar cuando eso pase.
 
 ## Requisitos
 
@@ -35,6 +36,13 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+## Configuración
+
+- `NEXPLAY_CORS_ORIGENES`: orígenes adicionales permitidos por CORS, separados por
+  coma (p. ej. `https://nexplay.example.com,https://otra.example.com`).
+  `http://localhost:7860` (Gradio) y `http://localhost:4200` (Angular) están siempre
+  permitidos para desarrollo local.
 
 ## Levantar la API
 
@@ -88,9 +96,14 @@ riesgo.
   "appid": 1245620,
   "riesgo": 0.42,
   "nivel": "medio",
-  "modelo_version": "simulado-0.1"
+  "modelo_version": "simulado-0.1",
+  "nota_plataforma": null
 }
 ```
+
+`nota_plataforma` viene poblada cuando el perfil declara una plataforma distinta de
+`pc`, aclarando que no existe fuente de entrenamiento propia para PlayStation/Xbox/
+Nintendo (el lado del juego transfiere, pero la señal viene de reseñas de Steam).
 
 ### `GET /explicacion/{appid}`
 

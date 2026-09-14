@@ -2,6 +2,7 @@
 del contrato: cualquier cambio aquí es un cambio de contrato con el cliente (UI)."""
 
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -86,6 +87,9 @@ class PrediccionRiesgo(BaseModel):
     )
     nivel: NivelRiesgo
     modelo_version: str
+    nota_plataforma: Optional[str] = Field(
+        None, description="Advertencia si el perfil declara una plataforma sin datos de entrenamiento propios"
+    )
 
 
 class MotivoInsatisfaccion(BaseModel):
