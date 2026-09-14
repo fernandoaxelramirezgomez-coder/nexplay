@@ -13,11 +13,17 @@ api/
   main.py       endpoints
   schemas.py    contratos Pydantic de entrada y salida
   scoring.py    predicción de riesgo (hoy simulada, firma estable)
-  catalogo.py   búsqueda de juegos (hoy con lista fija)
+  catalogo.py   búsqueda de juegos (catálogo real, cargado una vez al arrancar)
 modelo/         artefactos entrenados (.pkl) — no versionado, no existe todavía
-datos/          parquet local — no versionado, no existe todavía
+datos/          postplay.db (SQLite, ingesta de Steam) y futuro parquet — no versionado
 ui/             Gradio — no implementado todavía
 ```
+
+`api/catalogo.py` lee `datos/postplay.db` (ingerido con `ingesta_steam.py` desde la API
+pública de Steam) una sola vez, al importar el módulo — no vuelve a tocar la base en
+cada request. Como Steam es la única fuente, el catálogo declara todos los juegos en
+`pc`: no hay forma de confirmar disponibilidad en PlayStation/Xbox/Nintendo desde esta
+ingesta.
 
 `scoring.py::predecir` devuelve hoy un riesgo simulado (determinista, derivado del hash
 de `appid` + perfil — no aleatorio), pero respeta el contrato final: cuando el modelo
@@ -112,8 +118,7 @@ tempranas; hoy simulado).
 
 ## Próximos pasos
 
-- Reemplazar `api/catalogo.py` por una consulta sobre `datos/*.parquet` (71 juegos, Capa
-  A + Capa B) en vez de la lista fija.
-- Reemplazar `api/scoring.py::predecir` por la carga del modelo entrenado en `modelo/`,
-  manteniendo el contrato de `PerfilJugador` + `appid` → `PrediccionRiesgo`.
+- Reemplazar `api/scoring.py::predecir` y `motivos_frecuentes` por la carga del modelo
+  entrenado en `modelo/` y el cálculo real sobre las reseñas de `datos/`, manteniendo el
+  contrato de `PerfilJugador` + `appid` → `PrediccionRiesgo`.
 - Construir `ui/` en Gradio, consumiendo estos cuatro endpoints.

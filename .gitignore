@@ -4,3 +4,5 @@ __pycache__/
 datos/
 modelo/
 .env
+ingesta.log
+ingesta.lock
