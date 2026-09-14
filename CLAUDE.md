@@ -34,7 +34,8 @@ api/        FastAPI. Contrato estable, lógica delgada.
   scoring.py    carga el modelo y predice
   catalogo.py   búsqueda de juegos
 modelo/     artefactos entrenados (.pkl), no versionados
-datos/      parquet local, no versionado
+datos/      SQLite: nexplay.db, tablas `juegos` y `resenas` (más `resumen_resenas`
+            y `progreso`), no versionado
 ui/         Gradio
 ```
 

@@ -1,5 +1,5 @@
 """Búsqueda de juegos. El catálogo se carga una sola vez, al importar este
-módulo (o sea, al arrancar el proceso), desde datos/postplay.db —nunca en
+módulo (o sea, al arrancar el proceso), desde datos/nexplay.db —nunca en
 cada request.
 
 Steam es la única fuente: no hay manera de afirmar disponibilidad en
@@ -14,7 +14,7 @@ from .schemas import JuegoCatalogo, Plataforma
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH = Path(__file__).resolve().parent.parent / "datos" / "postplay.db"
+_DB_PATH = Path(__file__).resolve().parent.parent / "datos" / "nexplay.db"
 
 
 def _cargar_catalogo() -> list[JuegoCatalogo]:

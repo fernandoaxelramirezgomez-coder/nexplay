@@ -1,5 +1,5 @@
 """
-PostPlay - Ingesta de datos desde las APIs publicas de Steam
+NexPlay - Ingesta de datos desde las APIs publicas de Steam
 ===========================================================
 
 Baja el catalogo de juegos y sus resenas, y los guarda en SQLite.
@@ -37,7 +37,7 @@ import requests
 # ---------------------------------------------------------------------------
 
 BASE = Path(__file__).resolve().parent
-DB_PATH = BASE / "datos" / "postplay.db"
+DB_PATH = BASE / "datos" / "nexplay.db"
 APPIDS_PATH = BASE / "appids.txt"
 LOCK_PATH = BASE / "ingesta.lock"
 
@@ -57,7 +57,7 @@ MAX_RESENAS_POR_JUEGO = 1500
 IDIOMA = "english"
 
 # Steam bloquea peticiones sin User-Agent identificable.
-HEADERS = {"User-Agent": "PostPlay-Academico/1.0 (proyecto FES Acatlan)"}
+HEADERS = {"User-Agent": "NexPlay-Academico/1.0 (proyecto FES Acatlan)"}
 
 logging.basicConfig(
     level=logging.INFO,
@@ -68,7 +68,7 @@ logging.basicConfig(
         logging.FileHandler(BASE / "ingesta.log", encoding="utf-8"),
     ],
 )
-log = logging.getLogger("postplay")
+log = logging.getLogger("nexplay")
 
 
 # ---------------------------------------------------------------------------
@@ -427,7 +427,7 @@ def mostrar_estado(con):
     listos = con.execute("SELECT COUNT(*) FROM progreso WHERE terminado=1").fetchone()[0]
 
     print()
-    print("  PostPlay / estado de la ingesta")
+    print("  NexPlay / estado de la ingesta")
     print("  " + "-" * 44)
     print(f"  Juegos en catalogo      {juegos}")
     print(f"  Juegos con resenas OK   {listos}")
@@ -452,7 +452,7 @@ def mostrar_estado(con):
 # ---------------------------------------------------------------------------
 
 def main():
-    p = argparse.ArgumentParser(description="Ingesta de Steam para PostPlay")
+    p = argparse.ArgumentParser(description="Ingesta de Steam para NexPlay")
     p.add_argument("--catalogo", action="store_true", help="baja metadatos de juegos")
     p.add_argument("--resenas", action="store_true", help="baja resenas")
     p.add_argument("--estado", action="store_true", help="muestra el avance")
