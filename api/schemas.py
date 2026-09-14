@@ -36,7 +36,9 @@ class FormularioAlta(BaseModel):
         ..., ge=0, le=365, description="Juegos comprados en el último año; sustituto de num_games_owned"
     )
     horas_por_semana: float = Field(..., ge=0, le=168, description="Horas disponibles para jugar por semana")
-    tolerancia_friccion: NivelFriccion
+    tolerancia_friccion: int = Field(
+        ..., ge=1, le=5, description="Escala 1 (nula tolerancia a la fricción) a 5 (muy alta)"
+    )
     tags_preferidos: list[str] = Field(
         default_factory=list, description="Tags de Steam que el jugador busca en un juego"
     )
@@ -56,7 +58,9 @@ class PerfilJugador(BaseModel):
 
     compras_al_anio: int
     horas_por_semana: float
-    tolerancia_friccion: NivelFriccion
+    tolerancia_friccion: NivelFriccion = Field(
+        ..., description="'baja', 'media' o 'alta', heurística sobre la escala 1-5 declarada"
+    )
     tags_preferidos: list[str]
     tags_rechazados: list[str]
     plataforma: Plataforma

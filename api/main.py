@@ -7,6 +7,7 @@ from .schemas import (
     ExplicacionJuego,
     FormularioAlta,
     JuegoCatalogo,
+    NivelFriccion,
     PerfilJugador,
     PrediccionRiesgo,
     SolicitudPrediccion,
@@ -23,6 +24,16 @@ app = FastAPI(
 _UMBRAL_VETERANO_COMPRAS = 10
 _UMBRAL_DISPONIBILIDAD_ALTA = 10
 _UMBRAL_DISPONIBILIDAD_MEDIA = 4
+_UMBRAL_FRICCION_ALTA = 4
+_UMBRAL_FRICCION_MEDIA = 3
+
+
+def _derivar_tolerancia_friccion(escala: int) -> NivelFriccion:
+    if escala >= _UMBRAL_FRICCION_ALTA:
+        return NivelFriccion.ALTA
+    if escala >= _UMBRAL_FRICCION_MEDIA:
+        return NivelFriccion.MEDIA
+    return NivelFriccion.BAJA
 
 
 def _derivar_perfil(formulario: FormularioAlta) -> PerfilJugador:
@@ -38,7 +49,7 @@ def _derivar_perfil(formulario: FormularioAlta) -> PerfilJugador:
     return PerfilJugador(
         compras_al_anio=formulario.compras_al_anio,
         horas_por_semana=formulario.horas_por_semana,
-        tolerancia_friccion=formulario.tolerancia_friccion,
+        tolerancia_friccion=_derivar_tolerancia_friccion(formulario.tolerancia_friccion),
         tags_preferidos=formulario.tags_preferidos,
         tags_rechazados=formulario.tags_rechazados,
         plataforma=formulario.plataforma,

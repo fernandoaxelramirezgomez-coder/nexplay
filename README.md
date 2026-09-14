@@ -61,15 +61,18 @@ Recibe el formulario de alta declarado por el jugador y devuelve el perfil deriv
 {
   "compras_al_anio": 3,
   "horas_por_semana": 6,
-  "tolerancia_friccion": "media",
+  "tolerancia_friccion": 3,
   "tags_preferidos": ["roguelike", "singleplayer"],
   "tags_rechazados": ["pvp", "pay to win"],
   "plataforma": "pc"
 }
 ```
 
-**Response** (`PerfilJugador`): los mismos campos más `segmento` (`novato`/`veterano`) y
-`disponibilidad` (`baja`/`media`/`alta`), derivados por heurística.
+`tolerancia_friccion` es una escala 1 (nula tolerancia) a 5 (muy alta).
+
+**Response** (`PerfilJugador`): `tolerancia_friccion` normalizada a `baja`/`media`/`alta`,
+más `segmento` (`novato`/`veterano`) y `disponibilidad` (`baja`/`media`/`alta`) —
+todas derivadas por heurística.
 
 ### `POST /prediccion`
 
