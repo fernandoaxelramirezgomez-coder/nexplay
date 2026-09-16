@@ -6,6 +6,12 @@ compra. `Y = 1` si `playtime_at_review < 120` minutos (ventana de reembolso de S
 
 Contexto completo del proyecto (datos, validación, qué no hacer) en [CLAUDE.md](CLAUDE.md).
 
+Narrativa completa (Problema → Datos → EDA → Calidad de datos → Ingeniería de variables →
+Modelo → Experimento de privacidad → Conclusiones) en `notebook/nexplay.ipynb`, ejecutable de
+punta a punta en un Colab limpio:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/data-v1/notebook/nexplay.ipynb)
+
 ## Estructura
 
 ```
