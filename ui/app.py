@@ -90,8 +90,7 @@ def _evaluar_riesgo(perfil, appid):
     nota = f"\n\n*{prediccion['nota_plataforma']}*" if prediccion.get("nota_plataforma") else ""
     resultado = (
         f"## Riesgo de arrepentimiento temprano: **{prediccion['nivel'].upper()}**\n"
-        f"Probabilidad estimada — señal proxy, no observada directamente: "
-        f"{prediccion['riesgo']:.2%}  \n"
+        f"comparado con el resto del catálogo — señal proxy, no observada directamente.  \n"
         f"Modelo: `{prediccion['modelo_version']}`{nota}"
     )
 
