@@ -1,3 +1,4 @@
 numpy>=2.5
 pandas>=3.0
 scikit-learn>=1.9
+pyarrow>=25.0

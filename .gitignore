@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 datos/
 modelo/
+extracto/
 .env
 ingesta.log
 ingesta.lock

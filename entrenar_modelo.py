@@ -18,22 +18,12 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
-from entrenar_baseline import N_SPLITS, SEMILLA, cargar_datos, construir_features
+from entrenar_baseline import N_SPLITS, cargar_datos, construir_features, construir_pipeline
 
 MODELO_PATH = Path(__file__).resolve().parent / "modelo" / "nexplay.pkl"
 VERSION_MODELO = f"logreg-compra-{date.today().isoformat()}"
-
-
-def _construir_pipeline() -> Pipeline:
-    return Pipeline([
-        ("escalar", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", random_state=SEMILLA)),
-    ])
 
 
 def _scores_oof(X, y, grupos) -> np.ndarray:
@@ -43,7 +33,7 @@ def _scores_oof(X, y, grupos) -> np.ndarray:
     gkf = GroupKFold(n_splits=N_SPLITS)
     oof = np.zeros(len(X))
     for idx_train, idx_val in gkf.split(X, y, groups=grupos):
-        pipeline = _construir_pipeline()
+        pipeline = construir_pipeline()
         pipeline.fit(X.iloc[idx_train], y.iloc[idx_train])
         oof[idx_val] = pipeline.predict_proba(X.iloc[idx_val])[:, 1]
     return oof
@@ -58,7 +48,7 @@ def main():
     umbral_medio = float(np.percentile(oof, 100 / 3))
     umbral_alto = float(np.percentile(oof, 200 / 3))
 
-    pipeline = _construir_pipeline()
+    pipeline = construir_pipeline()
     pipeline.fit(X, y)
 
     artefacto = {

@@ -113,6 +113,15 @@ def construir_features(df: pd.DataFrame, conjunto: str = "completo") -> tuple[pd
     return X, y, grupos
 
 
+def construir_pipeline() -> Pipeline:
+    """Mismo pipeline en entrenar_baseline.py, entrenar_modelo.py y el
+    notebook: regresion logistica con class_weight='balanced', sin tuning."""
+    return Pipeline([
+        ("escalar", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", random_state=SEMILLA)),
+    ])
+
+
 def evaluar_gkf(modelo, X, y, grupos, nombre: str) -> np.ndarray:
     gkf = GroupKFold(n_splits=N_SPLITS)
     pr_aucs = []
@@ -141,10 +150,7 @@ def correr_conjunto(df: pd.DataFrame, conjunto: str) -> dict:
     pr_aucs_trivial = evaluar_gkf(trivial, X, y, grupos, f"{conjunto}/trivial")
 
     print(f"=== [{conjunto}] Regresion logistica (class_weight=balanced, sin tuning) ===")
-    logreg = Pipeline([
-        ("escalar", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", random_state=SEMILLA)),
-    ])
+    logreg = construir_pipeline()
     pr_aucs_logreg = evaluar_gkf(logreg, X, y, grupos, f"{conjunto}/logreg")
 
     logreg.fit(X, y)
@@ -156,6 +162,37 @@ def correr_conjunto(df: pd.DataFrame, conjunto: str) -> dict:
     return {
         "trivial": pr_aucs_trivial,
         "logreg": pr_aucs_logreg,
+    }
+
+
+def comparar_variantes_privacidad(df: pd.DataFrame) -> dict:
+    """Experimento ya aprobado (ver construir_features): compara PR-AUC del
+    conjunto 'compra' con la bandera privacidad_perfil, sin ella, y sobre el
+    subconjunto donde vale 0 (perfil publico) — ahi la bandera es constante
+    y por eso no se incluye como feature en esa variante. Conclusion: la
+    diferencia con/sin bandera (0.0036) es un orden de magnitud menor que la
+    desviacion entre folds (0.027), por eso 'compra' ya no la incluye."""
+    X, y, grupos = construir_features(df, conjunto="compra")
+    privacidad_perfil = (df["num_games_owned"] == 0).astype(int)
+
+    X_con = X.copy()
+    X_con.insert(0, "privacidad_perfil", privacidad_perfil)
+    con_privacidad = evaluar_gkf(construir_pipeline(), X_con, y, grupos, "con_privacidad")
+
+    sin_privacidad = evaluar_gkf(construir_pipeline(), X, y, grupos, "sin_privacidad")
+
+    mask = privacidad_perfil == 0
+    X_publico = X[mask].reset_index(drop=True)
+    y_publico = y[mask].reset_index(drop=True)
+    grupos_publico = grupos[mask].reset_index(drop=True)
+    print(f"  [solo_publico] n={len(X_publico)} ({100 * len(X_publico) / len(X):.2f}% del total)")
+    solo_publico = evaluar_gkf(construir_pipeline(), X_publico, y_publico, grupos_publico, "solo_publico")
+
+    return {
+        "con_privacidad": con_privacidad,
+        "sin_privacidad": sin_privacidad,
+        "solo_publico": solo_publico,
+        "n_solo_publico": len(X_publico),
     }
 
 
