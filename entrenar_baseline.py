@@ -82,9 +82,15 @@ def construir_features(df: pd.DataFrame, conjunto: str = "completo") -> tuple[pd
 
     X = pd.DataFrame(index=df.index)
 
+    if conjunto == "completo":
+        # privacidad_perfil solo se evaluo aqui: en GroupKFold sobre 'compra'
+        # la diferencia de PR-AUC frente a quitarla (0.0036) fue un orden de
+        # magnitud menor que la desviacion entre folds (0.027) — sin senal
+        # real, se saca del conjunto que sirve a produccion.
+        X["privacidad_perfil"] = (df["num_games_owned"] == 0).astype(int)
+
     if conjunto != "juego":
         # --- lado del jugador ---
-        X["privacidad_perfil"] = (df["num_games_owned"] == 0).astype(int)
         X["log_num_games_owned"] = np.log1p(df["num_games_owned"])
 
     if conjunto == "completo":

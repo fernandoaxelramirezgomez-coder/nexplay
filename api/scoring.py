@@ -85,10 +85,7 @@ def _construir_features(perfil: PerfilJugador, appid: int) -> pd.DataFrame:
     metacritic = juego["metacritic"]
     fila = {
         # compras_al_anio es el sustituto declarado de num_games_owned (ver
-        # CLAUDE.md); el formulario siempre lo pide, así que no existe la
-        # bandera de "perfil privado" en producción (esa bandera solo tiene
-        # sentido sobre datos de Steam, donde el perfil puede no ser público).
-        "privacidad_perfil": 0,
+        # CLAUDE.md).
         "log_num_games_owned": np.log1p(perfil.compras_al_anio),
         "es_gratis": int(juego["es_gratis"] or 0),
         "log_precio_final": np.log1p(juego["precio_final"] or 0.0),
