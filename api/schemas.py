@@ -26,6 +26,11 @@ class NivelRiesgo(str, Enum):
     ALTO = "alto"
 
 
+class DireccionFactor(str, Enum):
+    AUMENTA = "aumenta"
+    REDUCE = "reduce"
+
+
 def _normalizar_tags(tags: list[str]) -> list[str]:
     return [t.strip().lower() for t in tags if t.strip()]
 
@@ -80,6 +85,14 @@ class SolicitudPrediccion(BaseModel):
     appid: int = Field(..., description="appid de Steam del juego a evaluar")
 
 
+class FactorPrediccion(BaseModel):
+    etiqueta: str = Field(..., description="Variable del modelo en lenguaje claro, no el nombre técnico")
+    contribucion: float = Field(
+        ..., description="Coeficiente × valor estandarizado de la variable; unidades de log-odds, no de probabilidad"
+    )
+    direccion: DireccionFactor = Field(..., description="Si esta variable aumenta o reduce el riesgo estimado")
+
+
 class PrediccionRiesgo(BaseModel):
     appid: int
     riesgo: float = Field(
@@ -89,6 +102,10 @@ class PrediccionRiesgo(BaseModel):
     modelo_version: str
     nota_plataforma: Optional[str] = Field(
         None, description="Advertencia si el perfil declara una plataforma sin datos de entrenamiento propios"
+    )
+    factores: list[FactorPrediccion] = Field(
+        default_factory=list,
+        description="Las tres variables con mayor contribución absoluta al score, ordenadas por magnitud",
     )
 
 

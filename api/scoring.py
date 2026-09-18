@@ -13,7 +13,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .schemas import MotivoInsatisfaccion, NivelRiesgo, PerfilJugador, Plataforma, PrediccionRiesgo
+from .schemas import (
+    DireccionFactor,
+    FactorPrediccion,
+    MotivoInsatisfaccion,
+    NivelRiesgo,
+    PerfilJugador,
+    Plataforma,
+    PrediccionRiesgo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +32,15 @@ _NOTA_PLATAFORMA_SIN_DATOS = (
     "El lado del juego transfiere, pero no existe fuente de entrenamiento propia de "
     "{plataforma}: la señal viene de reseñas de Steam (PC)."
 )
+
+_ETIQUETAS_FEATURES = {
+    "log_num_games_owned": "compras declaradas por año",
+    "es_gratis": "el juego es gratuito",
+    "log_precio_final": "precio del juego",
+    "descuento": "descuento actual del juego",
+    "metacritic_disponible": "el juego tiene nota de Metacritic",
+    "metacritic": "nota de Metacritic",
+}
 
 # Con menos reseñas Y=1 que esto, cualquier frecuencia por término es ruido de
 # muestra chica (mismo criterio que descarta diferencias de PR-AUC menores al
@@ -140,6 +157,28 @@ def _construir_features(perfil: PerfilJugador, appid: int) -> pd.DataFrame:
     return pd.DataFrame([fila])[_FEATURES]
 
 
+def _factores_prediccion(X: pd.DataFrame) -> list[FactorPrediccion]:
+    """Contribución de cada variable al log-odds del score: coeficiente de la
+    regresión logística por el valor ya estandarizado (mismo StandardScaler
+    del pipeline), que es lo que la regresión logística realmente suma.
+    Se devuelven las tres de mayor magnitud absoluta."""
+    escalador = _PIPELINE.named_steps["escalar"]
+    clf = _PIPELINE.named_steps["clf"]
+    valores_estandarizados = escalador.transform(X)[0]
+    contribuciones = clf.coef_[0] * valores_estandarizados
+
+    factores = [
+        FactorPrediccion(
+            etiqueta=_ETIQUETAS_FEATURES[feature],
+            contribucion=round(float(contribucion), 4),
+            direccion=DireccionFactor.AUMENTA if contribucion > 0 else DireccionFactor.REDUCE,
+        )
+        for feature, contribucion in zip(_FEATURES, contribuciones)
+    ]
+    factores.sort(key=lambda f: abs(f.contribucion), reverse=True)
+    return factores[:3]
+
+
 def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
     X = _construir_features(perfil, appid)
     riesgo = round(float(_PIPELINE.predict_proba(X)[0, 1]), 4)
@@ -155,6 +194,7 @@ def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
         nivel=_nivel_desde_riesgo(riesgo),
         modelo_version=_VERSION_MODELO,
         nota_plataforma=nota_plataforma,
+        factores=_factores_prediccion(X),
     )
 
 

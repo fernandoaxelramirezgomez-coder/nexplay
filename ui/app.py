@@ -94,6 +94,15 @@ def _evaluar_riesgo(perfil, appid):
         f"Modelo: `{prediccion['modelo_version']}`{nota}"
     )
 
+    factores = prediccion.get("factores")
+    if factores:
+        lineas_factores = "\n".join(
+            f"- {'↑' if f['direccion'] == 'aumenta' else '↓'} {f['etiqueta']} "
+            f"({f['direccion']} el riesgo, contribución {f['contribucion']:+.2f})"
+            for f in factores
+        )
+        resultado += f"\n\n**Principales factores:**\n{lineas_factores}"
+
     if explicacion and explicacion.get("motivos"):
         lineas = "\n".join(f"- {m['motivo']}: {m['frecuencia']:.0%}" for m in explicacion["motivos"])
         contexto = (
