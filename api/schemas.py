@@ -95,11 +95,21 @@ class PrediccionRiesgo(BaseModel):
 class MotivoInsatisfaccion(BaseModel):
     motivo: str
     frecuencia: float = Field(
-        ..., ge=0, le=1, description="Proporción de reseñas negativas tempranas que mencionan este motivo"
+        ...,
+        ge=0,
+        le=1,
+        description="Proporción de reseñas clasificadas (no del total Y=1) que mencionan este motivo",
     )
 
 
 class ExplicacionJuego(BaseModel):
     appid: int
     nombre: str
+    n_casos: int = Field(..., description="Reseñas Y=1 (arrepentimiento temprano) analizadas para este appid")
+    pct_clasificados: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Proporción de esas reseñas que mencionan al menos una categoría de motivo",
+    )
     motivos: list[MotivoInsatisfaccion]

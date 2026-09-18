@@ -97,4 +97,4 @@ def explicar_juego(appid: int) -> ExplicacionJuego:
     juego = catalogo.obtener(appid)
     if juego is None:
         raise HTTPException(status_code=404, detail="appid no encontrado en el catálogo")
-    return ExplicacionJuego(appid=appid, nombre=juego.nombre, motivos=scoring.motivos_frecuentes(appid))
+    return ExplicacionJuego(appid=appid, nombre=juego.nombre, **scoring.motivos_frecuentes(appid))

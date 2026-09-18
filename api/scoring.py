@@ -60,8 +60,8 @@ _PALABRAS_CLAVE_POR_CATEGORIA: dict[str, list[str]] = {
     # generica (aparecen en cualquier resena Y=1 sin importar el motivo), no
     # queja de costo especificamente.
     "precio": [
-        "price", "priced", "pricing", "cost", "costly", "overpriced", "paywall",
-        "cash grab", "microtransaction", "microtransactions",
+        "price", "priced", "pricing", "cost", "costly", "overpriced", "expensive",
+        "paywall", "cash grab", "microtransaction", "microtransactions",
     ],
 }
 
@@ -170,22 +170,47 @@ def _textos_resenas_y1(appid: int) -> list[str]:
     return [texto for (texto,) in filas if texto]
 
 
-def motivos_frecuentes(appid: int) -> list[MotivoInsatisfaccion]:
+def motivos_frecuentes(appid: int) -> dict:
     """Motivos de arrepentimiento temprano (señal proxy: Y=1) más frecuentes en
     el texto de esas reseñas, por conteo de palabras clave por categoría — sin
-    modelo de lenguaje."""
+    modelo de lenguaje.
+
+    Las seis categorías no cubren todo el texto libre: `frecuencia` se calcula
+    sobre las reseñas clasificadas (con al menos una categoría), no sobre el
+    total de casos Y=1, para no verse artificialmente baja cuando la cobertura
+    de las categorías es parcial. `pct_clasificados` es esa cobertura.
+    """
+    sin_datos = {"n_casos": 0, "pct_clasificados": 0.0, "motivos": []}
+
     textos = _textos_resenas_y1(appid)
     n_casos = len(textos)
     if n_casos < _UMBRAL_MIN_CASOS:
         logger.info("appid=%s con %s casos Y=1 (< %s): sin motivos, muestra insuficiente", appid, n_casos, _UMBRAL_MIN_CASOS)
-        return []
+        return {**sin_datos, "n_casos": n_casos}
 
-    conteos = {categoria: sum(1 for t in textos if patron.search(t)) for categoria, patron in _PATRONES_MOTIVOS.items()}
+    conteos = {categoria: 0 for categoria in _PATRONES_MOTIVOS}
+    n_clasificados = 0
+    for texto in textos:
+        categorias_encontradas = [c for c, patron in _PATRONES_MOTIVOS.items() if patron.search(texto)]
+        if not categorias_encontradas:
+            continue
+        n_clasificados += 1
+        for categoria in categorias_encontradas:
+            conteos[categoria] += 1
+
+    if n_clasificados == 0:
+        logger.info("appid=%s: ninguna reseña Y=1 clasificada en alguna categoría", appid)
+        return {**sin_datos, "n_casos": n_casos}
+
     motivos = [
-        MotivoInsatisfaccion(motivo=categoria, frecuencia=round(conteo / n_casos, 2))
+        MotivoInsatisfaccion(motivo=categoria, frecuencia=round(conteo / n_clasificados, 2))
         for categoria, conteo in conteos.items()
         if conteo > 0
     ]
     motivos.sort(key=lambda m: m.frecuencia, reverse=True)
-    logger.info("motivos appid=%s n_casos=%s categorias_con_señal=%s", appid, n_casos, len(motivos))
-    return motivos
+    pct_clasificados = round(n_clasificados / n_casos, 4)
+    logger.info(
+        "motivos appid=%s n_casos=%s n_clasificados=%s pct_clasificados=%.2f categorias_con_señal=%s",
+        appid, n_casos, n_clasificados, pct_clasificados, len(motivos),
+    )
+    return {"n_casos": n_casos, "pct_clasificados": pct_clasificados, "motivos": motivos}

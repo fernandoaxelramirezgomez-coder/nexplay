@@ -96,7 +96,15 @@ def _evaluar_riesgo(perfil, appid):
 
     if explicacion and explicacion.get("motivos"):
         lineas = "\n".join(f"- {m['motivo']}: {m['frecuencia']:.0%}" for m in explicacion["motivos"])
-        motivos_md = f"### Motivos de insatisfacción más frecuentes en *{explicacion['nombre']}*\n{lineas}"
+        contexto = (
+            f"_{explicacion['n_casos']} reseñas de arrepentimiento temprano analizadas, "
+            f"{explicacion['pct_clasificados']:.0%} mencionan alguno de estos motivos "
+            f"— porcentajes sobre las clasificadas, no sobre el total._"
+        )
+        motivos_md = (
+            f"### Motivos de insatisfacción más frecuentes en *{explicacion['nombre']}*\n"
+            f"{lineas}\n\n{contexto}"
+        )
     else:
         motivos_md = "_Sin motivos disponibles para este juego._"
 
