@@ -6,7 +6,7 @@ modelo se re-entrene."""
 
 import logging
 import pickle
-import random
+import re
 import sqlite3
 from pathlib import Path
 
@@ -25,14 +25,56 @@ _NOTA_PLATAFORMA_SIN_DATOS = (
     "{plataforma}: la señal viene de reseñas de Steam (PC)."
 )
 
-_MOTIVOS_SIMULADOS = [
-    "rendimiento/optimización",
-    "bugs al lanzamiento",
-    "contenido pagado (dlc/microtransacciones)",
-    "diferencia con lo prometido en marketing",
-    "curva de aprendizaje/dificultad",
-    "servidores/matchmaking",
-]
+# Con menos reseñas Y=1 que esto, cualquier frecuencia por término es ruido de
+# muestra chica (mismo criterio que descarta diferencias de PR-AUC menores al
+# ruido entre folds en el notebook): mejor no reportar motivos que inventar
+# certeza sobre 2 o 3 reseñas.
+_UMBRAL_MIN_CASOS = 5
+
+# Palabras clave en inglés: la ingesta filtra language=english (ver
+# ingesta_steam.py), así que es lo que hay en el texto de las reseñas.
+_PALABRAS_CLAVE_POR_CATEGORIA: dict[str, list[str]] = {
+    "rendimiento": [
+        "fps", "lag", "laggy", "lagging", "stutter", "stuttering", "freeze", "freezing",
+        "freezes", "crash", "crashes", "crashing", "crashed", "optimize", "optimise",
+        "optimization", "optimisation", "framerate", "frame rate", "sluggish",
+        "memory leak", "loading times", "load times",
+    ],
+    "bugs": [
+        "bug", "bugs", "buggy", "glitch", "glitches", "glitchy", "broken", "game-breaking",
+        "gamebreaking", "softlock", "softlocked", "unplayable",
+    ],
+    "dificultad": [
+        "difficult", "difficulty", "hard", "hardcore", "frustrating", "frustrated",
+        "unfair", "punishing", "grind", "grindy", "grinding", "brutal",
+    ],
+    "controles": [
+        "controls", "controller", "clunky", "unresponsive", "aiming", "aim assist",
+        "keybind", "keybinding", "key bindings", "input lag", "camera controls",
+    ],
+    "contenido": [
+        "content", "short", "shallow", "repetitive", "repetition", "empty", "lacking",
+        "incomplete", "unfinished", "dlc", "microtransaction", "microtransactions",
+        "pay to win", "paywall", "filler",
+    ],
+    "precio": [
+        "price", "priced", "pricing", "expensive", "overpriced", "cost", "costly",
+        "refund", "waste of money", "not worth", "cash grab",
+    ],
+}
+
+
+def _compilar_patrones() -> dict[str, re.Pattern]:
+    return {
+        categoria: re.compile(
+            r"\b(?:" + "|".join(re.escape(palabra) for palabra in palabras) + r")\b",
+            re.IGNORECASE,
+        )
+        for categoria, palabras in _PALABRAS_CLAVE_POR_CATEGORIA.items()
+    }
+
+
+_PATRONES_MOTIVOS = _compilar_patrones()
 
 
 def _cargar_artefacto() -> dict:
@@ -114,10 +156,34 @@ def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
     )
 
 
+def _textos_resenas_y1(appid: int) -> list[str]:
+    con = sqlite3.connect(_DB_PATH)
+    try:
+        filas = con.execute(
+            "SELECT texto FROM resenas WHERE appid = ? AND playtime_at_review < 120 AND voted_up = 0",
+            (appid,),
+        ).fetchall()
+    finally:
+        con.close()
+    return [texto for (texto,) in filas if texto]
+
+
 def motivos_frecuentes(appid: int) -> list[MotivoInsatisfaccion]:
-    # rng propio (no random global) para que la respuesta sea estable por appid.
-    # Sigue simulado: la explicación por motivos no es parte de este cambio.
-    rng = random.Random(appid)
-    motivos = rng.sample(_MOTIVOS_SIMULADOS, k=rng.randint(2, 4))
-    frecuencias = sorted((round(rng.uniform(0.05, 0.6), 2) for _ in motivos), reverse=True)
-    return [MotivoInsatisfaccion(motivo=m, frecuencia=f) for m, f in zip(motivos, frecuencias)]
+    """Motivos de arrepentimiento temprano (señal proxy: Y=1) más frecuentes en
+    el texto de esas reseñas, por conteo de palabras clave por categoría — sin
+    modelo de lenguaje."""
+    textos = _textos_resenas_y1(appid)
+    n_casos = len(textos)
+    if n_casos < _UMBRAL_MIN_CASOS:
+        logger.info("appid=%s con %s casos Y=1 (< %s): sin motivos, muestra insuficiente", appid, n_casos, _UMBRAL_MIN_CASOS)
+        return []
+
+    conteos = {categoria: sum(1 for t in textos if patron.search(t)) for categoria, patron in _PATRONES_MOTIVOS.items()}
+    motivos = [
+        MotivoInsatisfaccion(motivo=categoria, frecuencia=round(conteo / n_casos, 2))
+        for categoria, conteo in conteos.items()
+        if conteo > 0
+    ]
+    motivos.sort(key=lambda m: m.frecuencia, reverse=True)
+    logger.info("motivos appid=%s n_casos=%s categorias_con_señal=%s", appid, n_casos, len(motivos))
+    return motivos
