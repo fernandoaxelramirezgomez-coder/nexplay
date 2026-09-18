@@ -352,15 +352,17 @@ def _agregar_a_comparar(actuales, appid, nombre):
 _CATALOGO_VISUAL = _cargar_catalogo_visual()
 _GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]})
 
-# Estantes por banda de riesgo (bajo -> medio -> alto), cada uno ordenado por
-# score descendente: dentro de "alto" los casos más extremos (score más alto)
-# quedan primero, no orden alfabético.
+# Estantes por banda de riesgo (bajo -> medio -> alto), por score y no
+# alfabético — pero el sentido del "extremo" cambia con la banda: en "bajo"
+# el extremo es el más seguro (score más bajo primero); en "medio" y "alto",
+# el extremo es el score más alto.
 _ORDEN_BANDAS = ["bajo", "medio", "alto"]
+_DESCENDENTE_POR_BANDA = {"bajo": False, "medio": True, "alto": True}
 _CATALOGO_POR_BANDA = {
     banda: sorted(
         (j for j in _CATALOGO_VISUAL if j["banda_riesgo"] == banda),
         key=lambda j: j["riesgo"],
-        reverse=True,
+        reverse=_DESCENDENTE_POR_BANDA[banda],
     )
     for banda in _ORDEN_BANDAS
 }
