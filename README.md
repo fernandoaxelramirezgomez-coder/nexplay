@@ -11,7 +11,7 @@ Narrativa completa (Problema → Datos → EDA → Calidad de datos → Ingenier
 Modelo → Experimento de privacidad → Conclusiones) en `notebook/nexplay.ipynb`, ejecutable de
 punta a punta en un Colab limpio:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/data-v1/notebook/nexplay.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/nexplay.ipynb)
 
 Esta guía es la otra mitad: **cómo dejar el proyecto completo (API + modelo + UI)
 funcionando en una máquina limpia**, no solo el notebook.
