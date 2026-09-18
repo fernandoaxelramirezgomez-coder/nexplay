@@ -54,12 +54,14 @@ _PALABRAS_CLAVE_POR_CATEGORIA: dict[str, list[str]] = {
     ],
     "contenido": [
         "content", "short", "shallow", "repetitive", "repetition", "empty", "lacking",
-        "incomplete", "unfinished", "dlc", "microtransaction", "microtransactions",
-        "pay to win", "paywall", "filler",
+        "incomplete", "unfinished", "dlc", "pay to win", "filler",
     ],
+    # "refund", "waste of money" y "not worth" se descartaron: son insatisfaccion
+    # generica (aparecen en cualquier resena Y=1 sin importar el motivo), no
+    # queja de costo especificamente.
     "precio": [
-        "price", "priced", "pricing", "expensive", "overpriced", "cost", "costly",
-        "refund", "waste of money", "not worth", "cash grab",
+        "price", "priced", "pricing", "cost", "costly", "overpriced", "paywall",
+        "cash grab", "microtransaction", "microtransactions",
     ],
 }
 
