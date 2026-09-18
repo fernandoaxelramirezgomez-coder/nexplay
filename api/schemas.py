@@ -96,6 +96,9 @@ class JuegoCatalogo(BaseModel):
     banda_riesgo: NivelRiesgo = Field(
         ..., description="Riesgo estimado con un perfil neutro (ver catalogo.py); orientativo para el catálogo, no personalizado"
     )
+    riesgo: float = Field(
+        ..., ge=0, le=1, description="Score numérico del mismo perfil neutro; para ordenar dentro de una banda, no para mostrar como probabilidad"
+    )
 
 
 class SolicitudPrediccion(BaseModel):

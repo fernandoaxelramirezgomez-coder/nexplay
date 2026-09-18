@@ -309,22 +309,27 @@ def _tarjeta_html(juego: dict) -> str:
     )
 
 
-def _filtrar_catalogo_visual(genero, banda, texto):
+def _filtrar_catalogo_visual(genero, texto):
+    """Filtra por género/nombre sobre los tres estantes (bajo/medio/alto). No
+    hay filtro de banda de riesgo: la estructura en estantes ya separa por
+    eso — filtrar además sería redundante con lo que la página ya muestra."""
     texto_norm = (texto or "").strip().lower()
     genero_sel = genero if genero and genero != "Todos" else None
-    banda_sel = banda if banda and banda != "Todas" else None
 
     visibilidades = []
-    for juego in _CATALOGO_VISUAL:
+    conteos = {banda: 0 for banda in _ORDEN_BANDAS}
+    for juego in _CATALOGO_ORDENADO:
         visible = True
         if texto_norm and texto_norm not in juego["nombre"].lower():
             visible = False
         if genero_sel and genero_sel not in juego["generos"]:
             visible = False
-        if banda_sel and juego["banda_riesgo"] != banda_sel:
-            visible = False
         visibilidades.append(gr.update(visible=visible))
-    return visibilidades
+        if visible:
+            conteos[juego["banda_riesgo"]] += 1
+
+    titulos = [f"### Riesgo {banda} ({conteos[banda]})" for banda in _ORDEN_BANDAS]
+    return titulos + visibilidades
 
 
 def _agregar_a_comparar(actuales, appid, nombre):
@@ -346,6 +351,20 @@ def _agregar_a_comparar(actuales, appid, nombre):
 # construir la app, no puede agregar tarjetas nuevas dinámicamente después.
 _CATALOGO_VISUAL = _cargar_catalogo_visual()
 _GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]})
+
+# Estantes por banda de riesgo (bajo -> medio -> alto), cada uno ordenado por
+# score descendente: dentro de "alto" los casos más extremos (score más alto)
+# quedan primero, no orden alfabético.
+_ORDEN_BANDAS = ["bajo", "medio", "alto"]
+_CATALOGO_POR_BANDA = {
+    banda: sorted(
+        (j for j in _CATALOGO_VISUAL if j["banda_riesgo"] == banda),
+        key=lambda j: j["riesgo"],
+        reverse=True,
+    )
+    for banda in _ORDEN_BANDAS
+}
+_CATALOGO_ORDENADO = [j for banda in _ORDEN_BANDAS for j in _CATALOGO_POR_BANDA[banda]]
 
 
 with gr.Blocks(title="NexPlay") as demo:
@@ -396,61 +415,62 @@ with gr.Blocks(title="NexPlay") as demo:
                         filtro_genero = gr.Dropdown(
                             label="Género", choices=["Todos"] + _GENEROS_DISPONIBLES, value="Todos"
                         )
-                        filtro_riesgo = gr.Dropdown(
-                            label="Banda de riesgo", choices=["Todas", "bajo", "medio", "alto"], value="Todas"
-                        )
                         filtro_texto = gr.Textbox(label="Buscar por nombre", placeholder="half-life")
                         boton_filtrar = gr.Button("Filtrar")
 
                     comparar_md = gr.Markdown("**En comparación:** _ninguno todavía_")
 
+                    titulos_banda = {}
                     columnas_catalogo = []
-                    for i in range(0, len(_CATALOGO_VISUAL), 4):
-                        with gr.Row():
-                            for juego in _CATALOGO_VISUAL[i : i + 4]:
-                                with gr.Column(min_width=200) as columna:
-                                    gr.HTML(_tarjeta_html(juego))
-                                    with gr.Row():
-                                        boton_opinion = gr.Button("Ver segunda opinión", size="sm")
-                                        boton_comparar = gr.Button("Comparar", size="sm")
+                    for banda in _ORDEN_BANDAS:
+                        juegos_banda = _CATALOGO_POR_BANDA[banda]
+                        titulos_banda[banda] = gr.Markdown(f"### Riesgo {banda} ({len(juegos_banda)})")
+                        for i in range(0, len(juegos_banda), 4):
+                            with gr.Row():
+                                for juego in juegos_banda[i : i + 4]:
+                                    with gr.Column(min_width=200) as columna:
+                                        gr.HTML(_tarjeta_html(juego))
+                                        with gr.Row():
+                                            boton_opinion = gr.Button("Ver segunda opinión", size="sm")
+                                            boton_comparar = gr.Button("Comparar", size="sm")
 
-                                    boton_opinion.click(
-                                        _mostrar_carga_ficha,
-                                        outputs=[
-                                            ficha_portada,
-                                            ficha_riesgo,
-                                            ficha_metadata,
-                                            ficha_motivos,
-                                            ficha_factores,
-                                            ficha_opinion,
-                                            panel_catalogo,
-                                            panel_ficha,
-                                        ],
-                                    ).then(
-                                        lambda perfil, ap=juego["appid"]: _abrir_ficha(perfil, ap)[:6],
-                                        inputs=[perfil_state],
-                                        outputs=[
-                                            ficha_portada,
-                                            ficha_riesgo,
-                                            ficha_metadata,
-                                            ficha_motivos,
-                                            ficha_factores,
-                                            ficha_opinion,
-                                        ],
-                                    )
-                                    boton_comparar.click(
-                                        lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
-                                            actuales, ap, nombre
-                                        ),
-                                        inputs=[comparar_state],
-                                        outputs=[comparar_state, comparar_md],
-                                    )
-                                columnas_catalogo.append(columna)
+                                        boton_opinion.click(
+                                            _mostrar_carga_ficha,
+                                            outputs=[
+                                                ficha_portada,
+                                                ficha_riesgo,
+                                                ficha_metadata,
+                                                ficha_motivos,
+                                                ficha_factores,
+                                                ficha_opinion,
+                                                panel_catalogo,
+                                                panel_ficha,
+                                            ],
+                                        ).then(
+                                            lambda perfil, ap=juego["appid"]: _abrir_ficha(perfil, ap)[:6],
+                                            inputs=[perfil_state],
+                                            outputs=[
+                                                ficha_portada,
+                                                ficha_riesgo,
+                                                ficha_metadata,
+                                                ficha_motivos,
+                                                ficha_factores,
+                                                ficha_opinion,
+                                            ],
+                                        )
+                                        boton_comparar.click(
+                                            lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
+                                                actuales, ap, nombre
+                                            ),
+                                            inputs=[comparar_state],
+                                            outputs=[comparar_state, comparar_md],
+                                        )
+                                    columnas_catalogo.append(columna)
 
                     boton_filtrar.click(
                         _filtrar_catalogo_visual,
-                        inputs=[filtro_genero, filtro_riesgo, filtro_texto],
-                        outputs=columnas_catalogo,
+                        inputs=[filtro_genero, filtro_texto],
+                        outputs=[titulos_banda[b] for b in _ORDEN_BANDAS] + columnas_catalogo,
                     )
 
             boton_volver.click(

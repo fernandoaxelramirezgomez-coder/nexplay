@@ -87,6 +87,7 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
                 portada_url=_url_portada(appid),
                 tienda_url=_url_tienda(appid),
                 banda_riesgo=prediccion.nivel,
+                riesgo=prediccion.riesgo,
             )
         )
     return catalogo
