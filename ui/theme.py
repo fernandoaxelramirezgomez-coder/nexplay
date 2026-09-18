@@ -172,6 +172,14 @@ CSS = f"""
     --nexplay-radio: {RADIO};
 }}
 
+.nexplay-header {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+}}
+
 .nexplay-titulo {{
     background: linear-gradient(90deg, var(--nexplay-violeta), var(--nexplay-azul));
     -webkit-background-clip: text;

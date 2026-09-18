@@ -21,7 +21,10 @@ _PLATAFORMAS = ["pc", "playstation", "xbox", "nintendo"]
 
 _COLOR_BANDA = theme.COLOR_BANDA
 _MAX_COMPARAR = 4
-_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "logo.png"
+# logo-header.png: derivado de assets/logo.png con el fondo blanco vuelto
+# transparente (recortado a su bounding box) — el original es opaco y se
+# veía como un cuadro blanco sobre el fondo casi negro del tema.
+_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "logo-header.png"
 # SVG inline, sin depender de un servicio externo: si header.jpg no carga,
 # el navegador la reemplaza sola (onerror), sin tocar Python ni bloquear el arranque.
 # Comillas del SVG percent-encoded (%27): el onerror ya lo asigna con
@@ -346,19 +349,22 @@ _GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]
 
 
 with gr.Blocks(title="NexPlay") as demo:
-    with gr.Row():
+    with gr.Column(elem_classes=["nexplay-header"]):
         if _LOGO_PATH.exists():
+            # El logo ya incluye el nombre "NexPlay" (wordmark) — sin <h1> de
+            # texto al lado, sería un duplicado. A 64px el wordmark y el
+            # eslogan propio del logo quedan ilegibles, así que va grande.
             gr.Image(
                 value=str(_LOGO_PATH),
                 show_label=False,
                 container=False,
                 interactive=False,
-                height=64,
-                width=64,
-                scale=0,
+                height=180,
+                width=208,
             )
+        else:
+            gr.Markdown("<h1 class='nexplay-titulo'>NexPlay</h1>")
         gr.Markdown(
-            "<h1 class='nexplay-titulo'>NexPlay</h1>"
             "<div class='nexplay-tagline'><strong>Una segunda opinión antes de comprar tu próximo juego</strong></div>"
             "<div class='nexplay-tagline'>Explora, compara y descubre qué dicen los datos y los jugadores antes de decidir.</div>"
         )

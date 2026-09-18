@@ -1,5 +1,13 @@
 # NexPlay
 
+**Una segunda opinión antes de comprar tu próximo juego.** Explorás el catálogo, ves
+qué banda de riesgo tiene cada título y por qué (motivos reales de reseñas de Steam,
+no una nota genérica), y decidís con eso encima.
+
+![Catálogo visual de NexPlay: tarjetas con portada, banda de riesgo y filtros por género](docs/captura-interfaz.png)
+
+## Qué es
+
 Estima el riesgo de **arrepentimiento temprano** al comprar un videojuego, antes de la
 compra. `Y = 1` si `playtime_at_review < 120` minutos (ventana de reembolso de Steam) y
 `voted_up == 0`. Es una señal proxy: Steam no observa arrepentimiento real.
@@ -15,31 +23,6 @@ punta a punta en un Colab limpio:
 
 Esta guía es la otra mitad: **cómo dejar el proyecto completo (API + modelo + UI)
 funcionando en una máquina limpia**, no solo el notebook.
-
-## Estructura
-
-```
-api/                módulos de la API
-  main.py             endpoints
-  schemas.py          contratos Pydantic de entrada y salida
-  scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
-  catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
-ui/                 UI en Gradio (consume la API por HTTP)
-modelo/             artefactos entrenados (.pkl) — no versionado, lo genera preparar_entorno.py
-datos/              nexplay.db (SQLite) — no versionado, lo reconstruye preparar_entorno.py
-notebook/           narrativa completa, ejecutable en Colab
-extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
-ingesta_steam.py       ingesta original desde la API pública de Steam (no hace falta correrla)
-extracto_datos.py      genera el extracto mínimo en Parquet que consume el notebook
-extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que consume preparar_entorno.py
-entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
-entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
-preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
-```
-
-`datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
-entrenados, no código). `preparar_entorno.py` los reconstruye sin necesidad de volver a
-correr la ingesta de Steam.
 
 ## Puesta en marcha, de cero
 
@@ -84,6 +67,35 @@ python ui/app.py
 
 La API queda en `http://127.0.0.1:8000` (docs interactivas en `/docs`) y la UI de Gradio
 en `http://127.0.0.1:7860`.
+
+## Estructura
+
+```
+api/                módulos de la API
+  main.py             endpoints
+  schemas.py          contratos Pydantic de entrada y salida
+  scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
+  catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
+ui/                 UI en Gradio (consume la API por HTTP)
+  app.py              layout y llamadas HTTP
+  theme.py            identidad visual: tema de gr.themes + CSS propio
+  assets/             logo (logo.png original, logo-header.png con fondo transparente)
+modelo/             artefactos entrenados (.pkl) — no versionado, lo genera preparar_entorno.py
+datos/              nexplay.db (SQLite) — no versionado, lo reconstruye preparar_entorno.py
+notebook/           narrativa completa, ejecutable en Colab
+extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
+docs/               capturas y material para este README
+ingesta_steam.py       ingesta original desde la API pública de Steam (no hace falta correrla)
+extracto_datos.py      genera el extracto mínimo en Parquet que consume el notebook
+extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que consume preparar_entorno.py
+entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
+entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
+preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
+```
+
+`datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
+entrenados, no código). `preparar_entorno.py` los reconstruye sin necesidad de volver a
+correr la ingesta de Steam.
 
 ## Configuración
 
