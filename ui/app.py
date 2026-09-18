@@ -89,49 +89,52 @@ def _perfil_neutro() -> dict | None:
         return None
 
 
-def _evaluar_riesgo(perfil, appid):
-    if appid is None:
-        return "⚠️ Elige un juego en Explorar.", ""
+_FRASES_BANDA = {
+    "bajo": "Comparado con el resto del catálogo, este juego tiende a generar **menos** arrepentimiento temprano.",
+    "medio": "Comparado con el resto del catálogo, este juego no se distingue particularmente en arrepentimiento temprano.",
+    "alto": "Comparado con el resto del catálogo, este juego tiende a generar **más** arrepentimiento temprano.",
+}
 
-    if perfil is None:
-        perfil = _perfil_neutro()
-        if perfil is None:
-            return "⚠️ No se pudo evaluar (falló el perfil neutro de respaldo; ¿está la API corriendo?).", ""
 
-    try:
-        resp = requests.post(
-            f"{API_URL}/prediccion", json={"perfil": perfil, "appid": int(appid)}, timeout=TIMEOUT
-        )
-        resp.raise_for_status()
-        prediccion = resp.json()
-    except requests.RequestException as exc:
-        logger.warning("fallo al predecir: %s", exc)
-        return f"⚠️ No se pudo obtener la predicción: {exc}", ""
-
-    try:
-        resp_exp = requests.get(f"{API_URL}/explicacion/{int(appid)}", timeout=TIMEOUT)
-        resp_exp.raise_for_status()
-        explicacion = resp_exp.json()
-    except requests.RequestException as exc:
-        logger.warning("fallo al obtener explicación: %s", exc)
-        explicacion = None
-
-    nota = f"\n\n*{prediccion['nota_plataforma']}*" if prediccion.get("nota_plataforma") else ""
-    resultado = (
-        f"## Riesgo de arrepentimiento temprano: **{prediccion['nivel'].upper()}**\n"
-        f"comparado con el resto del catálogo — señal proxy, no observada directamente.  \n"
-        f"Modelo: `{prediccion['modelo_version']}`{nota}"
+def _ficha_portada_html(juego: dict) -> str:
+    return (
+        "<div style='text-align:center;'>"
+        f"<img src='{juego['portada_url']}' loading='lazy' "
+        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\" "
+        "style='max-width:100%; width:460px; border-radius:10px;'>"
+        f"<h2 style='margin:12px 0 0;'>{juego['nombre']}</h2>"
+        "</div>"
     )
 
-    factores = prediccion.get("factores")
-    if factores:
-        lineas_factores = "\n".join(
-            f"- {f['etiqueta']}, {'por encima' if f['valor_relativo'] == 'alto' else 'por debajo'} "
-            f"del promedio del catálogo — {f['direccion']} el riesgo estimado."
-            for f in factores
-        )
-        resultado += f"\n\n**Principales factores:**\n{lineas_factores}"
 
+def _ficha_metadata_md(juego: dict) -> str:
+    metacritic = juego.get("metacritic")
+    metacritic_txt = f"**Metacritic:** {metacritic}" if metacritic is not None else "**Metacritic:** sin nota"
+    generos_txt = ", ".join(juego.get("generos") or []) or "sin género registrado"
+
+    if juego.get("es_gratis"):
+        precio_txt = "**Precio:** Gratis"
+    elif juego.get("precio_final") is not None:
+        precio_txt = f"**Precio:** ${juego['precio_final']:.2f} {juego.get('moneda') or ''}".strip()
+    else:
+        precio_txt = "**Precio:** no disponible"
+
+    fecha_txt = (
+        f"**Lanzamiento:** {juego['fecha_lanzamiento']}"
+        if juego.get("fecha_lanzamiento")
+        else "**Lanzamiento:** sin fecha registrada"
+    )
+
+    return (
+        f"{metacritic_txt}  \n"
+        f"**Géneros:** {generos_txt}  \n"
+        f"{precio_txt}  \n"
+        f"{fecha_txt}  \n"
+        f"[Ver en Steam]({juego['tienda_url']})"
+    )
+
+
+def _ficha_motivos_md(explicacion: dict | None) -> str:
     if explicacion and explicacion.get("motivos"):
         lineas = "\n".join(f"- {m['motivo']}: {m['frecuencia']:.0%}" for m in explicacion["motivos"])
         contexto = (
@@ -139,14 +142,107 @@ def _evaluar_riesgo(perfil, appid):
             f"{explicacion['pct_clasificados']:.0%} mencionan alguno de estos motivos "
             f"— porcentajes sobre las clasificadas, no sobre el total._"
         )
-        motivos_md = (
-            f"### Motivos de insatisfacción más frecuentes en *{explicacion['nombre']}*\n"
-            f"{lineas}\n\n{contexto}"
+        return f"### Motivos de insatisfacción más frecuentes\n{lineas}\n\n{contexto}"
+    return (
+        "### Motivos de insatisfacción más frecuentes\n"
+        "_Sin motivos disponibles: muy pocas reseñas de arrepentimiento temprano para este juego._"
+    )
+
+
+def _ficha_factores_md(factores: list[dict]) -> str:
+    if not factores:
+        return ""
+    lineas = "\n".join(
+        f"- {f['etiqueta']}, {'por encima' if f['valor_relativo'] == 'alto' else 'por debajo'} "
+        f"del promedio del catálogo — {f['direccion']} el riesgo estimado."
+        for f in factores
+    )
+    return f"### Principales factores del modelo\n{lineas}"
+
+
+def _segunda_opinion_md(nivel: str | None, motivos: list[dict], metacritic) -> str:
+    """Síntesis por reglas (riesgo + motivo dominante + Metacritic), sin modelo de
+    lenguaje y sin recomendar comprar o no comprar — solo describe lo que dicen los
+    datos, la decisión queda del lado de quien lee."""
+    if nivel is None:
+        return "### Segunda opinión\n_No se pudo calcular (falló la predicción de riesgo)._"
+
+    frases = [_FRASES_BANDA.get(nivel, "")]
+
+    if motivos:
+        top = motivos[0]
+        frases.append(
+            f"Entre quienes se arrepintieron pronto, el motivo más mencionado es **{top['motivo']}** "
+            f"({top['frecuencia']:.0%} de las reseñas clasificadas)."
         )
     else:
-        motivos_md = "_Sin motivos disponibles para este juego._"
+        frases.append(
+            "No hay suficientes reseñas de arrepentimiento temprano de este juego para identificar un motivo dominante."
+        )
 
-    return resultado, motivos_md
+    if metacritic is not None:
+        if metacritic >= 75:
+            frases.append(f"La crítica especializada lo calificó bien (Metacritic {metacritic}).")
+        elif metacritic >= 50:
+            frases.append(f"La crítica especializada lo calificó de forma mixta (Metacritic {metacritic}).")
+        else:
+            frases.append(f"La crítica especializada lo calificó mal (Metacritic {metacritic}).")
+    else:
+        frases.append("No tiene cobertura de crítica especializada (sin nota de Metacritic).")
+
+    return "### Segunda opinión\n" + " ".join(frases)
+
+
+def _abrir_ficha(perfil, appid):
+    juego = next((j for j in _CATALOGO_VISUAL if j["appid"] == appid), None)
+    if juego is None:
+        sin_cambio = gr.update()
+        return (
+            sin_cambio, sin_cambio, sin_cambio, sin_cambio, sin_cambio, sin_cambio,
+            gr.update(visible=True), gr.update(visible=False),
+        )
+
+    if perfil is None:
+        perfil = _perfil_neutro()
+
+    nivel, factores = None, []
+    if perfil is not None:
+        try:
+            resp = requests.post(
+                f"{API_URL}/prediccion", json={"perfil": perfil, "appid": int(appid)}, timeout=TIMEOUT
+            )
+            resp.raise_for_status()
+            prediccion = resp.json()
+            nivel = prediccion["nivel"]
+            frase_riesgo = f"## Riesgo {nivel.upper()}\n{_FRASES_BANDA.get(nivel, '')}"
+            if prediccion.get("nota_plataforma"):
+                frase_riesgo += f"\n\n_{prediccion['nota_plataforma']}_"
+            factores = prediccion.get("factores") or []
+        except requests.RequestException as exc:
+            logger.warning("fallo al predecir en la ficha: %s", exc)
+            frase_riesgo = "⚠️ No se pudo obtener el riesgo."
+    else:
+        frase_riesgo = "⚠️ No se pudo obtener el riesgo (falló el perfil neutro de respaldo)."
+
+    try:
+        resp_exp = requests.get(f"{API_URL}/explicacion/{int(appid)}", timeout=TIMEOUT)
+        resp_exp.raise_for_status()
+        explicacion = resp_exp.json()
+    except requests.RequestException as exc:
+        logger.warning("fallo al obtener explicación en la ficha: %s", exc)
+        explicacion = None
+    motivos = (explicacion or {}).get("motivos") or []
+
+    return (
+        _ficha_portada_html(juego),
+        frase_riesgo,
+        _ficha_metadata_md(juego),
+        _ficha_motivos_md(explicacion),
+        _ficha_factores_md(factores),
+        _segunda_opinion_md(nivel, motivos, juego.get("metacritic")),
+        gr.update(visible=False),  # panel_catalogo
+        gr.update(visible=True),  # panel_ficha
+    )
 
 
 def _cargar_catalogo_visual() -> list[dict]:
@@ -225,21 +321,24 @@ with gr.Blocks(title="NexPlay") as demo:
     )
 
     perfil_state = gr.State(None)
-    appid_state = gr.State(None)
     comparar_state = gr.State([])
 
     with gr.Tabs() as tabs:
         with gr.Tab("Explorar", id="explorar"):
-            with gr.Group():
-                gr.Markdown("### Resultado")
-                resultado_riesgo = gr.Markdown()
-                motivos_md = gr.Markdown()
+            with gr.Column(visible=False) as panel_ficha:
+                boton_volver = gr.Button("← Volver al catálogo")
+                ficha_portada = gr.HTML()
+                ficha_riesgo = gr.Markdown()
+                ficha_metadata = gr.Markdown()
+                ficha_motivos = gr.Markdown()
+                ficha_factores = gr.Markdown()
+                ficha_opinion = gr.Markdown()
 
-            with gr.Group():
+            with gr.Column(visible=True) as panel_catalogo:
                 gr.Markdown(
-                    "_\"Ver segunda opinión\" evalúa ese juego con tu perfil — si no creaste uno en "
-                    "\"Tu perfil\", usa uno neutro — y actualiza el resultado, arriba. \"Comparar\" "
-                    "solo junta candidatos por ahora (la comparación en sí es una fase futura)._"
+                    "_\"Ver segunda opinión\" abre la ficha del juego, con tu perfil si creaste uno en "
+                    "\"Tu perfil\" (si no, usa uno neutro). \"Comparar\" solo junta candidatos por ahora "
+                    "(la comparación en sí es una fase futura)._"
                 )
                 if not _CATALOGO_VISUAL:
                     gr.Markdown("_No se pudo cargar el catálogo — revisa que la API esté corriendo._")
@@ -267,9 +366,18 @@ with gr.Blocks(title="NexPlay") as demo:
                                         boton_comparar = gr.Button("Comparar", size="sm")
 
                                     boton_opinion.click(
-                                        lambda perfil, ap=juego["appid"]: (ap,) + _evaluar_riesgo(perfil, ap),
+                                        lambda perfil, ap=juego["appid"]: _abrir_ficha(perfil, ap),
                                         inputs=[perfil_state],
-                                        outputs=[appid_state, resultado_riesgo, motivos_md],
+                                        outputs=[
+                                            ficha_portada,
+                                            ficha_riesgo,
+                                            ficha_metadata,
+                                            ficha_motivos,
+                                            ficha_factores,
+                                            ficha_opinion,
+                                            panel_catalogo,
+                                            panel_ficha,
+                                        ],
                                     )
                                     boton_comparar.click(
                                         lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
@@ -285,6 +393,11 @@ with gr.Blocks(title="NexPlay") as demo:
                         inputs=[filtro_genero, filtro_riesgo, filtro_texto],
                         outputs=columnas_catalogo,
                     )
+
+            boton_volver.click(
+                lambda: (gr.update(visible=True), gr.update(visible=False)),
+                outputs=[panel_catalogo, panel_ficha],
+            )
 
         with gr.Tab("Tu perfil", id="tu_perfil"):
             gr.Markdown(

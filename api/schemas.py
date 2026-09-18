@@ -85,6 +85,12 @@ class JuegoCatalogo(BaseModel):
     plataformas: list[Plataforma]
     generos: list[str] = Field(default_factory=list, description="Géneros de Steam (no tags de usuario)")
     metacritic: Optional[int] = Field(None, description="Nota de Metacritic; None si el juego no tiene cobertura")
+    es_gratis: bool = False
+    precio_final: Optional[float] = Field(
+        None, description="En unidades de moneda (ya convertido de centavos); None si no hay precio disponible"
+    )
+    moneda: Optional[str] = None
+    fecha_lanzamiento: Optional[str] = None
     portada_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     tienda_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     banda_riesgo: NivelRiesgo = Field(

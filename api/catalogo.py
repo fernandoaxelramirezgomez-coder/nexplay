@@ -63,13 +63,14 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
     con = sqlite3.connect(_DB_PATH)
     try:
         filas = con.execute(
-            "SELECT appid, nombre, generos, metacritic FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
+            "SELECT appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento "
+            "FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
         ).fetchall()
     finally:
         con.close()
 
     catalogo = []
-    for appid, nombre, generos, metacritic in filas:
+    for appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento in filas:
         prediccion = scoring.predecir(_PERFIL_NEUTRO, appid)
         catalogo.append(
             JuegoCatalogo(
@@ -78,6 +79,11 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
                 plataformas=[Plataforma.PC],
                 generos=_generos_de(generos),
                 metacritic=metacritic,
+                es_gratis=bool(es_gratis),
+                # precio_final viene en centavos (misma convencion que la API de Steam).
+                precio_final=precio_final / 100 if precio_final is not None else None,
+                moneda=moneda,
+                fecha_lanzamiento=fecha_lanzamiento,
                 portada_url=_url_portada(appid),
                 tienda_url=_url_tienda(appid),
                 banda_riesgo=prediccion.nivel,
