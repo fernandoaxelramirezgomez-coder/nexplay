@@ -177,7 +177,11 @@ CSS = f"""
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 2px;
+    gap: 0;
+    padding: 4px 0 0;
+}}
+.nexplay-header .gr-image, .nexplay-header img {{
+    margin: 0 0 -6px;
 }}
 
 .nexplay-titulo {{
@@ -191,7 +195,9 @@ CSS = f"""
 
 .nexplay-tagline {{
     color: #F2F0F7;
-    font-size: 1.1em;
+    font-size: 0.95em;
+    line-height: 1.35;
+    margin: 0;
 }}
 
 /* Tarjetas del catálogo: borde con degradado sutil de marca (truco del

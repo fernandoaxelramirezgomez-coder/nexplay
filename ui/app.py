@@ -373,15 +373,17 @@ with gr.Blocks(title="NexPlay") as demo:
     with gr.Column(elem_classes=["nexplay-header"]):
         if _LOGO_PATH.exists():
             # El logo ya incluye el nombre "NexPlay" (wordmark) — sin <h1> de
-            # texto al lado, sería un duplicado. A 64px el wordmark y el
-            # eslogan propio del logo quedan ilegibles, así que va grande.
+            # texto al lado, sería un duplicado. buttons=[] quita los
+            # controles nativos de Gradio (descargar/compartir/pantalla
+            # completa) que no tienen sentido sobre un logo estático.
             gr.Image(
                 value=str(_LOGO_PATH),
                 show_label=False,
                 container=False,
                 interactive=False,
-                height=180,
-                width=208,
+                height=100,
+                width=116,
+                buttons=[],
             )
         else:
             gr.Markdown("<h1 class='nexplay-titulo'>NexPlay</h1>")
@@ -405,11 +407,6 @@ with gr.Blocks(title="NexPlay") as demo:
                 ficha_opinion = gr.Markdown()
 
             with gr.Column(visible=True, elem_classes=["nexplay-panel"]) as panel_catalogo:
-                gr.Markdown(
-                    "_\"Ver segunda opinión\" abre la ficha del juego, con tu perfil si creaste uno en "
-                    "\"Tu perfil\" (si no, usa uno neutro). \"Comparar\" solo junta candidatos por ahora "
-                    "(la comparación en sí es una fase futura)._"
-                )
                 if not _CATALOGO_VISUAL:
                     gr.Markdown("_No se pudo cargar el catálogo — revisa que la API esté corriendo._")
                 else:
