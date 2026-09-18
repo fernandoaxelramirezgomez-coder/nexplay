@@ -31,20 +31,35 @@ _PORTADA_FALLBACK = (
     "text-anchor=%27middle%27 dominant-baseline=%27middle%27>Sin portada</text></svg>"
 )
 
+# Perfil de respaldo cuando alguien pide "Ver segunda opinión" sin haber
+# creado un perfil: se manda a /perfil (misma derivación que un perfil real,
+# no una heurística duplicada aquí) para que el flujo funcione igual de bien
+# con o sin perfil declarado.
+_FORMULARIO_NEUTRO = {
+    "compras_al_anio": 5,
+    "horas_por_semana": 8,
+    "tolerancia_friccion": 3,
+    "plataforma": "pc",
+}
 
-def _parse_tags(texto: str) -> list[str]:
-    if not texto:
-        return []
-    return [t.strip() for t in texto.split(",") if t.strip()]
+_METODOLOGIA_MD = (
+    "NexPlay estima el riesgo de **arrepentimiento temprano** al comprar un videojuego, antes "
+    "de la compra. Es una señal *proxy*: se construye con reseñas donde el autor jugó poco "
+    "(menos de 120 minutos, la ventana de reembolso de Steam) y calificó negativo — Steam no "
+    "pregunta directamente si alguien se arrepintió.\n\n"
+    "El modelo se valida con `GroupKFold` agrupando por juego, así que el riesgo mide "
+    "generalización a juegos que el modelo no vio, no memorización. La métrica es PR-AUC: la "
+    "clase está muy desbalanceada (~2.2% de las reseñas), así que accuracy no sirve.\n\n"
+    "El riesgo ordena riesgo relativo, no es una probabilidad calibrada — por eso se muestra "
+    "como nivel (bajo/medio/alto), nunca como porcentaje."
+)
 
 
-def _crear_perfil(compras_al_anio, horas_por_semana, tolerancia_friccion, tags_preferidos, tags_rechazados, plataforma):
+def _crear_perfil(biblioteca, horas_por_semana, tolerancia_friccion, plataforma):
     formulario = {
-        "compras_al_anio": int(compras_al_anio),
+        "compras_al_anio": int(biblioteca),
         "horas_por_semana": float(horas_por_semana),
         "tolerancia_friccion": int(tolerancia_friccion),
-        "tags_preferidos": _parse_tags(tags_preferidos),
-        "tags_rechazados": _parse_tags(tags_rechazados),
         "plataforma": plataforma,
     }
     try:
@@ -64,25 +79,24 @@ def _crear_perfil(compras_al_anio, horas_por_semana, tolerancia_friccion, tags_p
     return perfil, resumen
 
 
-def _buscar_juegos(query):
+def _perfil_neutro() -> dict | None:
     try:
-        resp = requests.get(f"{API_URL}/catalogo", params={"q": query or ""}, timeout=TIMEOUT)
+        resp = requests.post(f"{API_URL}/perfil", json=_FORMULARIO_NEUTRO, timeout=TIMEOUT)
         resp.raise_for_status()
+        return resp.json()
     except requests.RequestException as exc:
-        logger.warning("fallo al buscar catálogo: %s", exc)
-        return gr.Dropdown(choices=[], value=None), f"⚠️ No se pudo buscar: {exc}"
-
-    juegos = resp.json()
-    choices = [(f"{j['nombre']} ({j['appid']})", j["appid"]) for j in juegos]
-    estado = f"{len(choices)} juego(s) encontrados." if choices else "Sin resultados."
-    return gr.Dropdown(choices=choices, value=choices[0][1] if choices else None), estado
+        logger.warning("no se pudo derivar el perfil neutro de respaldo: %s", exc)
+        return None
 
 
 def _evaluar_riesgo(perfil, appid):
-    if perfil is None:
-        return "⚠️ Primero crea el perfil (paso 1).", ""
     if appid is None:
-        return "⚠️ Primero elige un juego (paso 2).", ""
+        return "⚠️ Elige un juego en Explorar.", ""
+
+    if perfil is None:
+        perfil = _perfil_neutro()
+        if perfil is None:
+            return "⚠️ No se pudo evaluar (falló el perfil neutro de respaldo; ¿está la API corriendo?).", ""
 
     try:
         resp = requests.post(
@@ -206,110 +220,119 @@ _GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]
 with gr.Blocks(title="NexPlay") as demo:
     gr.Markdown(
         "# NexPlay\n"
-        "Estima el riesgo de **arrepentimiento temprano** al comprar un videojuego, "
-        "antes de la compra. Es una señal proxy: Steam no observa arrepentimiento real."
+        "**Una segunda opinión antes de comprar tu próximo juego**\n\n"
+        "Explora, compara y descubre qué dicen los datos y los jugadores antes de decidir."
     )
 
     perfil_state = gr.State(None)
     appid_state = gr.State(None)
+    comparar_state = gr.State([])
 
-    with gr.Group():
-        gr.Markdown("## 1. Perfil del jugador")
-        with gr.Row():
-            compras_al_anio = gr.Number(label="Compras al año", value=3, precision=0, minimum=0, maximum=365)
-            horas_por_semana = gr.Number(label="Horas por semana disponibles", value=6, minimum=0, maximum=168)
-            tolerancia_friccion = gr.Slider(
-                label="Tolerancia a la fricción (1 nula, 5 muy alta)", minimum=1, maximum=5, step=1, value=3
+    with gr.Tabs() as tabs:
+        with gr.Tab("Explorar", id="explorar"):
+            with gr.Group():
+                gr.Markdown("### Resultado")
+                resultado_riesgo = gr.Markdown()
+                motivos_md = gr.Markdown()
+
+            with gr.Group():
+                gr.Markdown(
+                    "_\"Ver segunda opinión\" evalúa ese juego con tu perfil — si no creaste uno en "
+                    "\"Tu perfil\", usa uno neutro — y actualiza el resultado, arriba. \"Comparar\" "
+                    "solo junta candidatos por ahora (la comparación en sí es una fase futura)._"
+                )
+                if not _CATALOGO_VISUAL:
+                    gr.Markdown("_No se pudo cargar el catálogo — revisa que la API esté corriendo._")
+                else:
+                    with gr.Row():
+                        filtro_genero = gr.Dropdown(
+                            label="Género", choices=["Todos"] + _GENEROS_DISPONIBLES, value="Todos"
+                        )
+                        filtro_riesgo = gr.Dropdown(
+                            label="Banda de riesgo", choices=["Todas", "bajo", "medio", "alto"], value="Todas"
+                        )
+                        filtro_texto = gr.Textbox(label="Buscar por nombre", placeholder="half-life")
+                        boton_filtrar = gr.Button("Filtrar")
+
+                    comparar_md = gr.Markdown("**En comparación:** _ninguno todavía_")
+
+                    columnas_catalogo = []
+                    for i in range(0, len(_CATALOGO_VISUAL), 4):
+                        with gr.Row():
+                            for juego in _CATALOGO_VISUAL[i : i + 4]:
+                                with gr.Column(min_width=200) as columna:
+                                    gr.HTML(_tarjeta_html(juego))
+                                    with gr.Row():
+                                        boton_opinion = gr.Button("Ver segunda opinión", size="sm")
+                                        boton_comparar = gr.Button("Comparar", size="sm")
+
+                                    boton_opinion.click(
+                                        lambda perfil, ap=juego["appid"]: (ap,) + _evaluar_riesgo(perfil, ap),
+                                        inputs=[perfil_state],
+                                        outputs=[appid_state, resultado_riesgo, motivos_md],
+                                    )
+                                    boton_comparar.click(
+                                        lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
+                                            actuales, ap, nombre
+                                        ),
+                                        inputs=[comparar_state],
+                                        outputs=[comparar_state, comparar_md],
+                                    )
+                                columnas_catalogo.append(columna)
+
+                    boton_filtrar.click(
+                        _filtrar_catalogo_visual,
+                        inputs=[filtro_genero, filtro_riesgo, filtro_texto],
+                        outputs=columnas_catalogo,
+                    )
+
+        with gr.Tab("Tu perfil", id="tu_perfil"):
+            gr.Markdown(
+                "Declarás cómo jugás para afinar el riesgo estimado. **Es opcional:** sin perfil, "
+                "\"Ver segunda opinión\" en Explorar usa un perfil neutro."
             )
-        with gr.Row():
-            tags_preferidos = gr.Textbox(
-                label="Tags preferidos (separados por coma, vocabulario de Steam)",
-                placeholder="roguelike, singleplayer",
+            biblioteca = gr.Radio(
+                label="Biblioteca de Steam",
+                choices=[
+                    ("Estoy empezando (0–10 juegos)", 5),
+                    ("Pequeña (11–30 juegos)", 20),
+                    ("Mediana (31–100 juegos)", 60),
+                    ("Grande (más de 100 juegos)", 150),
+                ],
+                value=20,
             )
-            tags_rechazados = gr.Textbox(
-                label="Tags rechazados (separados por coma)", placeholder="pvp, pay to win"
+            horas_por_semana = gr.Radio(
+                label="Horas por semana disponibles para jugar",
+                choices=[("Poca (menos de 4h)", 2), ("Media (4–9h)", 6), ("Alta (10h o más)", 15)],
+                value=6,
             )
-        plataforma = gr.Radio(label="Plataforma", choices=_PLATAFORMAS, value="pc")
-        boton_perfil = gr.Button("Crear perfil")
-        resumen_perfil = gr.Markdown()
+            tolerancia_friccion = gr.Radio(
+                label="Tolerancia a la fricción (bugs, curva de aprendizaje, dificultad)",
+                choices=[("Nula", 1), ("Baja", 2), ("Media", 3), ("Alta", 4), ("Muy alta", 5)],
+                value=3,
+            )
+            plataforma = gr.Radio(label="Plataforma", choices=_PLATAFORMAS, value="pc")
+            gr.Markdown(
+                "_El catálogo de NexPlay es solo de juegos de Steam. En otra plataforma, el lado del "
+                "juego transfiere, pero no hay una fuente de entrenamiento propia — el resultado lo "
+                "aclara._"
+            )
 
-    boton_perfil.click(
-        _crear_perfil,
-        inputs=[compras_al_anio, horas_por_semana, tolerancia_friccion, tags_preferidos, tags_rechazados, plataforma],
-        outputs=[perfil_state, resumen_perfil],
-    )
-
-    with gr.Group():
-        gr.Markdown("## 2. Buscar juego")
-        with gr.Row():
-            busqueda = gr.Textbox(label="Nombre del juego", placeholder="half-life")
-            boton_buscar = gr.Button("Buscar")
-        resultados = gr.Dropdown(label="Resultados")
-        estado_busqueda = gr.Markdown()
-
-    boton_buscar.click(_buscar_juegos, inputs=[busqueda], outputs=[resultados, estado_busqueda])
-    resultados.change(lambda appid: appid, inputs=[resultados], outputs=[appid_state])
-
-    with gr.Group():
-        gr.Markdown("## 3. Riesgo estimado")
-        boton_evaluar = gr.Button("Evaluar riesgo")
-        resultado_riesgo = gr.Markdown()
-        motivos_md = gr.Markdown()
-
-    boton_evaluar.click(_evaluar_riesgo, inputs=[perfil_state, appid_state], outputs=[resultado_riesgo, motivos_md])
-
-    with gr.Group():
-        gr.Markdown(
-            "## 4. Catálogo visual\n"
-            "_\"Ver segunda opinión\" evalúa ese juego con el perfil del paso 1 y actualiza el "
-            "resultado en la sección 3, arriba. \"Comparar\" solo junta candidatos por ahora "
-            "(la comparación en sí es una fase futura)._"
-        )
-        if not _CATALOGO_VISUAL:
-            gr.Markdown("_No se pudo cargar el catálogo visual — revisa que la API esté corriendo._")
-        else:
             with gr.Row():
-                filtro_genero = gr.Dropdown(
-                    label="Género", choices=["Todos"] + _GENEROS_DISPONIBLES, value="Todos"
-                )
-                filtro_riesgo = gr.Dropdown(
-                    label="Banda de riesgo", choices=["Todas", "bajo", "medio", "alto"], value="Todas"
-                )
-                filtro_texto = gr.Textbox(label="Buscar por nombre", placeholder="half-life")
-                boton_filtrar = gr.Button("Filtrar")
+                boton_perfil = gr.Button("Crear perfil", variant="primary")
+                boton_saltar = gr.Button("Saltar y explorar juegos")
+            resumen_perfil = gr.Markdown()
 
-            comparar_state = gr.State([])
-            comparar_md = gr.Markdown("**En comparación:** _ninguno todavía_")
+            boton_perfil.click(
+                _crear_perfil,
+                inputs=[biblioteca, horas_por_semana, tolerancia_friccion, plataforma],
+                outputs=[perfil_state, resumen_perfil],
+            ).then(lambda: gr.Tabs(selected="explorar"), outputs=tabs)
 
-            columnas_catalogo = []
-            for i in range(0, len(_CATALOGO_VISUAL), 4):
-                with gr.Row():
-                    for juego in _CATALOGO_VISUAL[i : i + 4]:
-                        with gr.Column(min_width=200) as columna:
-                            gr.HTML(_tarjeta_html(juego))
-                            with gr.Row():
-                                boton_opinion = gr.Button("Ver segunda opinión", size="sm")
-                                boton_comparar = gr.Button("Comparar", size="sm")
+            boton_saltar.click(lambda: gr.Tabs(selected="explorar"), outputs=tabs)
 
-                            boton_opinion.click(
-                                lambda perfil, ap=juego["appid"]: (ap,) + _evaluar_riesgo(perfil, ap),
-                                inputs=[perfil_state],
-                                outputs=[appid_state, resultado_riesgo, motivos_md],
-                            )
-                            boton_comparar.click(
-                                lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
-                                    actuales, ap, nombre
-                                ),
-                                inputs=[comparar_state],
-                                outputs=[comparar_state, comparar_md],
-                            )
-                        columnas_catalogo.append(columna)
-
-            boton_filtrar.click(
-                _filtrar_catalogo_visual,
-                inputs=[filtro_genero, filtro_riesgo, filtro_texto],
-                outputs=columnas_catalogo,
-            )
+    with gr.Accordion("Metodología", open=False):
+        gr.Markdown(_METODOLOGIA_MD)
 
 
 if __name__ == "__main__":
