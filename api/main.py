@@ -13,6 +13,7 @@ from .schemas import (
     FormularioAlta,
     JuegoCatalogo,
     NivelFriccion,
+    NivelRiesgo,
     PerfilJugador,
     PrediccionRiesgo,
     SolicitudPrediccion,
@@ -74,8 +75,8 @@ def _derivar_perfil(formulario: FormularioAlta) -> PerfilJugador:
 
 
 @app.get("/catalogo", response_model=list[JuegoCatalogo])
-def buscar_catalogo(q: str = "") -> list[JuegoCatalogo]:
-    return catalogo.buscar(q)
+def buscar_catalogo(q: str = "", genero: str = "", riesgo: NivelRiesgo | None = None) -> list[JuegoCatalogo]:
+    return catalogo.buscar(q, genero, riesgo)
 
 
 @app.post("/perfil", response_model=PerfilJugador)

@@ -4,17 +4,55 @@ cada request.
 
 Steam es la única fuente: no hay manera de afirmar disponibilidad en
 PlayStation/Xbox/Nintendo desde esta ingesta, así que todo el catálogo se
-declara solo en PC."""
+declara solo en PC.
+
+portada_url y tienda_url son campos derivados del appid (no hay columna de
+imagen en 'juegos'): la portada de Steam siempre vive en
+cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg y la ficha en
+store.steampowered.com/app/{appid}, verificado contra appids reales del
+catálogo (fase 0).
+
+banda_riesgo usa un perfil neutro (ver _PERFIL_NEUTRO): en el catálogo
+visual no hay un perfil declarado todavía, así que no hay riesgo
+personalizado que mostrar. scoring.predecir() solo lee compras_al_anio del
+perfil -el resto de PerfilJugador no mueve el score-, y el lado del
+jugador aporta ~2% del PR-AUC del modelo (dentro del ruido entre folds,
+ver notebook/nexplay.ipynb sección 6): la banda que sale de este perfil
+neutro se parece mucho a la que saldría de cualquier perfil razonable."""
 
 import logging
 import sqlite3
 from pathlib import Path
 
-from .schemas import JuegoCatalogo, Plataforma
+from . import scoring
+from .schemas import JuegoCatalogo, NivelFriccion, NivelRiesgo, PerfilJugador, Plataforma
 
 logger = logging.getLogger(__name__)
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "datos" / "nexplay.db"
+
+_PERFIL_NEUTRO = PerfilJugador(
+    compras_al_anio=5,  # a medio camino entre 0 y el umbral de "veterano" (10)
+    horas_por_semana=8,
+    tolerancia_friccion=NivelFriccion.MEDIA,
+    tags_preferidos=[],
+    tags_rechazados=[],
+    plataforma=Plataforma.PC,
+    segmento="novato",
+    disponibilidad="media",
+)
+
+
+def _url_portada(appid: int) -> str:
+    return f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg"
+
+
+def _url_tienda(appid: int) -> str:
+    return f"https://store.steampowered.com/app/{appid}"
+
+
+def _generos_de(campo: str | None) -> list[str]:
+    return [g for g in (campo or "").split("|") if g]
 
 
 def _cargar_catalogo() -> list[JuegoCatalogo]:
@@ -25,26 +63,43 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
     con = sqlite3.connect(_DB_PATH)
     try:
         filas = con.execute(
-            "SELECT appid, nombre FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
+            "SELECT appid, nombre, generos, metacritic FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
         ).fetchall()
     finally:
         con.close()
 
-    return [
-        JuegoCatalogo(appid=appid, nombre=nombre, plataformas=[Plataforma.PC])
-        for appid, nombre in filas
-    ]
+    catalogo = []
+    for appid, nombre, generos, metacritic in filas:
+        prediccion = scoring.predecir(_PERFIL_NEUTRO, appid)
+        catalogo.append(
+            JuegoCatalogo(
+                appid=appid,
+                nombre=nombre,
+                plataformas=[Plataforma.PC],
+                generos=_generos_de(generos),
+                metacritic=metacritic,
+                portada_url=_url_portada(appid),
+                tienda_url=_url_tienda(appid),
+                banda_riesgo=prediccion.nivel,
+            )
+        )
+    return catalogo
 
 
 _CATALOGO = _cargar_catalogo()
 logger.info("catálogo cargado: %s juegos", len(_CATALOGO))
 
 
-def buscar(q: str) -> list[JuegoCatalogo]:
-    if not q.strip():
-        return _CATALOGO
-    q_normalizado = q.strip().lower()
-    return [j for j in _CATALOGO if q_normalizado in j.nombre.lower()]
+def buscar(q: str = "", genero: str = "", riesgo: NivelRiesgo | None = None) -> list[JuegoCatalogo]:
+    resultado = _CATALOGO
+    if q.strip():
+        q_normalizado = q.strip().lower()
+        resultado = [j for j in resultado if q_normalizado in j.nombre.lower()]
+    if genero.strip():
+        resultado = [j for j in resultado if genero.strip() in j.generos]
+    if riesgo is not None:
+        resultado = [j for j in resultado if j.banda_riesgo == riesgo]
+    return resultado
 
 
 def obtener(appid: int) -> JuegoCatalogo | None:

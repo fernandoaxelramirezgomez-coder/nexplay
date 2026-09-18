@@ -16,6 +16,21 @@ TIMEOUT = 10
 
 _PLATAFORMAS = ["pc", "playstation", "xbox", "nintendo"]
 
+_COLOR_BANDA = {"bajo": "#2e7d32", "medio": "#f9a825", "alto": "#c62828"}
+_MAX_COMPARAR = 4
+# SVG inline, sin depender de un servicio externo: si header.jpg no carga,
+# el navegador la reemplaza sola (onerror), sin tocar Python ni bloquear el arranque.
+# Comillas del SVG percent-encoded (%27): el onerror ya lo asigna con
+# this.src='...' en JS de comillas simples -una comilla simple literal ahí
+# adentro cerraría ese string a medias y rompería el atributo.
+_PORTADA_FALLBACK = (
+    "data:image/svg+xml;utf8,"
+    "<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%27460%27 height=%27215%27>"
+    "<rect width=%27100%25%27 height=%27100%25%27 fill=%27%23333%27/>"
+    "<text x=%2750%25%27 y=%2750%25%27 fill=%27%23ccc%27 font-family=%27sans-serif%27 font-size=%2720%27 "
+    "text-anchor=%27middle%27 dominant-baseline=%27middle%27>Sin portada</text></svg>"
+)
+
 
 def _parse_tags(texto: str) -> list[str]:
     if not texto:
@@ -120,6 +135,74 @@ def _evaluar_riesgo(perfil, appid):
     return resultado, motivos_md
 
 
+def _cargar_catalogo_visual() -> list[dict]:
+    try:
+        resp = requests.get(f"{API_URL}/catalogo", timeout=TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as exc:
+        logger.warning("no se pudo cargar el catálogo visual: %s", exc)
+        return []
+
+
+def _tarjeta_html(juego: dict) -> str:
+    metacritic = juego.get("metacritic")
+    metacritic_txt = f"Metacritic: {metacritic}" if metacritic is not None else "Metacritic: sin nota"
+    banda = juego["banda_riesgo"]
+    color = _COLOR_BANDA.get(banda, "#666")
+    return (
+        "<div style='border:1px solid #444; border-radius:10px; padding:10px;'>"
+        f"<a href='{juego['tienda_url']}' target='_blank' rel='noopener'>"
+        f"<img src='{juego['portada_url']}' loading='lazy' "
+        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\" "
+        "style='width:100%; border-radius:6px; display:block;'></a>"
+        f"<div style='font-weight:600; margin-top:8px;'>{juego['nombre']}</div>"
+        f"<div style='font-size:0.9em; opacity:0.85;'>{metacritic_txt}</div>"
+        "<div style='margin-top:4px;'>"
+        f"<span style='background:{color}; color:white; padding:2px 8px; border-radius:12px; font-size:0.85em;'>"
+        f"Riesgo {banda.upper()}</span></div></div>"
+    )
+
+
+def _filtrar_catalogo_visual(genero, banda, texto):
+    texto_norm = (texto or "").strip().lower()
+    genero_sel = genero if genero and genero != "Todos" else None
+    banda_sel = banda if banda and banda != "Todas" else None
+
+    visibilidades = []
+    for juego in _CATALOGO_VISUAL:
+        visible = True
+        if texto_norm and texto_norm not in juego["nombre"].lower():
+            visible = False
+        if genero_sel and genero_sel not in juego["generos"]:
+            visible = False
+        if banda_sel and juego["banda_riesgo"] != banda_sel:
+            visible = False
+        visibilidades.append(gr.update(visible=visible))
+    return visibilidades
+
+
+def _agregar_a_comparar(actuales, appid, nombre):
+    actuales = list(actuales or [])
+    ya_esta = any(ap == appid for ap, _ in actuales)
+    if not ya_esta:
+        if len(actuales) >= _MAX_COMPARAR:
+            texto = ", ".join(n for _, n in actuales)
+            return actuales, f"**En comparación ({_MAX_COMPARAR} máx.):** {texto}  \n_Quita uno antes de agregar otro._"
+        actuales.append((appid, nombre))
+
+    texto = ", ".join(n for _, n in actuales) if actuales else "_ninguno todavía_"
+    return actuales, f"**En comparación:** {texto}"
+
+
+# Catálogo visual: cargado una sola vez al arrancar la UI (no en cada
+# request), igual que api/catalogo.py. Las tarjetas se construyen aquí
+# mismo, abajo, con este catálogo fijo — Gradio arma sus componentes al
+# construir la app, no puede agregar tarjetas nuevas dinámicamente después.
+_CATALOGO_VISUAL = _cargar_catalogo_visual()
+_GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]})
+
+
 with gr.Blocks(title="NexPlay") as demo:
     gr.Markdown(
         "# NexPlay\n"
@@ -174,6 +257,59 @@ with gr.Blocks(title="NexPlay") as demo:
         motivos_md = gr.Markdown()
 
     boton_evaluar.click(_evaluar_riesgo, inputs=[perfil_state, appid_state], outputs=[resultado_riesgo, motivos_md])
+
+    with gr.Group():
+        gr.Markdown(
+            "## 4. Catálogo visual\n"
+            "_\"Ver segunda opinión\" evalúa ese juego con el perfil del paso 1 y actualiza el "
+            "resultado en la sección 3, arriba. \"Comparar\" solo junta candidatos por ahora "
+            "(la comparación en sí es una fase futura)._"
+        )
+        if not _CATALOGO_VISUAL:
+            gr.Markdown("_No se pudo cargar el catálogo visual — revisa que la API esté corriendo._")
+        else:
+            with gr.Row():
+                filtro_genero = gr.Dropdown(
+                    label="Género", choices=["Todos"] + _GENEROS_DISPONIBLES, value="Todos"
+                )
+                filtro_riesgo = gr.Dropdown(
+                    label="Banda de riesgo", choices=["Todas", "bajo", "medio", "alto"], value="Todas"
+                )
+                filtro_texto = gr.Textbox(label="Buscar por nombre", placeholder="half-life")
+                boton_filtrar = gr.Button("Filtrar")
+
+            comparar_state = gr.State([])
+            comparar_md = gr.Markdown("**En comparación:** _ninguno todavía_")
+
+            columnas_catalogo = []
+            for i in range(0, len(_CATALOGO_VISUAL), 4):
+                with gr.Row():
+                    for juego in _CATALOGO_VISUAL[i : i + 4]:
+                        with gr.Column(min_width=200) as columna:
+                            gr.HTML(_tarjeta_html(juego))
+                            with gr.Row():
+                                boton_opinion = gr.Button("Ver segunda opinión", size="sm")
+                                boton_comparar = gr.Button("Comparar", size="sm")
+
+                            boton_opinion.click(
+                                lambda perfil, ap=juego["appid"]: (ap,) + _evaluar_riesgo(perfil, ap),
+                                inputs=[perfil_state],
+                                outputs=[appid_state, resultado_riesgo, motivos_md],
+                            )
+                            boton_comparar.click(
+                                lambda actuales, ap=juego["appid"], nombre=juego["nombre"]: _agregar_a_comparar(
+                                    actuales, ap, nombre
+                                ),
+                                inputs=[comparar_state],
+                                outputs=[comparar_state, comparar_md],
+                            )
+                        columnas_catalogo.append(columna)
+
+            boton_filtrar.click(
+                _filtrar_catalogo_visual,
+                inputs=[filtro_genero, filtro_riesgo, filtro_texto],
+                outputs=columnas_catalogo,
+            )
 
 
 if __name__ == "__main__":
