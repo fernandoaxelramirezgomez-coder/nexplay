@@ -4,9 +4,12 @@ módulo de api/, para respetar el contrato HTTP como única frontera."""
 
 import logging
 import os
+from pathlib import Path
 
 import gradio as gr
 import requests
+
+import theme
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,8 +19,9 @@ TIMEOUT = 10
 
 _PLATAFORMAS = ["pc", "playstation", "xbox", "nintendo"]
 
-_COLOR_BANDA = {"bajo": "#2e7d32", "medio": "#f9a825", "alto": "#c62828"}
+_COLOR_BANDA = theme.COLOR_BANDA
 _MAX_COMPARAR = 4
+_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "logo.png"
 # SVG inline, sin depender de un servicio externo: si header.jpg no carga,
 # el navegador la reemplaza sola (onerror), sin tocar Python ni bloquear el arranque.
 # Comillas del SVG percent-encoded (%27): el onerror ya lo asigna con
@@ -99,12 +103,18 @@ _FRASES_BANDA = {
 def _ficha_portada_html(juego: dict) -> str:
     return (
         "<div style='text-align:center;'>"
+        "<div class='nexplay-card-wrap' style='display:inline-block; max-width:460px;'>"
+        "<div class='nexplay-card-inner'>"
         f"<img src='{juego['portada_url']}' loading='lazy' "
-        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\" "
-        "style='max-width:100%; width:460px; border-radius:10px;'>"
-        f"<h2 style='margin:12px 0 0;'>{juego['nombre']}</h2>"
+        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\">"
+        "</div></div>"
+        f"<div class='nexplay-ficha-nombre'>{juego['nombre']}</div>"
         "</div>"
     )
+
+
+def _ficha_skeleton_html() -> str:
+    return "<div class='nexplay-skeleton'></div>"
 
 
 def _ficha_metadata_md(juego: dict) -> str:
@@ -126,11 +136,13 @@ def _ficha_metadata_md(juego: dict) -> str:
     )
 
     return (
+        "<div class='nexplay-ficha-meta'>\n\n"
         f"{metacritic_txt}  \n"
         f"**Géneros:** {generos_txt}  \n"
         f"{precio_txt}  \n"
         f"{fecha_txt}  \n"
         f"[Ver en Steam]({juego['tienda_url']})"
+        "\n\n</div>"
     )
 
 
@@ -193,6 +205,22 @@ def _segunda_opinion_md(nivel: str | None, motivos: list[dict], metacritic) -> s
     return "### Segunda opinión\n" + " ".join(frases)
 
 
+def _mostrar_carga_ficha():
+    """Primer paso del click: cambia de panel al instante (se siente como
+    abrir el juego) y deja un estado de carga visible, antes de que
+    _abrir_ficha() termine sus llamadas a la API."""
+    return (
+        _ficha_skeleton_html(),
+        "Cargando…",
+        "",
+        "",
+        "",
+        "",
+        gr.update(visible=False),  # panel_catalogo
+        gr.update(visible=True),  # panel_ficha
+    )
+
+
 def _abrir_ficha(perfil, appid):
     juego = next((j for j in _CATALOGO_VISUAL if j["appid"] == appid), None)
     if juego is None:
@@ -214,7 +242,11 @@ def _abrir_ficha(perfil, appid):
             resp.raise_for_status()
             prediccion = resp.json()
             nivel = prediccion["nivel"]
-            frase_riesgo = f"## Riesgo {nivel.upper()}\n{_FRASES_BANDA.get(nivel, '')}"
+            color_banda = _COLOR_BANDA.get(nivel, "#666")
+            frase_riesgo = (
+                f"<span class='nexplay-pill nexplay-pill-lg' style='background:{color_banda};'>"
+                f"Riesgo {nivel.upper()}</span>\n\n{_FRASES_BANDA.get(nivel, '')}"
+            )
             if prediccion.get("nota_plataforma"):
                 frase_riesgo += f"\n\n_{prediccion['nota_plataforma']}_"
             factores = prediccion.get("factores") or []
@@ -261,16 +293,16 @@ def _tarjeta_html(juego: dict) -> str:
     banda = juego["banda_riesgo"]
     color = _COLOR_BANDA.get(banda, "#666")
     return (
-        "<div style='border:1px solid #444; border-radius:10px; padding:10px;'>"
+        "<div class='nexplay-card-wrap'><div class='nexplay-card-inner'>"
         f"<a href='{juego['tienda_url']}' target='_blank' rel='noopener'>"
         f"<img src='{juego['portada_url']}' loading='lazy' "
-        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\" "
-        "style='width:100%; border-radius:6px; display:block;'></a>"
-        f"<div style='font-weight:600; margin-top:8px;'>{juego['nombre']}</div>"
-        f"<div style='font-size:0.9em; opacity:0.85;'>{metacritic_txt}</div>"
-        "<div style='margin-top:4px;'>"
-        f"<span style='background:{color}; color:white; padding:2px 8px; border-radius:12px; font-size:0.85em;'>"
-        f"Riesgo {banda.upper()}</span></div></div>"
+        f"onerror=\"this.onerror=null;this.src='{_PORTADA_FALLBACK}';\">"
+        "</a>"
+        "<div class='nexplay-card-body'>"
+        f"<div class='nexplay-card-nombre'>{juego['nombre']}</div>"
+        f"<div class='nexplay-card-meta'>{metacritic_txt}</div>"
+        f"<span class='nexplay-pill' style='background:{color};'>Riesgo {banda.upper()}</span>"
+        "</div></div></div>"
     )
 
 
@@ -314,18 +346,29 @@ _GENEROS_DISPONIBLES = sorted({g for j in _CATALOGO_VISUAL for g in j["generos"]
 
 
 with gr.Blocks(title="NexPlay") as demo:
-    gr.Markdown(
-        "# NexPlay\n"
-        "**Una segunda opinión antes de comprar tu próximo juego**\n\n"
-        "Explora, compara y descubre qué dicen los datos y los jugadores antes de decidir."
-    )
+    with gr.Row():
+        if _LOGO_PATH.exists():
+            gr.Image(
+                value=str(_LOGO_PATH),
+                show_label=False,
+                container=False,
+                interactive=False,
+                height=64,
+                width=64,
+                scale=0,
+            )
+        gr.Markdown(
+            "<h1 class='nexplay-titulo'>NexPlay</h1>"
+            "<div class='nexplay-tagline'><strong>Una segunda opinión antes de comprar tu próximo juego</strong></div>"
+            "<div class='nexplay-tagline'>Explora, compara y descubre qué dicen los datos y los jugadores antes de decidir.</div>"
+        )
 
     perfil_state = gr.State(None)
     comparar_state = gr.State([])
 
     with gr.Tabs() as tabs:
         with gr.Tab("Explorar", id="explorar"):
-            with gr.Column(visible=False) as panel_ficha:
+            with gr.Column(visible=False, elem_classes=["nexplay-panel"]) as panel_ficha:
                 boton_volver = gr.Button("← Volver al catálogo")
                 ficha_portada = gr.HTML()
                 ficha_riesgo = gr.Markdown()
@@ -334,7 +377,7 @@ with gr.Blocks(title="NexPlay") as demo:
                 ficha_factores = gr.Markdown()
                 ficha_opinion = gr.Markdown()
 
-            with gr.Column(visible=True) as panel_catalogo:
+            with gr.Column(visible=True, elem_classes=["nexplay-panel"]) as panel_catalogo:
                 gr.Markdown(
                     "_\"Ver segunda opinión\" abre la ficha del juego, con tu perfil si creaste uno en "
                     "\"Tu perfil\" (si no, usa uno neutro). \"Comparar\" solo junta candidatos por ahora "
@@ -366,8 +409,7 @@ with gr.Blocks(title="NexPlay") as demo:
                                         boton_comparar = gr.Button("Comparar", size="sm")
 
                                     boton_opinion.click(
-                                        lambda perfil, ap=juego["appid"]: _abrir_ficha(perfil, ap),
-                                        inputs=[perfil_state],
+                                        _mostrar_carga_ficha,
                                         outputs=[
                                             ficha_portada,
                                             ficha_riesgo,
@@ -377,6 +419,17 @@ with gr.Blocks(title="NexPlay") as demo:
                                             ficha_opinion,
                                             panel_catalogo,
                                             panel_ficha,
+                                        ],
+                                    ).then(
+                                        lambda perfil, ap=juego["appid"]: _abrir_ficha(perfil, ap)[:6],
+                                        inputs=[perfil_state],
+                                        outputs=[
+                                            ficha_portada,
+                                            ficha_riesgo,
+                                            ficha_metadata,
+                                            ficha_motivos,
+                                            ficha_factores,
+                                            ficha_opinion,
                                         ],
                                     )
                                     boton_comparar.click(
@@ -449,4 +502,4 @@ with gr.Blocks(title="NexPlay") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(theme=theme.construir_tema(), css=theme.CSS)
