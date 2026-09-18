@@ -31,6 +31,11 @@ class DireccionFactor(str, Enum):
     REDUCE = "reduce"
 
 
+class NivelRelativo(str, Enum):
+    ALTO = "alto"
+    BAJO = "bajo"
+
+
 def _normalizar_tags(tags: list[str]) -> list[str]:
     return [t.strip().lower() for t in tags if t.strip()]
 
@@ -87,6 +92,9 @@ class SolicitudPrediccion(BaseModel):
 
 class FactorPrediccion(BaseModel):
     etiqueta: str = Field(..., description="Variable del modelo en lenguaje claro, no el nombre técnico")
+    valor_relativo: NivelRelativo = Field(
+        ..., description="Si el valor de esta variable, para este juego/perfil, está por encima o por debajo del promedio del catálogo"
+    )
     contribucion: float = Field(
         ..., description="Coeficiente × valor estandarizado de la variable; unidades de log-odds, no de probabilidad"
     )

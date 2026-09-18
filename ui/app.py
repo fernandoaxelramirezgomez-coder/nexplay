@@ -97,8 +97,8 @@ def _evaluar_riesgo(perfil, appid):
     factores = prediccion.get("factores")
     if factores:
         lineas_factores = "\n".join(
-            f"- {'↑' if f['direccion'] == 'aumenta' else '↓'} {f['etiqueta']} "
-            f"({f['direccion']} el riesgo, contribución {f['contribucion']:+.2f})"
+            f"- {f['etiqueta']}, {'por encima' if f['valor_relativo'] == 'alto' else 'por debajo'} "
+            f"del promedio del catálogo — {f['direccion']} el riesgo estimado."
             for f in factores
         )
         resultado += f"\n\n**Principales factores:**\n{lineas_factores}"

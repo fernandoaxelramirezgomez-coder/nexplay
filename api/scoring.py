@@ -17,6 +17,7 @@ from .schemas import (
     DireccionFactor,
     FactorPrediccion,
     MotivoInsatisfaccion,
+    NivelRelativo,
     NivelRiesgo,
     PerfilJugador,
     Plataforma,
@@ -33,12 +34,17 @@ _NOTA_PLATAFORMA_SIN_DATOS = (
     "{plataforma}: la señal viene de reseñas de Steam (PC)."
 )
 
+# Frases nominales: la UI las arma como "{etiqueta}, por encima/debajo del
+# promedio del catálogo — {direccion} el riesgo estimado", así que tienen que
+# leerse como sustantivo, no como afirmación binaria fija (ver nota sobre
+# metacritic_disponible: la etiqueta no debe decir si el juego "tiene" o no
+# algo, porque eso ya lo dice valor_relativo).
 _ETIQUETAS_FEATURES = {
     "log_num_games_owned": "compras declaradas por año",
-    "es_gratis": "el juego es gratuito",
+    "es_gratis": "gratuidad del juego",
     "log_precio_final": "precio del juego",
     "descuento": "descuento actual del juego",
-    "metacritic_disponible": "el juego tiene nota de Metacritic",
+    "metacritic_disponible": "cobertura de crítica especializada",
     "metacritic": "nota de Metacritic",
 }
 
@@ -170,10 +176,11 @@ def _factores_prediccion(X: pd.DataFrame) -> list[FactorPrediccion]:
     factores = [
         FactorPrediccion(
             etiqueta=_ETIQUETAS_FEATURES[feature],
+            valor_relativo=NivelRelativo.ALTO if valor_estandarizado > 0 else NivelRelativo.BAJO,
             contribucion=round(float(contribucion), 4),
             direccion=DireccionFactor.AUMENTA if contribucion > 0 else DireccionFactor.REDUCE,
         )
-        for feature, contribucion in zip(_FEATURES, contribuciones)
+        for feature, valor_estandarizado, contribucion in zip(_FEATURES, valores_estandarizados, contribuciones)
     ]
     factores.sort(key=lambda f: abs(f.contribucion), reverse=True)
     return factores[:3]
