@@ -1,0 +1,344 @@
+{
+  "generado": "2026-09-19",
+  "modelo_version": "logreg-compra-2026-09-16",
+  "umbrales": {
+    "medio": 0.2679793703558745,
+    "alto": 0.4221301060428699
+  },
+  "perfil": "neutro (api/catalogo.py, _PERFIL_NEUTRO)",
+  "nota": "solo 'bandas' se compara; lo demás es trazabilidad",
+  "bandas": {
+    "220": {
+      "nombre": "Half-Life 2",
+      "banda": "bajo"
+    },
+    "400": {
+      "nombre": "Portal",
+      "banda": "bajo"
+    },
+    "550": {
+      "nombre": "Left 4 Dead 2",
+      "banda": "bajo"
+    },
+    "620": {
+      "nombre": "Portal 2",
+      "banda": "bajo"
+    },
+    "8930": {
+      "nombre": "Sid Meier's Civilization® V",
+      "banda": "bajo"
+    },
+    "105600": {
+      "nombre": "Terraria",
+      "banda": "medio"
+    },
+    "108600": {
+      "nombre": "Project Zomboid",
+      "banda": "alto"
+    },
+    "203160": {
+      "nombre": "Tomb Raider Game of the Year",
+      "banda": "medio"
+    },
+    "211820": {
+      "nombre": "Starbound",
+      "banda": "medio"
+    },
+    "219990": {
+      "nombre": "Grim Dawn",
+      "banda": "medio"
+    },
+    "233860": {
+      "nombre": "Kenshi",
+      "banda": "alto"
+    },
+    "236850": {
+      "nombre": "Europa Universalis IV",
+      "banda": "medio"
+    },
+    "239140": {
+      "nombre": "Dying Light",
+      "banda": "medio"
+    },
+    "242760": {
+      "nombre": "The Forest",
+      "banda": "medio"
+    },
+    "250900": {
+      "nombre": "The Binding of Isaac: Rebirth",
+      "banda": "alto"
+    },
+    "252490": {
+      "nombre": "Rust",
+      "banda": "alto"
+    },
+    "255710": {
+      "nombre": "Cities: Skylines",
+      "banda": "medio"
+    },
+    "261550": {
+      "nombre": "Mount & Blade II: Bannerlord",
+      "banda": "alto"
+    },
+    "268910": {
+      "nombre": "Cuphead",
+      "banda": "medio"
+    },
+    "271590": {
+      "nombre": "Grand Theft Auto V Legacy",
+      "banda": "bajo"
+    },
+    "275850": {
+      "nombre": "No Man's Sky",
+      "banda": "alto"
+    },
+    "281990": {
+      "nombre": "Stellaris",
+      "banda": "alto"
+    },
+    "289070": {
+      "nombre": "Sid Meier’s Civilization® VI",
+      "banda": "bajo"
+    },
+    "292030": {
+      "nombre": "The Witcher 3: Wild Hunt - Complete Edition",
+      "banda": "bajo"
+    },
+    "294100": {
+      "nombre": "RimWorld",
+      "banda": "medio"
+    },
+    "315210": {
+      "nombre": "Suicide Squad: Kill the Justice League",
+      "banda": "alto"
+    },
+    "322330": {
+      "nombre": "Don't Starve Together",
+      "banda": "medio"
+    },
+    "367520": {
+      "nombre": "Hollow Knight",
+      "banda": "medio"
+    },
+    "374320": {
+      "nombre": "DARK SOULS™ III",
+      "banda": "medio"
+    },
+    "377160": {
+      "nombre": "Fallout 4",
+      "banda": "medio"
+    },
+    "379720": {
+      "nombre": "DOOM",
+      "banda": "medio"
+    },
+    "381210": {
+      "nombre": "Dead by Daylight",
+      "banda": "alto"
+    },
+    "394360": {
+      "nombre": "Hearts of Iron IV",
+      "banda": "medio"
+    },
+    "413150": {
+      "nombre": "Stardew Valley",
+      "banda": "bajo"
+    },
+    "427520": {
+      "nombre": "Factorio",
+      "banda": "bajo"
+    },
+    "489830": {
+      "nombre": "The Elder Scrolls V: Skyrim Special Edition",
+      "banda": "alto"
+    },
+    "504230": {
+      "nombre": "Celeste",
+      "banda": "medio"
+    },
+    "526870": {
+      "nombre": "Satisfactory",
+      "banda": "bajo"
+    },
+    "546560": {
+      "nombre": "Half-Life: Alyx",
+      "banda": "bajo"
+    },
+    "553850": {
+      "nombre": "HELLDIVERS™ 2",
+      "banda": "alto"
+    },
+    "570940": {
+      "nombre": "DARK SOULS™: REMASTERED",
+      "banda": "medio"
+    },
+    "588650": {
+      "nombre": "Dead Cells",
+      "banda": "bajo"
+    },
+    "601150": {
+      "nombre": "Devil May Cry 5",
+      "banda": "medio"
+    },
+    "632360": {
+      "nombre": "Risk of Rain 2",
+      "banda": "medio"
+    },
+    "632470": {
+      "nombre": "Disco Elysium - The Final Cut",
+      "banda": "bajo"
+    },
+    "646570": {
+      "nombre": "Slay the Spire",
+      "banda": "bajo"
+    },
+    "782330": {
+      "nombre": "DOOM Eternal",
+      "banda": "medio"
+    },
+    "814380": {
+      "nombre": "Sekiro™: Shadows Die Twice - GOTY Edition",
+      "banda": "medio"
+    },
+    "892970": {
+      "nombre": "Valheim",
+      "banda": "bajo"
+    },
+    "975370": {
+      "nombre": "Dwarf Fortress",
+      "banda": "bajo"
+    },
+    "990080": {
+      "nombre": "Hogwarts Legacy",
+      "banda": "medio"
+    },
+    "1063730": {
+      "nombre": "New World: Aeternum",
+      "banda": "alto"
+    },
+    "1086940": {
+      "nombre": "Baldur's Gate 3",
+      "banda": "bajo"
+    },
+    "1091500": {
+      "nombre": "Cyberpunk 2077",
+      "banda": "medio"
+    },
+    "1142710": {
+      "nombre": "Total War: WARHAMMER III",
+      "banda": "medio"
+    },
+    "1145360": {
+      "nombre": "Hades",
+      "banda": "bajo"
+    },
+    "1151340": {
+      "nombre": "Fallout 76",
+      "banda": "alto"
+    },
+    "1158310": {
+      "nombre": "Crusader Kings III",
+      "banda": "bajo"
+    },
+    "1174180": {
+      "nombre": "Red Dead Redemption 2",
+      "banda": "bajo"
+    },
+    "1222670": {
+      "nombre": "The Sims™ 4",
+      "banda": "alto"
+    },
+    "1237970": {
+      "nombre": "Titanfall® 2",
+      "banda": "medio"
+    },
+    "1245620": {
+      "nombre": "ELDEN RING",
+      "banda": "bajo"
+    },
+    "1265780": {
+      "nombre": "The Lord of the Rings: Gollum™",
+      "banda": "alto"
+    },
+    "1272080": {
+      "nombre": "PAYDAY 3",
+      "banda": "alto"
+    },
+    "1294810": {
+      "nombre": "Redfall",
+      "banda": "alto"
+    },
+    "1332010": {
+      "nombre": "Stray",
+      "banda": "medio"
+    },
+    "1517290": {
+      "nombre": "Battlefield™ 2042",
+      "banda": "alto"
+    },
+    "1544020": {
+      "nombre": "The Callisto Protocol™",
+      "banda": "alto"
+    },
+    "1593500": {
+      "nombre": "God of War",
+      "banda": "bajo"
+    },
+    "1623730": {
+      "nombre": "Palworld",
+      "banda": "alto"
+    },
+    "1627720": {
+      "nombre": "Lies of P",
+      "banda": "alto"
+    },
+    "1680880": {
+      "nombre": "Forspoken",
+      "banda": "alto"
+    },
+    "1687950": {
+      "nombre": "Persona 5 Royal",
+      "banda": "bajo"
+    },
+    "1794680": {
+      "nombre": "Vampire Survivors",
+      "banda": "bajo"
+    },
+    "1817070": {
+      "nombre": "Marvel’s Spider-Man Remastered",
+      "banda": "alto"
+    },
+    "1888930": {
+      "nombre": "The Last of Us™ Parte I",
+      "banda": "alto"
+    },
+    "1938010": {
+      "nombre": "WILD HEARTS™",
+      "banda": "alto"
+    },
+    "1966720": {
+      "nombre": "Lethal Company",
+      "banda": "alto"
+    },
+    "2050650": {
+      "nombre": "Resident Evil 4",
+      "banda": "bajo"
+    },
+    "2344520": {
+      "nombre": "Diablo® IV",
+      "banda": "alto"
+    },
+    "2357570": {
+      "nombre": "Overwatch®",
+      "banda": "alto"
+    },
+    "2358720": {
+      "nombre": "Black Myth: Wukong",
+      "banda": "alto"
+    },
+    "2853730": {
+      "nombre": "Skull and Bones",
+      "banda": "alto"
+    }
+  }
+}
