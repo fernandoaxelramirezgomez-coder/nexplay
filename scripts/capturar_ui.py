@@ -177,8 +177,17 @@ def _appids_visibles(pagina: Page, banda: str) -> list[int]:
     return [int(v) for v in pagina.locator(selector).evaluate_all("nodos => nodos.map(n => n.dataset.appid)")]
 
 
+def _revisar_overlay(pagina: Page) -> None:
+    """ng serve tapa la página con un overlay cuando la compilación falla, y sin esto
+    el síntoma es un clic que nunca ocurre."""
+    overlay = pagina.locator("vite-error-overlay")
+    if overlay.count():
+        sys.exit(f"ng serve tiene un error de compilación:\n{overlay.first.inner_text()[:500]}")
+
+
 def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     _abrir(pagina, url)
+    _revisar_overlay(pagina)
     pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
     try:
         pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -278,8 +287,76 @@ def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _nivel_api(api: str, formulario: dict, appid: int) -> str:
+    """Puntúa un appid con un perfil derivado por la API, para comparar niveles."""
+    cuerpo = json.dumps(formulario).encode()
+    cabeceras = {"Content-Type": "application/json"}
+    with urllib.request.urlopen(urllib.request.Request(f"{api}/perfil", cuerpo, cabeceras), timeout=10) as r:
+        perfil = json.load(r)
+    solicitud = json.dumps({"perfil": perfil, "appid": appid}).encode()
+    with urllib.request.urlopen(urllib.request.Request(f"{api}/prediccion", solicitud, cabeceras), timeout=10) as r:
+        return json.load(r)["nivel"]
+
+
+def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/perfil")
+    pagina.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("chip-genero").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "perfil.png", full_page=True)
+
+    pagina.get_by_test_id("grupo-biblioteca").get_by_text("Grande (más de 100 juegos)").click()
+    for genero in ("Acción", "Rol"):
+        pagina.locator(f"[data-testid='chip-genero'][data-genero='{genero}']").click()
+    pagina.get_by_test_id("crear-perfil").click()
+
+    pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if not pagina.url.rstrip("/").endswith("4200"):
+        problemas.append(f"tras crear el perfil no volvió al catálogo ({pagina.url})")
+    pagina.reload()
+    try:
+        pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        print("perfil:   creado, y sigue activo después de recargar")
+    except TiempoAgotado:
+        problemas.append("el perfil no sobrevivió a la recarga")
+
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pildora = pagina.get_by_test_id("pildora-banda").inner_text()
+    if "Riesgo para tu perfil" not in pildora:
+        problemas.append(f"con perfil declarado, la ficha sigue diciendo '{pildora}'")
+    afinidad = pagina.get_by_test_id("ficha-afinidad").inner_text()
+    if "Dentro de tus géneros habituales" not in afinidad or "Acción" not in afinidad:
+        problemas.append(f"la ficha no muestra la afinidad esperada ('{afinidad}')")
+    _esperar_portadas(pagina, "[data-testid='ficha'] img")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "ficha-con-perfil.png", full_page=True)
+    print(f"ficha:    ficha-con-perfil.png ({pildora}; {afinidad})")
+
+    # Los géneros no deben mover el riesgo: el modelo no los usa.
+    base = {
+        "compras_al_anio": 150,
+        "horas_por_semana": 6,
+        "tolerancia_friccion": 3,
+        "tags_rechazados": [],
+        "plataforma": "pc",
+    }
+    con = _nivel_api(api, {**base, "tags_preferidos": ["acción", "rol"]}, _APPID_FICHA)
+    sin = _nivel_api(api, {**base, "tags_preferidos": []}, _APPID_FICHA)
+    if con != sin:
+        problemas.append(f"los géneros cambiaron el nivel de riesgo ({sin} sin géneros, {con} con géneros)")
+    print(f"géneros:  el nivel no cambia por declararlos ({sin} en ambos casos)")
+
+    return problemas + _revisar_vocabulario(pagina, "ficha con perfil")
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    return _angular_catalogo(pagina, url, destino, api) + _angular_ficha(pagina, url, destino)
+    return (
+        _angular_catalogo(pagina, url, destino, api)
+        + _angular_ficha(pagina, url, destino)
+        + _angular_perfil(pagina, url, destino, api)
+    )
 
 
 def capturar(frontend: str, url: str, api: str) -> int:

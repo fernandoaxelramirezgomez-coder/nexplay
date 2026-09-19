@@ -78,3 +78,12 @@
     display: none;
   }
 }
+
+.estado-perfil {
+  align-self: center;
+  padding: 2px var(--espacio-12);
+  border-radius: var(--radio-pildora);
+  background: var(--acento-sistema);
+  color: var(--texto);
+  font-size: var(--texto-caption);
+}

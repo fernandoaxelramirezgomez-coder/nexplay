@@ -28,6 +28,9 @@ export const appConfig: ApplicationConfig = {
           const [desde, hacia] = [hoja(from), hoja(to)];
           const mismosParametros = JSON.stringify(desde.params) === JSON.stringify(hacia.params);
           if (desde.routeConfig === hacia.routeConfig && mismosParametros) {
+            // Saltarla rechaza sus promesas: se atienden para no ensuciar la consola.
+            transition.ready.catch(() => undefined);
+            transition.finished.catch(() => undefined);
             transition.skipTransition();
           }
         },

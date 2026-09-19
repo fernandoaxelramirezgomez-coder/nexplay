@@ -3,6 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 
 import { FormularioAlta, PerfilJugador } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
+import { ValoresPerfil } from '../dominio/opciones-perfil';
 
 const CLAVE = 'nexplay.perfil.v1';
 
@@ -17,14 +18,21 @@ const FORMULARIO_NEUTRO: FormularioAlta = {
   plataforma: 'pc',
 };
 
-function leerGuardado(): PerfilJugador | null {
+interface Guardado {
+  /** Lo que el jugador eligió en el formulario, para volver a marcarlo. */
+  valores: ValoresPerfil;
+  /** Lo que devolvió /perfil, que es lo que consume /prediccion. */
+  perfil: PerfilJugador;
+}
+
+function leerGuardado(): Guardado | null {
   try {
     const crudo = localStorage.getItem(CLAVE);
     if (!crudo) {
       return null;
     }
-    const perfil = JSON.parse(crudo) as PerfilJugador;
-    return typeof perfil?.compras_al_anio === 'number' && typeof perfil?.plataforma === 'string' ? perfil : null;
+    const guardado = JSON.parse(crudo) as Guardado;
+    return typeof guardado?.perfil?.compras_al_anio === 'number' && guardado?.valores ? guardado : null;
   } catch {
     // Modo privado, almacenamiento bloqueado o dato corrupto: se sigue sin perfil.
     return null;
@@ -34,32 +42,33 @@ function leerGuardado(): PerfilJugador | null {
 @Injectable({ providedIn: 'root' })
 export class PerfilStore {
   private readonly api = inject(NexplayApi);
-  private readonly declarado = signal<PerfilJugador | null>(leerGuardado());
+  private readonly guardado = signal<Guardado | null>(leerGuardado());
 
-  readonly perfil = this.declarado.asReadonly();
-  readonly hayPerfil = computed(() => this.declarado() !== null);
+  readonly perfil = computed(() => this.guardado()?.perfil ?? null);
+  readonly valores = computed(() => this.guardado()?.valores ?? null);
+  readonly hayPerfil = computed(() => this.guardado() !== null);
 
   private readonly neutro = rxResource({
     // Solo se pide si hace falta: con perfil declarado no se usa.
-    params: () => (this.declarado() ? undefined : true),
+    params: () => (this.guardado() ? undefined : true),
     stream: () => this.api.crearPerfil(FORMULARIO_NEUTRO),
   });
 
   /** El perfil con el que se puntúa: el declarado o, si no hay, el neutro. */
-  readonly efectivo = computed(() => this.declarado() ?? this.neutro.value() ?? null);
-  readonly cargandoNeutro = computed(() => !this.declarado() && this.neutro.isLoading());
+  readonly efectivo = computed(() => this.perfil() ?? this.neutro.value() ?? null);
+  readonly cargandoNeutro = computed(() => !this.guardado() && this.neutro.isLoading());
 
-  guardar(perfil: PerfilJugador): void {
-    this.declarado.set(perfil);
+  guardar(valores: ValoresPerfil, perfil: PerfilJugador): void {
+    this.guardado.set({ valores, perfil });
     try {
-      localStorage.setItem(CLAVE, JSON.stringify(perfil));
+      localStorage.setItem(CLAVE, JSON.stringify({ valores, perfil }));
     } catch {
-      // Sin almacenamiento el perfil vive solo en esta pestaña.
+      // Sin almacenamiento, el perfil vive solo en esta pestaña.
     }
   }
 
   borrar(): void {
-    this.declarado.set(null);
+    this.guardado.set(null);
     try {
       localStorage.removeItem(CLAVE);
     } catch {
