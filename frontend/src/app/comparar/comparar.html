@@ -1,0 +1,32 @@
+<div class="comparar" data-testid="comparar">
+  <header class="encabezado">
+    <h1>Comparar</h1>
+    <p class="meta mono" data-testid="comparar-conteo">
+      {{ comparar.cantidad() }} de {{ maximo }} juegos en comparación
+    </p>
+  </header>
+
+  @if (catalogo.cargando()) {
+    <div class="columnas">
+      @for (n of [1, 2]; track n) {
+        <app-skeleton alto="420px" />
+      }
+    </div>
+  } @else if (!comparar.cantidad()) {
+    <section class="tarjeta vacio" data-testid="comparar-vacio">
+      <p class="lectura">
+        Todavía no elegiste juegos. En el catálogo, usa "Comparar" en hasta {{ maximo }} tarjetas y vuelve acá.
+      </p>
+      <a class="boton-cta" routerLink="/">Ir al catálogo</a>
+    </section>
+  } @else {
+    <div class="columnas">
+      @for (juego of juegos(); track juego.appid) {
+        <app-columna-comparar [juego]="juego" />
+      }
+    </div>
+    @if (faltantes()) {
+      <p class="meta">Algunos appids de la URL no están en el catálogo y no se muestran.</p>
+    }
+  }
+</div>

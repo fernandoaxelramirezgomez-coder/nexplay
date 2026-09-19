@@ -6,11 +6,12 @@ visuales sin abrir un navegador a mano.
   ficha-wild-hearts.png    ficha de Wild Hearts tras "Ver segunda opinión"
 
 --frontend angular (http://localhost:4200) guarda en docs/capturas/angular/:
-  catalogo.png             catálogo completo
-  catalogo-inicio.png      primera pantalla
-  catalogo-filtrado.png    el filtro reactivo aplicado
-y compara contra la API (--api) el total de tarjetas, el conteo de cada estante,
-el orden dentro de cada uno y el resultado del filtro.
+  catalogo.png, catalogo-inicio.png, catalogo-filtrado.png
+  ficha-wild-hearts.png, perfil.png, ficha-con-perfil.png, comparar.png
+y verifica contra la API (--api): total de tarjetas, conteo y orden de cada
+estante, filtro reactivo, factores de la ficha, entrada directa por URL, appid
+inexistente, perfil que sobrevive a la recarga, afinidad de géneros sin cambiar
+el nivel de riesgo, y la comparación sincronizada con ?appids=.
 
 docs/capturas/ está ignorada por git; la captura del README es otra,
 docs/captura-interfaz.png, y este script no la toca. En ambos modos revisa que
@@ -180,9 +181,14 @@ def _appids_visibles(pagina: Page, banda: str) -> list[int]:
 def _revisar_overlay(pagina: Page) -> None:
     """ng serve tapa la página con un overlay cuando la compilación falla, y sin esto
     el síntoma es un clic que nunca ocurre."""
-    overlay = pagina.locator("vite-error-overlay")
-    if overlay.count():
-        sys.exit(f"ng serve tiene un error de compilación:\n{overlay.first.inner_text()[:500]}")
+    detalle = pagina.evaluate(
+        """() => {
+            const overlay = document.querySelector('vite-error-overlay');
+            return overlay ? (overlay.shadowRoot?.textContent || overlay.textContent || 'sin detalle') : null;
+        }"""
+    )
+    if detalle:
+        sys.exit(f"ng serve tiene un error de compilación:\n{' '.join(detalle.split())[:500]}")
 
 
 def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
@@ -351,11 +357,80 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     return problemas + _revisar_vocabulario(pagina, "ficha con perfil")
 
 
+def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
+    problemas = []
+    elegidos = [_APPID_FICHA, 271590, 1091500]  # Wild Hearts, GTA V Legacy, Cyberpunk 2077
+
+    _abrir(pagina, url)
+    pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    for appid in elegidos:
+        pagina.locator(f"[data-testid='tarjeta-juego'][data-appid='{appid}'] [data-testid='boton-comparar']").click()
+    try:
+        pagina.wait_for_function(
+            "texto => document.querySelector(\"[data-testid='nav-comparar-cantidad']\")?.textContent === texto",
+            arg=f"({len(elegidos)})",
+            timeout=_TIMEOUT_MS,
+        )
+    except TiempoAgotado:
+        visto = pagina.get_by_test_id("nav-comparar-cantidad").inner_text()
+        problemas.append(f"el shell dice {visto} tras elegir {len(elegidos)} juegos")
+
+    pagina.get_by_test_id("nav-comparar").click()
+    pagina.get_by_test_id("comparar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("columna-comparar").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_function(
+        "n => document.querySelectorAll(\"[data-testid='columna-comparar']\").length === n",
+        arg=len(elegidos),
+        timeout=_TIMEOUT_MS,
+    )
+    for appid in elegidos:
+        if str(appid) not in pagina.url:
+            problemas.append(f"la URL de comparación no lleva el appid {appid} ({pagina.url})")
+    _esperar_portadas(pagina, "[data-testid='columna-comparar'] img")
+    _esperar_quietud(pagina)
+    ruta = destino / "comparar.png"
+    pagina.screenshot(path=ruta, full_page=True)
+    print(f"comparar: {ruta.relative_to(_RAIZ)} ({len(elegidos)} columnas)")
+    problemas += _revisar_vocabulario(pagina, "comparar")
+
+    pagina.get_by_test_id("quitar-comparar").first.click()
+    pagina.wait_for_function(
+        "n => document.querySelectorAll(\"[data-testid='columna-comparar']\").length === n",
+        arg=len(elegidos) - 1,
+        timeout=_TIMEOUT_MS,
+    )
+    try:
+        pagina.wait_for_function(
+            "appid => !new URL(location.href).searchParams.get('appids')?.includes(appid)",
+            arg=str(elegidos[0]),
+            timeout=_TIMEOUT_MS,
+        )
+        print("quitar:   queda 1 menos y la URL lo refleja")
+    except TiempoAgotado:
+        problemas.append(f"al quitar un juego, la URL lo conserva ({pagina.url})")
+
+    # La URL manda: entrar directo con dos appids arma esas dos columnas.
+    _abrir(pagina, f"{url.rstrip('/')}/comparar?appids={elegidos[0]},{elegidos[1]}")
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='columna-comparar']\").length === 2", timeout=_TIMEOUT_MS
+    )
+    print(f"directa:  /comparar?appids= abre 2 columnas y el shell dice {pagina.get_by_test_id('nav-comparar-cantidad').inner_text()}")
+
+    _abrir(pagina, f"{url.rstrip('/')}/comparar")
+    try:
+        pagina.get_by_test_id("comparar-vacio").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        print("vacío:    /comparar sin appids explica cómo elegir juegos")
+    except TiempoAgotado:
+        problemas.append("/comparar sin appids no muestra el estado vacío")
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
+        + _angular_comparar(pagina, url, destino)
     )
 
 

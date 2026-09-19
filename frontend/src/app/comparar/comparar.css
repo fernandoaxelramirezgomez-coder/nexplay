@@ -1,0 +1,35 @@
+.comparar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
+}
+
+.encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-8);
+}
+
+.columnas {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 1fr);
+  gap: var(--espacio-16);
+  align-items: stretch;
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-16);
+}
+
+@media (max-width: 900px) {
+  /* En pantallas chicas las columnas se desplazan en horizontal en vez de encogerse. */
+  .columnas {
+    grid-auto-columns: minmax(280px, 80vw);
+    overflow-x: auto;
+    padding-bottom: var(--espacio-8);
+  }
+}
