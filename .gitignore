@@ -7,3 +7,4 @@ extracto/
 .env
 ingesta.log
 ingesta.lock
+.claude/
