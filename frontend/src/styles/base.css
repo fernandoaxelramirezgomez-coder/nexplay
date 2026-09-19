@@ -173,3 +173,10 @@ b {
   border-color: var(--texto);
   color: var(--texto);
 }
+
+/* Tarjeta: superficie elevada por color, radio 16, padding 24. Sin sombra ni borde. */
+.tarjeta {
+  background: var(--superficie-tarjeta);
+  border-radius: var(--radio-tarjeta);
+  padding: var(--espacio-24);
+}

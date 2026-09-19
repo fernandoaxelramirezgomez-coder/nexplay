@@ -230,8 +230,56 @@ def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[s
     return problemas
 
 
+def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
+    problemas = []
+
+    # Desde una tarjeta, con un filtro puesto: al volver, el catálogo debe seguir filtrado.
+    pagina.get_by_test_id("filtro-texto").fill("dark")
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='tarjeta-juego']\").length === 2", timeout=_TIMEOUT_MS
+    )
+    pagina.locator("[data-testid='tarjeta-juego'] a").first.click()
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.go_back()
+    pagina.get_by_test_id("filtro-texto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if "q=dark" not in pagina.url:
+        problemas.append(f"al volver del juego, el filtro se perdió ({pagina.url})")
+    pagina.get_by_test_id("filtro-texto").fill("")
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='tarjeta-juego']\").length > 2", timeout=_TIMEOUT_MS
+    )
+
+    # Wild Hearts: sin nota de Metacritic, así que no debe aparecer ese factor.
+    pagina.locator(f"[data-testid='tarjeta-juego'][data-appid='{_APPID_FICHA}'] a").click()
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("segunda-opinion").get_by_text("arrepentimiento temprano").wait_for(timeout=_TIMEOUT_MS)
+    factores = pagina.get_by_test_id("factores").inner_text()
+    if "nota de Metacritic" in factores:
+        problemas.append("ficha de Wild Hearts: muestra 'nota de Metacritic' aunque el juego no tiene nota")
+    if "cobertura de crítica especializada, por debajo del promedio del catálogo — aumenta" not in factores:
+        problemas.append("ficha de Wild Hearts: falta el factor de cobertura de crítica")
+    _esperar_portadas(pagina, "[data-testid='ficha'] img")
+    _esperar_quietud(pagina)
+    ruta = destino / "ficha-wild-hearts.png"
+    pagina.screenshot(path=ruta, full_page=True)
+    print(f"ficha:    {ruta.relative_to(_RAIZ)} ({pagina.get_by_test_id('ficha-nombre').inner_text()})")
+    problemas += _revisar_vocabulario(pagina, "ficha")
+
+    # Entrada directa por URL y appid inexistente.
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    print(f"directa:  /juego/{_APPID_FICHA} abre {pagina.get_by_test_id('ficha-nombre').inner_text()}")
+    _abrir(pagina, f"{url.rstrip('/')}/juego/1")
+    try:
+        pagina.get_by_test_id("ficha-no-encontrado").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        print("faltante: /juego/1 muestra 'Juego no encontrado'")
+    except TiempoAgotado:
+        problemas.append("/juego/1 no muestra el mensaje de juego no encontrado")
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    return _angular_catalogo(pagina, url, destino, api)
+    return _angular_catalogo(pagina, url, destino, api) + _angular_ficha(pagina, url, destino)
 
 
 def capturar(frontend: str, url: str, api: str) -> int:
