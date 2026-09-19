@@ -262,6 +262,9 @@ def _abrir_ficha(perfil, appid):
     # El modelo lee un precio faltante como 0: ese "precio bajo" no describe al juego (ver notebook, sección 4).
     if juego.get("precio_final") is None and not juego.get("es_gratis"):
         factores = [f for f in factores if f["etiqueta"] != "precio del juego"]
+    # Sin nota, el modelo usa la mediana del catálogo: esa "nota" no es del juego.
+    if juego.get("metacritic") is None:
+        factores = [f for f in factores if f["etiqueta"] != "nota de Metacritic"]
 
     try:
         resp_exp = requests.get(f"{API_URL}/explicacion/{int(appid)}", timeout=TIMEOUT)
