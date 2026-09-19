@@ -259,6 +259,10 @@ def _abrir_ficha(perfil, appid):
     else:
         frase_riesgo = "⚠️ No se pudo obtener el riesgo (falló el perfil neutro de respaldo)."
 
+    # El modelo lee un precio faltante como 0: ese "precio bajo" no describe al juego (ver notebook, sección 4).
+    if juego.get("precio_final") is None and not juego.get("es_gratis"):
+        factores = [f for f in factores if f["etiqueta"] != "precio del juego"]
+
     try:
         resp_exp = requests.get(f"{API_URL}/explicacion/{int(appid)}", timeout=TIMEOUT)
         resp_exp.raise_for_status()
