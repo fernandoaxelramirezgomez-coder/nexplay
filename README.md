@@ -85,12 +85,15 @@ datos/              nexplay.db (SQLite) — no versionado, lo reconstruye prepar
 notebook/           narrativa completa, ejecutable en Colab
 extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
 docs/               capturas y material para este README
+scripts/            opcional: capturar_ui.py captura la UI con Playwright para revisar cambios visuales;
+                    ni el notebook ni preparar_entorno.py lo necesitan
 ingesta_steam.py       ingesta original desde la API pública de Steam (no hace falta correrla)
 extracto_datos.py      genera el extracto mínimo en Parquet que consume el notebook
 extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que consume preparar_entorno.py
 entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
 entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
 preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
+requirements-dev.txt   opcional: Playwright para scripts/capturar_ui.py; el notebook y preparar_entorno.py no lo usan
 ```
 
 `datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
