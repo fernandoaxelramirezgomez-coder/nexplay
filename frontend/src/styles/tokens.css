@@ -1,0 +1,67 @@
+/* Tokens de NexPlay: docs/diseno/referencia-estilo.md con las adaptaciones del
+   proyecto. Las diferencias con la referencia están justificadas por contraste
+   medido (WCAG 4.5:1 texto, 3:1 controles). */
+:root {
+  /* Superficies: la elevación se marca por paso de color, nunca con sombra. */
+  --superficie-lienzo: #25262d;
+  --superficie-tarjeta: #383a42;
+  --superficie-tarjeta-hover: #4a4c55;
+  --linea: #2e2f37;
+
+  /* Texto */
+  --texto: #f2f2f3;
+  /* Fog aclarado: el #858893 de la referencia da 3.21:1 sobre Graphite. */
+  --texto-meta: #a1a4ac;
+
+  /* Controles: el Charcoal #0c0c0c de la referencia es invisible (1.73:1). */
+  --borde-control: #858893;
+
+  /* Acentos semánticos: el índigo solo significa "estado activo"; las bandas
+     son los únicos otros colores de la interfaz. */
+  --acento-sistema: #384270;
+  --banda-bajo: #16c79a;
+  --banda-medio: #f5a623;
+  --banda-alto: #ff6f91;
+  --texto-sobre-banda: #25262d;
+
+  --cta-fondo: #f2f2f3;
+  --cta-fondo-hover: #dcdce0;
+  --cta-texto: #25262d;
+  --foco: #f2f2f3;
+
+  /* Tipografía */
+  --fuente-texto: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --peso-regular: 400;
+  --peso-clave: 700; /* solo la palabra clave de la frase de riesgo */
+  --tracking: -0.014em;
+
+  --texto-caption: 14px;
+  --texto-body-sm: 16px;
+  --texto-body: 20px;
+  --texto-subheading: 24px;
+  --texto-heading-sm: 28px;
+  --texto-heading: 36px;
+  --interlineado-corto: 1.2;
+  --interlineado-largo: 1.5;
+  --medida-lectura: 65ch;
+
+  /* Espacio y ritmo (unidad de 4px) */
+  --espacio-4: 4px;
+  --espacio-8: 8px;
+  --espacio-12: 12px;
+  --espacio-16: 16px;
+  --espacio-24: 24px;
+  --espacio-64: 64px;
+  --ancho-pagina: 1200px;
+
+  /* Radios: solo tres valores en todo el sistema */
+  --radio-tarjeta: 16px;
+  --radio-boton: 24px;
+  --radio-pildora: 64px;
+
+  /* Movimiento */
+  --duracion-rapida: 150ms;
+  --duracion: 200ms;
+  --curva: cubic-bezier(0.2, 0, 0, 1);
+}

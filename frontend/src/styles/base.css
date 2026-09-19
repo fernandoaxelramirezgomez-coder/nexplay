@@ -1,0 +1,108 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--superficie-lienzo);
+  color: var(--texto);
+  font-family: var(--fuente-texto);
+  font-weight: var(--peso-regular);
+  font-size: var(--texto-body-sm);
+  line-height: var(--interlineado-corto);
+  letter-spacing: var(--tracking);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+  font-weight: var(--peso-regular);
+}
+
+h1 {
+  font-size: var(--texto-heading);
+}
+
+h2 {
+  font-size: var(--texto-heading-sm);
+}
+
+h3 {
+  font-size: var(--texto-subheading);
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+strong,
+b {
+  font-weight: var(--peso-clave);
+}
+
+/* Estructura en mono: fechas, géneros, conteos, porcentajes. */
+.mono {
+  font-family: var(--fuente-mono);
+  letter-spacing: 0;
+}
+
+.meta {
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
+/* Texto largo: segunda opinión, contexto de motivos, metodología. */
+.lectura {
+  font-size: var(--texto-body);
+  line-height: var(--interlineado-largo);
+  max-width: var(--medida-lectura);
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

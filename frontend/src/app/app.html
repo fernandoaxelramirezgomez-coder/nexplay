@@ -1,0 +1,32 @@
+<div class="pagina" data-testid="shell">
+  <header class="cabecera">
+    <a routerLink="/" class="marca" aria-label="NexPlay, ir al catálogo">
+      <img src="logo-header.png" alt="" width="81" height="70" />
+      <span class="lema">Una segunda opinión antes de comprar tu próximo juego</span>
+    </a>
+    <nav class="navegacion" aria-label="Secciones">
+      <a
+        routerLink="/"
+        routerLinkActive="activo"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+        data-testid="nav-explorar"
+        >Explorar</a
+      >
+      <a routerLink="/comparar" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-comparar"
+        >Comparar</a
+      >
+      <a routerLink="/perfil" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-perfil"
+        >Tu perfil</a
+      >
+    </nav>
+  </header>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+
+  <footer class="pie">
+    <app-metodologia />
+  </footer>
+</div>
