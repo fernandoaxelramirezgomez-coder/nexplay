@@ -8,3 +8,6 @@ extracto/
 ingesta.log
 ingesta.lock
 .claude/
+
+# capturas que genera scripts/capturar_ui.py (la del README es docs/captura-interfaz.png)
+docs/capturas/
