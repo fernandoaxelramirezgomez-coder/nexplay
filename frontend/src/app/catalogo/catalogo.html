@@ -1,0 +1,48 @@
+<div class="catalogo">
+  <header class="encabezado">
+    <h1>Explorar</h1>
+    @if (!catalogo.cargando() && !catalogo.error()) {
+      <p class="meta mono" data-testid="catalogo-conteo">
+        @if (hayFiltro()) {
+          {{ filtrados().length }} de {{ catalogo.juegos().length }} juegos coinciden
+        } @else {
+          {{ catalogo.juegos().length }} juegos de Steam, agrupados por riesgo general de arrepentimiento temprano
+        }
+      </p>
+    }
+  </header>
+
+  @if (catalogo.error()) {
+    <div class="error" data-testid="catalogo-error">
+      <p>No se pudo cargar el catálogo. Revisa que la API esté corriendo.</p>
+      <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
+    </div>
+  } @else {
+    <app-filtros-catalogo
+      [texto]="texto()"
+      [genero]="generoActivo()"
+      [generos]="catalogo.generos()"
+      (textoCambio)="cambiarTexto($event)"
+      (generoCambio)="cambiarGenero($event)"
+    />
+
+    <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
+
+    @if (catalogo.cargando()) {
+      @for (banda of bandas; track banda) {
+        <div class="estante-cargando" aria-hidden="true">
+          <app-skeleton alto="28px" radio="var(--radio-boton)" class="titulo-cargando" />
+          <div class="rejilla-cargando">
+            @for (n of [1, 2, 3, 4]; track n) {
+              <app-skeleton alto="300px" />
+            }
+          </div>
+        </div>
+      }
+    } @else {
+      @for (estante of estantes(); track estante.banda; let primero = $first) {
+        <app-estante [estante]="estante" [prioritario]="primero" />
+      }
+    }
+  }
+</div>

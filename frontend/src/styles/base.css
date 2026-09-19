@@ -106,3 +106,70 @@ b {
     scroll-behavior: auto !important;
   }
 }
+
+/* Controles compartidos. Sin sombras ni gradientes: el estado se marca con color. */
+.boton-cta {
+  display: inline-block;
+  padding: 10px var(--espacio-24);
+  border: 0;
+  border-radius: var(--radio-pildora);
+  background: var(--cta-fondo);
+  color: var(--cta-texto);
+  font-size: var(--texto-body-sm);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--duracion-rapida) var(--curva);
+}
+
+.boton-cta:hover {
+  background: var(--cta-fondo-hover);
+}
+
+.boton-fantasma {
+  display: inline-block;
+  padding: 8px var(--espacio-16);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio-boton);
+  background: transparent;
+  color: var(--texto);
+  font-size: var(--texto-body-sm);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--duracion-rapida) var(--curva),
+    background var(--duracion-rapida) var(--curva);
+}
+
+.boton-fantasma:hover {
+  border-color: var(--texto);
+}
+
+/* Opción elegida (chips, tarjetas de opción, "En comparación"): índigo MÁS borde claro,
+   porque el índigo solo no contrasta lo suficiente con las superficies. */
+.chip {
+  padding: 4px var(--espacio-12);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio-pildora);
+  background: transparent;
+  color: var(--texto-meta);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    color var(--duracion-rapida) var(--curva),
+    border-color var(--duracion-rapida) var(--curva),
+    background var(--duracion-rapida) var(--curva);
+}
+
+.chip:hover {
+  color: var(--texto);
+  border-color: var(--texto);
+}
+
+.chip[aria-pressed='true'],
+.boton-fantasma[aria-pressed='true'] {
+  background: var(--acento-sistema);
+  border-color: var(--texto);
+  color: var(--texto);
+}

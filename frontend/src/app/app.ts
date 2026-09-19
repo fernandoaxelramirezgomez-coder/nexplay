@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { Metodologia } from './compartido/metodologia';
+import { CompararStore } from './estado/comparar-store';
 
 @Component({
   selector: 'app-root',
@@ -9,4 +10,9 @@ import { Metodologia } from './compartido/metodologia';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {}
+export class App {
+  protected readonly comparar = inject(CompararStore);
+  protected readonly parametrosComparar = computed(() =>
+    this.comparar.cantidad() ? { appids: this.comparar.appids().join(',') } : {},
+  );
+}

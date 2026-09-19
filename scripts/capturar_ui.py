@@ -6,7 +6,11 @@ visuales sin abrir un navegador a mano.
   ficha-wild-hearts.png    ficha de Wild Hearts tras "Ver segunda opinión"
 
 --frontend angular (http://localhost:4200) guarda en docs/capturas/angular/:
-  shell.png                cabecera, navegación y estado del catálogo
+  catalogo.png             catálogo completo
+  catalogo-inicio.png      primera pantalla
+  catalogo-filtrado.png    el filtro reactivo aplicado
+y compara contra la API (--api) el total de tarjetas, el conteo de cada estante,
+el orden dentro de cada uno y el resultado del filtro.
 
 docs/capturas/ está ignorada por git; la captura del README es otra,
 docs/captura-interfaz.png, y este script no la toca. En ambos modos revisa que
@@ -23,8 +27,10 @@ Uso:
 """
 
 import argparse
+import json
 import re
 import sys
+import urllib.request
 from pathlib import Path
 
 from playwright.sync_api import Error as ErrorPlaywright
@@ -152,33 +158,93 @@ def _capturar_gradio(pagina: Page, url: str, destino: Path) -> list[str]:
 # --- Angular --------------------------------------------------------------
 
 
-def _angular_shell(pagina: Page, url: str, destino: Path) -> list[str]:
+def _catalogo_api(api: str) -> list[dict]:
+    try:
+        with urllib.request.urlopen(f"{api}/catalogo", timeout=10) as respuesta:
+            return json.load(respuesta)
+    except OSError as exc:
+        sys.exit(f"No pude leer {api}/catalogo para comparar: {exc}")
+
+
+def _orden_esperado(juegos: list[dict], banda: str) -> list[int]:
+    """Mismo criterio que dominio/estantes.ts y ui/app.py."""
+    del_estante = [j for j in juegos if j["banda_riesgo"] == banda]
+    return [j["appid"] for j in sorted(del_estante, key=lambda j: j["riesgo"], reverse=banda != "bajo")]
+
+
+def _appids_visibles(pagina: Page, banda: str) -> list[int]:
+    selector = f"[data-testid='estante-{banda}'] [data-testid='tarjeta-juego']"
+    return [int(v) for v in pagina.locator(selector).evaluate_all("nodos => nodos.map(n => n.dataset.appid)")]
+
+
+def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     _abrir(pagina, url)
     pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
     try:
-        pagina.get_by_test_id("catalogo-conteo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
     except TiempoAgotado:
-        sys.exit("El shell cargó pero el catálogo no: ¿está corriendo la API en el puerto que espera environment.ts?")
+        sys.exit("El shell cargó pero el catálogo está vacío: ¿está corriendo la API donde apunta environment.ts?")
+
+    juegos = _catalogo_api(api)
+    problemas = []
+    total = pagina.get_by_test_id("tarjeta-juego").count()
+    if total != len(juegos):
+        problemas.append(f"catálogo: {total} tarjetas en pantalla y {len(juegos)} en la API")
+
+    for banda in ("bajo", "medio", "alto"):
+        esperado = _orden_esperado(juegos, banda)
+        visible = _appids_visibles(pagina, banda)
+        conteo = pagina.locator(f"[data-testid='estante-{banda}'] [data-testid='estante-conteo']").inner_text()
+        if conteo != f"({len(esperado)})":
+            problemas.append(f"estante {banda}: el título dice {conteo} y la API tiene {len(esperado)}")
+        if visible != esperado:
+            problemas.append(f"estante {banda}: el orden no coincide con el de la API")
+        print(f"estante {banda}: {len(visible)} juegos, orden {'OK' if visible == esperado else 'DISTINTO'}")
+
+    _recorrer_pagina(pagina)
     _esperar_quietud(pagina)
-    ruta = destino / "shell.png"
-    pagina.screenshot(path=ruta)
-    print(f"shell:    {ruta.relative_to(_RAIZ)} ({pagina.get_by_test_id('catalogo-conteo').inner_text()})")
-    return _revisar_vocabulario(pagina, "shell")
+    ruta = destino / "catalogo.png"
+    pagina.screenshot(path=ruta, full_page=True)
+    pagina.screenshot(path=destino / "catalogo-inicio.png")
+    print(f"catálogo: {ruta.relative_to(_RAIZ)} y catalogo-inicio.png ({total} tarjetas)")
+    problemas += _revisar_vocabulario(pagina, "catálogo")
+
+    # Filtro reactivo: sin botón, la lista y la URL cambian al teclear.
+    esperados_dark = sum("dark" in j["nombre"].lower() for j in juegos)
+    pagina.get_by_test_id("filtro-texto").fill("dark")
+    try:
+        pagina.wait_for_function(
+            "n => document.querySelectorAll(\"[data-testid='tarjeta-juego']\").length === n",
+            arg=esperados_dark,
+            timeout=_TIMEOUT_MS,
+        )
+    except TiempoAgotado:
+        visibles = pagina.get_by_test_id("tarjeta-juego").count()
+        problemas.append(f"filtro 'dark': {visibles} tarjetas en pantalla y {esperados_dark} en la API")
+    if "q=dark" not in pagina.url:
+        problemas.append(f"filtro 'dark': la URL no lo refleja ({pagina.url})")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "catalogo-filtrado.png")
+    print(f"filtro:   catalogo-filtrado.png ('dark' → {esperados_dark} juegos, URL con q=dark)")
+    pagina.get_by_test_id("filtro-texto").fill("")
+    return problemas
 
 
-def _capturar_angular(pagina: Page, url: str, destino: Path) -> list[str]:
-    return _angular_shell(pagina, url, destino)
+def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    return _angular_catalogo(pagina, url, destino, api)
 
 
-def capturar(frontend: str, url: str) -> int:
+def capturar(frontend: str, url: str, api: str) -> int:
     destino = _DESTINOS[frontend]
     destino.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         try:
             pagina = navegador.new_page(viewport=_VIEWPORT)
-            capturador = _capturar_angular if frontend == "angular" else _capturar_gradio
-            problemas = capturador(pagina, url, destino)
+            if frontend == "angular":
+                problemas = _capturar_angular(pagina, url, destino, api)
+            else:
+                problemas = _capturar_gradio(pagina, url, destino)
         finally:
             navegador.close()
     for problema in problemas:
@@ -190,5 +256,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Captura la UI de NexPlay (Gradio o Angular).")
     parser.add_argument("--frontend", choices=sorted(_URLS), default="gradio", help="por defecto %(default)s")
     parser.add_argument("--url", help="URL de la UI (por defecto, la del frontend elegido)")
+    parser.add_argument("--api", default="http://localhost:8000", help="API con la que comparar (por defecto %(default)s)")
     args = parser.parse_args()
-    sys.exit(capturar(args.frontend, args.url or _URLS[args.frontend]))
+    sys.exit(capturar(args.frontend, args.url or _URLS[args.frontend], args.api))

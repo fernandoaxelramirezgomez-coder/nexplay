@@ -8,13 +8,21 @@
       <a
         routerLink="/"
         routerLinkActive="activo"
-        [routerLinkActiveOptions]="{ exact: true }"
+        [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }"
         ariaCurrentWhenActive="page"
         data-testid="nav-explorar"
         >Explorar</a
       >
-      <a routerLink="/comparar" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-comparar"
-        >Comparar</a
+      <a
+        routerLink="/comparar"
+        [queryParams]="parametrosComparar()"
+        routerLinkActive="activo"
+        ariaCurrentWhenActive="page"
+        data-testid="nav-comparar"
+        >Comparar
+        @if (comparar.cantidad()) {
+          <span class="mono" data-testid="nav-comparar-cantidad">({{ comparar.cantidad() }})</span>
+        }</a
       >
       <a routerLink="/perfil" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-perfil"
         >Tu perfil</a

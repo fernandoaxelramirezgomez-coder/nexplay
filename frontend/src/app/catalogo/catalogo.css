@@ -1,0 +1,48 @@
+.catalogo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
+}
+
+.encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-8);
+}
+
+.aviso:empty {
+  display: none;
+}
+
+.aviso {
+  margin: 0;
+  color: var(--texto);
+}
+
+.catalogo > app-estante + app-estante {
+  margin-top: var(--espacio-24);
+}
+
+.estante-cargando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-16);
+}
+
+.titulo-cargando {
+  max-width: 280px;
+}
+
+.rejilla-cargando {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--espacio-16);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-12);
+}
+

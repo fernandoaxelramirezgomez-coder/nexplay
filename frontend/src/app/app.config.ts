@@ -1,6 +1,7 @@
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import {
+  ActivatedRouteSnapshot,
   provideRouter,
   withComponentInputBinding,
   withInMemoryScrolling,
@@ -9,6 +10,10 @@ import {
 
 import { routes } from './app.routes';
 
+function hoja(ruta: ActivatedRouteSnapshot): ActivatedRouteSnapshot {
+  return ruta.firstChild ? hoja(ruta.firstChild) : ruta;
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -16,7 +21,17 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
-      withViewTransitions(),
+      withViewTransitions({
+        // Solo al cambiar de pantalla: los filtros del catálogo cambian la URL en cada
+        // tecla y un fundido ahí se sentiría como parpadeo.
+        onViewTransitionCreated: ({ transition, from, to }) => {
+          const [desde, hacia] = [hoja(from), hoja(to)];
+          const mismosParametros = JSON.stringify(desde.params) === JSON.stringify(hacia.params);
+          if (desde.routeConfig === hacia.routeConfig && mismosParametros) {
+            transition.skipTransition();
+          }
+        },
+      }),
     ),
     provideHttpClient(withFetch()),
   ],
