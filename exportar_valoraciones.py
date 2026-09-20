@@ -1,11 +1,13 @@
-"""Exporta a CSV todas las valoraciones de la segunda opinión, para analizarlas.
+"""Exporta a CSV los votos y los comentarios, para analizarlos.
 
-Es local a propósito: la API nunca devuelve comentarios de otras personas, solo los
-conteos. Este script lee datos/valoraciones.db (la base de contenido de usuarios) y le
+Es local a propósito: la API devuelve los comentarios sin identidad, y aquí sí va el id
+anónimo de quien los escribió. Lee datos/valoraciones.db (contenido de usuarios) y le
 pega el nombre del juego desde datos/nexplay.db.
 
+Genera dos archivos: uno de votos y otro de comentarios.
+
 Uso:
-  python exportar_valoraciones.py                    # extracto/valoraciones-AAAA-MM-DD.csv
+  python exportar_valoraciones.py                    # extracto/valoraciones-AAAA-MM-DD.csv y -comentarios.csv
   python exportar_valoraciones.py --salida ruta.csv
 """
 
@@ -20,7 +22,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent
 VALORACIONES_PATH = Path(os.environ.get("NEXPLAY_VALORACIONES_DB", RAIZ / "datos" / "valoraciones.db"))
 CATALOGO_PATH = RAIZ / "datos" / "nexplay.db"
-COLUMNAS = ["appid", "nombre", "usuario", "util", "comentario", "creado", "actualizado"]
+COLUMNAS_VOTOS = ["appid", "nombre", "usuario", "util", "creado", "actualizado"]
+COLUMNAS_COMENTARIOS = ["id", "appid", "nombre", "usuario", "texto", "creado"]
 
 
 def _nombres_por_appid() -> dict[int, str]:
@@ -42,9 +45,11 @@ def exportar(salida: Path) -> int:
     nombres = _nombres_por_appid()
     con = sqlite3.connect(f"file:{VALORACIONES_PATH}?mode=ro", uri=True)
     try:
-        filas = con.execute(
-            "SELECT appid, usuario, util, comentario, creado, actualizado "
-            "FROM valoraciones ORDER BY appid, actualizado"
+        votos = con.execute(
+            "SELECT appid, usuario, util, creado, actualizado FROM valoraciones ORDER BY appid, actualizado"
+        ).fetchall()
+        comentarios = con.execute(
+            "SELECT id, appid, usuario, texto, creado FROM comentarios ORDER BY appid, id"
         ).fetchall()
     finally:
         con.close()
@@ -52,18 +57,21 @@ def exportar(salida: Path) -> int:
     salida.parent.mkdir(parents=True, exist_ok=True)
     with open(salida, "w", encoding="utf-8", newline="") as archivo:
         escritor = csv.writer(archivo)
-        escritor.writerow(COLUMNAS)
-        for appid, usuario, util, comentario, creado, actualizado in filas:
-            escritor.writerow(
-                [appid, nombres.get(appid, ""), usuario, "si" if util else "no", comentario or "", creado, actualizado]
-            )
+        escritor.writerow(COLUMNAS_VOTOS)
+        for appid, usuario, util, creado, actualizado in votos:
+            escritor.writerow([appid, nombres.get(appid, ""), usuario, "si" if util else "no", creado, actualizado])
 
-    con_comentario = sum(1 for fila in filas if fila[3])
-    utiles = sum(1 for fila in filas if fila[2])
-    print(
-        f"{salida}: {len(filas)} valoraciones ({utiles} útiles, {len(filas) - utiles} no útiles), "
-        f"{con_comentario} con comentario, {len({fila[1] for fila in filas})} usuarios."
-    )
+    salida_comentarios = salida.with_name(f"{salida.stem}-comentarios{salida.suffix}")
+    with open(salida_comentarios, "w", encoding="utf-8", newline="") as archivo:
+        escritor = csv.writer(archivo)
+        escritor.writerow(COLUMNAS_COMENTARIOS)
+        for id_comentario, appid, usuario, texto, creado in comentarios:
+            escritor.writerow([id_comentario, appid, nombres.get(appid, ""), usuario, texto, creado])
+
+    utiles = sum(1 for fila in votos if fila[2])
+    usuarios = {fila[1] for fila in votos} | {fila[2] for fila in comentarios}
+    print(f"{salida}: {len(votos)} votos ({utiles} útiles, {len(votos) - utiles} no útiles).")
+    print(f"{salida_comentarios}: {len(comentarios)} comentarios. {len(usuarios)} usuarios distintos en total.")
     return 0
 
 

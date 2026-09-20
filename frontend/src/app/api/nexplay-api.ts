@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import {
+  Comentario,
   ExplicacionJuego,
   FiltrosCatalogo,
   FormularioAlta,
@@ -11,6 +12,7 @@ import {
   PerfilJugador,
   PrediccionRiesgo,
   ResumenValoraciones,
+  SolicitudComentario,
   SolicitudPrediccion,
   SolicitudValoracion,
 } from './contrato';
@@ -55,5 +57,14 @@ export class NexplayApi {
   borrarValoracion(appid: number, usuario: string): Observable<ResumenValoraciones> {
     const params = new HttpParams().set('usuario', usuario);
     return this.http.delete<ResumenValoraciones>(`${this.base}/valoraciones/${appid}`, { params });
+  }
+
+  comentarios(appid: number): Observable<Comentario[]> {
+    return this.http.get<Comentario[]>(`${this.base}/comentarios/${appid}`);
+  }
+
+  /** Devuelve el hilo completo ya con el comentario nuevo al final. */
+  comentar(appid: number, solicitud: SolicitudComentario): Observable<Comentario[]> {
+    return this.http.post<Comentario[]>(`${this.base}/comentarios/${appid}`, solicitud);
   }
 }

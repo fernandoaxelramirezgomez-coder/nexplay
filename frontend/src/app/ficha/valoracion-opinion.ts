@@ -1,18 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { ResumenValoraciones } from '../api/contrato';
 import { textoUtilidad } from '../dominio/utilidad';
 import { UsuarioStore } from '../estado/usuario-store';
+import { HiloComentarios } from './hilo-comentarios';
 
-const MAXIMO_COMENTARIO = 500;
-
-/** Valoración de la segunda opinión: el conteo de "útil" es público y el comentario es
- * privado (la API solo lo devuelve a quien lo escribió). */
+/** Voto sobre la segunda opinión: uno por persona y juego, y se puede cambiar. Debajo va
+ * el hilo público de comentarios. */
 @Component({
   selector: 'app-valoracion-opinion',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [HiloComentarios],
   template: `
     <section class="valoracion" data-testid="valoracion">
       <h3 class="titulo">¿Te sirvió esta segunda opinión?</h3>
@@ -41,41 +41,20 @@ const MAXIMO_COMENTARIO = 500;
           <span aria-hidden="true">👎</span>
         </button>
         <span class="meta mono conteo" data-testid="valoracion-conteo">{{ conteo() }}</span>
-      </div>
-
-      @if (mia()) {
-        <label class="comentario">
-          <span class="meta">Tu comentario (opcional). Solo tú lo ves.</span>
-          <textarea
-            rows="3"
-            [attr.maxlength]="maximo"
-            data-testid="valoracion-comentario"
-            [value]="comentario()"
-            (input)="comentario.set($any($event.target).value)"
-          ></textarea>
-          <span class="meta mono contador">{{ comentario().length }}/{{ maximo }}</span>
-        </label>
-
-        <div class="acciones">
+        @if (mia()) {
           <button
             type="button"
-            class="boton-fantasma"
-            data-testid="guardar-comentario"
-            [disabled]="guardando() || !comentarioCambio()"
-            (click)="guardarComentario()"
+            class="boton-fantasma quitar"
+            data-testid="quitar-valoracion"
+            [disabled]="guardando()"
+            (click)="quitar()"
           >
-            Guardar comentario
+            Quitar mi voto
           </button>
-          @if (mia()?.comentario) {
-            <button type="button" class="boton-fantasma" data-testid="borrar-comentario" [disabled]="guardando()" (click)="borrarComentario()">
-              Borrar comentario
-            </button>
-          }
-          <button type="button" class="boton-fantasma" data-testid="quitar-valoracion" [disabled]="guardando()" (click)="quitar()">
-            Quitar mi valoración
-          </button>
-        </div>
-      }
+        }
+      </div>
+
+      <app-hilo-comentarios [appid]="appid()" />
 
       <p class="meta aviso" role="status" aria-live="polite">{{ aviso() }}</p>
     </section>
@@ -91,12 +70,6 @@ const MAXIMO_COMENTARIO = 500;
     }
     .titulo {
       font-size: var(--texto-body-sm);
-    }
-    .acciones {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--espacio-8);
     }
     .botones {
       display: flex;
@@ -136,29 +109,10 @@ const MAXIMO_COMENTARIO = 500;
     .conteo {
       margin-inline-start: var(--espacio-8);
     }
-    .comentario {
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-4);
-      max-width: var(--medida-lectura);
-    }
-    textarea {
-      font: inherit;
-      letter-spacing: inherit;
-      color: var(--texto);
-      background: var(--superficie-lienzo);
-      border: 1px solid var(--borde-control);
-      border-radius: var(--radio-tarjeta);
-      padding: var(--espacio-12);
-      resize: vertical;
-      transition: border-color var(--duracion-rapida) var(--curva);
-    }
-    textarea:hover,
-    textarea:focus {
-      border-color: var(--texto);
-    }
-    .contador {
-      align-self: flex-end;
+    .quitar {
+      margin-inline-start: auto;
+      font-size: var(--texto-caption);
+      padding: 4px var(--espacio-12);
     }
     .aviso:empty {
       display: none;
@@ -174,7 +128,6 @@ export class ValoracionOpinion {
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
 
-  protected readonly maximo = MAXIMO_COMENTARIO;
   protected readonly guardando = signal(false);
   protected readonly aviso = signal('');
 
@@ -189,48 +142,19 @@ export class ValoracionOpinion {
     return resumen ? textoUtilidad(resumen.utiles, resumen.total) : '';
   });
 
-  /** Arranca con lo guardado y se reinicia al cambiar de juego o al llegar otra respuesta. */
-  protected readonly comentario = linkedSignal<ResumenValoraciones | undefined, string>({
-    source: this.recurso.value,
-    computation: (resumen) => resumen?.mia?.comentario ?? '',
-  });
-
-  protected readonly comentarioCambio = computed(
-    () => this.comentario().trim() !== (this.mia()?.comentario ?? ''),
-  );
-
   protected valorar(util: boolean): void {
-    this.enviar({ util, comentario: this.comentario().trim() || null }, util ? 'Gracias, quedó marcada como útil.' : 'Gracias, quedó marcada como no útil.');
-  }
-
-  protected guardarComentario(): void {
-    const util = this.mia()?.util;
-    if (util === undefined) {
-      return;
-    }
-    this.enviar({ util, comentario: this.comentario().trim() || null }, 'Comentario guardado.');
-  }
-
-  protected borrarComentario(): void {
-    const util = this.mia()?.util;
-    if (util === undefined) {
-      return;
-    }
-    this.enviar({ util, comentario: null }, 'Comentario borrado; tu valoración sigue ahí.');
+    this.guardando.set(true);
+    this.api.guardarValoracion(this.appid(), { usuario: this.usuario.id, util }).subscribe({
+      next: (resumen) =>
+        this.terminar(resumen, util ? 'Gracias, quedó marcada como útil.' : 'Gracias, quedó marcada como no útil.'),
+      error: () => this.fallar(),
+    });
   }
 
   protected quitar(): void {
     this.guardando.set(true);
     this.api.borrarValoracion(this.appid(), this.usuario.id).subscribe({
       next: (resumen) => this.terminar(resumen, 'Quitamos tu valoración.'),
-      error: () => this.fallar(),
-    });
-  }
-
-  private enviar(cambios: { util: boolean; comentario: string | null }, aviso: string): void {
-    this.guardando.set(true);
-    this.api.guardarValoracion(this.appid(), { usuario: this.usuario.id, ...cambios }).subscribe({
-      next: (resumen) => this.terminar(resumen, aviso),
       error: () => this.fallar(),
     });
   }

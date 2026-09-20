@@ -4,11 +4,12 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import catalogo, scoring, valoraciones
+from . import catalogo, limites, scoring, valoraciones
 from .schemas import (
+    Comentario,
     ExplicacionJuego,
     FormularioAlta,
     JuegoCatalogo,
@@ -17,6 +18,7 @@ from .schemas import (
     PerfilJugador,
     PrediccionRiesgo,
     ResumenValoraciones,
+    SolicitudComentario,
     SolicitudPrediccion,
     SolicitudValoracion,
 )
@@ -122,13 +124,45 @@ def ver_valoraciones(appid: int, usuario: str = _USUARIO) -> ResumenValoraciones
 @app.put("/valoraciones/{appid}", response_model=ResumenValoraciones)
 def valorar(appid: int, solicitud: SolicitudValoracion) -> ResumenValoraciones:
     _exigir_juego(appid)
-    logger.info("valoración appid=%s util=%s con_comentario=%s", appid, solicitud.util, solicitud.comentario is not None)
-    return ResumenValoraciones(
-        **valoraciones.guardar(appid, solicitud.usuario, solicitud.util, solicitud.comentario)
-    )
+    logger.info("voto appid=%s util=%s", appid, solicitud.util)
+    return ResumenValoraciones(**valoraciones.guardar(appid, solicitud.usuario, solicitud.util))
 
 
 @app.delete("/valoraciones/{appid}", response_model=ResumenValoraciones)
 def quitar_valoracion(appid: int, usuario: str = _USUARIO) -> ResumenValoraciones:
     _exigir_juego(appid)
     return ResumenValoraciones(**valoraciones.borrar(appid, usuario))
+
+
+# Los comentarios son un hilo público: se insertan y no se editan. El tope por ventana
+# frena el spam sin moderación; al reiniciar la API los contadores vuelven a cero.
+_LIMITE_COMENTARIOS = limites.LimitePorVentana(
+    maximo=int(os.environ.get("NEXPLAY_COMENTARIOS_POR_MINUTO", "3")), ventana_segundos=60.0
+)
+
+
+@app.get("/comentarios/{appid}", response_model=list[Comentario])
+def ver_comentarios(appid: int) -> list[Comentario]:
+    _exigir_juego(appid)
+    return [Comentario(**comentario) for comentario in valoraciones.comentarios(appid)]
+
+
+@app.post("/comentarios/{appid}", response_model=list[Comentario], status_code=201)
+def comentar(appid: int, solicitud: SolicitudComentario, peticion: Request) -> list[Comentario]:
+    _exigir_juego(appid)
+
+    ip = peticion.client.host if peticion.client else "sin-ip"
+    espera = _LIMITE_COMENTARIOS.revisar(f"usuario:{solicitud.usuario}", f"ip:{ip}")
+    if espera:
+        logger.info("comentario rechazado por frecuencia appid=%s", appid)
+        raise HTTPException(
+            status_code=429,
+            detail="Estás comentando muy seguido. Espera un momento antes de enviar otro.",
+            headers={"Retry-After": str(max(1, int(espera) + 1))},
+        )
+
+    logger.info("comentario nuevo appid=%s largo=%s", appid, len(solicitud.texto))
+    return [
+        Comentario(**comentario)
+        for comentario in valoraciones.agregar_comentario(appid, solicitud.usuario, solicitud.texto)
+    ]

@@ -107,11 +107,9 @@ export interface ErrorApi {
   detail: string | { loc: (string | number)[]; msg: string; type: string }[];
 }
 
-/** La valoración propia de la segunda opinión. El comentario es privado: la API solo
- * lo devuelve a quien lo escribió. */
+/** El voto propio sobre la segunda opinión. Los comentarios son un hilo aparte. */
 export interface Valoracion {
   util: boolean;
-  comentario: string | null;
   actualizado: string;
 }
 
@@ -120,8 +118,6 @@ export interface SolicitudValoracion {
   /** Id anónimo del navegador: identifica, no autentica. */
   usuario: string;
   util: boolean;
-  /** null borra el comentario y conserva la valoración. Máximo 500 caracteres. */
-  comentario: string | null;
 }
 
 /** GET/PUT/DELETE /valoraciones/{appid} */
@@ -131,4 +127,18 @@ export interface ResumenValoraciones {
   no_utiles: number;
   total: number;
   mia: Valoracion | null;
+}
+
+/** GET/POST /comentarios/{appid}: hilo público, del más viejo al más nuevo y sin identidad. */
+export interface Comentario {
+  texto: string;
+  creado: string;
+}
+
+/** POST /comentarios/{appid} */
+export interface SolicitudComentario {
+  /** Se guarda para el límite de frecuencia; la API nunca lo devuelve. */
+  usuario: string;
+  /** Hasta 500 caracteres. */
+  texto: string;
 }

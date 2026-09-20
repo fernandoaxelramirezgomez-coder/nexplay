@@ -1,12 +1,15 @@
-"""Valoraciones de la segunda opinión: útil o no útil, más un comentario privado.
+"""Valoraciones de la segunda opinión y su hilo de comentarios.
 
-Vive en su propia base (datos/valoraciones.db, movible con NEXPLAY_VALORACIONES_DB),
+Viven en su propia base (datos/valoraciones.db, movible con NEXPLAY_VALORACIONES_DB),
 separada de nexplay.db: es contenido de quien usa la app, no datos del proyecto, y
 preparar_entorno.py no la reconstruye ni la pisa.
 
-El id de usuario es anónimo y lo genera el navegador: identifica, no autentica. El
-comentario es privado —solo se devuelve a quien lo escribió—, así que de un juego solo
-salen los conteos. Para analizarlos está exportar_valoraciones.py, que es local.
+- El voto útil / no útil es uno por persona y juego, y se puede cambiar.
+- Los comentarios son un hilo público: solo se insertan, nunca se editan ni se pisan, y
+  se devuelven sin identidad (texto y fecha). El id de usuario se guarda para el límite
+  de frecuencia y para poder ubicar una fila desde moderar_comentarios.py.
+
+El id de usuario es anónimo y lo genera el navegador: identifica, no autentica.
 """
 
 import logging
@@ -38,13 +41,22 @@ def _crear_esquema() -> None:
                    usuario     TEXT    NOT NULL,
                    appid       INTEGER NOT NULL,
                    util        INTEGER NOT NULL,
-                   comentario  TEXT,
                    creado      TEXT    NOT NULL,
                    actualizado TEXT    NOT NULL,
                    PRIMARY KEY (usuario, appid)
                )"""
         )
         con.execute("CREATE INDEX IF NOT EXISTS idx_valoraciones_appid ON valoraciones (appid)")
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS comentarios (
+                   id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                   appid   INTEGER NOT NULL,
+                   usuario TEXT    NOT NULL,
+                   texto   TEXT    NOT NULL,
+                   creado  TEXT    NOT NULL
+               )"""
+        )
+        con.execute("CREATE INDEX IF NOT EXISTS idx_comentarios_appid ON comentarios (appid, id)")
         con.commit()
     finally:
         con.close()
@@ -70,30 +82,28 @@ def resumen(appid: int, usuario: str | None = None) -> dict:
         mia = None
         if usuario:
             fila = con.execute(
-                "SELECT util, comentario, actualizado FROM valoraciones WHERE appid = ? AND usuario = ?",
+                "SELECT util, actualizado FROM valoraciones WHERE appid = ? AND usuario = ?",
                 (appid, usuario),
             ).fetchone()
             if fila is not None:
-                mia = {"util": bool(fila[0]), "comentario": fila[1], "actualizado": fila[2]}
+                mia = {"util": bool(fila[0]), "actualizado": fila[1]}
     finally:
         con.close()
     return {"appid": appid, "utiles": utiles, "no_utiles": no_utiles, "total": utiles + no_utiles, "mia": mia}
 
 
-def guardar(appid: int, usuario: str, util: bool, comentario: str | None) -> dict:
-    """Crea o actualiza la valoración de ese usuario para ese juego. Con comentario en
-    None se borra solo el comentario y la valoración se conserva."""
+def guardar(appid: int, usuario: str, util: bool) -> dict:
+    """Crea o actualiza el voto de ese usuario para ese juego."""
     ahora = _ahora()
     con = _conectar()
     try:
         con.execute(
-            """INSERT INTO valoraciones (usuario, appid, util, comentario, creado, actualizado)
-               VALUES (?, ?, ?, ?, ?, ?)
+            """INSERT INTO valoraciones (usuario, appid, util, creado, actualizado)
+               VALUES (?, ?, ?, ?, ?)
                ON CONFLICT (usuario, appid) DO UPDATE SET
                    util = excluded.util,
-                   comentario = excluded.comentario,
                    actualizado = excluded.actualizado""",
-            (usuario, appid, int(util), comentario, ahora, ahora),
+            (usuario, appid, int(util), ahora, ahora),
         )
         con.commit()
     finally:
@@ -109,3 +119,59 @@ def borrar(appid: int, usuario: str) -> dict:
     finally:
         con.close()
     return resumen(appid, usuario)
+
+
+MAXIMO_COMENTARIOS = 100
+
+
+def comentarios(appid: int, limite: int = MAXIMO_COMENTARIOS) -> list[dict]:
+    """Hilo público: los últimos `limite`, del más viejo al más nuevo y sin identidad."""
+    con = _conectar()
+    try:
+        filas = con.execute(
+            "SELECT texto, creado FROM comentarios WHERE appid = ? ORDER BY id DESC LIMIT ?",
+            (appid, limite),
+        ).fetchall()
+    finally:
+        con.close()
+    return [{"texto": texto, "creado": creado} for texto, creado in reversed(filas)]
+
+
+def agregar_comentario(appid: int, usuario: str, texto: str) -> list[dict]:
+    """Solo inserta: los comentarios no se editan ni se pisan."""
+    con = _conectar()
+    try:
+        con.execute(
+            "INSERT INTO comentarios (appid, usuario, texto, creado) VALUES (?, ?, ?, ?)",
+            (appid, usuario, texto, _ahora()),
+        )
+        con.commit()
+    finally:
+        con.close()
+    return comentarios(appid)
+
+
+def comentarios_para_moderar(appid: int | None = None) -> list[tuple]:
+    """Con identidad y id: solo para moderar_comentarios.py, nunca para la API."""
+    con = _conectar()
+    try:
+        if appid is None:
+            return con.execute(
+                "SELECT id, appid, usuario, texto, creado FROM comentarios ORDER BY id"
+            ).fetchall()
+        return con.execute(
+            "SELECT id, appid, usuario, texto, creado FROM comentarios WHERE appid = ? ORDER BY id",
+            (appid,),
+        ).fetchall()
+    finally:
+        con.close()
+
+
+def borrar_comentario(id_comentario: int) -> bool:
+    con = _conectar()
+    try:
+        borradas = con.execute("DELETE FROM comentarios WHERE id = ?", (id_comentario,)).rowcount
+        con.commit()
+    finally:
+        con.close()
+    return borradas > 0
