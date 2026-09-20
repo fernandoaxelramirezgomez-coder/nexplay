@@ -68,6 +68,34 @@ python ui/app.py
 La API queda en `http://127.0.0.1:8000` (docs interactivas en `/docs`) y la UI de Gradio
 en `http://127.0.0.1:7860`.
 
+## Frontend en Angular (rama `frontend-angular`)
+
+El frontend nuevo vive en `frontend/` y consume la misma API por HTTP, sin cambiarla.
+Está en la rama `frontend-angular`; en `master`, Gradio sigue siendo la UI que funciona.
+
+```bash
+# terminal 1, desde la raíz
+uvicorn api.main:app --reload
+
+# terminal 2
+cd frontend
+npm ci
+npx ng serve        # http://localhost:4200
+```
+
+Hay que abrirlo como `localhost`, no como `127.0.0.1`: el CORS de la API permite
+`http://localhost:4200` (`api/main.py`). Requiere Node `^22.22.3 || ^24.15.0 || >=26`.
+
+Rutas: `/` (catálogo), `/juego/:appid` (ficha), `/comparar` y `/perfil`. Detalles de
+diseño, decisiones y deuda conocida en [frontend/README.md](frontend/README.md).
+
+Para revisar los cambios visuales sin abrir un navegador a mano:
+
+```bash
+python scripts/capturar_ui.py --frontend angular   # capturas en docs/capturas/angular/
+python scripts/capturar_ui.py                      # la UI de Gradio, en docs/capturas/
+```
+
 ## Estructura
 
 ```
@@ -85,6 +113,7 @@ datos/              nexplay.db (SQLite) — no versionado, lo reconstruye prepar
 notebook/           narrativa completa, ejecutable en Colab
 extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
 docs/               capturas y material para este README
+frontend/           opcional: frontend en Angular (rama frontend-angular), consume la API por HTTP
 scripts/            opcional: capturar_ui.py captura la UI con Playwright para revisar cambios visuales;
                     ni el notebook ni preparar_entorno.py lo necesitan
 ingesta_steam.py       ingesta original desde la API pública de Steam (no hace falta correrla)
