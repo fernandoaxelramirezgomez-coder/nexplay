@@ -20,25 +20,27 @@ const MAXIMO_COMENTARIO = 500;
       <div class="botones">
         <button
           type="button"
-          class="boton-fantasma"
+          class="voto"
           data-testid="valorar-util"
+          aria-label="Sí, me sirvió"
           [attr.aria-pressed]="mia()?.util === true"
           [disabled]="guardando()"
           (click)="valorar(true)"
         >
-          Sí, me sirvió
+          <span aria-hidden="true">👍</span>
         </button>
         <button
           type="button"
-          class="boton-fantasma"
+          class="voto"
           data-testid="valorar-no-util"
+          aria-label="No me sirvió"
           [attr.aria-pressed]="mia()?.util === false"
           [disabled]="guardando()"
           (click)="valorar(false)"
         >
-          No me sirvió
+          <span aria-hidden="true">👎</span>
         </button>
-        <span class="meta mono" data-testid="valoracion-conteo">{{ conteo() }}</span>
+        <span class="meta mono conteo" data-testid="valoracion-conteo">{{ conteo() }}</span>
       </div>
 
       @if (mia()) {
@@ -90,12 +92,49 @@ const MAXIMO_COMENTARIO = 500;
     .titulo {
       font-size: var(--texto-body-sm);
     }
-    .botones,
     .acciones {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--espacio-8);
+    }
+    .botones {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--espacio-16);
+    }
+    /* Iconos: el texto completo va en aria-label, no en pantalla. La pila de fuentes
+       de emoji es la del sistema; en Linux sin fuente de emoji se ven como cuadros. */
+    .voto {
+      width: 56px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+      font-size: 24px;
+      line-height: 1;
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-boton);
+      background: transparent;
+      cursor: pointer;
+      transition:
+        border-color var(--duracion-rapida) var(--curva),
+        background var(--duracion-rapida) var(--curva);
+    }
+    .voto:hover:not([disabled]) {
+      border-color: var(--texto);
+    }
+    .voto[aria-pressed='true'] {
+      background: var(--acento-sistema);
+      border-color: var(--texto);
+    }
+    .voto[disabled] {
+      cursor: progress;
+      opacity: 0.6;
+    }
+    .conteo {
+      margin-inline-start: var(--espacio-8);
     }
     .comentario {
       display: flex;
