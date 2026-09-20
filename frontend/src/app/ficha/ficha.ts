@@ -16,11 +16,12 @@ import { PerfilStore } from '../estado/perfil-store';
 import { FactoresModelo } from './factores-modelo';
 import { MetadatosJuego } from './metadatos-juego';
 import { MotivosBarras } from './motivos-barras';
+import { ValoracionOpinion } from './valoracion-opinion';
 
 @Component({
   selector: 'app-ficha',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PortadaAncha, Skeleton, MotivosBarras, MetadatosJuego, FactoresModelo],
+  imports: [RouterLink, PortadaAncha, Skeleton, MotivosBarras, MetadatosJuego, FactoresModelo, ValoracionOpinion],
   templateUrl: './ficha.html',
   styleUrl: './ficha.css',
 })

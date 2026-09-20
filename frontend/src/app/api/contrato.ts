@@ -106,3 +106,29 @@ export interface ExplicacionJuego {
 export interface ErrorApi {
   detail: string | { loc: (string | number)[]; msg: string; type: string }[];
 }
+
+/** La valoración propia de la segunda opinión. El comentario es privado: la API solo
+ * lo devuelve a quien lo escribió. */
+export interface Valoracion {
+  util: boolean;
+  comentario: string | null;
+  actualizado: string;
+}
+
+/** PUT /valoraciones/{appid} */
+export interface SolicitudValoracion {
+  /** Id anónimo del navegador: identifica, no autentica. */
+  usuario: string;
+  util: boolean;
+  /** null borra el comentario y conserva la valoración. Máximo 500 caracteres. */
+  comentario: string | null;
+}
+
+/** GET/PUT/DELETE /valoraciones/{appid} */
+export interface ResumenValoraciones {
+  appid: number;
+  utiles: number;
+  no_utiles: number;
+  total: number;
+  mia: Valoracion | null;
+}

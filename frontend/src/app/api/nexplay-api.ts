@@ -10,7 +10,9 @@ import {
   JuegoCatalogo,
   PerfilJugador,
   PrediccionRiesgo,
+  ResumenValoraciones,
   SolicitudPrediccion,
+  SolicitudValoracion,
 } from './contrato';
 
 /** Único punto de contacto con la API. */
@@ -39,5 +41,19 @@ export class NexplayApi {
 
   explicacion(appid: number): Observable<ExplicacionJuego> {
     return this.http.get<ExplicacionJuego>(`${this.base}/explicacion/${appid}`);
+  }
+
+  valoraciones(appid: number, usuario: string): Observable<ResumenValoraciones> {
+    const params = new HttpParams().set('usuario', usuario);
+    return this.http.get<ResumenValoraciones>(`${this.base}/valoraciones/${appid}`, { params });
+  }
+
+  guardarValoracion(appid: number, solicitud: SolicitudValoracion): Observable<ResumenValoraciones> {
+    return this.http.put<ResumenValoraciones>(`${this.base}/valoraciones/${appid}`, solicitud);
+  }
+
+  borrarValoracion(appid: number, usuario: string): Observable<ResumenValoraciones> {
+    const params = new HttpParams().set('usuario', usuario);
+    return this.http.delete<ResumenValoraciones>(`${this.base}/valoraciones/${appid}`, { params });
   }
 }
