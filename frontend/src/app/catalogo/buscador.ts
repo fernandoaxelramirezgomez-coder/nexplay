@@ -80,7 +80,7 @@ const MAXIMO_SUGERENCIAS = 6;
     }
     input:hover,
     input:focus {
-      border-color: var(--texto);
+      border-color: var(--neon);
     }
     .sugerencias {
       position: absolute;

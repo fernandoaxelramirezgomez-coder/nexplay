@@ -49,28 +49,39 @@ import { Opcion } from '../dominio/opciones-perfil';
     .opciones {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--espacio-8);
+      gap: 0 var(--espacio-24);
     }
+    /* Sin recuadro, pero sigue siendo un formulario: el padding mantiene el área
+       clicable de 44px de alto aunque no se vea el borde. */
     .opcion {
-      padding: 10px var(--espacio-16);
-      border: 1px solid var(--borde-control);
-      border-radius: var(--radio-boton);
+      position: relative;
+      padding: 10px 0 12px;
       color: var(--texto-meta);
       cursor: pointer;
-      transition:
-        color var(--duracion-rapida) var(--curva),
-        border-color var(--duracion-rapida) var(--curva),
-        background var(--duracion-rapida) var(--curva);
+      transition: color var(--duracion-rapida) var(--curva);
+    }
+    /* La barra del elegido va en ::after, como en los chips, para no mover el texto. */
+    .opcion::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      bottom: 2px;
+      height: 2px;
+      border-radius: 2px;
+      background: transparent;
+      transition: background var(--duracion-rapida) var(--curva);
     }
     .opcion:hover {
       color: var(--texto);
-      border-color: var(--texto);
     }
-    /* Elegida: índigo MÁS borde claro y una marca; el color solo no basta. */
+    .opcion:hover::after {
+      background: var(--borde-control);
+    }
     .opcion.elegida {
-      background: var(--acento-sistema);
-      border-color: var(--texto);
-      color: var(--texto);
+      color: var(--neon);
+    }
+    .opcion.elegida::after {
+      background: var(--neon);
     }
     .opcion.elegida span::before {
       content: '✓ ';

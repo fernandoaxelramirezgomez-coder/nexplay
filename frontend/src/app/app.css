@@ -27,6 +27,25 @@
   width: 81px;
   height: 70px;
   object-fit: contain;
+  /* El logo es un PNG, así que la animación va por fuera: flota tres píxeles y el halo
+     cian late con ella. La regla global de prefers-reduced-motion la deja quieta. */
+  animation: respirar 6s var(--curva) infinite;
+}
+
+@keyframes respirar {
+  0%,
+  100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 1px rgba(34, 224, 255, 0.15)) brightness(1);
+  }
+  50% {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 0 5px rgba(34, 224, 255, 0.5)) brightness(1.12);
+  }
+}
+
+.marca:hover img {
+  filter: drop-shadow(0 0 6px rgba(34, 224, 255, 0.65)) brightness(1.15);
 }
 
 .lema {
@@ -57,7 +76,7 @@
 }
 
 .navegacion a.activo {
-  border-bottom-color: var(--texto);
+  border-bottom-color: var(--neon);
 }
 
 .contenido {

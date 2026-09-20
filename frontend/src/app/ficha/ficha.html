@@ -1,14 +1,14 @@
 <div class="ficha" data-testid="ficha">
-  <button type="button" class="volver" (click)="volver()" data-testid="volver">← Volver al catálogo</button>
+  <button type="button" class="boton-texto volver" (click)="volver()" data-testid="volver">← Volver al catálogo</button>
 
   @if (noEncontrado()) {
-    <section class="tarjeta" data-testid="ficha-no-encontrado">
+    <section class="seccion" data-testid="ficha-no-encontrado">
       <h1>Juego no encontrado</h1>
       <p class="lectura">Este appid no está en el catálogo de NexPlay.</p>
       <a class="boton-cta" routerLink="/">Ir al catálogo</a>
     </section>
   } @else if (catalogo.error()) {
-    <section class="tarjeta">
+    <section class="seccion">
       <h1>No se pudo cargar el catálogo</h1>
       <p class="lectura">Revisa que la API esté corriendo y vuelve a intentarlo.</p>
       <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
@@ -67,22 +67,15 @@
         @if (prediccion()!.nota_plataforma; as nota) {
           <p class="meta nota">{{ nota }}</p>
         }
-        @if (muestraAfinidad()) {
-          <p class="meta mono" data-testid="ficha-afinidad">
-            @if (generosAfines().length) {
-              Dentro de tus géneros habituales: {{ generosAfines().join(', ') }}
-            } @else {
-              Fuera de tus géneros habituales
-            }
-          </p>
-        }
       </section>
     }
 
     <div class="columnas">
-      <div class="principal">
-        <section class="tarjeta" data-testid="segunda-opinion">
-          <h2>Segunda opinión</h2>
+      <div class="principal pila-separada">
+        <app-historia-perfil [juego]="juego" [motivos]="explicacion()?.motivos ?? []" />
+
+        <section class="seccion" data-testid="segunda-opinion">
+          <h2 class="rotulo-seccion">Segunda opinión</h2>
           @if (esperandoOpinion() || !opinion().length) {
             <app-skeleton alto="72px" />
           } @else {
@@ -96,17 +89,17 @@
         </section>
 
         @if (cargandoMotivos()) {
-          <section class="tarjeta"><app-skeleton alto="160px" /></section>
+          <section class="seccion"><app-skeleton alto="160px" /></section>
         } @else {
           <app-motivos-barras [explicacion]="explicacion()" />
         }
       </div>
 
-      <aside class="lateral">
+      <aside class="lateral pila-separada">
         <app-metadatos-juego [juego]="juego" />
 
-        <section class="tarjeta" data-testid="factores">
-          <h2>Qué mueve esta estimación</h2>
+        <section class="seccion" data-testid="factores">
+          <h2 class="rotulo-seccion">Qué mueve esta estimación</h2>
           @if (cargando()) {
             <app-skeleton alto="96px" />
           } @else if (factores().length) {
@@ -118,15 +111,12 @@
           } @else {
             <p class="meta">Sin factores que mostrar para este juego.</p>
           }
-          @if (muestraAfinidad()) {
-            <p class="meta nota-gustos">Tus gustos no cambian el riesgo estimado: el modelo no los usa.</p>
-          }
         </section>
 
         <app-nia [appid]="juego.appid" />
       </aside>
     </div>
   } @else {
-    <section class="tarjeta"><app-skeleton alto="200px" /></section>
+    <section class="seccion"><app-skeleton alto="200px" /></section>
   }
 </div>

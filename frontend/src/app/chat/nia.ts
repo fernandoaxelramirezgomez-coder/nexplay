@@ -28,8 +28,10 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="tarjeta nia" data-testid="nia">
-      <h2>Pregúntale a Nia</h2>
+    <section class="seccion nia" data-testid="nia">
+      @if (muestraTitulo()) {
+        <h2 class="rotulo-seccion">Pregúntale a Nia</h2>
+      }
       <p class="meta intro">
         Responde con los datos de este juego: su banda, los motivos de las reseñas, la crítica y el precio. No
         recomienda comprar ni no comprar.
@@ -99,9 +101,6 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       flex-direction: column;
       gap: var(--espacio-12);
     }
-    h2 {
-      font-size: var(--texto-subheading);
-    }
     .intro {
       margin: 0;
       line-height: var(--interlineado-largo);
@@ -163,7 +162,7 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
     }
     textarea:hover,
     textarea:focus {
-      border-color: var(--texto);
+      border-color: var(--neon);
     }
     .acciones {
       display: flex;
@@ -184,6 +183,8 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
 })
 export class Nia {
   readonly appid = input.required<number>();
+  /** La burbuja flotante ya pone el rótulo en su cabecera: ahí sobra repetirlo. */
+  readonly muestraTitulo = input(true);
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);

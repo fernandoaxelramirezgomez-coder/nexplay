@@ -7,8 +7,8 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
   selector: 'app-metadatos-juego',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="tarjeta" data-testid="metadatos">
-      <h2>Ficha técnica</h2>
+    <section class="seccion" data-testid="metadatos">
+      <h2 class="rotulo-seccion">Ficha técnica</h2>
       <dl class="datos">
         <dt class="meta">Crítica</dt>
         <dd class="mono">{{ metacritic() }}</dd>
@@ -28,8 +28,7 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
     </section>
   `,
   styles: `
-    h2 {
-      font-size: var(--texto-subheading);
+    .rotulo-seccion {
       margin-bottom: var(--espacio-16);
     }
     .datos {
@@ -44,7 +43,12 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
     .generos {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--espacio-4);
+      gap: var(--espacio-8);
+    }
+    .generos .chip + .chip::before {
+      content: '·';
+      margin-inline-end: var(--espacio-8);
+      color: var(--borde-control);
     }
     .chip {
       cursor: default;

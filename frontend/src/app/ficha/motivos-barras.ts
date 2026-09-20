@@ -7,8 +7,8 @@ import { porcentaje } from '../dominio/formato';
   selector: 'app-motivos-barras',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="tarjeta" data-testid="motivos">
-      <h2>Motivos de insatisfacción más frecuentes</h2>
+    <section class="seccion" data-testid="motivos">
+      <h2 class="rotulo-seccion">Motivos de insatisfacción más frecuentes</h2>
       @if (explicacion(); as datos) {
         @if (datos.motivos.length) {
           <ul class="lista">
@@ -38,8 +38,7 @@ import { porcentaje } from '../dominio/formato';
     </section>
   `,
   styles: `
-    h2 {
-      font-size: var(--texto-subheading);
+    .rotulo-seccion {
       margin-bottom: var(--espacio-16);
     }
     .lista {
@@ -65,7 +64,7 @@ import { porcentaje } from '../dominio/formato';
     .barra {
       display: block;
       height: 100%;
-      background: var(--texto);
+      background: var(--neon);
     }
     .valor {
       text-align: right;

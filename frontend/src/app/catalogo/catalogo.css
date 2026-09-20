@@ -11,12 +11,22 @@
   align-items: center;
   gap: var(--espacio-16);
   text-align: center;
-  padding: var(--espacio-24) 0;
+  padding: var(--espacio-48) 0 var(--espacio-40);
 }
 
-.pregunta {
-  font-size: clamp(var(--texto-heading-sm), 4vw, var(--texto-heading));
+.titular {
+  font-size: clamp(var(--texto-heading-sm), 5vw, var(--texto-display));
   max-width: 18ch;
+}
+
+/* La voz baja del referente: el subtítulo pesa menos que el titular, no más. */
+.entrada {
+  margin: 0;
+  max-width: 52ch;
+  font-size: var(--texto-body);
+  font-weight: var(--peso-tenue);
+  line-height: var(--interlineado-largo);
+  color: var(--texto-meta);
 }
 
 .hero .meta {

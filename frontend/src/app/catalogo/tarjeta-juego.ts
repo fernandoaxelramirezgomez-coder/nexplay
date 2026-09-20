@@ -131,6 +131,7 @@ import { MotivosStore } from '../estado/motivos-store';
     }
     .comparar[aria-pressed='true'] {
       background: var(--acento-sistema);
+      color: var(--neon);
     }
     .tarjeta-juego:hover .comparar,
     .tarjeta-juego:focus-within .comparar {

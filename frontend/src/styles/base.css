@@ -29,6 +29,16 @@ p {
   font-weight: var(--peso-regular);
 }
 
+/* Los titulares van en caja normal: el peso y el tamaño alcanzan para la jerarquía y
+   una pregunta en mayúsculas grita más de lo que dice. Las mayúsculas se quedan en
+   .rotulo-seccion, que es donde hacen falta ahora que no hay cajas. */
+h1,
+h2 {
+  font-weight: var(--peso-titular);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--interlineado-display);
+}
+
 h1 {
   font-size: var(--texto-heading);
 }
@@ -64,6 +74,19 @@ button {
 strong,
 b {
   font-weight: var(--peso-clave);
+}
+
+/* Rótulo de sección: ahora que las secciones no tienen caja, este rótulo es lo que
+   marca dónde empieza cada una. Mayúsculas chicas con tracking positivo, como el
+   "RIESGO GENERAL" del veredicto. */
+.rotulo-seccion {
+  margin: 0;
+  color: var(--texto-meta);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  font-weight: var(--peso-regular);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 /* Estructura en mono: fechas, géneros, conteos, porcentajes. */
@@ -107,76 +130,143 @@ b {
   }
 }
 
-/* Controles compartidos. Sin sombras ni gradientes: el estado se marca con color. */
-.boton-cta {
-  display: inline-block;
-  padding: 10px var(--espacio-24);
-  border: 0;
+/* Botones: tres variantes y nada más. Todas comparten forma de píldora, la misma
+   altura y el mismo movimiento; lo único que cambia es cuánto peso tienen.
+   Sin gradientes y sin sombra de elevación: el :active enciende el resplandor. */
+.boton-cta,
+.boton-fantasma,
+.boton-texto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-8);
   border-radius: var(--radio-pildora);
-  background: var(--cta-fondo);
-  color: var(--cta-texto);
   font-size: var(--texto-body-sm);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--duracion-rapida) var(--curva);
-}
-
-.boton-cta:hover {
-  background: var(--cta-fondo-hover);
-}
-
-.boton-fantasma {
-  display: inline-block;
-  padding: 8px var(--espacio-16);
-  border: 1px solid var(--borde-control);
-  border-radius: var(--radio-boton);
-  background: transparent;
-  color: var(--texto);
-  font-size: var(--texto-body-sm);
+  line-height: 1.25;
   text-decoration: none;
   cursor: pointer;
   transition:
+    background var(--duracion-rapida) var(--curva),
     border-color var(--duracion-rapida) var(--curva),
-    background var(--duracion-rapida) var(--curva);
+    color var(--duracion-rapida) var(--curva),
+    transform var(--duracion-rapida) var(--curva);
 }
 
-.boton-fantasma:hover {
-  border-color: var(--texto);
+.boton-cta:active:not([disabled]),
+.boton-fantasma:active:not([disabled]) {
+  transform: translateY(1px);
+  box-shadow: var(--resplandor);
 }
 
-/* Opción elegida (chips, tarjetas de opción, "En comparación"): índigo MÁS borde claro,
-   porque el índigo solo no contrasta lo suficiente con las superficies. */
-.chip {
-  padding: 4px var(--espacio-12);
+/* Primario: el único relleno cromático de la página. */
+.boton-cta {
+  padding: 12px var(--espacio-24);
+  border: 1px solid transparent;
+  background: var(--cta-fondo);
+  color: var(--cta-texto);
+}
+
+.boton-cta:hover:not([disabled]) {
+  background: var(--cta-fondo-hover);
+}
+
+/* Secundario: el mismo neón, en borde. */
+.boton-fantasma {
+  padding: 12px var(--espacio-24);
   border: 1px solid var(--borde-control);
-  border-radius: var(--radio-pildora);
   background: transparent;
+  color: var(--texto);
+}
+
+.boton-fantasma:hover:not([disabled]) {
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
+/* Terciario: solo texto, para acciones que no compiten (volver, editar, quitar). */
+.boton-texto {
+  padding: var(--espacio-4) 0;
+  border: 0;
+  background: none;
+  color: var(--texto-meta);
+  text-underline-offset: 4px;
+}
+
+.boton-texto:hover:not([disabled]) {
+  color: var(--neon);
+  text-decoration: underline;
+}
+
+.boton-cta[disabled],
+.boton-fantasma[disabled],
+.boton-texto[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Chips sin caja: son texto. El área clicable se conserva con padding y lo elegido se
+   marca con una barra de neón debajo de la palabra, no con un recuadro. La barra va en
+   ::after para que no mueva el texto al aparecer. */
+.chip {
+  position: relative;
+  padding: var(--espacio-8) var(--espacio-4);
+  border: 0;
+  background: none;
   color: var(--texto-meta);
   font-family: var(--fuente-mono);
   font-size: var(--texto-caption);
   letter-spacing: 0;
   cursor: pointer;
-  transition:
-    color var(--duracion-rapida) var(--curva),
-    border-color var(--duracion-rapida) var(--curva),
-    background var(--duracion-rapida) var(--curva);
+  transition: color var(--duracion-rapida) var(--curva);
+}
+
+.chip::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--espacio-4);
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background var(--duracion-rapida) var(--curva);
 }
 
 .chip:hover {
   color: var(--texto);
-  border-color: var(--texto);
 }
 
-.chip[aria-pressed='true'],
+.chip:hover::after {
+  background: var(--borde-control);
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--neon);
+}
+
+.chip[aria-pressed='true']::after {
+  background: var(--neon);
+}
+
 .boton-fantasma[aria-pressed='true'] {
   background: var(--acento-sistema);
-  border-color: var(--texto);
+  border-color: var(--neon);
   color: var(--texto);
 }
 
-/* Tarjeta: superficie elevada por color, radio 16, padding 24. Sin sombra ni borde. */
-.tarjeta {
+/* El lienzo ES la superficie: lo que antes encerraba una caja ahora lo separa un filete
+   y el aire de arriba. Una superficie con fondo solo existe cuando encierra una portada o
+   flota sobre el contenido: para eso está .superficie.
+
+   .seccion solo agrupa; la línea la pone .pila-separada en el contenedor, porque varias
+   secciones vienen dentro de un componente y desde afuera no se puede entrar a tocarlas. */
+.pila-separada > * + * {
+  padding-top: var(--espacio-24);
+  border-top: var(--filete);
+}
+
+.superficie {
   background: var(--superficie-tarjeta);
+  border: 1px solid var(--linea);
   border-radius: var(--radio-tarjeta);
   padding: var(--espacio-24);
 }

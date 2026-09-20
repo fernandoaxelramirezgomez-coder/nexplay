@@ -95,7 +95,7 @@ import { TarjetaJuego } from './tarjeta-juego';
       transition: border-color var(--duracion-rapida) var(--curva);
     }
     .controles button:hover {
-      border-color: var(--texto);
+      border-color: var(--neon);
     }
     /* Estante horizontal: las tres bandas caben casi sin bajar. */
     .fila {

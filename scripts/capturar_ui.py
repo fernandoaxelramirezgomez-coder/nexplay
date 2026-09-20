@@ -10,8 +10,8 @@ visuales sin abrir un navegador a mano.
   ficha-wild-hearts.png, perfil.png, ficha-con-perfil.png, comparar.png
 y verifica contra la API (--api): total de tarjetas, conteo y orden de cada
 estante, filtro reactivo, factores de la ficha, entrada directa por URL, appid
-inexistente, perfil que sobrevive a la recarga, afinidad de géneros sin cambiar
-el nivel de riesgo, y la comparación sincronizada con ?appids=.
+inexistente, perfil que sobrevive a la recarga, la historia del perfil sin que
+cambie el nivel de riesgo, y la comparación sincronizada con ?appids=.
 
 docs/capturas/ está ignorada por git; la captura del README es otra,
 docs/captura-interfaz.png, y este script no la toca. En ambos modos revisa que
@@ -526,13 +526,31 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     veredicto = pagina.get_by_test_id("ficha-veredicto").inner_text()
     if "riesgo para tu perfil" not in veredicto.lower():
         problemas.append(f"con perfil declarado, el veredicto sigue diciendo '{veredicto.splitlines()[0]}'")
-    afinidad = pagina.get_by_test_id("ficha-afinidad").inner_text()
-    if "Dentro de tus géneros habituales" not in afinidad or "Acción" not in afinidad:
-        problemas.append(f"la ficha no muestra la afinidad esperada ('{afinidad}')")
+    # La historia reemplaza a la línea suelta de afinidad: con perfil se cuenta entera.
+    historia = pagina.get_by_test_id("historia-texto").inner_text()
+    plano = " ".join(historia.split())
+    if "dentro" not in plano.lower() or "Acción" not in plano:
+        problemas.append(f"la historia no reconoce el género en común ('{plano[:120]}')")
+    if "arrepentimiento temprano" not in plano.lower():
+        problemas.append("la historia no usa el vocabulario del proyecto")
+    if pagina.get_by_test_id("historia-sin-perfil").count():
+        problemas.append("con perfil declarado, la historia sigue pidiendo crear uno")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "ficha-con-perfil.png", full_page=True)
-    print(f"ficha:    ficha-con-perfil.png ({veredicto.splitlines()[0]}; {afinidad})")
+    print(f"ficha:    ficha-con-perfil.png ({veredicto.splitlines()[0]}; historia: {plano[:70]}…)")
+
+    # Nia cuenta la misma historia con sus palabras, aunque sea en modo demostración.
+    pagina.get_by_test_id("historia-pedir-nia").click()
+    try:
+        pagina.get_by_test_id("historia-nia").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        modo = "demostración" if pagina.get_by_test_id("historia-nia-demo").count() else "modelo"
+        print(f"historia: Nia la cuenta con sus palabras ({modo})")
+    except TiempoAgotado:
+        problemas.append("el botón 'Que Nia lo cuente' no trajo respuesta")
+    _esperar_quietud(pagina)
+    pagina.get_by_test_id("historia-perfil").screenshot(path=destino / "historia-perfil.png")
+    print(f"historia: {(destino / 'historia-perfil.png').relative_to(_RAIZ)}")
 
     # Los géneros no deben mover el riesgo: el modelo no los usa.
     base = {
@@ -619,6 +637,111 @@ def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
+    """La burbuja de la esquina: pide un juego antes de conversar, y no sale en la ficha."""
+    problemas = []
+
+    _abrir(pagina, url)
+    pagina.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("nia-flotante-burbuja").click()
+    pagina.get_by_test_id("nia-flotante-panel").wait_for(state="visible", timeout=_TIMEOUT_MS)
+
+    # Sin juego elegido no hay chat todavía: primero hay que decir de cuál hablar.
+    if pagina.get_by_test_id("nia").count():
+        problemas.append("la burbuja abre el chat sin preguntar antes de qué juego")
+
+    pagina.get_by_test_id("nia-flotante-buscar").fill("wild hearts")
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='nia-flotante-sugerencia']\").length === 1",
+        timeout=_TIMEOUT_MS,
+    )
+    _esperar_portadas(pagina, "[data-testid='nia-flotante-panel'] img")
+    _esperar_quietud(pagina)
+    ruta = destino / "nia-flotante-elegir.png"
+    pagina.get_by_test_id("nia-flotante-panel").screenshot(path=ruta)
+    print(f"burbuja:  {ruta.relative_to(_RAIZ)} (pide de qué juego hablar)")
+
+    pagina.get_by_test_id("nia-flotante-sugerencia").first.click()
+    pagina.get_by_test_id("nia").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    elegido = pagina.get_by_test_id("nia-flotante-juego").inner_text()
+    if "WILD HEARTS" not in elegido.upper():
+        problemas.append(f"la burbuja no abrió el chat del juego elegido ('{elegido}')")
+
+    pagina.get_by_test_id("sugerencia-nia").first.click()
+    try:
+        pagina.get_by_test_id("mensaje-nia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.wait_for_function(
+            "() => !document.querySelector(\"[data-testid='nia-escribiendo']\")", timeout=_TIMEOUT_MS
+        )
+    except TiempoAgotado:
+        problemas.append("la burbuja no obtuvo respuesta de Nia")
+    _esperar_quietud(pagina)
+    ruta = destino / "nia-flotante-chat.png"
+    pagina.get_by_test_id("nia-flotante-panel").screenshot(path=ruta)
+    print(f"burbuja:  {ruta.relative_to(_RAIZ)} ({elegido})")
+    problemas += _revisar_vocabulario(pagina, "burbuja de Nia")
+
+    # Escape la cierra y devuelve el foco a la burbuja.
+    pagina.keyboard.press("Escape")
+    try:
+        pagina.get_by_test_id("nia-flotante-panel").wait_for(state="detached", timeout=_TIMEOUT_MS)
+        enfocada = pagina.evaluate(
+            "() => document.activeElement?.getAttribute('data-testid') === 'nia-flotante-burbuja'"
+        )
+        if not enfocada:
+            problemas.append("al cerrar con Escape, el foco no vuelve a la burbuja")
+        print("burbuja:  Escape la cierra y el foco vuelve al botón")
+    except TiempoAgotado:
+        problemas.append("Escape no cierra el panel de la burbuja")
+
+    # En la ficha, Nia ya vive en la columna lateral: ahí la burbuja no debe salir.
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if pagina.get_by_test_id("nia-flotante-burbuja").count():
+        problemas.append("la burbuja aparece en la ficha, donde Nia ya está en la columna")
+    else:
+        print("burbuja:  no aparece en la ficha, donde Nia ya está en la columna")
+
+    _abrir(pagina, url)
+    pagina.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    return problemas
+
+
+def _angular_movimiento(pagina: Page, url: str) -> list[str]:
+    """El logo respira, pero se queda quieto si el sistema pide menos movimiento."""
+    problemas = []
+    navegador = pagina.context.browser
+    if navegador is None:
+        return ["no se pudo abrir un contexto con prefers-reduced-motion"]
+
+    medir = """() => {
+        const img = document.querySelector('.marca img');
+        return img ? getComputedStyle(img).animationDuration : null;
+    }"""
+
+    def segundos(valor: str | None) -> float:
+        """'6s' o '1e-05s' a número; la regla de reduced-motion deja 0.01ms, no 0. """
+        return float(valor.rstrip("s")) if valor and valor.endswith("s") else 0.0
+
+    normal = pagina.evaluate(medir)
+    if segundos(normal) < 1:
+        problemas.append(f"el logo no tiene animación en condiciones normales ({normal})")
+
+    contexto = navegador.new_context(viewport=_VIEWPORT, reduced_motion="reduce")
+    try:
+        quieta = contexto.new_page()
+        _abrir(quieta, url)
+        quieta.wait_for_selector(".marca img", timeout=_TIMEOUT_MS)
+        reducida = quieta.evaluate(medir)
+        if segundos(reducida) > 0.05:
+            problemas.append(f"con prefers-reduced-motion el logo sigue animándose ({reducida})")
+        else:
+            print(f"logo:     respira {normal} y queda quieto con prefers-reduced-motion ({reducida})")
+    finally:
+        contexto.close()
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
@@ -626,6 +749,8 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
+        + _angular_nia_flotante(pagina, url, destino)
+        + _angular_movimiento(pagina, url)
     )
 
 

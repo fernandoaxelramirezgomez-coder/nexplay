@@ -221,7 +221,7 @@ const MOTIVOS_VISIBLES = 3;
     .barra {
       display: block;
       height: 100%;
-      background: var(--texto);
+      background: var(--neon);
     }
     .valor {
       grid-area: valor;

@@ -6,13 +6,14 @@ import { ResumenValoraciones } from '../api/contrato';
 import { textoUtilidad } from '../dominio/utilidad';
 import { UsuarioStore } from '../estado/usuario-store';
 import { HiloComentarios } from './hilo-comentarios';
+import { IconoPulgar } from '../compartido/icono-pulgar';
 
 /** Voto sobre la segunda opinión: uno por persona y juego, y se puede cambiar. Debajo va
  * el hilo público de comentarios. */
 @Component({
   selector: 'app-valoracion-opinion',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HiloComentarios],
+  imports: [HiloComentarios, IconoPulgar],
   template: `
     <section class="valoracion" data-testid="valoracion">
       <h3 class="titulo">¿Te sirvió esta segunda opinión?</h3>
@@ -27,7 +28,7 @@ import { HiloComentarios } from './hilo-comentarios';
           [disabled]="guardando()"
           (click)="valorar(true)"
         >
-          <span aria-hidden="true">👍</span>
+          <app-icono-pulgar />
         </button>
         <button
           type="button"
@@ -38,7 +39,7 @@ import { HiloComentarios } from './hilo-comentarios';
           [disabled]="guardando()"
           (click)="valorar(false)"
         >
-          <span aria-hidden="true">👎</span>
+          <app-icono-pulgar [abajo]="true" />
         </button>
         <span class="meta mono conteo" data-testid="valoracion-conteo">{{ conteo() }}</span>
         @if (mia()) {
@@ -77,15 +78,15 @@ import { HiloComentarios } from './hilo-comentarios';
       align-items: center;
       gap: var(--espacio-16);
     }
-    /* Iconos: el texto completo va en aria-label, no en pantalla. La pila de fuentes
-       de emoji es la del sistema; en Linux sin fuente de emoji se ven como cuadros. */
+    /* El texto completo va en aria-label, no en pantalla. El icono es un trazo propio,
+       no un emoji, para que se vea igual en cualquier sistema. */
     .voto {
       width: 56px;
       height: 48px;
       display: grid;
       place-items: center;
-      font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
-      font-size: 24px;
+      color: var(--texto-meta);
+      font-size: 22px;
       line-height: 1;
       border: 1px solid var(--borde-control);
       border-radius: var(--radio-boton);
@@ -96,11 +97,14 @@ import { HiloComentarios } from './hilo-comentarios';
         background var(--duracion-rapida) var(--curva);
     }
     .voto:hover:not([disabled]) {
-      border-color: var(--texto);
+      border-color: var(--neon);
+      color: var(--texto);
     }
     .voto[aria-pressed='true'] {
       background: var(--acento-sistema);
-      border-color: var(--texto);
+      border-color: var(--neon);
+      box-shadow: var(--resplandor);
+      color: var(--neon);
     }
     .voto[disabled] {
       cursor: progress;

@@ -1,6 +1,9 @@
 <div class="catalogo">
   <section class="hero">
-    <h1 class="pregunta">¿Qué juego estás pensando comprar?</h1>
+    <h1 class="titular">Antes de comprar, una segunda opinión</h1>
+    <p class="entrada">
+      Qué tan seguido un juego deja señales de arrepentimiento temprano en sus primeras dos horas.
+    </p>
     <app-buscador [juegos]="catalogo.juegos()" [texto]="texto()" (textoCambio)="cambiarTexto($event)" />
     <app-filtros-catalogo
       [genero]="generoActivo()"

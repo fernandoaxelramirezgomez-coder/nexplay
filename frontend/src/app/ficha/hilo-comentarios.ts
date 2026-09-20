@@ -15,6 +15,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Comentario } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { hace } from '../dominio/tiempo';
+import { IconoPulgar } from '../compartido/icono-pulgar';
 import { UsuarioStore } from '../estado/usuario-store';
 
 const MAXIMO_TEXTO = 500;
@@ -26,6 +27,7 @@ const MAXIMO_TEXTO = 500;
 @Component({
   selector: 'app-hilo-comentarios',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [IconoPulgar],
   template: `
     <section class="hilo" data-testid="hilo-comentarios">
       <h3 class="titulo">Lo que dicen otras personas</h3>
@@ -126,7 +128,7 @@ const MAXIMO_TEXTO = 500;
                 [disabled]="ocupado() === comentario.id"
                 (click)="reaccionar(comentario.id)"
               >
-                <span aria-hidden="true">👍</span>
+                <app-icono-pulgar />
                 <span class="mono" data-testid="comentario-reacciones">{{ comentario.reacciones }}</span>
               </button>
             </li>
@@ -221,7 +223,7 @@ const MAXIMO_TEXTO = 500;
       cursor: pointer;
     }
     .enlace:hover:not([disabled]) {
-      color: var(--texto);
+      color: var(--neon);
     }
     .texto {
       margin: 0;
@@ -251,7 +253,7 @@ const MAXIMO_TEXTO = 500;
     }
     textarea:hover,
     textarea:focus {
-      border-color: var(--texto);
+      border-color: var(--neon);
     }
     .acciones {
       display: flex;
@@ -267,13 +269,12 @@ const MAXIMO_TEXTO = 500;
       cursor: not-allowed;
     }
     /* Mismo lenguaje que el voto de la segunda opinión: borde discreto, relleno índigo
-       cuando está activo. La pila de emoji es la del sistema. */
+       y borde neón cuando está activo, con el mismo pulgar dibujado. */
     .reaccion {
       display: inline-flex;
       align-items: center;
       gap: var(--espacio-8);
       padding: 4px var(--espacio-12);
-      font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
       font-size: var(--texto-caption);
       line-height: 1.6;
       color: var(--texto);
@@ -286,11 +287,16 @@ const MAXIMO_TEXTO = 500;
         background var(--duracion-rapida) var(--curva);
     }
     .reaccion:hover:not([disabled]) {
-      border-color: var(--texto);
+      border-color: var(--neon);
+    }
+    .reaccion app-icono-pulgar {
+      font-size: 16px;
     }
     .reaccion[aria-pressed='true'] {
       background: var(--acento-sistema);
-      border-color: var(--texto);
+      border-color: var(--neon);
+      box-shadow: var(--resplandor);
+      color: var(--neon);
     }
     .reaccion[disabled] {
       cursor: progress;

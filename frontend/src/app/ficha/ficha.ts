@@ -7,7 +7,6 @@ import { NexplayApi } from '../api/nexplay-api';
 import { Nia } from '../chat/nia';
 import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
-import { generosEnComun } from '../dominio/afinidad';
 import { rotuloRiesgo } from '../dominio/etiqueta-riesgo';
 import { factoresVisibles, fraseFactor } from '../dominio/factores';
 import { fraseBanda, segundaOpinion } from '../dominio/segunda-opinion';
@@ -15,6 +14,7 @@ import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { FactoresModelo } from './factores-modelo';
+import { HistoriaPerfil } from './historia-perfil';
 import { MetadatosJuego } from './metadatos-juego';
 import { MotivosBarras } from './motivos-barras';
 import { ValoracionOpinion } from './valoracion-opinion';
@@ -31,6 +31,7 @@ import { ValoracionOpinion } from './valoracion-opinion';
     FactoresModelo,
     ValoracionOpinion,
     Nia,
+    HistoriaPerfil,
   ],
   templateUrl: './ficha.html',
   styleUrl: './ficha.css',
@@ -102,15 +103,6 @@ export class Ficha {
     const juego = this.juego();
     return prediccion && juego ? factoresVisibles(prediccion.factores, juego) : [];
   });
-
-  protected readonly generosAfines = computed(() => {
-    const juego = this.juego();
-    const preferidos = this.perfil.perfil()?.tags_preferidos ?? [];
-    return juego && preferidos.length ? generosEnComun(juego.generos, preferidos) : [];
-  });
-  protected readonly muestraAfinidad = computed(
-    () => !!this.juego() && (this.perfil.perfil()?.tags_preferidos.length ?? 0) > 0,
-  );
 
   protected readonly enComparacion = computed(() => {
     const juego = this.juego();
