@@ -742,10 +742,70 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
     return problemas
 
 
+# Los 9 juegos cuyo short_description Steam solo tiene en inglés: la ficha debe caer al
+# mensaje de respaldo en vez de mostrar el texto en otro idioma.
+_SIN_DESCRIPCION_ES = {
+    427520: "Factorio",
+    219990: "Grim Dawn",
+    550: "Left 4 Dead 2",
+    1966720: "Lethal Company",
+    261550: "Mount & Blade II: Bannerlord",
+    108600: "Project Zomboid",
+    211820: "Starbound",
+    250900: "The Binding of Isaac: Rebirth",
+    242760: "The Forest",
+}
+
+
+def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
+    """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
+    problemas = []
+
+    # La API decide el idioma; el frontend solo pinta lo que llega.
+    catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+    sin_texto = {appid for appid, juego in catalogo.items() if juego.get("descripcion") is None}
+    if sin_texto != set(_SIN_DESCRIPCION_ES):
+        problemas.append(
+            f"la API no devuelve None en los 9 juegos esperados (de más: "
+            f"{sorted(sin_texto - set(_SIN_DESCRIPCION_ES))}, de menos: "
+            f"{sorted(set(_SIN_DESCRIPCION_ES) - sin_texto)})"
+        )
+    else:
+        print(f"descripción: la API manda None en los {len(sin_texto)} juegos sin versión en español")
+
+    # Uno en español: el párrafo completo, tal como vino de Steam.
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-descripcion").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    mostrado = " ".join(pagina.get_by_test_id("ficha-descripcion").inner_text().split())
+    esperado = " ".join((catalogo[_APPID_FICHA]["descripcion"] or "").split())
+    if mostrado != esperado:
+        problemas.append(f"la ficha no muestra la descripción completa ('{mostrado[:80]}')")
+    if pagina.get_by_test_id("ficha-sin-descripcion").count():
+        problemas.append("con descripción en español, la ficha muestra igual el respaldo")
+    print(f"descripción: {catalogo[_APPID_FICHA]['nombre']} muestra {len(mostrado)} caracteres")
+
+    # Los 9 en inglés: respaldo, y ni rastro del texto original.
+    for appid, nombre in _SIN_DESCRIPCION_ES.items():
+        _abrir(pagina, f"{url.rstrip('/')}/juego/{appid}")
+        try:
+            pagina.get_by_test_id("ficha-sin-descripcion").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        except TiempoAgotado:
+            problemas.append(f"{nombre}: no cae al mensaje de respaldo")
+            continue
+        if pagina.get_by_test_id("ficha-descripcion").count():
+            problemas.append(f"{nombre}: muestra descripción además del respaldo")
+    if not problemas:
+        print(f"descripción: los {len(_SIN_DESCRIPCION_ES)} juegos en inglés caen al respaldo")
+
+    _abrir(pagina, url)
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
+        + _angular_descripcion(pagina, url, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)

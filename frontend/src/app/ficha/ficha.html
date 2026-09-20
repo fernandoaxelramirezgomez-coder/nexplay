@@ -33,6 +33,12 @@
     </header>
     <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
 
+    @if (juego.descripcion; as descripcion) {
+      <p class="lectura descripcion" data-testid="ficha-descripcion">{{ descripcion }}</p>
+    } @else {
+      <p class="meta descripcion" data-testid="ficha-sin-descripcion">Descripción no disponible en español.</p>
+    }
+
     @if (errorRiesgo()) {
       <p class="veredicto-error" data-testid="ficha-riesgo-error">
         No se pudo calcular el riesgo. Revisa que la API esté corriendo.

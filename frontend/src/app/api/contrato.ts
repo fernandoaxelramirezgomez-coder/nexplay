@@ -21,6 +21,8 @@ export interface JuegoCatalogo {
   moneda: string | null;
   /** Texto de Steam, p. ej. '16 FEB 2023'; no es una fecha ISO. */
   fecha_lanzamiento: string | null;
+  /** short_description de Steam; null cuando la tienda solo la tiene en inglés. */
+  descripcion: string | null;
   portada_url: string;
   tienda_url: string;
   /** "Riesgo general": calculado con el perfil neutro de api/catalogo.py. */

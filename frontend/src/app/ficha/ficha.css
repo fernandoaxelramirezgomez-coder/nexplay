@@ -29,6 +29,11 @@
   display: none;
 }
 
+/* Lo primero que se lee de un juego, antes del riesgo, como en cualquier tienda. */
+.descripcion {
+  margin: 0;
+}
+
 /* Veredicto: el bloque protagonista. Franja del color de la banda sobre el lienzo,
    donde los tres colores sí pasan contraste como texto. */
 .veredicto {

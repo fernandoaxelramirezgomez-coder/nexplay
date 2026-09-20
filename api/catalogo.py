@@ -21,6 +21,7 @@ ver notebook/nexplay.ipynb sección 6): la banda que sale de este perfil
 neutro se parece mucho a la que saldría de cualquier perfil razonable."""
 
 import logging
+import re
 import sqlite3
 from pathlib import Path
 
@@ -55,6 +56,25 @@ def _generos_de(campo: str | None) -> list[str]:
     return [g for g in (campo or "").split("|") if g]
 
 
+# La ingesta pide las descripciones con l=spanish, pero Steam cae al inglés cuando el
+# juego no la tiene traducida: son 9 de los 83. Se cuentan palabras muy comunes de cada
+# idioma y gana la mayoría. Basta comparar, no detectar: con una sola palabra inglesa
+# bastaba para tirar ocho descripciones que sí estaban en español pero citaban un título
+# ("The Elder Scrolls V: Skyrim", "Skull and Bones", "The Last of Us").
+_PALABRAS_INGLESAS = re.compile(r"\b(the|and|your|you|with|of|in|is|as|to|from)\b", re.IGNORECASE)
+_PALABRAS_ESPANOLAS = re.compile(r"\b(de|del|la|el|los|las|un|una|que|con|para|en|por)\b", re.IGNORECASE)
+
+
+def _descripcion_en_espanol(texto: str | None) -> str | None:
+    """La descripción de Steam, o None si Steam la devolvió en inglés."""
+    limpio = (texto or "").strip()
+    if not limpio:
+        return None
+    if len(_PALABRAS_INGLESAS.findall(limpio)) > len(_PALABRAS_ESPANOLAS.findall(limpio)):
+        return None
+    return limpio
+
+
 def _cargar_catalogo() -> list[JuegoCatalogo]:
     if not _DB_PATH.exists():
         logger.warning("no existe %s; el catálogo queda vacío", _DB_PATH)
@@ -63,14 +83,27 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
     con = sqlite3.connect(_DB_PATH)
     try:
         filas = con.execute(
-            "SELECT appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento "
-            "FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
+            "SELECT appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento, "
+            "descripcion_corta FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
         ).fetchall()
     finally:
         con.close()
 
     catalogo = []
-    for appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento in filas:
+    sin_espanol = 0
+    for (
+        appid,
+        nombre,
+        generos,
+        metacritic,
+        es_gratis,
+        precio_final,
+        moneda,
+        fecha_lanzamiento,
+        descripcion_corta,
+    ) in filas:
+        descripcion = _descripcion_en_espanol(descripcion_corta)
+        sin_espanol += descripcion is None
         prediccion = scoring.predecir(_PERFIL_NEUTRO, appid)
         catalogo.append(
             JuegoCatalogo(
@@ -84,12 +117,15 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
                 precio_final=precio_final / 100 if precio_final is not None else None,
                 moneda=moneda,
                 fecha_lanzamiento=fecha_lanzamiento,
+                descripcion=descripcion,
                 portada_url=_url_portada(appid),
                 tienda_url=_url_tienda(appid),
                 banda_riesgo=prediccion.nivel,
                 riesgo=prediccion.riesgo,
             )
         )
+    if sin_espanol:
+        logger.info("descripciones sin versión en español: %s de %s", sin_espanol, len(catalogo))
     return catalogo
 
 

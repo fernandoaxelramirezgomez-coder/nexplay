@@ -91,6 +91,10 @@ class JuegoCatalogo(BaseModel):
     )
     moneda: Optional[str] = None
     fecha_lanzamiento: Optional[str] = None
+    descripcion: Optional[str] = Field(
+        None,
+        description="short_description de Steam; None cuando la tienda solo la tiene en inglés (ver catalogo.py)",
+    )
     portada_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     tienda_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     banda_riesgo: NivelRiesgo = Field(
