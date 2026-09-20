@@ -4,6 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 
 import { NexplayApi } from '../api/nexplay-api';
+import { Nia } from '../chat/nia';
 import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
@@ -21,7 +22,16 @@ import { ValoracionOpinion } from './valoracion-opinion';
 @Component({
   selector: 'app-ficha',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PortadaAncha, Skeleton, MotivosBarras, MetadatosJuego, FactoresModelo, ValoracionOpinion],
+  imports: [
+    RouterLink,
+    PortadaAncha,
+    Skeleton,
+    MotivosBarras,
+    MetadatosJuego,
+    FactoresModelo,
+    ValoracionOpinion,
+    Nia,
+  ],
   templateUrl: './ficha.html',
   styleUrl: './ficha.css',
 })

@@ -11,8 +11,10 @@ import {
   JuegoCatalogo,
   PerfilJugador,
   PrediccionRiesgo,
+  RespuestaNia,
   ResumenValoraciones,
   SolicitudComentario,
+  SolicitudNia,
   SolicitudPrediccion,
   SolicitudValoracion,
 } from './contrato';
@@ -66,5 +68,9 @@ export class NexplayApi {
   /** Devuelve el hilo completo ya con el comentario nuevo al final. */
   comentar(appid: number, solicitud: SolicitudComentario): Observable<Comentario[]> {
     return this.http.post<Comentario[]>(`${this.base}/comentarios/${appid}`, solicitud);
+  }
+
+  preguntarANia(solicitud: SolicitudNia): Observable<RespuestaNia> {
+    return this.http.post<RespuestaNia>(`${this.base}/nia`, solicitud);
   }
 }

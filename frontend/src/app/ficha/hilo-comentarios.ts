@@ -183,7 +183,8 @@ export class HiloComentarios {
       this.comentarios();
       const lista = this.lista()?.nativeElement;
       if (lista) {
-        lista.scrollTop = lista.scrollHeight;
+        // Tras pintar: si se ajusta antes, el último mensaje queda cortado.
+        requestAnimationFrame(() => (lista.scrollTop = lista.scrollHeight));
       }
     });
   }

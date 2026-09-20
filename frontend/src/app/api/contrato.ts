@@ -142,3 +142,28 @@ export interface SolicitudComentario {
   /** Hasta 500 caracteres. */
   texto: string;
 }
+
+/** POST /nia: el chat de la ficha. */
+export interface MensajeChat {
+  rol: 'usuario' | 'nia';
+  /** Hasta 500 caracteres. */
+  contenido: string;
+}
+
+export interface SolicitudNia {
+  /** Id anónimo del navegador; solo se usa para el límite de frecuencia. */
+  usuario: string;
+  appid: number;
+  /** Hasta 10 mensajes, incluida la pregunta nueva. */
+  mensajes: MensajeChat[];
+  /** Si va, la banda del contexto es la del perfil declarado. */
+  perfil?: PerfilJugador;
+}
+
+export interface RespuestaNia {
+  respuesta: string;
+  /** 'demostracion' = armada con reglas sobre los datos, sin modelo de lenguaje. */
+  modo: 'openai' | 'demostracion';
+  modelo: string | null;
+  aviso: string | null;
+}
