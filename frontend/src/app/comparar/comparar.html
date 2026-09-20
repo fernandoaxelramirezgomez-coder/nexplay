@@ -22,7 +22,7 @@
   } @else {
     <div class="columnas">
       @for (juego of juegos(); track juego.appid) {
-        <app-columna-comparar [juego]="juego" />
+        <app-columna-comparar [juego]="juego" [promedioMetacritic]="catalogo.promedioMetacritic()" />
       }
     </div>
     @if (faltantes()) {

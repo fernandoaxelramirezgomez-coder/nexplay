@@ -10,10 +10,14 @@
   gap: var(--espacio-8);
 }
 
+/* Las filas se declaran aquí y cada columna las hereda con subgrid, así la segunda
+   opinión, los motivos, los factores y la ficha técnica empiezan a la misma altura:
+   portada, nombre, veredicto, opinión, motivos, factores, datos, afinidad y acción. */
 .columnas {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(280px, 1fr);
+  grid-template-rows: repeat(9, auto);
   gap: var(--espacio-16);
   align-items: stretch;
 }

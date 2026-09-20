@@ -6,13 +6,14 @@ import { agruparEnEstantes, ORDEN_BANDAS } from '../dominio/estantes';
 import { filtrarJuegos } from '../dominio/filtros';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
+import { Buscador } from './buscador';
 import { Estante } from './estante';
 import { FiltrosCatalogo } from './filtros-catalogo';
 
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Estante, FiltrosCatalogo, Skeleton],
+  imports: [Buscador, Estante, FiltrosCatalogo, Skeleton],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })

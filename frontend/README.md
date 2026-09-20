@@ -24,6 +24,14 @@ Si alguna vez hay que regenerar el lockfile, npm 10.9 falla con
 `Cannot read properties of null (reading 'edgesOut')` al resolver las dependencias de
 Vitest; `npx npm@11.19.1 install` lo resuelve. `npm ci` con npm 10 funciona bien.
 
+## Deuda conocida
+
+- **La cabecera de la ficha arma una URL de Steam en el frontend**
+  (`capsule_616x353.jpg`, en `src/app/compartido/portada-ancha.ts`), con respaldo automático
+  a `portada_url` si esa imagen no existe. Lo limpio sería que la API la entregue como un
+  campo más del catálogo, junto a `portada_url` y `tienda_url`, que ya se derivan del appid
+  en `api/catalogo.py`.
+
 ## Decisiones
 
 - **Un solo servicio HTTP**: `src/app/api/nexplay-api.ts`, con la URL base en `src/environments/`.

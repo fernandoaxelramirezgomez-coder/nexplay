@@ -4,42 +4,51 @@ import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
-import { PildoraBanda } from '../compartido/pildora-banda';
 import { Portada } from '../compartido/portada';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
 import { rotuloRiesgo } from '../dominio/etiqueta-riesgo';
-import { factoresVisibles, fraseFactor } from '../dominio/factores';
+import { factoresVisibles } from '../dominio/factores';
 import { porcentaje, textoMetacritic, textoPrecio } from '../dominio/formato';
 import { segundaOpinion } from '../dominio/segunda-opinion';
 import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
+import { FactoresModelo } from '../ficha/factores-modelo';
 
 const MOTIVOS_VISIBLES = 3;
 
+/** Una columna de la comparación. Sus secciones son filas de un subgrid, así la
+ * segunda opinión, los motivos, los factores y la ficha técnica empiezan a la misma
+ * altura en todas las columnas. */
 @Component({
   selector: 'app-columna-comparar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Portada, PildoraBanda, Skeleton],
+  imports: [RouterLink, Portada, Skeleton, FactoresModelo],
   template: `
-    <article class="columna tarjeta" data-testid="columna-comparar" [attr.data-appid]="juego().appid">
-      <app-portada [src]="juego().portada_url" [prioritaria]="true" />
+    <article class="columna" data-testid="columna-comparar" [attr.data-appid]="juego().appid">
+      <app-portada [src]="juego().portada_url" [prioritaria]="true" radio="0" />
+
       <h2 class="nombre">
         <a [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
       </h2>
 
-      @if (prediccion(); as prediccion) {
-        <app-pildora-banda [banda]="prediccion.nivel" [rotulo]="rotulo()" />
-      } @else if (error()) {
-        <p class="meta">No se pudo calcular el riesgo.</p>
-      } @else {
-        <app-skeleton alto="24px" radio="var(--radio-pildora)" />
-      }
+      <div class="fila-veredicto">
+        @if (prediccion(); as prediccion) {
+          <p class="veredicto" [attr.data-banda]="prediccion.nivel">
+            <span class="rotulo mono">{{ rotulo() }}</span>
+            <span class="titular">Riesgo <span class="palabra">{{ prediccion.nivel }}</span></span>
+          </p>
+        } @else if (error()) {
+          <p class="meta">No se pudo calcular el riesgo.</p>
+        } @else {
+          <app-skeleton alto="44px" radio="var(--radio-boton)" />
+        }
+      </div>
 
-      <section>
-        <h3 class="rotulo meta">Segunda opinión</h3>
+      <section class="bloque">
+        <h3 class="titulo-bloque meta">Segunda opinión</h3>
         @if (opinion().length) {
-          <p class="lectura texto">
+          <p class="texto">
             @for (segmento of opinion(); track $index) {
               @if (segmento.clave) {
                 <strong>{{ segmento.texto }}</strong>
@@ -53,8 +62,8 @@ const MOTIVOS_VISIBLES = 3;
         }
       </section>
 
-      <section>
-        <h3 class="rotulo meta">Motivos principales</h3>
+      <section class="bloque">
+        <h3 class="titulo-bloque meta">Motivos principales</h3>
         @if (motivos().length) {
           <ul class="motivos">
             @for (motivo of motivos(); track motivo.motivo) {
@@ -70,14 +79,14 @@ const MOTIVOS_VISIBLES = 3;
         }
       </section>
 
-      <section>
-        <h3 class="rotulo meta">Factores del modelo</h3>
+      <section class="bloque">
+        <h3 class="titulo-bloque meta">Factores del modelo</h3>
         @if (factores().length) {
-          <ul class="factores">
-            @for (factor of factores(); track factor.etiqueta) {
-              <li>{{ frasePara(factor) }}</li>
-            }
-          </ul>
+          <app-factores-modelo
+            [factores]="factores()"
+            [metacritic]="juego().metacritic"
+            [promedio]="promedioMetacritic()"
+          />
         } @else {
           <p class="meta">Sin factores que mostrar.</p>
         }
@@ -90,7 +99,7 @@ const MOTIVOS_VISIBLES = 3;
       </dl>
 
       @if (muestraAfinidad()) {
-        <p class="meta mono" data-testid="columna-afinidad">
+        <p class="meta mono afinidad" data-testid="columna-afinidad">
           @if (generosAfines().length) {
             Dentro de tus géneros: {{ generosAfines().join(', ') }}
           } @else {
@@ -99,38 +108,91 @@ const MOTIVOS_VISIBLES = 3;
         </p>
       }
 
-      <button type="button" class="boton-fantasma" data-testid="quitar-comparar" (click)="comparar.quitar(juego().appid)">
-        Quitar
-      </button>
+      <div class="fila-accion">
+        <button type="button" class="boton-fantasma" data-testid="quitar-comparar" (click)="comparar.quitar(juego().appid)">
+          Quitar
+        </button>
+      </div>
     </article>
   `,
   styles: `
+    /* Dos niveles de subgrid (host y artículo) para heredar las filas de .columnas. */
+    :host,
     .columna {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--espacio-12);
-      padding: var(--espacio-16);
-      height: 100%;
+      display: grid;
+      grid-row: 1 / -1;
+      grid-template-rows: subgrid;
+    }
+    .columna {
+      background: var(--superficie-tarjeta);
+      border-radius: var(--radio-tarjeta);
+      overflow: hidden;
+      align-content: start;
+    }
+    .columna > *:not(app-portada) {
+      padding-inline: var(--espacio-16);
     }
     .nombre {
       font-size: var(--texto-body);
+      padding-top: var(--espacio-12);
     }
     .nombre a {
       text-decoration: none;
     }
+    .veredicto {
+      margin: 0;
+      padding-left: var(--espacio-12);
+      border-left: 4px solid;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .veredicto[data-banda='bajo'] {
+      border-color: var(--banda-bajo);
+    }
+    .veredicto[data-banda='medio'] {
+      border-color: var(--banda-medio);
+    }
+    .veredicto[data-banda='alto'] {
+      border-color: var(--banda-alto);
+    }
     .rotulo {
+      font-size: var(--texto-caption);
+      color: var(--texto-meta);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .titular {
+      font-size: var(--texto-subheading);
+    }
+    .veredicto[data-banda='bajo'] .palabra {
+      color: var(--banda-bajo);
+    }
+    .veredicto[data-banda='medio'] .palabra {
+      color: var(--banda-medio);
+    }
+    .veredicto[data-banda='alto'] .palabra {
+      color: var(--banda-alto);
+    }
+    .fila-veredicto,
+    .bloque,
+    .datos,
+    .afinidad,
+    .fila-accion {
+      padding-top: var(--espacio-12);
+    }
+    .titulo-bloque {
       font-size: var(--texto-caption);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-bottom: var(--espacio-8);
     }
     .texto {
-      font-size: var(--texto-body-sm);
       margin: 0;
+      font-size: var(--texto-body-sm);
+      line-height: var(--interlineado-largo);
     }
-    .motivos,
-    .factores {
+    .motivos {
       list-style: none;
       margin: 0;
       padding: 0;
@@ -181,13 +243,20 @@ const MOTIVOS_VISIBLES = 3;
     .datos dd {
       margin: 0;
     }
-    button {
-      margin-top: auto;
+    .afinidad {
+      margin: 0;
+    }
+    .fila-accion {
+      display: flex;
+      align-items: end;
+      padding-bottom: var(--espacio-16);
     }
   `,
 })
 export class ColumnaComparar {
   readonly juego = input.required<JuegoCatalogo>();
+  /** Promedio de Metacritic del catálogo, para el factor de la nota. */
+  readonly promedioMetacritic = input<number | null>(null);
 
   private readonly api = inject(NexplayApi);
   private readonly perfil = inject(PerfilStore);
@@ -235,5 +304,4 @@ export class ColumnaComparar {
   protected readonly metacritic = computed(() => textoMetacritic(this.juego().metacritic));
   protected readonly precio = computed(() => textoPrecio(this.juego()));
   protected readonly pct = porcentaje;
-  protected readonly frasePara = fraseFactor;
 }

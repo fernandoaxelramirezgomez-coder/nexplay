@@ -25,7 +25,6 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
         <dt class="meta">Lanzamiento</dt>
         <dd class="mono">{{ juego().fecha_lanzamiento ?? 'Sin fecha registrada' }}</dd>
       </dl>
-      <a class="boton-fantasma" [href]="juego().tienda_url" target="_blank" rel="noopener">Ver en Steam ↗</a>
     </section>
   `,
   styles: `
@@ -37,7 +36,7 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
       display: grid;
       grid-template-columns: auto 1fr;
       gap: var(--espacio-8) var(--espacio-24);
-      margin: 0 0 var(--espacio-16);
+      margin: 0;
     }
     dd {
       margin: 0;

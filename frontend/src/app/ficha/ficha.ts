@@ -4,8 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 
 import { NexplayApi } from '../api/nexplay-api';
-import { PildoraBanda } from '../compartido/pildora-banda';
-import { Portada } from '../compartido/portada';
+import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
 import { rotuloRiesgo } from '../dominio/etiqueta-riesgo';
@@ -14,13 +13,14 @@ import { fraseBanda, segundaOpinion } from '../dominio/segunda-opinion';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
+import { FactoresModelo } from './factores-modelo';
 import { MetadatosJuego } from './metadatos-juego';
 import { MotivosBarras } from './motivos-barras';
 
 @Component({
   selector: 'app-ficha',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Portada, PildoraBanda, Skeleton, MotivosBarras, MetadatosJuego],
+  imports: [RouterLink, PortadaAncha, Skeleton, MotivosBarras, MetadatosJuego, FactoresModelo],
   templateUrl: './ficha.html',
   styleUrl: './ficha.css',
 })
@@ -81,7 +81,9 @@ export class Ficha {
     if (!prediccion || !juego) {
       return [];
     }
-    return segundaOpinion(prediccion.nivel, this.explicacion()?.motivos ?? [], juego.metacritic);
+    // La frase de banda ya se muestra en el veredicto: aquí empieza en el motivo.
+    const completa = segundaOpinion(prediccion.nivel, this.explicacion()?.motivos ?? [], juego.metacritic);
+    return completa.slice(fraseBanda(prediccion.nivel).length);
   });
 
   protected readonly factores = computed(() => {

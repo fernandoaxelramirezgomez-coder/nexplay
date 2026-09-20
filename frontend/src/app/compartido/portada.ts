@@ -14,7 +14,7 @@ const RESPALDO =
   selector: 'app-portada',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="marco" [class.cargando]="estado() === 'cargando'">
+    <div class="marco" [class.cargando]="estado() === 'cargando'" [style.border-radius]="radio()">
       <img
         [src]="estado() === 'fallida' ? respaldo : src()"
         alt=""
@@ -28,9 +28,11 @@ const RESPALDO =
     </div>
   `,
   styles: `
+    :host {
+      display: block;
+    }
     .marco {
       aspect-ratio: 460 / 215;
-      border-radius: var(--radio-tarjeta);
       overflow: hidden;
       background: var(--superficie-tarjeta-hover);
     }
@@ -57,6 +59,8 @@ const RESPALDO =
 export class Portada {
   readonly src = input.required<string>();
   readonly prioritaria = input(false);
+  /** '0' cuando la tarjeta ya recorta las esquinas con su propio overflow. */
+  readonly radio = input('var(--radio-tarjeta)');
 
   protected readonly respaldo = RESPALDO;
   protected readonly estado = linkedSignal<string, 'cargando' | 'lista' | 'fallida'>({

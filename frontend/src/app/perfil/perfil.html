@@ -1,54 +1,66 @@
 <div class="perfil" data-testid="perfil">
-  <header class="encabezado">
-    <h1>Tu perfil</h1>
-    <p class="lectura">
-      Declara cómo juegas para ajustar la estimación. Es opcional: sin perfil, NexPlay usa un perfil neutro y la ficha
-      lo dice.
+  <header class="hero">
+    <h1>Ajusta la estimación a cómo juegas</h1>
+    <p class="lectura entrada">
+      Es opcional: sin perfil, NexPlay usa un perfil neutro y cada ficha lo dice. Con perfil, el riesgo se rotula
+      "Riesgo para tu perfil".
     </p>
     @if (resumen(); as texto) {
       <p class="meta activo" data-testid="perfil-resumen">{{ texto }}</p>
     }
   </header>
 
-  <app-tarjetas-opcion
-    nombre="biblioteca"
-    etiqueta="Tu biblioteca de Steam"
-    [opciones]="biblioteca"
-    [valor]="valores().biblioteca"
-    (valorCambio)="cambiar('biblioteca', $event)"
-  />
+  <div class="tarjetas">
+    <section class="tarjeta">
+      <app-tarjetas-opcion
+        nombre="biblioteca"
+        etiqueta="Tu biblioteca de Steam"
+        [opciones]="biblioteca"
+        [valor]="valores().biblioteca"
+        (valorCambio)="cambiar('biblioteca', $event)"
+      />
+    </section>
 
-  <app-tarjetas-opcion
-    nombre="horas"
-    etiqueta="Horas por semana disponibles para jugar"
-    [opciones]="horas"
-    [valor]="valores().horas"
-    (valorCambio)="cambiar('horas', $event)"
-  />
+    <section class="tarjeta">
+      <app-tarjetas-opcion
+        nombre="horas"
+        etiqueta="Horas por semana para jugar"
+        [opciones]="horas"
+        [valor]="valores().horas"
+        (valorCambio)="cambiar('horas', $event)"
+      />
+    </section>
 
-  <app-tarjetas-opcion
-    nombre="friccion"
-    etiqueta="Tolerancia a la fricción"
-    ayuda="Bugs, curva de aprendizaje, dificultad."
-    [opciones]="friccion"
-    [valor]="valores().friccion"
-    (valorCambio)="cambiar('friccion', $event)"
-  />
+    <section class="tarjeta">
+      <app-tarjetas-opcion
+        nombre="friccion"
+        etiqueta="Tolerancia a la fricción"
+        ayuda="Bugs, curva de aprendizaje, dificultad."
+        [opciones]="friccion"
+        [valor]="valores().friccion"
+        (valorCambio)="cambiar('friccion', $event)"
+      />
+    </section>
 
-  <app-tarjetas-opcion
-    nombre="plataforma"
-    etiqueta="Plataforma"
-    ayuda="El catálogo de NexPlay es solo de juegos de Steam. En otra plataforma, el lado del juego transfiere, pero no hay una fuente de entrenamiento propia: la ficha lo aclara."
-    [opciones]="plataformas"
-    [valor]="valores().plataforma"
-    (valorCambio)="cambiarPlataforma($event)"
-  />
+    <section class="tarjeta">
+      <app-tarjetas-opcion
+        nombre="plataforma"
+        etiqueta="Plataforma"
+        ayuda="El catálogo es solo de juegos de Steam. En otra plataforma, el lado del juego transfiere, pero no hay una fuente de entrenamiento propia: la ficha lo aclara."
+        [opciones]="plataformas"
+        [valor]="valores().plataforma"
+        (valorCambio)="cambiarPlataforma($event)"
+      />
+    </section>
 
-  <app-selector-generos
-    [generos]="catalogo.generos()"
-    [elegidos]="valores().generos"
-    (alternar)="alternarGenero($event)"
-  />
+    <section class="tarjeta ancha">
+      <app-selector-generos
+        [generos]="catalogo.generos()"
+        [elegidos]="valores().generos"
+        (alternar)="alternarGenero($event)"
+      />
+    </section>
+  </div>
 
   @if (error()) {
     <p class="error" role="alert" data-testid="perfil-error">{{ error() }}</p>

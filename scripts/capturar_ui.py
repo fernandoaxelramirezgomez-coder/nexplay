@@ -216,6 +216,18 @@ def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[s
             problemas.append(f"estante {banda}: el orden no coincide con el de la API")
         print(f"estante {banda}: {len(visible)} juegos, orden {'OK' if visible == esperado else 'DISTINTO'}")
 
+    # Estado al pasar el cursor: motivo principal y botón de comparar sobre la portada.
+    primera = pagina.get_by_test_id("tarjeta-juego").first
+    primera.hover()
+    pagina.wait_for_function(
+        "() => !(document.querySelector(\"[data-testid='tarjeta-motivo']\")?.textContent || '').includes('Buscando')",
+        timeout=_TIMEOUT_MS,
+    )
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "catalogo-hover.png")
+    print(f"hover:    catalogo-hover.png ({primera.get_by_test_id('tarjeta-motivo').inner_text()})")
+    pagina.mouse.move(0, 0)
+
     _recorrer_pagina(pagina)
     _esperar_quietud(pagina)
     ruta = destino / "catalogo.png"
@@ -267,18 +279,37 @@ def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
     # Wild Hearts: sin nota de Metacritic, así que no debe aparecer ese factor.
     pagina.locator(f"[data-testid='tarjeta-juego'][data-appid='{_APPID_FICHA}'] a").click()
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    pagina.get_by_test_id("segunda-opinion").get_by_text("arrepentimiento temprano").wait_for(timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_function(
+        "() => (document.querySelector(\"[data-testid='segunda-opinion'] p\")?.textContent || '').trim().length > 20",
+        timeout=_TIMEOUT_MS,
+    )
     factores = pagina.get_by_test_id("factores").inner_text()
     if "nota de Metacritic" in factores:
         problemas.append("ficha de Wild Hearts: muestra 'nota de Metacritic' aunque el juego no tiene nota")
-    if "cobertura de crítica especializada, por debajo del promedio del catálogo — aumenta" not in factores:
-        problemas.append("ficha de Wild Hearts: falta el factor de cobertura de crítica")
+    plano = " ".join(factores.lower().split())
+    if "cobertura de crítica especializada" not in plano or "aumenta el riesgo" not in plano:
+        problemas.append(f"ficha de Wild Hearts: falta el factor de cobertura de crítica ({plano[:120]})")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
     _esperar_quietud(pagina)
     ruta = destino / "ficha-wild-hearts.png"
     pagina.screenshot(path=ruta, full_page=True)
     print(f"ficha:    {ruta.relative_to(_RAIZ)} ({pagina.get_by_test_id('ficha-nombre').inner_text()})")
     problemas += _revisar_vocabulario(pagina, "ficha")
+
+    # Respaldo de la cabecera: si capsule_616x353 no existe, debe usar portada_url.
+    pagina.route("**/capsule_616x353.jpg", lambda ruta: ruta.abort())
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    try:
+        pagina.wait_for_function(
+            "() => (document.querySelector('app-portada-ancha img')?.currentSrc || '').includes('header.jpg')",
+            timeout=_TIMEOUT_MS,
+        )
+        print("respaldo: sin capsule_616x353, la cabecera cae a header.jpg")
+    except TiempoAgotado:
+        problemas.append("la cabecera no cae a portada_url cuando falta capsule_616x353")
+    pagina.unroute("**/capsule_616x353.jpg")
 
     # Entrada directa por URL y appid inexistente.
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
@@ -318,7 +349,9 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     pagina.get_by_test_id("crear-perfil").click()
 
     pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    if not pagina.url.rstrip("/").endswith("4200"):
+    try:
+        pagina.wait_for_url(lambda url: not url.rstrip("/").endswith("/perfil"), timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
         problemas.append(f"tras crear el perfil no volvió al catálogo ({pagina.url})")
     pagina.reload()
     try:
@@ -329,16 +362,16 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
 
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    pildora = pagina.get_by_test_id("pildora-banda").inner_text()
-    if "Riesgo para tu perfil" not in pildora:
-        problemas.append(f"con perfil declarado, la ficha sigue diciendo '{pildora}'")
+    veredicto = pagina.get_by_test_id("ficha-veredicto").inner_text()
+    if "riesgo para tu perfil" not in veredicto.lower():
+        problemas.append(f"con perfil declarado, el veredicto sigue diciendo '{veredicto.splitlines()[0]}'")
     afinidad = pagina.get_by_test_id("ficha-afinidad").inner_text()
     if "Dentro de tus géneros habituales" not in afinidad or "Acción" not in afinidad:
         problemas.append(f"la ficha no muestra la afinidad esperada ('{afinidad}')")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "ficha-con-perfil.png", full_page=True)
-    print(f"ficha:    ficha-con-perfil.png ({pildora}; {afinidad})")
+    print(f"ficha:    ficha-con-perfil.png ({veredicto.splitlines()[0]}; {afinidad})")
 
     # Los géneros no deben mover el riesgo: el modelo no los usa.
     base = {

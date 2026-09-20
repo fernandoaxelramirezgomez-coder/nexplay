@@ -4,10 +4,24 @@
   gap: var(--espacio-24);
 }
 
-.encabezado {
+/* Hero: la búsqueda es lo primero y lo más grande de la página. */
+.hero {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-8);
+  align-items: center;
+  gap: var(--espacio-16);
+  text-align: center;
+  padding: var(--espacio-24) 0;
+}
+
+.pregunta {
+  font-size: clamp(var(--texto-heading-sm), 4vw, var(--texto-heading));
+  max-width: 18ch;
+}
+
+.hero .meta {
+  margin: 0;
+  max-width: 60ch;
 }
 
 .aviso:empty {
@@ -16,27 +30,24 @@
 
 .aviso {
   margin: 0;
-  color: var(--texto);
-}
-
-.catalogo > app-estante + app-estante {
-  margin-top: var(--espacio-24);
 }
 
 .estante-cargando {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-16);
+  gap: var(--espacio-12);
 }
 
 .titulo-cargando {
-  max-width: 280px;
+  max-width: 220px;
 }
 
-.rejilla-cargando {
+.fila-cargando {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: 232px;
   gap: var(--espacio-16);
+  overflow: hidden;
 }
 
 .error {
@@ -45,4 +56,3 @@
   align-items: flex-start;
   gap: var(--espacio-12);
 }
-

@@ -14,55 +14,11 @@
       <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
     </section>
   } @else if (juego(); as juego) {
-    <header class="cabecera">
-      <div class="portada">
-        <app-portada [src]="juego.portada_url" [prioritaria]="true" />
-      </div>
-      <div class="titulos">
-        <h1 data-testid="ficha-nombre">{{ juego.nombre }}</h1>
+    <app-portada-ancha [appid]="juego.appid" [respaldo]="juego.portada_url" />
 
-        @if (errorRiesgo()) {
-          <p data-testid="ficha-riesgo-error">No se pudo calcular el riesgo. Revisa que la API esté corriendo.</p>
-        } @else if (cargando() || !prediccion()) {
-          <app-skeleton alto="28px" radio="var(--radio-pildora)" class="carga-pildora" />
-          <app-skeleton alto="48px" />
-        } @else {
-          <app-pildora-banda [banda]="prediccion()!.nivel" [rotulo]="rotulo()" />
-          <p class="lectura frase" data-testid="ficha-frase">
-            @for (segmento of frase(); track $index) {
-              @if (segmento.clave) {
-                <strong>{{ segmento.texto }}</strong>
-              } @else {
-                {{ segmento.texto }}
-              }
-            }
-          </p>
-          @if (bandaGeneralDistinta(); as general) {
-            <p class="meta" data-testid="ficha-banda-general">
-              Con el perfil neutro del catálogo, este juego aparece como riesgo general {{ general }}.
-            </p>
-          }
-          @if (!perfil.hayPerfil()) {
-            <p class="meta">
-              <a routerLink="/perfil">Crea tu perfil</a> para ajustar esta estimación a cómo juegas.
-            </p>
-          }
-          @if (prediccion()!.nota_plataforma; as nota) {
-            <p class="meta nota">{{ nota }}</p>
-          }
-        }
-
-        @if (muestraAfinidad()) {
-          <p class="meta mono" data-testid="ficha-afinidad">
-            @if (generosAfines().length) {
-              Dentro de tus géneros habituales: {{ generosAfines().join(', ') }}
-            } @else {
-              Fuera de tus géneros habituales
-            }
-          </p>
-          <p class="meta">Tus gustos no cambian el riesgo estimado: el modelo no los usa.</p>
-        }
-
+    <header class="titulos">
+      <h1 data-testid="ficha-nombre">{{ juego.nombre }}</h1>
+      <div class="acciones">
         <button
           type="button"
           class="boton-fantasma"
@@ -72,17 +28,25 @@
         >
           {{ enComparacion() ? 'En comparación' : 'Comparar' }}
         </button>
-        <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
+        <a class="boton-fantasma" [href]="juego.tienda_url" target="_blank" rel="noopener">Ver en Steam ↗</a>
       </div>
     </header>
+    <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
 
-    <section class="tarjeta" data-testid="segunda-opinion">
-      <h2>Segunda opinión</h2>
-      @if (esperandoOpinion() || !opinion().length) {
-        <app-skeleton alto="72px" />
-      } @else {
-        <p class="lectura">
-          @for (segmento of opinion(); track $index) {
+    @if (errorRiesgo()) {
+      <p class="veredicto-error" data-testid="ficha-riesgo-error">
+        No se pudo calcular el riesgo. Revisa que la API esté corriendo.
+      </p>
+    } @else if (cargando() || !prediccion()) {
+      <app-skeleton alto="120px" />
+    } @else {
+      <section class="veredicto" [attr.data-banda]="prediccion()!.nivel" data-testid="ficha-veredicto">
+        <p class="rotulo mono">{{ rotulo() }}</p>
+        <p class="titular">
+          Riesgo <span class="palabra">{{ prediccion()!.nivel }}</span> de arrepentimiento temprano
+        </p>
+        <p class="lectura frase" data-testid="ficha-frase">
+          @for (segmento of frase(); track $index) {
             @if (segmento.clave) {
               <strong>{{ segmento.texto }}</strong>
             } @else {
@@ -90,31 +54,75 @@
             }
           }
         </p>
-      }
-    </section>
-
-    @if (cargandoMotivos()) {
-      <section class="tarjeta"><app-skeleton alto="120px" /></section>
-    } @else {
-      <app-motivos-barras [explicacion]="explicacion()" />
+        @if (bandaGeneralDistinta(); as general) {
+          <p class="meta" data-testid="ficha-banda-general">
+            Con el perfil neutro del catálogo aparece como riesgo general {{ general }}.
+          </p>
+        }
+        @if (!perfil.hayPerfil()) {
+          <p class="meta">
+            <a routerLink="/perfil">Crea tu perfil</a> para ajustar esta estimación a cómo juegas.
+          </p>
+        }
+        @if (prediccion()!.nota_plataforma; as nota) {
+          <p class="meta nota">{{ nota }}</p>
+        }
+        @if (muestraAfinidad()) {
+          <p class="meta mono" data-testid="ficha-afinidad">
+            @if (generosAfines().length) {
+              Dentro de tus géneros habituales: {{ generosAfines().join(', ') }}
+            } @else {
+              Fuera de tus géneros habituales
+            }
+          </p>
+        }
+      </section>
     }
 
-    <section class="tarjeta" data-testid="factores">
-      <h2>Principales factores del modelo</h2>
-      @if (cargando()) {
-        <app-skeleton alto="64px" />
-      } @else if (factores().length) {
-        <ul class="factores">
-          @for (factor of factores(); track factor.etiqueta) {
-            <li class="lectura">{{ frasePara(factor) }}</li>
+    <div class="columnas">
+      <div class="principal">
+        <section class="tarjeta" data-testid="segunda-opinion">
+          <h2>Segunda opinión</h2>
+          @if (esperandoOpinion() || !opinion().length) {
+            <app-skeleton alto="72px" />
+          } @else {
+            <p class="lectura">
+              @for (segmento of opinion(); track $index) {
+                {{ segmento.texto }}
+              }
+            </p>
           }
-        </ul>
-      } @else {
-        <p class="meta">Sin factores que mostrar para este juego.</p>
-      }
-    </section>
+        </section>
 
-    <app-metadatos-juego [juego]="juego" />
+        @if (cargandoMotivos()) {
+          <section class="tarjeta"><app-skeleton alto="160px" /></section>
+        } @else {
+          <app-motivos-barras [explicacion]="explicacion()" />
+        }
+      </div>
+
+      <aside class="lateral">
+        <app-metadatos-juego [juego]="juego" />
+
+        <section class="tarjeta" data-testid="factores">
+          <h2>Qué mueve esta estimación</h2>
+          @if (cargando()) {
+            <app-skeleton alto="96px" />
+          } @else if (factores().length) {
+            <app-factores-modelo
+              [factores]="factores()"
+              [metacritic]="juego.metacritic"
+              [promedio]="catalogo.promedioMetacritic()"
+            />
+          } @else {
+            <p class="meta">Sin factores que mostrar para este juego.</p>
+          }
+          @if (muestraAfinidad()) {
+            <p class="meta nota-gustos">Tus gustos no cambian el riesgo estimado: el modelo no los usa.</p>
+          }
+        </section>
+      </aside>
+    </div>
   } @else {
     <section class="tarjeta"><app-skeleton alto="200px" /></section>
   }
