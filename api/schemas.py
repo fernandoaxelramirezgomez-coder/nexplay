@@ -2,7 +2,7 @@
 del contrato: cualquier cambio aquí es un cambio de contrato con el cliente (UI)."""
 
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -193,6 +193,33 @@ class SolicitudComentario(BaseModel):
         if not limpio:
             raise ValueError("el comentario no puede ser solo espacios")
         return limpio
+
+
+class MensajeChat(BaseModel):
+    rol: Literal["usuario", "nia"]
+    contenido: str = Field(..., min_length=1, max_length=500)
+
+
+class SolicitudNia(BaseModel):
+    usuario: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Id anónimo del navegador; solo se usa para el límite de frecuencia",
+    )
+    appid: int
+    mensajes: list[MensajeChat] = Field(..., min_length=1, max_length=10)
+    perfil: Optional[PerfilJugador] = Field(
+        None, description="Si viene, la banda del contexto es la de ese perfil; si no, la del perfil neutro"
+    )
+
+
+class RespuestaNia(BaseModel):
+    respuesta: str
+    modo: Literal["openai", "demostracion"]
+    modelo: Optional[str] = Field(None, description="Modelo usado; None en modo demostración")
+    aviso: Optional[str] = Field(None, description="Qué mostrar cuando la respuesta no vino del modelo")
 
 
 class ExplicacionJuego(BaseModel):

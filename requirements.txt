@@ -1,3 +1,7 @@
 fastapi==0.141.1
 uvicorn[standard]==0.53.0
 pydantic==2.13.5
+pydantic-settings==2.15.0
+# Solo para el chat de Nia; se importa de forma perezosa, así que sin el
+# paquete la API arranca igual y Nia queda en modo demostración.
+openai==3.16.2

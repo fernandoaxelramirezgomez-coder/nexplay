@@ -7,10 +7,12 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import catalogo, limites, scoring, valoraciones
+from . import catalogo, limites, nia, scoring, valoraciones
+from .config import configuracion
 from .schemas import (
     Comentario,
     ExplicacionJuego,
+    RespuestaNia,
     FormularioAlta,
     JuegoCatalogo,
     NivelFriccion,
@@ -19,6 +21,7 @@ from .schemas import (
     PrediccionRiesgo,
     ResumenValoraciones,
     SolicitudComentario,
+    SolicitudNia,
     SolicitudPrediccion,
     SolicitudValoracion,
 )
@@ -166,3 +169,26 @@ def comentar(appid: int, solicitud: SolicitudComentario, peticion: Request) -> l
         Comentario(**comentario)
         for comentario in valoraciones.agregar_comentario(appid, solicitud.usuario, solicitud.texto)
     ]
+
+
+# Nia consulta un modelo de pago: el tope por ventana es un límite de costo.
+_LIMITE_NIA = limites.LimitePorVentana(maximo=configuracion.nexplay_nia_por_minuto, ventana_segundos=60.0)
+
+
+@app.post("/nia", response_model=RespuestaNia)
+def preguntar_a_nia(solicitud: SolicitudNia, peticion: Request) -> RespuestaNia:
+    _exigir_juego(solicitud.appid)
+
+    ip = peticion.client.host if peticion.client else "sin-ip"
+    espera = _LIMITE_NIA.revisar(f"nia-usuario:{solicitud.usuario}", f"nia-ip:{ip}")
+    if espera:
+        logger.info("pregunta a Nia rechazada por frecuencia appid=%s", solicitud.appid)
+        raise HTTPException(
+            status_code=429,
+            detail="Nia está recibiendo muchas preguntas seguidas. Espera un momento.",
+            headers={"Retry-After": str(max(1, int(espera) + 1))},
+        )
+
+    respuesta = nia.responder(solicitud.appid, solicitud.mensajes, solicitud.perfil)
+    logger.info("respuesta de Nia appid=%s modo=%s", solicitud.appid, respuesta["modo"])
+    return RespuestaNia(**respuesta)
