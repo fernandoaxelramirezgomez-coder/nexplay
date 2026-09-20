@@ -4,10 +4,10 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import catalogo, scoring
+from . import catalogo, scoring, valoraciones
 from .schemas import (
     ExplicacionJuego,
     FormularioAlta,
@@ -16,7 +16,9 @@ from .schemas import (
     NivelRiesgo,
     PerfilJugador,
     PrediccionRiesgo,
+    ResumenValoraciones,
     SolicitudPrediccion,
+    SolicitudValoracion,
 )
 
 app = FastAPI(
@@ -99,3 +101,34 @@ def explicar_juego(appid: int) -> ExplicacionJuego:
     if juego is None:
         raise HTTPException(status_code=404, detail="appid no encontrado en el catálogo")
     return ExplicacionJuego(appid=appid, nombre=juego.nombre, **scoring.motivos_frecuentes(appid))
+
+
+# El id de usuario viaja como parámetro: es anónimo, lo genera el navegador y sirve para
+# saber cuál valoración es suya, no para autenticar a nadie.
+_USUARIO = Query(..., min_length=8, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
+
+
+def _exigir_juego(appid: int) -> None:
+    if catalogo.obtener(appid) is None:
+        raise HTTPException(status_code=404, detail="appid no encontrado en el catálogo")
+
+
+@app.get("/valoraciones/{appid}", response_model=ResumenValoraciones)
+def ver_valoraciones(appid: int, usuario: str = _USUARIO) -> ResumenValoraciones:
+    _exigir_juego(appid)
+    return ResumenValoraciones(**valoraciones.resumen(appid, usuario))
+
+
+@app.put("/valoraciones/{appid}", response_model=ResumenValoraciones)
+def valorar(appid: int, solicitud: SolicitudValoracion) -> ResumenValoraciones:
+    _exigir_juego(appid)
+    logger.info("valoración appid=%s util=%s con_comentario=%s", appid, solicitud.util, solicitud.comentario is not None)
+    return ResumenValoraciones(
+        **valoraciones.guardar(appid, solicitud.usuario, solicitud.util, solicitud.comentario)
+    )
+
+
+@app.delete("/valoraciones/{appid}", response_model=ResumenValoraciones)
+def quitar_valoracion(appid: int, usuario: str = _USUARIO) -> ResumenValoraciones:
+    _exigir_juego(appid)
+    return ResumenValoraciones(**valoraciones.borrar(appid, usuario))

@@ -143,6 +143,43 @@ class MotivoInsatisfaccion(BaseModel):
     )
 
 
+class Valoracion(BaseModel):
+    """La valoración de quien pregunta. El comentario es privado: no se devuelve a nadie más."""
+
+    util: bool
+    comentario: Optional[str] = None
+    actualizado: str
+
+
+class SolicitudValoracion(BaseModel):
+    usuario: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Id anónimo generado por el navegador; identifica, no autentica",
+    )
+    util: bool = Field(..., description="True si la segunda opinión le sirvió")
+    comentario: Optional[str] = Field(
+        None, max_length=500, description="Privado: solo lo ve quien lo escribió. None borra el comentario"
+    )
+
+    @field_validator("comentario")
+    @classmethod
+    def _limpiar_comentario(cls, valor: Optional[str]) -> Optional[str]:
+        if valor is None:
+            return None
+        return valor.strip() or None
+
+
+class ResumenValoraciones(BaseModel):
+    appid: int
+    utiles: int = Field(..., description="Cuántas personas marcaron la segunda opinión como útil")
+    no_utiles: int
+    total: int
+    mia: Optional[Valoracion] = Field(None, description="La del usuario que pregunta, si tiene una")
+
+
 class ExplicacionJuego(BaseModel):
     appid: int
     nombre: str
