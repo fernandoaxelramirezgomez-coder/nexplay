@@ -24,6 +24,19 @@ Si alguna vez hay que regenerar el lockfile, npm 10.9 falla con
 `Cannot read properties of null (reading 'edgesOut')` al resolver las dependencias de
 Vitest; `npx npm@11.19.1 install` lo resuelve. `npm ci` con npm 10 funciona bien.
 
+## Qué hay en la ficha
+
+Además del riesgo, los motivos y los factores, cada ficha tiene:
+
+- **Valoración de la segunda opinión**: 👍 / 👎 (uno por persona y juego, se puede cambiar
+  o quitar) con el conteo público.
+- **Hilo de comentarios**, público y anónimo. Solo se agregan; no se editan ni se borran
+  desde la app. La moderación es `moderar_comentarios.py`, desde la terminal.
+- **Nia**, el chat del juego. Sin clave de OpenAI configurada responde en modo
+  demostración, con reglas sobre los mismos datos, y lo dice en pantalla.
+
+La identidad es un id anónimo en `localStorage` (`UsuarioStore`): identifica, no autentica.
+
 ## Deuda conocida
 
 - **La cabecera de la ficha arma una URL de Steam en el frontend**

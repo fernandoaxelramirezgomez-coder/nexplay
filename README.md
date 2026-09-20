@@ -104,6 +104,10 @@ api/                módulos de la API
   schemas.py          contratos Pydantic de entrada y salida
   scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
   catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
+  valoraciones.py     votos y hilo de comentarios (base propia, datos/valoraciones.db)
+  nia.py              el chat: contexto del juego, reglas de vocabulario y modo demostración
+  config.py           variables de .env (clave y modelo de Nia, topes)
+  limites.py          límite de frecuencia en memoria, por usuario e IP
 ui/                 UI en Gradio (consume la API por HTTP)
   app.py              layout y llamadas HTTP
   theme.py            identidad visual: tema de gr.themes + CSS propio
@@ -122,6 +126,10 @@ extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que con
 entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
 entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
 preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
+verificar_bandas.py    compara las bandas de los 83 juegos contra docs/bandas_referencia.json
+exportar_valoraciones.py  exporta votos y comentarios a CSV (uso local)
+moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
+.env.example           plantilla de variables; el .env real no se versiona
 requirements-dev.txt   opcional: Playwright para scripts/capturar_ui.py; el notebook y preparar_entorno.py no lo usan
 ```
 
@@ -137,6 +145,18 @@ correr la ingesta de Steam.
   permitidos para desarrollo local.
 - `NEXPLAY_API_URL`: URL de la API que consume `ui/app.py`. Por defecto
   `http://localhost:8000`.
+- `NEXPLAY_VALORACIONES_DB`: dónde vive la base de valoraciones y comentarios. Por
+  defecto `datos/valoraciones.db`.
+- `NEXPLAY_COMENTARIOS_POR_MINUTO` (3) y `NEXPLAY_NIA_POR_MINUTO` (10): topes por usuario
+  e IP, en memoria.
+- `OPENAI_API_KEY` y `NEXPLAY_MODELO_NIA`: la clave y el modelo del chat de Nia. Vacíos,
+  Nia responde en modo demostración. `NEXPLAY_NIA_MAX_TOKENS` (400) y
+  `NEXPLAY_NIA_TIMEOUT` (20) acotan la respuesta.
+
+Todo eso puede ir en un `.env` en la raíz: copia [.env.example](.env.example), que está
+versionado y vacío. **`.env` no se versiona** (está en `.gitignore`) y la clave de OpenAI
+**nunca va en un archivo del repo**: en el despliegue se carga como secreto del proveedor
+(*Repository secrets* en Hugging Face Spaces, *Environment* en Render).
 
 ## Endpoints
 
@@ -246,6 +266,56 @@ esas menciona al menos una de las seis categorías. `frecuencia` se calcula sobr
 reseñas clasificadas, no sobre `n_casos` — con cobertura parcial, dividir sobre el total
 se ve engañosamente bajo. Con menos de 5 casos `Y=1`, `motivos` viene vacío: no hay
 muestra para decir algo confiable.
+
+### Valoraciones y comentarios de la segunda opinión
+
+Viven en `datos/valoraciones.db`, aparte de `nexplay.db`. La identidad es un id anónimo
+que genera el navegador y guarda en `localStorage`: **identifica, no autentica**.
+
+- `GET /valoraciones/{appid}?usuario=` → `{ appid, utiles, no_utiles, total, mia }`. El
+  conteo es público; `mia` es el voto de quien pregunta.
+- `PUT /valoraciones/{appid}` con `{ usuario, util }` → crea o cambia el voto (uno por
+  persona y juego). `DELETE` con `?usuario=` lo quita.
+- `GET /comentarios/{appid}` → hilo público, del más viejo al más nuevo, con `texto` y
+  `creado`. **Nunca devuelve el id de quien escribió.** Máximo 100.
+- `POST /comentarios/{appid}` con `{ usuario, texto }` (hasta 500 caracteres) → agrega uno
+  al final; no se editan ni se borran desde la app. Pasado el tope por minuto responde
+  429 con `Retry-After`.
+
+### `POST /nia`
+
+El chat de la ficha. Recibe `{ usuario, appid, mensajes, perfil? }` (hasta 10 mensajes de
+500 caracteres) y devuelve `{ respuesta, modo, modelo, aviso }`.
+
+El backend arma el contexto con los datos reales de ese juego (banda, motivos con sus
+porcentajes, Metacritic, precio, géneros) y el prompt de sistema fija el vocabulario del
+proyecto: "arrepentimiento temprano" y nunca "abandono", señal proxy, bandas en vez de
+probabilidades, y nada de recomendar comprar o no comprar.
+
+Sin `OPENAI_API_KEY` o sin `NEXPLAY_MODELO_NIA` —y también si la llamada falla— responde
+en **modo demostración**: la misma información armada con reglas, marcada como tal en la
+respuesta y en pantalla.
+
+**Para probar el modo con OpenAI real:** pon la clave y el modelo en `.env`, reinicia la
+API y hazle a Nia una pregunta *fuera de las reglas*, por ejemplo "¿me lo recomiendas?" o
+"¿lo compro?". La respuesta debe describir los datos y devolver la decisión a quien
+pregunta, sin recomendar la compra. Es la forma de confirmar que el prompt de sistema
+también frena al modelo real, no solo al modo demostración.
+
+## Contenido de usuarios y moderación
+
+- **`datos/valoraciones.db` no se regenera.** `preparar_entorno.py` reconstruye
+  `nexplay.db`, pero esta base es contenido de quienes usan la app y no está en ningún
+  release. En un contenedor el disco es efímero: en el despliegue necesita un volumen
+  persistente (un disco en Render, `/data` en Spaces) o las valoraciones se pierden en
+  cada reinicio. Respaldarla es copiar el archivo.
+- `python exportar_valoraciones.py` genera dos CSV en `extracto/`: votos y comentarios.
+  El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
+- `python moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
+  `--borrar ID` elimina uno. **Es el único mecanismo de moderación**: la API no expone
+  nada para borrar.
+- El id anónimo no es autenticación: cualquiera puede mandar otro id y editar esa
+  valoración. La app lo advierte antes de comentar y conviene no guardar nada sensible.
 
 ## Regenerar los datos publicados (mantenedores)
 
