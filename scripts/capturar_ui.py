@@ -324,6 +324,167 @@ def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+# Dos identidades de prueba para el hilo: el id anónimo vive en localStorage, así que
+# cambiarlo es cambiar de persona sin necesidad de otro navegador.
+_USUARIO_A = "captura-hilo-a1"
+_USUARIO_B = "captura-hilo-b2"
+_TEXTO_A = "comentario de prueba <b>con etiquetas</b>"
+_TEXTO_A_EDITADO = "comentario de prueba, ya corregido"
+
+
+def _identificarse(pagina: Page, url: str, usuario: str) -> None:
+    """Deja ese id anónimo en localStorage y vuelve a abrir la ficha con él."""
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.evaluate("id => localStorage.setItem('nexplay.usuario.v1', id)", usuario)
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("hilo-comentarios").wait_for(state="visible", timeout=_TIMEOUT_MS)
+
+
+def _burbuja(pagina: Page, id_comentario: str):
+    """Por id, no por texto: al editar, el texto pasa a estar dentro de un textarea."""
+    return pagina.locator(f"[data-testid='comentario'][data-id='{id_comentario}']")
+
+
+def _esperar_burbuja(pagina: Page, texto: str, problemas: list[str], que: str) -> str | None:
+    """Espera a que aparezca una burbuja con ese texto y devuelve su id."""
+    try:
+        burbuja = pagina.locator("[data-testid='comentario']").filter(has_text=texto).last
+        burbuja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        return burbuja.get_attribute("data-id")
+    except TiempoAgotado:
+        aviso = pagina.get_by_test_id("hilo-comentarios").inner_text()
+        problemas.append(f"{que}: el comentario no apareció en el hilo ({' '.join(aviso.split())[:160]})")
+        return None
+
+
+def _esperar_conteo(pagina: Page, id_comentario: str, esperado: str, accion, problemas: list[str], que: str) -> None:
+    accion()
+    try:
+        pagina.wait_for_function(
+            "([id, n]) => document.querySelector(`[data-id='${id}'] [data-testid='comentario-reacciones']`)"
+            "?.textContent.trim() === n",
+            arg=[id_comentario, esperado],
+            timeout=_TIMEOUT_MS,
+        )
+    except TiempoAgotado:
+        visto = pagina.locator(f"[data-id='{id_comentario}'] [data-testid='comentario-reacciones']").inner_text()
+        problemas.append(f"{que}: el conteo quedó en {visto.strip()} y se esperaba {esperado}")
+
+
+def _angular_hilo(pagina: Page, url: str, destino: Path) -> list[str]:
+    """Editar, eliminar y reaccionar en el hilo, con dos identidades distintas."""
+    problemas = []
+    _identificarse(pagina, url, _USUARIO_A)
+
+    pagina.get_by_test_id("comentario-nuevo").fill(_TEXTO_A)
+    pagina.get_by_test_id("enviar-comentario").click()
+    id_comentario = _esperar_burbuja(pagina, "comentario de prueba", problemas, "publicar")
+    if id_comentario is None:
+        return problemas
+
+    mio = _burbuja(pagina, id_comentario)
+    # El texto con etiquetas tiene que verse como texto, no convertirse en marcado.
+    if mio.locator("b").count():
+        problemas.append("el hilo interpretó el HTML del comentario en vez de escaparlo")
+    if "<b>" not in mio.inner_text():
+        problemas.append(f"el comentario no muestra las etiquetas como texto ({mio.inner_text()[:80]})")
+    if mio.get_by_test_id("comentario-editar").count() != 1:
+        problemas.append("el comentario propio no ofrece 'Editar'")
+
+    # Editar: cambia el texto y aparece "(editado)".
+    mio.get_by_test_id("comentario-editar").click()
+    mio.get_by_test_id("comentario-editor").fill(_TEXTO_A_EDITADO)
+    _esperar_quietud(pagina)
+    ruta = destino / "hilo-editando.png"
+    pagina.get_by_test_id("hilo-comentarios").screenshot(path=ruta)
+    print(f"hilo:     {ruta.relative_to(_RAIZ)} (editor en línea abierto)")
+    mio.get_by_test_id("comentario-guardar-edicion").click()
+    try:
+        pagina.wait_for_function(
+            "([id, texto]) => document.querySelector(`[data-id='${id}'] [data-testid='comentario-editado']`)"
+            " && document.querySelector(`[data-id='${id}']`).textContent.includes(texto)",
+            arg=[id_comentario, _TEXTO_A_EDITADO],
+            timeout=_TIMEOUT_MS,
+        )
+        print("hilo:     el dueño edita su comentario y queda marcado como '(editado)'")
+    except TiempoAgotado:
+        problemas.append(f"editar: el comentario no quedó actualizado ({mio.inner_text()[:120]})")
+        return problemas
+    if "<b>" in mio.inner_text():
+        problemas.append("el texto viejo siguió en pantalla tras editar")
+    if mio.locator("[data-testid='comentario-editor']").count():
+        problemas.append("tras guardar, el editor en línea sigue abierto")
+
+    # Reaccionar: alterna y el conteo lo sigue.
+    reaccion = mio.get_by_test_id("comentario-reaccion")
+    _esperar_conteo(pagina, id_comentario, "1", reaccion.click, problemas, "reaccionar")
+    if reaccion.get_attribute("aria-pressed") != "true":
+        problemas.append("tras reaccionar, el botón no queda marcado como activo")
+    _esperar_quietud(pagina)
+    ruta = destino / "hilo-comentario-propio.png"
+    pagina.get_by_test_id("hilo-comentarios").screenshot(path=ruta)
+    print(f"hilo:     {ruta.relative_to(_RAIZ)} (editado, con reacción propia)")
+
+    _esperar_conteo(pagina, id_comentario, "0", reaccion.click, problemas, "quitar la reacción")
+    if reaccion.get_attribute("aria-pressed") != "false":
+        problemas.append("al quitar la reacción, el botón sigue marcado como activo")
+
+    # La otra persona: ve el comentario, puede reaccionar, no puede editarlo.
+    _identificarse(pagina, url, _USUARIO_B)
+    ajeno = _burbuja(pagina, id_comentario)
+    ajeno.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if ajeno.get_by_test_id("comentario-editar").count():
+        problemas.append("un comentario ajeno ofrece 'Editar'")
+    if ajeno.get_by_test_id("comentario-eliminar").count():
+        problemas.append("un comentario ajeno ofrece 'Eliminar'")
+    if ajeno.get_by_test_id("comentario-editado").count() != 1:
+        problemas.append("la otra persona no ve la marca '(editado)'")
+    _esperar_conteo(
+        pagina, id_comentario, "1", ajeno.get_by_test_id("comentario-reaccion").click, problemas, "reaccionar como otro"
+    )
+    _esperar_quietud(pagina)
+    ruta = destino / "hilo-visto-por-otro.png"
+    pagina.get_by_test_id("hilo-comentarios").screenshot(path=ruta)
+    print(f"hilo:     {ruta.relative_to(_RAIZ)} (sin Editar ni Eliminar, con reacción ajena)")
+
+    # De vuelta como el dueño: la reacción del otro cuenta, pero no es suya.
+    _identificarse(pagina, url, _USUARIO_A)
+    mio = _burbuja(pagina, id_comentario)
+    mio.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    conteo = mio.get_by_test_id("comentario-reacciones").inner_text().strip()
+    if conteo != "1":
+        problemas.append(f"el conteo de reacciones no refleja a la otra persona ({conteo})")
+    if mio.get_by_test_id("comentario-reaccion").get_attribute("aria-pressed") != "false":
+        problemas.append("la reacción ajena aparece como propia")
+
+    # Eliminar: primero pide confirmación, y solo entonces se va.
+    mio.get_by_test_id("comentario-eliminar").click()
+    mio.get_by_test_id("comentario-confirmar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    _esperar_quietud(pagina)
+    ruta = destino / "hilo-confirmar-eliminar.png"
+    pagina.get_by_test_id("hilo-comentarios").screenshot(path=ruta)
+    print(f"hilo:     {ruta.relative_to(_RAIZ)} (confirmación antes de eliminar)")
+
+    mio.get_by_test_id("comentario-cancelar-eliminar").click()
+    if _burbuja(pagina, id_comentario).count() != 1:
+        problemas.append("cancelar la confirmación borró el comentario igual")
+
+    mio.get_by_test_id("comentario-eliminar").click()
+    mio.get_by_test_id("comentario-confirmar-eliminar").click()
+    try:
+        pagina.wait_for_function(
+            "id => !document.querySelector(`[data-testid='comentario'][data-id='${id}']`)",
+            arg=id_comentario,
+            timeout=_TIMEOUT_MS,
+        )
+        print("hilo:     el dueño elimina su comentario y desaparece del hilo")
+    except TiempoAgotado:
+        problemas.append("el comentario propio no desapareció tras confirmar la eliminación")
+
+    problemas += _revisar_vocabulario(pagina, "hilo")
+    return problemas
+
+
 def _nivel_api(api: str, formulario: dict, appid: int) -> str:
     """Puntúa un appid con un perfil derivado por la API, para comparar niveles."""
     cuerpo = json.dumps(formulario).encode()
@@ -462,6 +623,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
+        + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
     )

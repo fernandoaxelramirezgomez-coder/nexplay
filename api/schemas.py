@@ -170,13 +170,22 @@ class ResumenValoraciones(BaseModel):
 
 
 class Comentario(BaseModel):
-    """Entrada del hilo público. Nunca lleva el id de quien la escribió."""
+    """Entrada del hilo público. Nunca lleva el id de quien la escribió: `es_mio` ya
+    responde lo único que el cliente necesita saber de esa identidad."""
 
+    id: int
     texto: str
-    creado: str
+    creado: str = Field(..., description="Cuándo apareció en el hilo; no cambia al editar")
+    actualizado: Optional[str] = Field(None, description="Cuándo se editó por última vez")
+    editado: bool = False
+    reacciones: int = Field(0, description="Cuántas personas le dieron pulgar arriba")
+    reaccione_mia: bool = Field(False, description="Si quien pregunta ya reaccionó")
+    es_mio: bool = Field(False, description="Si lo escribió quien pregunta; solo entonces puede editarlo")
 
 
-class SolicitudComentario(BaseModel):
+class _TextoComentario(BaseModel):
+    """Lo común entre publicar y editar: el mismo tope de 500 y el mismo id anónimo."""
+
     usuario: str = Field(
         ...,
         min_length=8,
@@ -193,6 +202,30 @@ class SolicitudComentario(BaseModel):
         if not limpio:
             raise ValueError("el comentario no puede ser solo espacios")
         return limpio
+
+
+class SolicitudComentario(_TextoComentario):
+    """POST /comentarios/{appid}: agrega uno al final del hilo."""
+
+
+class SolicitudEdicionComentario(_TextoComentario):
+    """PUT /comentarios/{appid}/{id}: solo el dueño cambia su propio texto."""
+
+
+class SolicitudReaccion(BaseModel):
+    usuario: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Id anónimo del navegador; una reacción por persona y comentario",
+    )
+
+
+class ReaccionComentario(BaseModel):
+    comentario_id: int
+    reacciones: int
+    reaccione_mia: bool
 
 
 class MensajeChat(BaseModel):

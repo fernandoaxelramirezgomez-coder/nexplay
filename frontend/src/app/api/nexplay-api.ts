@@ -11,6 +11,7 @@ import {
   JuegoCatalogo,
   PerfilJugador,
   PrediccionRiesgo,
+  ReaccionComentario,
   RespuestaNia,
   ResumenValoraciones,
   SolicitudComentario,
@@ -61,13 +62,30 @@ export class NexplayApi {
     return this.http.delete<ResumenValoraciones>(`${this.base}/valoraciones/${appid}`, { params });
   }
 
-  comentarios(appid: number): Observable<Comentario[]> {
-    return this.http.get<Comentario[]>(`${this.base}/comentarios/${appid}`);
+  /** El usuario va en la consulta solo para marcar cuáles son suyos y si ya reaccionó. */
+  comentarios(appid: number, usuario: string): Observable<Comentario[]> {
+    const params = new HttpParams().set('usuario', usuario);
+    return this.http.get<Comentario[]>(`${this.base}/comentarios/${appid}`, { params });
   }
 
   /** Devuelve el hilo completo ya con el comentario nuevo al final. */
   comentar(appid: number, solicitud: SolicitudComentario): Observable<Comentario[]> {
     return this.http.post<Comentario[]>(`${this.base}/comentarios/${appid}`, solicitud);
+  }
+
+  /** Solo el dueño: la API responde 403 si el comentario es de otra persona. */
+  editarComentario(appid: number, id: number, solicitud: SolicitudComentario): Observable<Comentario[]> {
+    return this.http.put<Comentario[]>(`${this.base}/comentarios/${appid}/${id}`, solicitud);
+  }
+
+  borrarComentario(appid: number, id: number, usuario: string): Observable<Comentario[]> {
+    const params = new HttpParams().set('usuario', usuario);
+    return this.http.delete<Comentario[]>(`${this.base}/comentarios/${appid}/${id}`, { params });
+  }
+
+  /** Alterna el pulgar arriba y devuelve el conteo ya actualizado de ese comentario. */
+  reaccionar(appid: number, id: number, usuario: string): Observable<ReaccionComentario> {
+    return this.http.put<ReaccionComentario>(`${this.base}/comentarios/${appid}/${id}/reaccion`, { usuario });
   }
 
   preguntarANia(solicitud: SolicitudNia): Observable<RespuestaNia> {

@@ -129,18 +129,35 @@ export interface ResumenValoraciones {
   mia: Valoracion | null;
 }
 
-/** GET/POST /comentarios/{appid}: hilo público, del más viejo al más nuevo y sin identidad. */
+/** Hilo público de /comentarios/{appid}, del más viejo al más nuevo y sin identidad:
+ * de quién es cada uno solo llega resumido en `es_mio`. */
 export interface Comentario {
+  id: number;
   texto: string;
+  /** Cuándo apareció en el hilo; no cambia al editar. */
   creado: string;
+  /** Cuándo se editó por última vez, o null. Es la fecha que se muestra si existe. */
+  actualizado: string | null;
+  editado: boolean;
+  reacciones: number;
+  reaccione_mia: boolean;
+  /** Solo entonces se puede editar o eliminar desde la app. */
+  es_mio: boolean;
 }
 
-/** POST /comentarios/{appid} */
+/** POST /comentarios/{appid} y PUT /comentarios/{appid}/{id} */
 export interface SolicitudComentario {
   /** Se guarda para el límite de frecuencia; la API nunca lo devuelve. */
   usuario: string;
   /** Hasta 500 caracteres. */
   texto: string;
+}
+
+/** PUT /comentarios/{appid}/{id}/reaccion: un pulgar arriba por persona, en toggle. */
+export interface ReaccionComentario {
+  comentario_id: number;
+  reacciones: number;
+  reaccione_mia: boolean;
 }
 
 /** POST /nia: el chat de la ficha. */

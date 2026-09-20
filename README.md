@@ -147,8 +147,8 @@ correr la ingesta de Steam.
   `http://localhost:8000`.
 - `NEXPLAY_VALORACIONES_DB`: dónde vive la base de valoraciones y comentarios. Por
   defecto `datos/valoraciones.db`.
-- `NEXPLAY_COMENTARIOS_POR_MINUTO` (3) y `NEXPLAY_NIA_POR_MINUTO` (10): topes por usuario
-  e IP, en memoria.
+- `NEXPLAY_COMENTARIOS_POR_MINUTO` (3), `NEXPLAY_REACCIONES_POR_MINUTO` (30) y
+  `NEXPLAY_NIA_POR_MINUTO` (10): topes por usuario e IP, en memoria.
 - `OPENAI_API_KEY` y `NEXPLAY_MODELO_NIA`: la clave y el modelo del chat de Nia. Vacíos,
   Nia responde en modo demostración. `NEXPLAY_NIA_MAX_TOKENS` (400) y
   `NEXPLAY_NIA_TIMEOUT` (20) acotan la respuesta.
@@ -276,11 +276,26 @@ que genera el navegador y guarda en `localStorage`: **identifica, no autentica**
   conteo es público; `mia` es el voto de quien pregunta.
 - `PUT /valoraciones/{appid}` con `{ usuario, util }` → crea o cambia el voto (uno por
   persona y juego). `DELETE` con `?usuario=` lo quita.
-- `GET /comentarios/{appid}` → hilo público, del más viejo al más nuevo, con `texto` y
-  `creado`. **Nunca devuelve el id de quien escribió.** Máximo 100.
+- `GET /comentarios/{appid}?usuario=` → hilo público, del más viejo al más nuevo. Cada
+  entrada trae `id`, `texto`, `creado`, `actualizado`, `editado`, `reacciones`,
+  `reaccione_mia` y `es_mio`. **Nunca devuelve el id de quien escribió**: de esa identidad
+  solo sale `es_mio`, que es la comparación contra quien pregunta. Sin `usuario` el hilo
+  se lee igual, pero nada viene marcado como propio. Máximo 100.
 - `POST /comentarios/{appid}` con `{ usuario, texto }` (hasta 500 caracteres) → agrega uno
-  al final; no se editan ni se borran desde la app. Pasado el tope por minuto responde
-  429 con `Retry-After`.
+  al final. Pasado el tope por minuto responde 429 con `Retry-After`.
+- `PUT /comentarios/{appid}/{id}` con `{ usuario, texto }` → cambia el texto, marca
+  `editado` y guarda la fecha del cambio en `actualizado`; `creado` no se toca, porque es
+  cuándo apareció en el hilo. **403** si el comentario es de otra persona, 404 si no
+  existe en ese juego.
+- `DELETE /comentarios/{appid}/{id}?usuario=` → lo borra con todo y sus reacciones.
+  **403** si es de otra persona.
+- `PUT /comentarios/{appid}/{id}/reaccion` con `{ usuario }` → pulgar arriba en toggle:
+  una fila por persona y comentario, y si ya estaba se quita. Devuelve
+  `{ comentario_id, reacciones, reaccione_mia }`. Tiene su propio tope por minuto
+  (`NEXPLAY_REACCIONES_POR_MINUTO`, 30), más alto que el de publicar porque es un clic.
+
+Los tres últimos se apoyan en el mismo id anónimo, así que **no son control de acceso**:
+impiden el accidente, no a quien mande el id de otra persona a propósito.
 
 ### `POST /nia`
 
@@ -312,8 +327,8 @@ también frena al modelo real, no solo al modo demostración.
 - `python exportar_valoraciones.py` genera dos CSV en `extracto/`: votos y comentarios.
   El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
 - `python moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
-  `--borrar ID` elimina uno. **Es el único mecanismo de moderación**: la API no expone
-  nada para borrar.
+  `--borrar ID` elimina uno, con sus reacciones. Cada quien puede borrar los suyos desde
+  la app; para **el comentario de alguien más, este script es el único camino**.
 - El id anónimo no es autenticación: cualquiera puede mandar otro id y editar esa
   valoración. La app lo advierte antes de comentar y conviene no guardar nada sensible.
 

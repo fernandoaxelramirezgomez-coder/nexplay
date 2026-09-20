@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import contextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,10 +20,13 @@ from .schemas import (
     NivelRiesgo,
     PerfilJugador,
     PrediccionRiesgo,
+    ReaccionComentario,
     ResumenValoraciones,
     SolicitudComentario,
+    SolicitudEdicionComentario,
     SolicitudNia,
     SolicitudPrediccion,
+    SolicitudReaccion,
     SolicitudValoracion,
 )
 
@@ -111,6 +115,8 @@ def explicar_juego(appid: int) -> ExplicacionJuego:
 # El id de usuario viaja como parámetro: es anónimo, lo genera el navegador y sirve para
 # saber cuál valoración es suya, no para autenticar a nadie.
 _USUARIO = Query(..., min_length=8, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
+# En el hilo es opcional: sin él se lee igual, solo que nada sale marcado como propio.
+_USUARIO_OPCIONAL = Query(None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
 
 
 def _exigir_juego(appid: int) -> None:
@@ -144,10 +150,23 @@ _LIMITE_COMENTARIOS = limites.LimitePorVentana(
 )
 
 
+@contextmanager
+def _errores_de_comentario():
+    """403 y 404 del hilo, en un solo lugar: el módulo no sabe de HTTP."""
+    try:
+        yield
+    except valoraciones.ComentarioInexistente:
+        raise HTTPException(status_code=404, detail="comentario no encontrado") from None
+    except valoraciones.ComentarioAjeno:
+        raise HTTPException(
+            status_code=403, detail="ese comentario es de otra persona: solo quien lo escribió puede cambiarlo"
+        ) from None
+
+
 @app.get("/comentarios/{appid}", response_model=list[Comentario])
-def ver_comentarios(appid: int) -> list[Comentario]:
+def ver_comentarios(appid: int, usuario: str | None = _USUARIO_OPCIONAL) -> list[Comentario]:
     _exigir_juego(appid)
-    return [Comentario(**comentario) for comentario in valoraciones.comentarios(appid)]
+    return [Comentario(**comentario) for comentario in valoraciones.comentarios(appid, usuario)]
 
 
 @app.post("/comentarios/{appid}", response_model=list[Comentario], status_code=201)
@@ -169,6 +188,51 @@ def comentar(appid: int, solicitud: SolicitudComentario, peticion: Request) -> l
         Comentario(**comentario)
         for comentario in valoraciones.agregar_comentario(appid, solicitud.usuario, solicitud.texto)
     ]
+
+
+@app.put("/comentarios/{appid}/{id_comentario}", response_model=list[Comentario])
+def editar_comentario(appid: int, id_comentario: int, solicitud: SolicitudEdicionComentario) -> list[Comentario]:
+    _exigir_juego(appid)
+    with _errores_de_comentario():
+        hilo = valoraciones.editar_comentario(appid, id_comentario, solicitud.usuario, solicitud.texto)
+    logger.info("comentario editado appid=%s id=%s", appid, id_comentario)
+    return [Comentario(**comentario) for comentario in hilo]
+
+
+@app.delete("/comentarios/{appid}/{id_comentario}", response_model=list[Comentario])
+def borrar_comentario(appid: int, id_comentario: int, usuario: str = _USUARIO) -> list[Comentario]:
+    _exigir_juego(appid)
+    with _errores_de_comentario():
+        hilo = valoraciones.borrar_comentario_propio(appid, id_comentario, usuario)
+    logger.info("comentario borrado por su dueño appid=%s id=%s", appid, id_comentario)
+    return [Comentario(**comentario) for comentario in hilo]
+
+
+# Reaccionar es un clic, no escribir: el tope es más alto que el de publicar, pero existe
+# para que no sea un hueco de spam.
+_LIMITE_REACCIONES = limites.LimitePorVentana(
+    maximo=int(os.environ.get("NEXPLAY_REACCIONES_POR_MINUTO", "30")), ventana_segundos=60.0
+)
+
+
+@app.put("/comentarios/{appid}/{id_comentario}/reaccion", response_model=ReaccionComentario)
+def reaccionar(
+    appid: int, id_comentario: int, solicitud: SolicitudReaccion, peticion: Request
+) -> ReaccionComentario:
+    _exigir_juego(appid)
+
+    ip = peticion.client.host if peticion.client else "sin-ip"
+    espera = _LIMITE_REACCIONES.revisar(f"reaccion-usuario:{solicitud.usuario}", f"reaccion-ip:{ip}")
+    if espera:
+        logger.info("reacción rechazada por frecuencia appid=%s id=%s", appid, id_comentario)
+        raise HTTPException(
+            status_code=429,
+            detail="Estás reaccionando muy seguido. Espera un momento.",
+            headers={"Retry-After": str(max(1, int(espera) + 1))},
+        )
+
+    with _errores_de_comentario():
+        return ReaccionComentario(**valoraciones.alternar_reaccion(appid, id_comentario, solicitud.usuario))
 
 
 # Nia consulta un modelo de pago: el tope por ventana es un límite de costo.
