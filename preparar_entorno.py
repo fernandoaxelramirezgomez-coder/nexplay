@@ -42,13 +42,13 @@ MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 # Mismo repo/tag que notebook/nexplay.ipynb: un release con tag fijo, nunca
 # "latest", para que este script siga funcionando igual dentro de un año.
 GITHUB_REPO = "fernandoaxelramirezgomez-coder/nexplay"
-GITHUB_REF = "data-v1"
+GITHUB_REF = "data-v2"
 ASSET_NOMBRE = "nexplay_reproducible.db.xz"
 ASSET_URL = f"https://github.com/{GITHUB_REPO}/releases/download/{GITHUB_REF}/{ASSET_NOMBRE}"
 # sha256 real del asset publicado en ese release (ver salida de
 # extracto_reproducible.py). Si se regenera el asset y se sube uno nuevo,
 # este valor tiene que actualizarse junto con el.
-ASSET_SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
+ASSET_SHA256 = "9d5a54f6cbb5f361e397eb043989e592cbff1d553c57ef8a41aae41e2c763d72"
 
 PUERTO_PRUEBA_API = 8321
 TIMEOUT_RED = 60

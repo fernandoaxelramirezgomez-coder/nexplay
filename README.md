@@ -44,7 +44,7 @@ python preparar_entorno.py
 `preparar_entorno.py` hace, en orden:
 
 1. Verifica que las dependencias estén instaladas.
-2. Descarga el asset de datos publicado en el [release `data-v1`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v1)
+2. Descarga el asset de datos publicado en el [release `data-v2`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v2)
    y valida su SHA-256 antes de tocarlo (mismo patrón que el notebook).
 3. Reconstruye `datos/nexplay.db` a partir de ese asset.
 4. Corre `entrenar_modelo.py` para generar `modelo/nexplay.pkl`.
@@ -352,10 +352,13 @@ python extracto_reproducible.py        # extracto/nexplay_reproducible.db.xz (pa
 `resumen_resenas` y `progreso` no se copian: son metadata de la ingesta, no las usa ni la
 API ni el entrenamiento.
 
-Subir el asset al release existente (mismo tag `data-v1` que usa el notebook):
+Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
+reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
+seguir bajando exactamente lo mismo. Hoy el notebook y `preparar_entorno.py` usan
+`data-v2`:
 
 ```bash
-gh release upload data-v1 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz --clobber
+gh release create data-v2 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
 ```
 
 Y actualizar `PARQUET_SHA256` en `notebook/nexplay.ipynb` y `ASSET_SHA256` en
