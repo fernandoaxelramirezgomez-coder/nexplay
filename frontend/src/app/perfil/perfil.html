@@ -13,11 +13,11 @@
   <div class="tarjetas">
     <section class="seccion">
       <app-tarjetas-opcion
-        nombre="biblioteca"
-        etiqueta="Tu biblioteca de Steam"
-        [opciones]="biblioteca"
-        [valor]="valores().biblioteca"
-        (valorCambio)="cambiar('biblioteca', $event)"
+        nombre="compras"
+        etiqueta="Juegos que compras al año"
+        [opciones]="compras"
+        [valor]="valores().compras"
+        (valorCambio)="cambiar('compras', $event)"
       />
     </section>
 

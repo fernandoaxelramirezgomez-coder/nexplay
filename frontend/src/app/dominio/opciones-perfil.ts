@@ -5,12 +5,14 @@ export interface Opcion<T> {
   valor: T;
 }
 
-// Mismos rangos que el formulario de Gradio (ui/app.py).
-export const BIBLIOTECA: Opcion<number>[] = [
-  { etiqueta: 'Estoy empezando (0–10 juegos)', valor: 5 },
-  { etiqueta: 'Pequeña (11–30 juegos)', valor: 20 },
-  { etiqueta: 'Mediana (31–100 juegos)', valor: 60 },
-  { etiqueta: 'Grande (más de 100 juegos)', valor: 150 },
+// Compras al año, no tamaño de la biblioteca: el formulario preguntaba una cosa y
+// mandaba el número como si fuera la otra. El valor de cada opción es el punto medio
+// del rango. Mismos rangos que el formulario de Gradio (ui/app.py).
+export const COMPRAS: Opcion<number>[] = [
+  { etiqueta: 'Casi ninguno (0–2 al año)', valor: 1 },
+  { etiqueta: 'Pocos (3–6 al año)', valor: 4 },
+  { etiqueta: 'Varios (7–15 al año)', valor: 11 },
+  { etiqueta: 'Muchos (más de 15 al año)', valor: 25 },
 ];
 
 export const HORAS: Opcion<number>[] = [
@@ -35,7 +37,7 @@ export const PLATAFORMAS: Opcion<Plataforma>[] = [
 ];
 
 export interface ValoresPerfil {
-  biblioteca: number;
+  compras: number;
   horas: number;
   friccion: 1 | 2 | 3 | 4 | 5;
   plataforma: Plataforma;
@@ -43,7 +45,7 @@ export interface ValoresPerfil {
 }
 
 export const VALORES_POR_DEFECTO: ValoresPerfil = {
-  biblioteca: 20,
+  compras: 4,
   horas: 6,
   friccion: 3,
   plataforma: 'pc',
@@ -54,7 +56,7 @@ export const VALORES_POR_DEFECTO: ValoresPerfil = {
  * pero el modelo no los usa (solo lee compras_al_anio y plataforma). */
 export function formularioDesde(valores: ValoresPerfil): FormularioAlta {
   return {
-    compras_al_anio: valores.biblioteca,
+    compras_al_anio: valores.compras,
     horas_por_semana: valores.horas,
     tolerancia_friccion: valores.friccion,
     tags_preferidos: valores.generos,

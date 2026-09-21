@@ -81,12 +81,15 @@ describe('historiaPerfil', () => {
     expect(texto).toContain('No hay suficientes reseñas de arrepentimiento temprano');
   });
 
-  it('con pocas horas avisa que la ventana de reembolso vence antes', () => {
-    const texto = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 2 }), juegoDePrueba(), MOTIVOS));
-    expect(texto).toContain('el reembolso de Steam ya venció');
+  it('el reembolso depende de los 14 días, no de las horas por semana', () => {
+    // 2 h por semana llega a las dos horas en una semana: sigue dentro del plazo.
+    const normal = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 2 }), juegoDePrueba(), MOTIVOS));
+    expect(normal).toContain('dentro de los 14 días');
+    expect(normal).not.toContain('venció');
 
-    const holgado = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 15 }), juegoDePrueba(), MOTIVOS));
-    expect(holgado).toContain('dentro del plazo de reembolso');
+    // Media hora por semana: tardaría un mes en llegar, y el plazo corre igual.
+    const lento = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 0.5 }), juegoDePrueba(), MOTIVOS));
+    expect(lento).toContain('caduca a los 14 días de la compra aunque no hayas jugado');
   });
 
   it('un juego gratuito no habla de cuánto pesa la compra', () => {

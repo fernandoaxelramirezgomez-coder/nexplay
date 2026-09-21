@@ -11,8 +11,12 @@ const MOTIVOS_DE_FRICCION: Record<string, string> = {
   controles: 'controles incómodos',
 };
 
-/** La ventana que define la variable: 120 minutos, el plazo de reembolso de Steam. */
+/** Las dos horas con las que se define el arrepentimiento temprano (120 minutos). */
 const HORAS_DE_LA_VENTANA = 2;
+
+/** Steam devuelve el dinero si se cumplen las dos condiciones: menos de 2 horas jugadas
+ * y menos de 14 días desde la compra. El plazo corre aunque no se juegue. */
+const DIAS_DE_REEMBOLSO = 14;
 
 /** Por qué este juego le tocaría a quien declaró este perfil: géneros, fricción, tiempo
  * y cuánto pesa una compra. Es contexto, no una recomendación, y no mueve el riesgo:
@@ -119,21 +123,22 @@ function parrafoTiempo(perfil: PerfilJugador): Segmento[] {
     return [];
   }
 
-  const semanas = HORAS_DE_LA_VENTANA / horas;
-  if (semanas >= 1) {
+  const dias = (HORAS_DE_LA_VENTANA / horas) * 7;
+  if (dias > DIAS_DE_REEMBOLSO) {
     return [
       {
         texto:
-          `Con ${horas} h por semana, las dos primeras horas —la ventana en la que se mide el arrepentimiento` +
-          ' temprano— te toman más de una semana: cuando notes si te gustó, el reembolso de Steam ya venció. ',
+          `Con ${horas} h por semana tardarías más de ${DIAS_DE_REEMBOLSO} días en llegar a las dos horas con` +
+          ' las que se mide el arrepentimiento temprano, y el reembolso de Steam caduca a los' +
+          ` ${DIAS_DE_REEMBOLSO} días de la compra aunque no hayas jugado. `,
       },
     ];
   }
   return [
     {
       texto:
-        `Con ${horas} h por semana, esas dos primeras horas se te van en la primera sesión o dos,` +
-        ' todavía dentro del plazo de reembolso de Steam. ',
+        `Con ${horas} h por semana llegas a esas dos horas en la primera sesión o dos, dentro de los` +
+        ` ${DIAS_DE_REEMBOLSO} días en que Steam todavía admite el reembolso. `,
     },
   ];
 }

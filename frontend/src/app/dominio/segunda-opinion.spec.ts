@@ -11,7 +11,7 @@ describe('segundaOpinion', () => {
   it('reproduce la frase de Wild Hearts de Gradio (alto, rendimiento 86%, sin nota)', () => {
     expect(texto(segundaOpinion('alto', motivos, null))).toBe(
       'Comparado con el resto del catálogo, este juego tiende a generar más arrepentimiento temprano.' +
-        ' Entre quienes se arrepintieron pronto, el motivo más mencionado es rendimiento' +
+        ' Entre las reseñas con señal de arrepentimiento temprano, el motivo más mencionado es rendimiento' +
         ' (86% de las reseñas clasificadas).' +
         ' No tiene cobertura de crítica especializada (sin nota de Metacritic).',
     );

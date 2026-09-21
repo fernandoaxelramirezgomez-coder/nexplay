@@ -4,7 +4,7 @@ del contrato: cualquier cambio aquí es un cambio de contrato con el cliente (UI
 from enum import Enum
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Plataforma(str, Enum):
@@ -65,10 +65,14 @@ class FormularioAlta(BaseModel):
 
 
 class PerfilJugador(BaseModel):
-    """Perfil derivado del formulario de alta. Es lo que consume /prediccion."""
+    """Perfil derivado del formulario de alta. Es lo que consume /prediccion.
 
-    compras_al_anio: int
-    horas_por_semana: float
+    Los rangos son los mismos que en FormularioAlta y no son decorativos: scoring.py
+    calcula log1p(compras_al_anio), que con un valor negativo da NaN y hace fallar al
+    modelo. Sin estos límites, un perfil inválido salía como 500 en vez de 422."""
+
+    compras_al_anio: int = Field(..., ge=0, le=365)
+    horas_por_semana: float = Field(..., ge=0, le=168)
     tolerancia_friccion: NivelFriccion = Field(
         ..., description="'baja', 'media' o 'alta', heurística sobre la escala 1-5 declarada"
     )
@@ -232,9 +236,22 @@ class ReaccionComentario(BaseModel):
     reaccione_mia: bool
 
 
+#: Lo que escribe la persona. Es el límite que importa: acota costo y abuso.
+MAXIMO_PREGUNTA = 500
+#: Lo que respondió Nia y vuelve en el historial. Con max_tokens=400 una respuesta pasa
+#: holgadamente de 500 caracteres, y con el tope anterior rompía la pregunta siguiente.
+MAXIMO_RESPUESTA = 4000
+
+
 class MensajeChat(BaseModel):
     rol: Literal["usuario", "nia"]
-    contenido: str = Field(..., min_length=1, max_length=500)
+    contenido: str = Field(..., min_length=1, max_length=MAXIMO_RESPUESTA)
+
+    @model_validator(mode="after")
+    def _limitar_lo_que_escribe_la_persona(self) -> "MensajeChat":
+        if self.rol == "usuario" and len(self.contenido) > MAXIMO_PREGUNTA:
+            raise ValueError(f"la pregunta no puede pasar de {MAXIMO_PREGUNTA} caracteres")
+        return self
 
 
 class SolicitudNia(BaseModel):

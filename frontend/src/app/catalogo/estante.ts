@@ -104,7 +104,7 @@ import { TarjetaJuego } from './tarjeta-juego';
       padding: 0 var(--espacio-4) var(--espacio-8);
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: 232px;
+      grid-auto-columns: 296px;
       gap: var(--espacio-16);
       overflow-x: auto;
       scroll-snap-type: x proximity;

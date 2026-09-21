@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { NexplayApi } from '../api/nexplay-api';
 import { Plataforma } from '../api/contrato';
 import {
-  BIBLIOTECA,
+  COMPRAS,
   FRICCION,
   HORAS,
   PLATAFORMAS,
@@ -30,7 +30,7 @@ export class Perfil {
   protected readonly perfil = inject(PerfilStore);
   protected readonly catalogo = inject(CatalogoStore);
 
-  protected readonly biblioteca = BIBLIOTECA;
+  protected readonly compras = COMPRAS;
   protected readonly horas = HORAS;
   protected readonly friccion = FRICCION;
   protected readonly plataformas = PLATAFORMAS;

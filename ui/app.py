@@ -62,9 +62,9 @@ _METODOLOGIA_MD = (
 )
 
 
-def _crear_perfil(biblioteca, horas_por_semana, tolerancia_friccion, plataforma):
+def _crear_perfil(compras_al_anio, horas_por_semana, tolerancia_friccion, plataforma):
     formulario = {
-        "compras_al_anio": int(biblioteca),
+        "compras_al_anio": int(compras_al_anio),
         "horas_por_semana": float(horas_por_semana),
         "tolerancia_friccion": int(tolerancia_friccion),
         "plataforma": plataforma,
@@ -187,7 +187,8 @@ def _segunda_opinion_md(nivel: str | None, motivos: list[dict], metacritic) -> s
     if motivos:
         top = motivos[0]
         frases.append(
-            f"Entre quienes se arrepintieron pronto, el motivo más mencionado es **{top['motivo']}** "
+            f"Entre las reseñas con señal de arrepentimiento temprano, el motivo más mencionado es "
+            f"**{top['motivo']}** "
             f"({top['frecuencia']:.0%} de las reseñas clasificadas)."
         )
     else:
@@ -489,15 +490,15 @@ with gr.Blocks(title="NexPlay") as demo:
                 "Declarás cómo jugás para afinar el riesgo estimado. **Es opcional:** sin perfil, "
                 "\"Ver segunda opinión\" en Explorar usa un perfil neutro."
             )
-            biblioteca = gr.Radio(
-                label="Biblioteca de Steam",
+            compras = gr.Radio(
+                label="Juegos que comprás al año",
                 choices=[
-                    ("Estoy empezando (0–10 juegos)", 5),
-                    ("Pequeña (11–30 juegos)", 20),
-                    ("Mediana (31–100 juegos)", 60),
-                    ("Grande (más de 100 juegos)", 150),
+                    ("Casi ninguno (0–2 al año)", 1),
+                    ("Pocos (3–6 al año)", 4),
+                    ("Varios (7–15 al año)", 11),
+                    ("Muchos (más de 15 al año)", 25),
                 ],
-                value=20,
+                value=4,
             )
             horas_por_semana = gr.Radio(
                 label="Horas por semana disponibles para jugar",
@@ -523,7 +524,7 @@ with gr.Blocks(title="NexPlay") as demo:
 
             boton_perfil.click(
                 _crear_perfil,
-                inputs=[biblioteca, horas_por_semana, tolerancia_friccion, plataforma],
+                inputs=[compras, horas_por_semana, tolerancia_friccion, plataforma],
                 outputs=[perfil_state, resumen_perfil],
             ).then(lambda: gr.Tabs(selected="explorar"), outputs=tabs)
 

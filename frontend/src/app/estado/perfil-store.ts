@@ -5,7 +5,9 @@ import { FormularioAlta, PerfilJugador } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { ValoresPerfil } from '../dominio/opciones-perfil';
 
-const CLAVE = 'nexplay.perfil.v1';
+// v2: antes se guardaba el tamaño de la biblioteca en un campo que la API lee como
+// compras al año. Los perfiles v1 no se migran porque su número no es comparable.
+const CLAVE = 'nexplay.perfil.v2';
 
 /** Mismo _FORMULARIO_NEUTRO de ui/app.py: se manda a /perfil para no duplicar aquí
  * las heurísticas de segmento y disponibilidad. */

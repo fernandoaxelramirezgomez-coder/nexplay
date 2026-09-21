@@ -504,7 +504,7 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "perfil.png", full_page=True)
 
-    pagina.get_by_test_id("grupo-biblioteca").get_by_text("Grande (más de 100 juegos)").click()
+    pagina.get_by_test_id("grupo-compras").get_by_text("Muchos (más de 15 al año)").click()
     for genero in ("Acción", "Rol"):
         pagina.locator(f"[data-testid='chip-genero'][data-genero='{genero}']").click()
     pagina.get_by_test_id("crear-perfil").click()
@@ -554,7 +554,7 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
 
     # Los géneros no deben mover el riesgo: el modelo no los usa.
     base = {
-        "compras_al_anio": 150,
+        "compras_al_anio": 25,
         "horas_por_semana": 6,
         "tolerancia_friccion": 3,
         "tags_rechazados": [],

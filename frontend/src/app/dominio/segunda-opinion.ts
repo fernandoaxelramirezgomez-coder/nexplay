@@ -43,7 +43,7 @@ export function segundaOpinion(
     const principal = motivos[0];
     segmentos.push({
       texto:
-        ` Entre quienes se arrepintieron pronto, el motivo más mencionado es ${principal.motivo}` +
+        ` Entre las reseñas con señal de arrepentimiento temprano, el motivo más mencionado es ${principal.motivo}` +
         ` (${porcentaje(principal.frecuencia)} de las reseñas clasificadas).`,
     });
   } else {
