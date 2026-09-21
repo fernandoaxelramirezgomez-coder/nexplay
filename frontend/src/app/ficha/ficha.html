@@ -14,7 +14,7 @@
       <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
     </section>
   } @else if (juego(); as juego) {
-    <app-portada-ancha [appid]="juego.appid" [respaldo]="juego.portada_url" />
+    <app-portada-ancha [appid]="juego.appid" [respaldo]="juego.portada_url" [video]="juego.video_url" />
 
     <header class="titulos">
       <h1 data-testid="ficha-nombre">{{ juego.nombre }}</h1>

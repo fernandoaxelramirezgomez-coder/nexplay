@@ -935,6 +935,178 @@ def _angular_panel_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _estado_video(pagina: Page) -> str | None:
+    video = pagina.get_by_test_id("portada-video")
+    return video.get_attribute("data-estado") if video.count() else None
+
+
+def _esperar_video(pagina: Page) -> str | None:
+    """Espera a que el tráiler reproduzca o falle; devuelve el estado final."""
+    try:
+        # Primero que exista: la ficha pinta la cabecera cuando llega el catálogo.
+        pagina.get_by_test_id("portada-video").wait_for(state="attached", timeout=_TIMEOUT_MS)
+        pagina.wait_for_function(
+            "() => { const v = document.querySelector('[data-testid=portada-video]');"
+            " return !v || v.dataset.estado !== 'cargando'; }",
+            timeout=30_000,
+        )
+    except TiempoAgotado:
+        pass
+    return _estado_video(pagina)
+
+
+def _portada_en_gris(pagina: Page) -> bool:
+    filtro = pagina.get_by_test_id("portada-ancha").locator("img").evaluate("i => getComputedStyle(i).filter")
+    return "grayscale(1)" in filtro
+
+
+def _avanza_el_video(pagina: Page) -> bool:
+    antes = pagina.get_by_test_id("portada-video").evaluate("v => v.currentTime")
+    pagina.wait_for_timeout(1500)
+    despues = pagina.get_by_test_id("portada-video").evaluate("v => v.currentTime")
+    return despues > antes
+
+
+def _opacidad(localizador) -> float:
+    return float(localizador.evaluate("b => getComputedStyle(b).opacity"))
+
+
+def _pausa_del_video(pagina: Page, destino: Path) -> list[str]:
+    """WCAG 2.2.2: un botón que pausa el tráiler, oculto hasta hover o foco de teclado."""
+    problemas = []
+    boton = pagina.get_by_test_id("portada-pausa")
+    video = pagina.get_by_test_id("portada-video")
+    pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(400)
+    if _opacidad(boton) > 0.05:
+        problemas.append("el botón de pausa se ve sin hover ni foco")
+    pagina.get_by_test_id("portada-ancha").hover()
+    pagina.wait_for_timeout(400)
+    if _opacidad(boton) < 0.95:
+        problemas.append("el botón de pausa no aparece al pasar el ratón")
+    pagina.mouse.move(0, 0)
+
+    # Con teclado: foco visible, Enter pausa y el video deja de avanzar.
+    # Un Tab antes: el navegador solo pinta :focus-visible si la última interacción fue
+    # de teclado, y focus() por script no cuenta como tal.
+    pagina.keyboard.press("Tab")
+    boton.focus()
+    pagina.wait_for_timeout(400)
+    if _opacidad(boton) < 0.95:
+        problemas.append("el botón de pausa no aparece con foco de teclado")
+    ruta = destino / "video-pausa-foco.png"
+    pagina.get_by_test_id("portada-ancha").screenshot(path=ruta)
+    pagina.keyboard.press("Enter")
+    pagina.wait_for_function("() => document.querySelector('[data-testid=portada-video]').dataset.estado === 'pausado'", timeout=_TIMEOUT_MS)
+    etiqueta = boton.get_attribute("aria-label")
+    quieto = video.evaluate("v => v.paused")
+    if not quieto or _avanza_el_video(pagina) or etiqueta != "Reproducir el tráiler":
+        problemas.append(f"Enter en el botón no pausa el tráiler (paused={quieto}, etiqueta={etiqueta!r})")
+    pagina.keyboard.press("Enter")
+    pagina.wait_for_timeout(300)
+    if not _avanza_el_video(pagina) or boton.get_attribute("aria-label") != "Pausar el tráiler":
+        problemas.append("Enter otra vez no reanuda el tráiler")
+    if not problemas:
+        print(f"video:    botón de pausa: oculto en reposo, aparece con hover y con foco; Enter pausa y reanuda ({ruta.relative_to(_RAIZ)})")
+    pagina.locator("body").focus()
+    return problemas
+
+
+_APPID_SIN_VIDEO = 690790  # DiRT Rally 2.0, el único del catálogo sin tráiler
+
+
+def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """El tráiler de la cabecera: nativo o con hls.js, y la portada en gris como respaldo."""
+    problemas = []
+    base = url.rstrip("/")
+    juegos = {j["appid"]: j for j in _catalogo_api(api)}
+    con_video = sum(1 for j in juegos.values() if j.get("video_url"))
+    print(f"video:    la API trae video_url en {con_video} de {len(juegos)} juegos")
+    if not juegos[_APPID_FICHA].get("video_url"):
+        return problemas + [f"el juego {_APPID_FICHA} no trae video_url en la API"]
+
+    _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
+    if not _portada_en_gris(pagina):
+        problemas.append("la portada de la cabecera no está en escala de grises")
+    estado = _esperar_video(pagina)
+    via = pagina.get_by_test_id("portada-video").evaluate(
+        "v => v.canPlayType('application/vnd.apple.mpegurl') ? 'nativo' : 'hls.js'"
+    ) if estado else None
+    if estado != "reproduciendo":
+        problemas.append(f"el tráiler de la ficha no llegó a reproducir (estado {estado})")
+    elif not _avanza_el_video(pagina):
+        problemas.append("el tráiler de la ficha está visible pero no avanza")
+    else:
+        print(f"video:    la ficha reproduce el tráiler con <video> {via}, mudo y en loop")
+    if estado == "reproduciendo":
+        problemas += _pausa_del_video(pagina, destino)
+    pagina.wait_for_timeout(2500)
+    ruta = destino / "video-ficha.png"
+    pagina.screenshot(path=ruta)
+    ruta_cerca = destino / "video-cabecera.png"
+    pagina.get_by_test_id("portada-ancha").screenshot(path=ruta_cerca)
+    print(f"video:    capturas {ruta.relative_to(_RAIZ)}, {ruta_cerca.relative_to(_RAIZ)}")
+
+    _abrir(pagina, f"{base}/juego/{_APPID_SIN_VIDEO}")
+    pagina.get_by_test_id("portada-ancha").wait_for(timeout=_TIMEOUT_MS)
+    if pagina.get_by_test_id("portada-video").count() or not _portada_en_gris(pagina):
+        problemas.append("un juego sin tráiler no se queda solo con la portada en gris")
+    else:
+        print(f"video:    {juegos[_APPID_SIN_VIDEO]['nombre']} (sin tráiler) se queda con la portada en gris")
+
+    # Si el video falla, desaparece y queda la portada.
+    pagina.route("**/*.m3u8*", lambda ruta: ruta.abort())
+    _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("portada-ancha").wait_for(timeout=_TIMEOUT_MS)
+    try:
+        pagina.get_by_test_id("portada-video").wait_for(state="detached", timeout=30_000)
+        print("video:    si el tráiler falla, se quita y queda la portada en gris")
+    except TiempoAgotado:
+        problemas.append(f"con el tráiler caído el video no se quita (estado {_estado_video(pagina)})")
+    pagina.unroute("**/*.m3u8*")
+
+    navegador = pagina.context.browser
+    # Un navegador sin HLS nativo (Firefox): se finge quitando canPlayType para m3u8.
+    contexto = navegador.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    contexto.add_init_script(
+        "const original = HTMLMediaElement.prototype.canPlayType;"
+        "HTMLMediaElement.prototype.canPlayType = function (tipo) {"
+        " return /mpegurl/i.test(tipo) ? '' : original.call(this, tipo); };"
+    )
+    try:
+        otra = contexto.new_page()
+        trozos = []
+        otra.on("request", lambda r: trozos.append(r.url) if r.url.endswith(".js") else None)
+        _abrir(otra, f"{base}/juego/{_APPID_FICHA}")
+        estado = _esperar_video(otra)
+        if estado != "reproduciendo" or not _avanza_el_video(otra):
+            problemas.append(f"sin HLS nativo, hls.js no reproduce el tráiler (estado {estado})")
+        else:
+            print("video:    sin HLS nativo carga hls.js bajo demanda y reproduce")
+    finally:
+        contexto.close()
+
+    contexto = navegador.new_context(viewport=_VIEWPORT, reduced_motion="reduce")
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        pedidos = []
+        otra.on("request", lambda r: pedidos.append(r.url) if "video.akamai" in r.url else None)
+        _abrir(otra, f"{base}/juego/{_APPID_FICHA}")
+        otra.get_by_test_id("portada-ancha").wait_for(timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(2000)
+        if otra.get_by_test_id("portada-video").count() or pedidos:
+            problemas.append(f"con prefers-reduced-motion se pide el tráiler ({len(pedidos)} peticiones)")
+        elif not _portada_en_gris(otra):
+            problemas.append("con prefers-reduced-motion la portada no queda en gris")
+        else:
+            print("video:    con prefers-reduced-motion no se pide el video; queda la portada en gris")
+    finally:
+        contexto.close()
+    return problemas
+
+
 def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
     problemas = []
@@ -1098,6 +1270,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
+        + _angular_video(pagina, url, destino, api)
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
         + _angular_carrusel(pagina, url, destino)
