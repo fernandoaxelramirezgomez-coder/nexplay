@@ -793,9 +793,9 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
 # (dominio/reaccion-nia.ts) en vez de importarlo: si alguien cambia un texto allá sin
 # querer, aquí salta.
 _REACCION_ESPERADA = {
-    "bajo": "favorables",
-    "medio": "mixtas",
-    "alto": "mayor riesgo relativo",
+    "bajo": "señal baja",
+    "medio": "señal mixta",
+    "alto": "señal alta",
 }
 
 

@@ -1,10 +1,11 @@
 import { NivelRiesgo } from '../api/contrato';
 import { reaccionPara } from './reaccion-nia';
+import { SALUDO_CATALOGO } from './textos-nia';
 
 const BANDAS: NivelRiesgo[] = ['bajo', 'medio', 'alto'];
 
-/** Lo que Nia nunca puede decir, sea cual sea la banda. Las tres primeras confundirían
- * riesgo con fiabilidad; el resto son recomendaciones de compra o afirmaciones absolutas. */
+/** Lo que Nia nunca puede decir, sea cual sea la banda. Las primeras confundirían riesgo
+ * con fiabilidad; el resto son recomendaciones de compra o afirmaciones absolutas. */
 const PROHIBIDO = [
   'confiable',
   'fiable',
@@ -18,6 +19,13 @@ const PROHIBIDO = [
   'abandono',
   'es malo',
 ];
+
+/** Fórmulas de consejo: Nia describe la estimación, nunca le dice a nadie qué hacer.
+ * Solo se buscan en lo que Nia dice, no en la descripción de la imagen. */
+const CONSEJO = ['conviene', 'deberías', 'te recomiendo', 'recomendamos', 'antes de decidir', 'busca ', 'revisa '];
+
+/** Todo lo que Nia dice fuera del chat, para aplicarle el mismo criterio. */
+const TEXTOS_DE_NIA = [...BANDAS.map((b) => reaccionPara(b).texto), SALUDO_CATALOGO];
 
 describe('reaccionPara', () => {
   it('cada banda tiene su propia emoción, imagen y texto', () => {
@@ -39,10 +47,13 @@ describe('reaccionPara', () => {
     }
   });
 
-  it('el texto no contradice la banda', () => {
-    expect(reaccionPara('bajo').texto).toContain('favorables');
-    expect(reaccionPara('medio').texto).toContain('mixtas');
-    expect(reaccionPara('alto').texto).toContain('mayor riesgo relativo');
+  it('el texto describe la banda que le toca', () => {
+    expect(reaccionPara('bajo').texto).toContain('señal baja');
+    expect(reaccionPara('medio').texto).toContain('señal mixta');
+    expect(reaccionPara('alto').texto).toContain('señal alta');
+    for (const banda of BANDAS) {
+      expect(reaccionPara(banda).texto).toContain('arrepentimiento temprano');
+    }
   });
 
   it('la descripción accesible nombra la banda', () => {
@@ -59,5 +70,21 @@ describe('reaccionPara', () => {
         expect(todo, `banda ${banda} dice "${frase}"`).not.toContain(frase);
       }
     }
+  });
+});
+
+describe('textos cortos de Nia', () => {
+  it('describen, nunca aconsejan', () => {
+    for (const texto of TEXTOS_DE_NIA) {
+      const bajo = texto.toLowerCase();
+      for (const frase of [...CONSEJO, ...PROHIBIDO]) {
+        expect(bajo, `"${texto}" contiene "${frase.trim()}"`).not.toContain(frase);
+      }
+    }
+  });
+
+  it('el saludo del catálogo usa el vocabulario del proyecto', () => {
+    expect(SALUDO_CATALOGO).toContain('arrepentimiento temprano');
+    expect(SALUDO_CATALOGO).not.toMatch(/arriba|abajo/);
   });
 });

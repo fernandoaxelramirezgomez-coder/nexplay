@@ -35,7 +35,13 @@ const MAXIMO_SUGERENCIAS = 6;
           data-testid="nia-flotante-panel"
         >
           <header class="cabecera">
-            <h2 class="rotulo-seccion" id="nia-flotante-titulo">Pregúntale a Nia</h2>
+            <div class="quien">
+              <img class="avatar-chico" src="nia/avatar.png" alt="" width="192" height="192" />
+              <div>
+                <h2 class="nombre" id="nia-flotante-titulo">Nia</h2>
+                <p class="meta subtitulo">Asistente de NexPlay</p>
+              </div>
+            </div>
             <button type="button" class="boton-texto" data-testid="nia-flotante-cerrar" (click)="cerrar()">
               Cerrar
             </button>
@@ -90,7 +96,7 @@ const MAXIMO_SUGERENCIAS = 6;
         #burbuja
         (click)="alternar()"
       >
-        <span aria-hidden="true" class="inicial">N</span>
+        <img class="avatar" src="nia/avatar.png" alt="" width="192" height="192" />
       </button>
     </div>
   `,
@@ -107,29 +113,63 @@ const MAXIMO_SUGERENCIAS = 6;
       align-items: flex-end;
       gap: var(--espacio-12);
     }
+    /* La burbuja es la cara de Nia dentro de un anillo neón que respira despacio: se
+       nota que está ahí sin reclamar atención. Al abrirse, el anillo se queda encendido. */
     .burbuja {
-      width: 56px;
-      height: 56px;
-      border-radius: var(--radio-pildora);
-      border: 1px solid var(--neon);
-      background: var(--superficie-tarjeta);
-      color: var(--neon);
-      font-size: var(--texto-subheading);
+      width: 64px;
+      height: 64px;
+      padding: 3px;
+      border: 2px solid var(--neon);
+      border-radius: 50%;
+      background: var(--superficie-lienzo);
       cursor: pointer;
-      transition:
-        background var(--duracion-rapida) var(--curva),
-        transform var(--duracion-rapida) var(--curva);
+      animation: respirar-anillo 4.5s ease-in-out infinite;
+      transition: transform var(--duracion-rapida) var(--curva);
+    }
+    @keyframes respirar-anillo {
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(34, 224, 255, 0), 0 0 6px rgba(34, 224, 255, 0.25);
+      }
+      50% {
+        box-shadow: 0 0 0 3px rgba(34, 224, 255, 0.12), 0 0 14px rgba(34, 224, 255, 0.45);
+      }
     }
     .burbuja:hover {
-      background: var(--acento-sistema);
-      transform: translateY(-2px);
+      transform: translateY(-2px) scale(1.04);
     }
     .abierto .burbuja {
-      background: var(--acento-sistema);
+      animation: none;
       box-shadow: var(--resplandor);
     }
-    .inicial {
-      font-weight: var(--peso-titular);
+    .avatar {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+    .quien {
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-12);
+    }
+    .avatar-chico {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px var(--neon), 0 0 8px rgba(34, 224, 255, 0.35);
+    }
+    .nombre {
+      margin: 0;
+      font-size: var(--texto-body-sm);
+    }
+    .subtitulo {
+      margin: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .burbuja {
+        animation: none;
+      }
     }
     .panel {
       width: min(380px, calc(100vw - var(--espacio-48)));

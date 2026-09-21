@@ -28,22 +28,22 @@ import { reaccionPara } from '../dominio/reaccion-nia';
           (error)="imagenCaida.set(true)"
         />
       }
-      <figcaption class="globo" data-testid="nia-reaccion-texto">
-        <span class="quien mono">Nia</span>
+      <figcaption class="globo-nia globo" data-testid="nia-reaccion-texto">
+        <span class="quien">Nia</span>
         {{ reaccion().texto }}
       </figcaption>
     </figure>
   `,
   styles: `
     .reaccion {
-      margin: var(--espacio-16) 0 0;
+      margin: var(--espacio-24) 0 var(--espacio-8);
       display: flex;
       align-items: center;
-      gap: var(--espacio-16);
+      gap: var(--espacio-24);
       max-width: var(--medida-lectura);
     }
     img {
-      width: 96px;
+      width: 112px;
       height: auto;
       flex: 0 0 auto;
       /* El halo toma el color de la banda: la misma señal que la franja del veredicto. */
@@ -103,40 +103,13 @@ import { reaccionPara } from '../dominio/reaccion-nia';
       }
     }
 
-    .globo {
-      position: relative;
-      margin: 0;
-      padding: var(--espacio-12) var(--espacio-16);
-      border: 1px solid var(--linea);
-      border-radius: var(--radio-tarjeta);
-      background: var(--superficie-tarjeta);
-      font-size: var(--texto-body-sm);
-      line-height: var(--interlineado-largo);
-    }
-    /* El acento de la banda alta: un filo del color de la banda, fijo. */
+    /* El globo es .globo-nia (base.css), el mismo de la bienvenida del catálogo. Lo
+       único propio es el acento de la banda alta: un filo del color de la banda, fijo. */
     [data-banda='alto'] .globo {
       border-inline-start: 3px solid var(--banda-alto);
     }
-    .globo::before {
-      content: '';
-      position: absolute;
-      inset-inline-start: -7px;
-      top: 50%;
-      width: 12px;
-      height: 12px;
-      transform: translateY(-50%) rotate(45deg);
-      border-inline-start: 1px solid var(--linea);
-      border-block-end: 1px solid var(--linea);
-      background: var(--superficie-tarjeta);
-    }
     [data-banda='alto'] .globo::before {
       inset-inline-start: -9px;
-    }
-    .quien {
-      display: block;
-      margin-bottom: var(--espacio-4);
-      color: var(--texto-meta);
-      font-size: var(--texto-caption);
     }
 
     /* Con menos movimiento pedido, la imagen queda quieta en su pose. */

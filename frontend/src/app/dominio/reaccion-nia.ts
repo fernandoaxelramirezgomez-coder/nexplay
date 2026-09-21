@@ -13,25 +13,29 @@ export interface ReaccionNia {
 /** La banda es la única entrada. No se mira el score, ni los motivos, ni el perfil:
  * si la reacción dependiera de otra cosa podría contradecir a la ficha, que muestra la
  * banda. Nia reacciona al riesgo relativo estimado, no a una supuesta confianza del
- * modelo en su estimación. */
+ * modelo en su estimación.
+ *
+ * Los tres textos describen la banda con la misma frase y cambian una palabra. Ninguno
+ * aconseja qué hacer: el veredicto de arriba ya dice que es comparado con el catálogo, y
+ * decidir le toca a quien lee. */
 const REACCIONES: Record<NivelRiesgo, ReaccionNia> = {
   bajo: {
     emocion: 'tranquila',
     imagen: 'nia/ficha-bajo.png',
-    texto: 'Las señales observadas son favorables respecto a otros juegos del catálogo de NexPlay.',
+    texto: 'La estimación muestra una señal baja de arrepentimiento temprano.',
     descripcion: 'Nia sonríe con los brazos arriba: riesgo relativo bajo.',
   },
   medio: {
     emocion: 'pensativa',
     imagen: 'nia/ficha-medio.png',
-    texto: 'Hay señales mixtas. Conviene revisar un poco más antes de decidir.',
+    texto: 'La estimación muestra una señal mixta de arrepentimiento temprano.',
     descripcion: 'Nia piensa con la mano en la barbilla: riesgo relativo medio.',
   },
   alto: {
     emocion: 'cautelosa',
     imagen: 'nia/ficha-alto.png',
-    texto: 'Detecté señales de mayor riesgo relativo. Conviene revisar los motivos frecuentes antes de decidir.',
-    descripcion: 'Nia revisa datos en su laptop con gesto serio: riesgo relativo alto.',
+    texto: 'La estimación muestra una señal alta de arrepentimiento temprano.',
+    descripcion: 'Nia concentrada frente a su laptop, con gesto serio: riesgo relativo alto.',
   },
 };
 

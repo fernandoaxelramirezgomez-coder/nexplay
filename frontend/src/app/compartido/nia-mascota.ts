@@ -7,11 +7,12 @@ import {
   signal,
 } from '@angular/core';
 
+import { SALUDO_CATALOGO } from '../dominio/textos-nia';
+
 /** El saludo se escribe letra por letra: es lo que hace que se sienta alguien
- * escribiendo y no un cartel. Se corta en seco con prefers-reduced-motion. */
-const SALUDO =
-  '¡Hola! Soy Nia. Te muestro qué tan seguido un juego deja señales de arrepentimiento temprano' +
-  ' en sus primeras dos horas. Busca uno aquí arriba y te cuento lo que dicen sus reseñas.';
+ * escribiendo y no un cartel. Se corta en seco con prefers-reduced-motion. El texto vive
+ * en dominio/textos-nia.ts, donde una prueba vigila que describa y no aconseje. */
+const SALUDO = SALUDO_CATALOGO;
 const MS_POR_LETRA = 22;
 
 /** Nia del catálogo: el retrato de bienvenida, solo en el inicio. La ficha tiene su
@@ -29,7 +30,8 @@ const MS_POR_LETRA = 22;
         height="500"
         fetchpriority="high"
       />
-      <p class="globo" role="status" aria-live="polite" data-testid="nia-saludo">
+      <p class="globo-nia globo" role="status" aria-live="polite" data-testid="nia-saludo">
+        <span class="quien">Nia</span>
         <span class="texto">{{ visible() }}</span
         ><span class="cursor" [class.quieto]="termino()" aria-hidden="true">▋</span>
       </p>
@@ -39,12 +41,12 @@ const MS_POR_LETRA = 22;
     .mascota {
       display: flex;
       align-items: center;
-      gap: var(--espacio-16);
+      gap: var(--espacio-24);
       max-width: var(--medida-lectura);
       text-align: start;
     }
     img {
-      width: 132px;
+      width: 148px;
       height: auto;
       flex: 0 0 auto;
       /* Respira como el logo, pero medio segundo más lenta para que no vayan a la par. */
@@ -61,29 +63,10 @@ const MS_POR_LETRA = 22;
         filter: drop-shadow(0 0 10px rgba(34, 224, 255, 0.45));
       }
     }
-    /* El globo sale del lado de Nia: la punta lo ata a ella. */
+    /* El globo es .globo-nia (base.css). Solo se reserva su alto final, para que la
+       página no salte mientras el saludo se escribe letra por letra. */
     .globo {
-      position: relative;
-      margin: 0;
-      padding: var(--espacio-12) var(--espacio-16);
-      border: 1px solid var(--linea);
-      border-radius: var(--radio-tarjeta);
-      background: var(--superficie-tarjeta);
-      font-size: var(--texto-body-sm);
-      line-height: var(--interlineado-largo);
-      min-height: 5.5em;
-    }
-    .globo::before {
-      content: '';
-      position: absolute;
-      inset-inline-start: -7px;
-      top: 50%;
-      width: 12px;
-      height: 12px;
-      transform: translateY(-50%) rotate(45deg);
-      border-inline-start: 1px solid var(--linea);
-      border-block-end: 1px solid var(--linea);
-      background: var(--superficie-tarjeta);
+      min-height: 6.5em;
     }
     .cursor {
       color: var(--neon);

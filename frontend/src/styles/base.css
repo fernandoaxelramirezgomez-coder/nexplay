@@ -270,3 +270,42 @@ b {
   border-radius: var(--radio-tarjeta);
   padding: var(--espacio-24);
 }
+
+/* Globo de Nia: lo comparten la bienvenida del catálogo y la reacción de la ficha, para
+   que hable igual en las dos. El filo lleva un poco de neón y el nombre va en cian: es
+   lo que la distingue de un bloque de texto cualquiera. La cola apunta a la izquierda;
+   cada componente la mueve arriba cuando se apila en pantallas angostas. */
+.globo-nia {
+  position: relative;
+  margin: 0;
+  padding: var(--espacio-16) var(--espacio-24);
+  border: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie-tarjeta);
+  font-size: var(--texto-body-sm);
+  line-height: var(--interlineado-largo);
+}
+
+.globo-nia::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -7px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%) rotate(45deg);
+  /* Explícito y no inherit: en la banda alta el filo izquierdo del globo es grueso y de
+     color, y la cola heredaría ese grosor solo de un lado. */
+  border-inline-start: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  border-block-end: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  background: var(--superficie-tarjeta);
+}
+
+.globo-nia .quien {
+  display: block;
+  margin-bottom: var(--espacio-4);
+  color: var(--neon);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  letter-spacing: 0.04em;
+}
