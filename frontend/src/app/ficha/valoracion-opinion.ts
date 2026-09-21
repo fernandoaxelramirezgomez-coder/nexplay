@@ -3,54 +3,33 @@ import { rxResource } from '@angular/core/rxjs-interop';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { ResumenValoraciones } from '../api/contrato';
-import { textoUtilidad } from '../dominio/utilidad';
+import { textoCalificacion } from '../dominio/calificacion';
 import { UsuarioStore } from '../estado/usuario-store';
+import { Estrellas } from './estrellas';
 import { HiloComentarios } from './hilo-comentarios';
-import { IconoPulgar } from '../compartido/icono-pulgar';
 
-/** Voto sobre la segunda opinión: uno por persona y juego, y se puede cambiar. Debajo va
- * el hilo público de comentarios. */
+/** Calificación de 1 a 5 estrellas sobre la segunda opinión: una por persona y juego, y
+ * se puede cambiar o quitar. Debajo va el hilo público de comentarios. */
 @Component({
   selector: 'app-valoracion-opinion',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HiloComentarios, IconoPulgar],
+  imports: [HiloComentarios, Estrellas],
   template: `
     <section class="valoracion" data-testid="valoracion">
       <h3 class="titulo">¿Te sirvió esta segunda opinión?</h3>
 
       <div class="botones">
-        <button
-          type="button"
-          class="voto"
-          data-testid="valorar-util"
-          aria-label="Sí, me sirvió"
-          [attr.aria-pressed]="mia()?.util === true"
-          [disabled]="guardando()"
-          (click)="valorar(true)"
-        >
-          <app-icono-pulgar />
-        </button>
-        <button
-          type="button"
-          class="voto"
-          data-testid="valorar-no-util"
-          aria-label="No me sirvió"
-          [attr.aria-pressed]="mia()?.util === false"
-          [disabled]="guardando()"
-          (click)="valorar(false)"
-        >
-          <app-icono-pulgar [abajo]="true" />
-        </button>
+        <app-estrellas [valor]="mia()" [deshabilitado]="guardando()" (elegir)="valorar($event)" />
         <span class="meta mono conteo" data-testid="valoracion-conteo">{{ conteo() }}</span>
         @if (mia()) {
           <button
             type="button"
-            class="boton-fantasma quitar"
+            class="boton-texto quitar"
             data-testid="quitar-valoracion"
             [disabled]="guardando()"
             (click)="quitar()"
           >
-            Quitar mi voto
+            Quitar mi valoración
           </button>
         }
       </div>
@@ -78,45 +57,12 @@ import { IconoPulgar } from '../compartido/icono-pulgar';
       align-items: center;
       gap: var(--espacio-16);
     }
-    /* El texto completo va en aria-label, no en pantalla. El icono es un trazo propio,
-       no un emoji, para que se vea igual en cualquier sistema. */
-    .voto {
-      width: 56px;
-      height: 48px;
-      display: grid;
-      place-items: center;
-      color: var(--texto-meta);
-      font-size: 22px;
-      line-height: 1;
-      border: 1px solid var(--borde-control);
-      border-radius: var(--radio-boton);
-      background: transparent;
-      cursor: pointer;
-      transition:
-        border-color var(--duracion-rapida) var(--curva),
-        background var(--duracion-rapida) var(--curva);
-    }
-    .voto:hover:not([disabled]) {
-      border-color: var(--neon);
-      color: var(--texto);
-    }
-    .voto[aria-pressed='true'] {
-      background: var(--acento-sistema);
-      border-color: var(--neon);
-      box-shadow: var(--resplandor);
-      color: var(--neon);
-    }
-    .voto[disabled] {
-      cursor: progress;
-      opacity: 0.6;
-    }
     .conteo {
       margin-inline-start: var(--espacio-8);
     }
     .quitar {
       margin-inline-start: auto;
       font-size: var(--texto-caption);
-      padding: 4px var(--espacio-12);
     }
     .aviso:empty {
       display: none;
@@ -143,14 +89,14 @@ export class ValoracionOpinion {
   protected readonly mia = computed(() => this.recurso.value()?.mia ?? null);
   protected readonly conteo = computed(() => {
     const resumen = this.recurso.value();
-    return resumen ? textoUtilidad(resumen.utiles, resumen.total) : '';
+    return resumen ? textoCalificacion(resumen.promedio, resumen.total) : '';
   });
 
-  protected valorar(util: boolean): void {
+  protected valorar(calificacion: number): void {
     this.guardando.set(true);
-    this.api.guardarValoracion(this.appid(), { usuario: this.usuario.id, util }).subscribe({
+    this.api.guardarValoracion(this.appid(), { usuario: this.usuario.id, calificacion }).subscribe({
       next: (resumen) =>
-        this.terminar(resumen, util ? 'Gracias, quedó marcada como útil.' : 'Gracias, quedó marcada como no útil.'),
+        this.terminar(resumen, `Gracias, quedó calificada con ${calificacion} de 5 estrellas.`),
       error: () => this.fallar(),
     });
   }
@@ -158,7 +104,7 @@ export class ValoracionOpinion {
   protected quitar(): void {
     this.guardando.set(true);
     this.api.borrarValoracion(this.appid(), this.usuario.id).subscribe({
-      next: (resumen) => this.terminar(resumen, 'Quitamos tu valoración.'),
+      next: (resumen) => this.terminar(resumen, 'Quitamos tu calificación.'),
       error: () => this.fallar(),
     });
   }

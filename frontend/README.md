@@ -28,8 +28,8 @@ Vitest; `npx npm@11.19.1 install` lo resuelve. `npm ci` con npm 10 funciona bien
 
 Además del riesgo, los motivos y los factores, cada ficha tiene:
 
-- **Valoración de la segunda opinión**: 👍 / 👎 (uno por persona y juego, se puede cambiar
-  o quitar) con el conteo público.
+- **Valoración de la segunda opinión**: de 1 a 5 estrellas (una por persona y juego, se
+  puede cambiar o quitar), con el promedio y el total públicos: "4.2 ★ · 15 valoraciones".
 - **Hilo de comentarios**, público y anónimo. Cada quien edita y elimina los suyos
   —con "(editado)" a la vista y una confirmación antes de borrar—, y cualquiera puede
   darle 👍 a un comentario, uno por persona. Para moderar el de alguien más está

@@ -104,7 +104,7 @@ api/                módulos de la API
   schemas.py          contratos Pydantic de entrada y salida
   scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
   catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
-  valoraciones.py     votos y hilo de comentarios (base propia, datos/valoraciones.db)
+  valoraciones.py     calificaciones y hilo de comentarios (base propia, datos/valoraciones.db)
   nia.py              el chat: contexto del juego, reglas de vocabulario y modo demostración
   config.py           variables de .env (clave y modelo de Nia, topes)
   limites.py          límite de frecuencia en memoria, por usuario e IP
@@ -127,7 +127,7 @@ entrenar_baseline.py   pipeline compartido + comparación de conjuntos de featur
 entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
 preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
 verificar_bandas.py    compara las bandas del catálogo contra docs/bandas_referencia.json
-exportar_valoraciones.py  exporta votos y comentarios a CSV (uso local)
+exportar_valoraciones.py  exporta calificaciones y comentarios a CSV (uso local)
 moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
 .env.example           plantilla de variables; el .env real no se versiona
 requirements-dev.txt   opcional: Playwright para scripts/capturar_ui.py; el notebook y preparar_entorno.py no lo usan
@@ -272,10 +272,12 @@ muestra para decir algo confiable.
 Viven en `datos/valoraciones.db`, aparte de `nexplay.db`. La identidad es un id anónimo
 que genera el navegador y guarda en `localStorage`: **identifica, no autentica**.
 
-- `GET /valoraciones/{appid}?usuario=` → `{ appid, utiles, no_utiles, total, mia }`. El
-  conteo es público; `mia` es el voto de quien pregunta.
-- `PUT /valoraciones/{appid}` con `{ usuario, util }` → crea o cambia el voto (uno por
-  persona y juego). `DELETE` con `?usuario=` lo quita.
+- `GET /valoraciones/{appid}?usuario=` → `{ appid, promedio, total, mia }`. El promedio
+  y el total son públicos (`promedio` es `null` si nadie ha calificado); `mia` es la
+  calificación de quien pregunta, de 1 a 5, o `null`.
+- `PUT /valoraciones/{appid}` con `{ usuario, calificacion }` → crea o cambia la
+  calificación (uno por persona y juego). `calificacion` es un entero de 1 a 5: `0`, `6`,
+  `3.5` o `"3"` devuelven 422. `DELETE` con `?usuario=` la quita.
 - `GET /comentarios/{appid}?usuario=` → hilo público, del más viejo al más nuevo. Cada
   entrada trae `id`, `texto`, `creado`, `actualizado`, `editado`, `reacciones`,
   `reaccione_mia` y `es_mio`. **Nunca devuelve el id de quien escribió**: de esa identidad
@@ -324,7 +326,7 @@ también frena al modelo real, no solo al modo demostración.
   release. En un contenedor el disco es efímero: en el despliegue necesita un volumen
   persistente (un disco en Render, `/data` en Spaces) o las valoraciones se pierden en
   cada reinicio. Respaldarla es copiar el archivo.
-- `python exportar_valoraciones.py` genera dos CSV en `extracto/`: votos y comentarios.
+- `python exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
   El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
 - `python moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
   `--borrar ID` elimina uno, con sus reacciones. Cada quien puede borrar los suyos desde

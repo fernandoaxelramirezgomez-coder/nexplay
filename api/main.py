@@ -133,8 +133,8 @@ def ver_valoraciones(appid: int, usuario: str = _USUARIO) -> ResumenValoraciones
 @app.put("/valoraciones/{appid}", response_model=ResumenValoraciones)
 def valorar(appid: int, solicitud: SolicitudValoracion) -> ResumenValoraciones:
     _exigir_juego(appid)
-    logger.info("voto appid=%s util=%s", appid, solicitud.util)
-    return ResumenValoraciones(**valoraciones.guardar(appid, solicitud.usuario, solicitud.util))
+    logger.info("calificación appid=%s estrellas=%s", appid, solicitud.calificacion)
+    return ResumenValoraciones(**valoraciones.guardar(appid, solicitud.usuario, solicitud.calificacion))
 
 
 @app.delete("/valoraciones/{appid}", response_model=ResumenValoraciones)

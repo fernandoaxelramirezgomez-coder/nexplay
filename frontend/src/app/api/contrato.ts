@@ -110,25 +110,22 @@ export interface ErrorApi {
 }
 
 /** El voto propio sobre la segunda opinión. Los comentarios son un hilo aparte. */
-export interface Valoracion {
-  util: boolean;
-  actualizado: string;
-}
-
 /** PUT /valoraciones/{appid} */
 export interface SolicitudValoracion {
   /** Id anónimo del navegador: identifica, no autentica. */
   usuario: string;
-  util: boolean;
+  /** Estrellas, entero de 1 a 5. */
+  calificacion: number;
 }
 
 /** GET/PUT/DELETE /valoraciones/{appid} */
 export interface ResumenValoraciones {
   appid: number;
-  utiles: number;
-  no_utiles: number;
+  /** Promedio de estrellas; null si nadie ha calificado todavía. */
+  promedio: number | null;
   total: number;
-  mia: Valoracion | null;
+  /** Las estrellas de quien pregunta, si ya calificó. */
+  mia: number | null;
 }
 
 /** Hilo público de /comentarios/{appid}, del más viejo al más nuevo y sin identidad:

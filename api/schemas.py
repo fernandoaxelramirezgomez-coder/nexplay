@@ -151,13 +151,6 @@ class MotivoInsatisfaccion(BaseModel):
     )
 
 
-class Valoracion(BaseModel):
-    """El voto de quien pregunta. Los comentarios son un hilo aparte y público."""
-
-    util: bool
-    actualizado: str
-
-
 class SolicitudValoracion(BaseModel):
     usuario: str = Field(
         ...,
@@ -166,15 +159,17 @@ class SolicitudValoracion(BaseModel):
         pattern=r"^[A-Za-z0-9._-]+$",
         description="Id anónimo generado por el navegador; identifica, no autentica",
     )
-    util: bool = Field(..., description="True si la segunda opinión le sirvió")
+    # strict: un 3.5, un "3" o un true dan 422 en vez de convertirse en silencio.
+    calificacion: int = Field(..., ge=1, le=5, strict=True, description="Estrellas, de 1 a 5")
 
 
 class ResumenValoraciones(BaseModel):
     appid: int
-    utiles: int = Field(..., description="Cuántas personas marcaron la segunda opinión como útil")
-    no_utiles: int
-    total: int
-    mia: Optional[Valoracion] = Field(None, description="El voto del usuario que pregunta, si tiene uno")
+    promedio: Optional[float] = Field(
+        None, description="Promedio de estrellas; None si nadie ha calificado (no 0.0, que parecería una nota)"
+    )
+    total: int = Field(..., description="Cuántas personas calificaron la segunda opinión")
+    mia: Optional[int] = Field(None, ge=1, le=5, description="Las estrellas de quien pregunta, si ya calificó")
 
 
 class Comentario(BaseModel):

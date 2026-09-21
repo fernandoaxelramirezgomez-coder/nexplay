@@ -22,7 +22,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent
 VALORACIONES_PATH = Path(os.environ.get("NEXPLAY_VALORACIONES_DB", RAIZ / "datos" / "valoraciones.db"))
 CATALOGO_PATH = RAIZ / "datos" / "nexplay.db"
-COLUMNAS_VOTOS = ["appid", "nombre", "usuario", "util", "creado", "actualizado"]
+COLUMNAS_VOTOS = ["appid", "nombre", "usuario", "calificacion", "creado", "actualizado"]
 COLUMNAS_COMENTARIOS = ["id", "appid", "nombre", "usuario", "texto", "creado"]
 
 
@@ -46,7 +46,7 @@ def exportar(salida: Path) -> int:
     con = sqlite3.connect(f"file:{VALORACIONES_PATH}?mode=ro", uri=True)
     try:
         votos = con.execute(
-            "SELECT appid, usuario, util, creado, actualizado FROM valoraciones ORDER BY appid, actualizado"
+            "SELECT appid, usuario, calificacion, creado, actualizado FROM valoraciones ORDER BY appid, actualizado"
         ).fetchall()
         comentarios = con.execute(
             "SELECT id, appid, usuario, texto, creado FROM comentarios ORDER BY appid, id"
@@ -58,8 +58,8 @@ def exportar(salida: Path) -> int:
     with open(salida, "w", encoding="utf-8", newline="") as archivo:
         escritor = csv.writer(archivo)
         escritor.writerow(COLUMNAS_VOTOS)
-        for appid, usuario, util, creado, actualizado in votos:
-            escritor.writerow([appid, nombres.get(appid, ""), usuario, "si" if util else "no", creado, actualizado])
+        for appid, usuario, calificacion, creado, actualizado in votos:
+            escritor.writerow([appid, nombres.get(appid, ""), usuario, calificacion, creado, actualizado])
 
     salida_comentarios = salida.with_name(f"{salida.stem}-comentarios{salida.suffix}")
     with open(salida_comentarios, "w", encoding="utf-8", newline="") as archivo:
@@ -68,9 +68,9 @@ def exportar(salida: Path) -> int:
         for id_comentario, appid, usuario, texto, creado in comentarios:
             escritor.writerow([id_comentario, appid, nombres.get(appid, ""), usuario, texto, creado])
 
-    utiles = sum(1 for fila in votos if fila[2])
+    promedio = sum(fila[2] for fila in votos) / len(votos) if votos else None
     usuarios = {fila[1] for fila in votos} | {fila[2] for fila in comentarios}
-    print(f"{salida}: {len(votos)} votos ({utiles} útiles, {len(votos) - utiles} no útiles).")
+    print(f"{salida}: {len(votos)} calificaciones" + (f", promedio {promedio:.1f} de 5." if votos else "."))
     print(f"{salida_comentarios}: {len(comentarios)} comentarios. {len(usuarios)} usuarios distintos en total.")
     return 0
 

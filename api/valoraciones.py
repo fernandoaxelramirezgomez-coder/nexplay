@@ -4,7 +4,7 @@ Viven en su propia base (datos/valoraciones.db, movible con NEXPLAY_VALORACIONES
 separada de nexplay.db: es contenido de quien usa la app, no datos del proyecto, y
 preparar_entorno.py no la reconstruye ni la pisa.
 
-- El voto útil / no útil es uno por persona y juego, y se puede cambiar.
+- La calificación (1 a 5 estrellas) es una por persona y juego, y se puede cambiar.
 - Los comentarios son un hilo público. Se devuelven sin identidad: el id de quien
   escribió nunca sale de este módulo, solo se compara contra quien pregunta para marcar
   cuáles son suyos. Cada quien edita y borra los propios; ese mismo id sirve para el
@@ -38,13 +38,20 @@ def _crear_esquema() -> None:
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     con = _conectar()
     try:
+        # El voto útil/no útil pasó a una calificación de 1 a 5. La tabla vieja tenía
+        # votos de prueba y se recrea limpia en vez de traducirlos: "útil" no tiene un
+        # número de estrellas equivalente honesto.
+        columnas = {fila[1] for fila in con.execute("PRAGMA table_info(valoraciones)")}
+        if columnas and "calificacion" not in columnas:
+            con.execute("DROP TABLE valoraciones")
+            logger.info("tabla valoraciones recreada con calificación 1-5 (los votos útil/no útil eran de prueba)")
         con.execute(
             """CREATE TABLE IF NOT EXISTS valoraciones (
-                   usuario     TEXT    NOT NULL,
-                   appid       INTEGER NOT NULL,
-                   util        INTEGER NOT NULL,
-                   creado      TEXT    NOT NULL,
-                   actualizado TEXT    NOT NULL,
+                   usuario      TEXT    NOT NULL,
+                   appid        INTEGER NOT NULL,
+                   calificacion INTEGER NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
+                   creado       TEXT    NOT NULL,
+                   actualizado  TEXT    NOT NULL,
                    PRIMARY KEY (usuario, appid)
                )"""
         )
@@ -91,39 +98,36 @@ def _ahora() -> str:
 
 
 def resumen(appid: int, usuario: str | None = None) -> dict:
-    """Conteos del juego y, si se pide, la valoración de ese usuario. Nunca devuelve
-    comentarios de terceros."""
+    """Promedio y total del juego y, si se pide, la calificación de ese usuario. El
+    promedio es None cuando nadie ha calificado: un 0.0 se leería como "cero estrellas"."""
     con = _conectar()
     try:
-        utiles, no_utiles = con.execute(
-            "SELECT COALESCE(SUM(util), 0), COALESCE(SUM(1 - util), 0) FROM valoraciones WHERE appid = ?",
-            (appid,),
+        promedio, total = con.execute(
+            "SELECT AVG(calificacion), COUNT(*) FROM valoraciones WHERE appid = ?", (appid,)
         ).fetchone()
         mia = None
         if usuario:
             fila = con.execute(
-                "SELECT util, actualizado FROM valoraciones WHERE appid = ? AND usuario = ?",
-                (appid, usuario),
+                "SELECT calificacion FROM valoraciones WHERE appid = ? AND usuario = ?", (appid, usuario)
             ).fetchone()
-            if fila is not None:
-                mia = {"util": bool(fila[0]), "actualizado": fila[1]}
+            mia = fila[0] if fila else None
     finally:
         con.close()
-    return {"appid": appid, "utiles": utiles, "no_utiles": no_utiles, "total": utiles + no_utiles, "mia": mia}
+    return {"appid": appid, "promedio": promedio, "total": total, "mia": mia}
 
 
-def guardar(appid: int, usuario: str, util: bool) -> dict:
-    """Crea o actualiza el voto de ese usuario para ese juego."""
+def guardar(appid: int, usuario: str, calificacion: int) -> dict:
+    """Crea o cambia la calificación de ese usuario para ese juego."""
     ahora = _ahora()
     con = _conectar()
     try:
         con.execute(
-            """INSERT INTO valoraciones (usuario, appid, util, creado, actualizado)
+            """INSERT INTO valoraciones (usuario, appid, calificacion, creado, actualizado)
                VALUES (?, ?, ?, ?, ?)
                ON CONFLICT (usuario, appid) DO UPDATE SET
-                   util = excluded.util,
+                   calificacion = excluded.calificacion,
                    actualizado = excluded.actualizado""",
-            (usuario, appid, int(util), ahora, ahora),
+            (usuario, appid, calificacion, ahora, ahora),
         )
         con.commit()
     finally:

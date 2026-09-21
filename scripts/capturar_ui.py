@@ -748,6 +748,97 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
 _MUESTRA_SIN_DESCRIPCION = 5
 
 
+def _estrellas_marcadas(pagina: Page) -> list[str]:
+    """Qué estrellas tienen aria-checked=true (debería haber una o ninguna)."""
+    return pagina.locator("[data-testid='estrellas'] [role='radio'][aria-checked='true']").evaluate_all(
+        "nodos => nodos.map(n => n.dataset.estrella)"
+    )
+
+
+def _angular_estrellas(pagina: Page, url: str, destino: Path) -> list[str]:
+    """La calificación de 1 a 5: radiogroup con teclado y con ratón, y quitarla."""
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    grupo = pagina.get_by_test_id("estrellas")
+    grupo.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    conteo = pagina.get_by_test_id("valoracion-conteo")
+
+    radios = grupo.locator("[role='radio']")
+    if grupo.get_attribute("role") != "radiogroup" or radios.count() != 5:
+        problemas.append(f"las estrellas no son un radiogroup de 5 radios ({radios.count()})")
+    etiquetas = radios.evaluate_all("nodos => nodos.map(n => n.getAttribute('aria-label'))")
+    if etiquetas[2:3] != ["Calificar con 3 de 5 estrellas"]:
+        problemas.append(f"aria-label inesperado en la tercera estrella: {etiquetas[2:3]}")
+    tabulables = radios.evaluate_all("nodos => nodos.filter(n => n.tabIndex === 0).length")
+    if tabulables != 1:
+        problemas.append(f"debe entrar una sola estrella al orden de tabulación, entran {tabulables}")
+
+    # Teclado: desde la primera, tres flechas a la derecha dejan el foco en la cuarta con
+    # vista previa hasta ahí, y Enter confirma.
+    radios.nth(0).focus()
+    for _ in range(3):
+        pagina.keyboard.press("ArrowRight")
+    enfocada = pagina.evaluate("() => document.activeElement?.dataset.estrella")
+    # La vista previa se pinta en el siguiente ciclo de detección de cambios: se espera,
+    # en vez de leerla en el mismo instante en que termina la tecla.
+    try:
+        pagina.wait_for_function(
+            "() => document.querySelectorAll(\"[data-testid='estrellas'] .previa\").length === 4",
+            timeout=5_000,
+        )
+    except TiempoAgotado:
+        pass
+    previas = grupo.locator(".previa").count()
+    if enfocada != "4" or previas != 4:
+        problemas.append(f"con las flechas el foco quedó en {enfocada} y hay {previas} en vista previa (esperaba 4 y 4)")
+    pagina.keyboard.press("Enter")
+    try:
+        pagina.wait_for_function(
+            "() => document.querySelector(\"[data-testid='estrellas'] [data-estrella='4']\")"
+            "?.getAttribute('aria-checked') === 'true'",
+            timeout=_TIMEOUT_MS,
+        )
+    except TiempoAgotado:
+        problemas.append("Enter no confirmó la calificación con teclado")
+    if "★" not in conteo.inner_text():
+        problemas.append(f"el resumen no muestra el promedio con estrella ('{conteo.inner_text()}')")
+    if _estrellas_marcadas(pagina) != ["4"]:
+        problemas.append(f"aria-checked quedó en {_estrellas_marcadas(pagina)}, esperaba solo la 4")
+    print(f"estrellas: con teclado, flechas + Enter → 4 · '{conteo.inner_text()}'")
+
+    # Ratón: pasar por encima de la segunda previsualiza dos; el clic confirma.
+    radios.nth(1).hover()
+    _esperar_quietud(pagina)
+    ruta = destino / "estrellas-vista-previa.png"
+    pagina.get_by_test_id("valoracion").screenshot(path=ruta)
+    radios.nth(1).click()
+    try:
+        pagina.wait_for_function(
+            "() => document.querySelector(\"[data-testid='estrellas'] [data-estrella='2']\")"
+            "?.getAttribute('aria-checked') === 'true'",
+            timeout=_TIMEOUT_MS,
+        )
+    except TiempoAgotado:
+        problemas.append("el clic en la segunda estrella no cambió la calificación")
+    pagina.mouse.move(0, 0)
+    _esperar_quietud(pagina)
+    ruta_final = destino / "estrellas-calificada.png"
+    pagina.get_by_test_id("valoracion").screenshot(path=ruta_final)
+    print(f"estrellas: con ratón, clic en la 2 · {ruta.relative_to(_RAIZ)}, {ruta_final.relative_to(_RAIZ)}")
+
+    # Quitarla deja todo como estaba.
+    pagina.get_by_test_id("quitar-valoracion").click()
+    try:
+        pagina.wait_for_function(
+            "() => !document.querySelector(\"[data-testid='estrellas'] [aria-checked='true']\")",
+            timeout=_TIMEOUT_MS,
+        )
+        print("estrellas: 'Quitar mi valoración' deja las cinco vacías")
+    except TiempoAgotado:
+        problemas.append("'Quitar mi valoración' no vació las estrellas")
+    return problemas
+
+
 def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
     problemas = []
@@ -911,6 +1002,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
+        + _angular_estrellas(pagina, url, destino)
         + _angular_nia_reaccion(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
