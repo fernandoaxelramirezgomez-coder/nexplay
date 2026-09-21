@@ -14,6 +14,7 @@ export function juegoDePrueba(cambios: Partial<JuegoCatalogo> = {}): JuegoCatalo
     fecha_lanzamiento: '16 FEB 2023',
     descripcion: 'Domina una tecnología ancestral para cazar bestias enormes.',
     portada_url: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1938010/header.jpg',
+    video_url: null,
     tienda_url: 'https://store.steampowered.com/app/1938010',
     banda_riesgo: 'alto',
     riesgo: 0.7424,

@@ -24,6 +24,8 @@ export interface JuegoCatalogo {
   /** short_description de Steam; null cuando la tienda solo la tiene en inglés. */
   descripcion: string | null;
   portada_url: string;
+  /** Primer tráiler de Steam en HLS (.m3u8); null si el juego no tiene videos. */
+  video_url: string | null;
   tienda_url: string;
   /** "Riesgo general": calculado con el perfil neutro de api/catalogo.py. */
   banda_riesgo: NivelRiesgo;

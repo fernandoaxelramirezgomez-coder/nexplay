@@ -82,9 +82,12 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
 
     con = sqlite3.connect(_DB_PATH)
     try:
+        # Una base anterior a la columna video_hls (data-v1) sigue sirviendo, sin videos.
+        columnas = {f[1] for f in con.execute("PRAGMA table_info(juegos)")}
+        video = "video_hls" if "video_hls" in columnas else "NULL"
         filas = con.execute(
             "SELECT appid, nombre, generos, metacritic, es_gratis, precio_final, moneda, fecha_lanzamiento, "
-            "descripcion_corta FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
+            f"descripcion_corta, {video} FROM juegos WHERE nombre IS NOT NULL ORDER BY nombre"
         ).fetchall()
     finally:
         con.close()
@@ -101,6 +104,7 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
         moneda,
         fecha_lanzamiento,
         descripcion_corta,
+        video_hls,
     ) in filas:
         descripcion = _descripcion_en_espanol(descripcion_corta)
         sin_espanol += descripcion is None
@@ -119,6 +123,7 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
                 fecha_lanzamiento=fecha_lanzamiento,
                 descripcion=descripcion,
                 portada_url=_url_portada(appid),
+                video_url=video_hls,
                 tienda_url=_url_tienda(appid),
                 banda_riesgo=prediccion.nivel,
                 riesgo=prediccion.riesgo,

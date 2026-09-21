@@ -100,6 +100,9 @@ class JuegoCatalogo(BaseModel):
         description="short_description de Steam; None cuando la tienda solo la tiene en inglés (ver catalogo.py)",
     )
     portada_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
+    video_url: Optional[str] = Field(
+        None, description="Primer tráiler de Steam en HLS (.m3u8); None si el juego no tiene videos"
+    )
     tienda_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     banda_riesgo: NivelRiesgo = Field(
         ..., description="Riesgo estimado con un perfil neutro (ver catalogo.py); orientativo para el catálogo, no personalizado"

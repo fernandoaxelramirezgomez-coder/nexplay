@@ -14,6 +14,7 @@ de veteranos, y ese es el corazon del proyecto.
 Uso:
     python ingesta_steam.py --catalogo    # metadatos de los juegos
     python ingesta_steam.py --resenas     # resenas (esto es lo que tarda)
+    python ingesta_steam.py --videos      # solo el trailer de los juegos ya bajados
     python ingesta_steam.py --estado      # cuanto llevas
 
 Fernando Barranco / Diplomado en Ciencia de Datos, FES Acatlan (UNAM)
@@ -121,7 +122,8 @@ CREATE TABLE IF NOT EXISTS juegos (
     soporta_mac          INTEGER,
     soporta_linux        INTEGER,
     descripcion_corta    TEXT,
-    descargado_en        TEXT
+    descargado_en        TEXT,
+    video_hls            TEXT
 );
 
 CREATE TABLE IF NOT EXISTS resenas (
@@ -175,6 +177,10 @@ def conectar():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_PATH)
     con.executescript(ESQUEMA)
+    # CREATE TABLE IF NOT EXISTS no agrega columnas a una base que ya existe.
+    columnas = {f[1] for f in con.execute("PRAGMA table_info(juegos)")}
+    if "video_hls" not in columnas:
+        con.execute("ALTER TABLE juegos ADD COLUMN video_hls TEXT")
     con.commit()
     return con
 
@@ -233,6 +239,18 @@ def lista_a_texto(valor, campo=None):
 # Catalogo
 # ---------------------------------------------------------------------------
 
+def primer_trailer_hls(d):
+    """URL HLS del primer trailer, o None si el juego no tiene videos.
+
+    Steam ya no publica mp4 ni webm en appdetails: cada video trae solo
+    dash_av1, dash_h264 y hls_h264. Se guarda el HLS porque es el que Safari
+    y Chromium reproducen con un <video> simple; el front carga hls.js solo
+    donde el navegador no lo soporta.
+    """
+    videos = d.get("movies") or []
+    return videos[0].get("hls_h264") if videos else None
+
+
 def bajar_juego(con, appid):
     datos = pedir(URL_DETALLES, {"appids": appid, "cc": "mx", "l": "spanish"})
     if not datos:
@@ -251,8 +269,12 @@ def bajar_juego(con, appid):
     metacritic = (d.get("metacritic") or {}).get("score")
 
     con.execute(
-        """INSERT OR REPLACE INTO juegos VALUES
-           (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        """INSERT OR REPLACE INTO juegos
+           (appid, nombre, tipo, fecha_lanzamiento, proximamente, es_gratis,
+            precio_inicial, precio_final, descuento, moneda, generos, categorias,
+            desarrolladores, editores, metacritic, soporta_windows, soporta_mac,
+            soporta_linux, descripcion_corta, descargado_en, video_hls)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             appid,
             d.get("name"),
@@ -274,6 +296,7 @@ def bajar_juego(con, appid):
             1 if plataformas.get("linux") else 0,
             d.get("short_description"),
             ahora(),
+            primer_trailer_hls(d),
         ),
     )
     con.commit()
@@ -303,6 +326,38 @@ def correr_catalogo(con, appids):
         bajar_juego(con, appid)
         if i < len(appids):
             time.sleep(ESPERA_DETALLES)
+
+
+def correr_videos(con):
+    """Guarda el trailer de los juegos que ya estan en 'juegos', sin tocar nada mas.
+
+    No reusa bajar_juego(): eso reescribe la fila con el precio de hoy, y el
+    precio es una variable del modelo (ver filtrar_nuevos). Aqui solo se hace
+    UPDATE de video_hls, asi que las bandas no se mueven.
+    """
+    appids = [f[0] for f in con.execute("SELECT appid FROM juegos ORDER BY appid")]
+    log.info("Videos: %s juegos por revisar", len(appids))
+    con_video = sin_video = fallidos = 0
+    for i, appid in enumerate(appids, 1):
+        datos = pedir(URL_DETALLES, {"appids": appid, "filters": "movies"})
+        bloque = (datos or {}).get(str(appid), {})
+        if not bloque.get("success"):
+            log.error("appid %s: sin respuesta de Steam, queda como estaba", appid)
+            fallidos += 1
+        else:
+            # Con filters=movies, Steam responde data=[] (lista, no dict) si no hay videos.
+            d = bloque.get("data") if isinstance(bloque.get("data"), dict) else {}
+            url = primer_trailer_hls(d)
+            con.execute("UPDATE juegos SET video_hls = ? WHERE appid = ?", (url, appid))
+            con.commit()
+            if url:
+                con_video += 1
+            else:
+                sin_video += 1
+                log.info("appid %-8s sin trailer", appid)
+        if i < len(appids):
+            time.sleep(ESPERA_DETALLES)
+    log.info("Videos: %s con trailer, %s sin trailer, %s sin respuesta", con_video, sin_video, fallidos)
 
 
 # ---------------------------------------------------------------------------
@@ -472,6 +527,7 @@ def main():
     p.add_argument("--catalogo", action="store_true", help="baja metadatos de juegos")
     p.add_argument("--resenas", action="store_true", help="baja resenas")
     p.add_argument("--estado", action="store_true", help="muestra el avance")
+    p.add_argument("--videos", action="store_true", help="guarda el trailer HLS de los juegos ya bajados")
     p.add_argument(
         "--solo-nuevos",
         action="store_true",
@@ -487,7 +543,7 @@ def main():
         con.close()
         return
 
-    if not (args.catalogo or args.resenas):
+    if not (args.catalogo or args.resenas or args.videos):
         p.print_help()
         con.close()
         return
@@ -496,6 +552,8 @@ def main():
     try:
         if args.catalogo:
             correr_catalogo(con, filtrar_nuevos(con, leer_appids()) if args.solo_nuevos else leer_appids())
+        if args.videos:
+            correr_videos(con)
         if args.resenas:
             correr_resenas(con)
         mostrar_estado(con)
