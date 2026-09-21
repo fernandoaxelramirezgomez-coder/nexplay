@@ -38,6 +38,13 @@ Además del riesgo, los motivos y los factores, cada ficha tiene:
   tolerancia a la fricción, tus horas por semana y tus compras al año con los datos del juego
   (`dominio/historia-perfil.ts`, con pruebas). Es contexto, no una recomendación, y lo dice:
   el modelo no usa gustos ni horas. Un botón deja que Nia lo cuente con sus palabras.
+- **Nia reacciona a la banda de riesgo**, dentro de la segunda opinión: sonríe en riesgo
+  bajo, piensa en medio y revisa datos con gesto serio en alto, con un texto breve para
+  cada una. Es apoyo visual, no un segundo resultado: la emoción sale solo de la banda que
+  ya muestra el veredicto (`dominio/reaccion-nia.ts`), y reacciona al riesgo relativo, no
+  a una supuesta confianza del modelo. Los sprites salen de una hoja de 12 emociones con
+  `scripts/recortar_nia.py`; los de la ficha y el retrato del inicio viven aparte, en
+  `public/nia/`.
 - **Nia**, el chat del juego. Sin clave de OpenAI configurada responde en modo
   demostración, con reglas sobre los mismos datos, y lo dice en pantalla. En el resto de las
   pantallas vive como burbuja en la esquina: al abrirla pregunta de qué juego hablar, porque la

@@ -91,6 +91,9 @@
               }
             </p>
           }
+          @if (prediccion(); as prediccion) {
+            <app-nia-reaccion [nivel]="prediccion.nivel" />
+          }
           <app-valoracion-opinion [appid]="juego.appid" />
         </section>
 

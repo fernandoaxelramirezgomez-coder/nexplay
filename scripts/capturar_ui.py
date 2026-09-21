@@ -789,11 +789,129 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     return problemas
 
 
+# Lo que Nia debe decir en la ficha según la banda. Replica a propósito el dominio
+# (dominio/reaccion-nia.ts) en vez de importarlo: si alguien cambia un texto allá sin
+# querer, aquí salta.
+_REACCION_ESPERADA = {
+    "bajo": "favorables",
+    "medio": "mixtas",
+    "alto": "mayor riesgo relativo",
+}
+
+
+def _un_juego_por_banda(api: str) -> dict[str, int]:
+    """El primer appid de cada banda según la API: el catálogo crece, no se fija a mano."""
+    elegidos: dict[str, int] = {}
+    for juego in sorted(_catalogo_api(api), key=lambda j: j["appid"]):
+        elegidos.setdefault(juego["banda_riesgo"], juego["appid"])
+    return elegidos
+
+
+def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Nia v2 en la ficha: una emoción por banda, la misma banda que el veredicto."""
+    problemas = []
+    base = url.rstrip("/")
+    elegidos = _un_juego_por_banda(api)
+    if set(elegidos) != {"bajo", "medio", "alto"}:
+        return [f"el catálogo no tiene juegos de las tres bandas ({sorted(elegidos)})"]
+
+    for banda, appid in elegidos.items():
+        _abrir(pagina, f"{base}/juego/{appid}")
+        reaccion = pagina.get_by_test_id("nia-reaccion")
+        try:
+            reaccion.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        except TiempoAgotado:
+            problemas.append(f"{banda} ({appid}): Nia no aparece en la ficha")
+            continue
+
+        # La única fuente de verdad es la banda que ya muestra el veredicto.
+        veredicto = pagina.get_by_test_id("ficha-veredicto").get_attribute("data-banda")
+        de_nia = reaccion.get_attribute("data-banda")
+        if de_nia != veredicto:
+            problemas.append(f"{appid}: Nia reacciona a '{de_nia}' y el veredicto dice '{veredicto}'")
+        imagen = pagina.get_by_test_id("nia-reaccion-imagen").get_attribute("src") or ""
+        if not imagen.endswith(f"nia/ficha-{veredicto}.png"):
+            problemas.append(f"{appid}: banda {veredicto} con la imagen {imagen}")
+        texto = " ".join(pagina.get_by_test_id("nia-reaccion-texto").inner_text().split())
+        if _REACCION_ESPERADA[veredicto] not in texto:
+            problemas.append(f"{appid}: el texto no corresponde a la banda {veredicto} ('{texto[:70]}')")
+
+        _esperar_portadas(pagina, "[data-testid='ficha'] img")
+        _esperar_quietud(pagina)
+        ruta = destino / f"nia-reaccion-{banda}.png"
+        pagina.get_by_test_id("segunda-opinion").screenshot(path=ruta)
+        nombre = pagina.get_by_test_id("ficha-nombre").inner_text()
+        print(f"nia v2:   {banda:5} {nombre} → {reaccion.get_attribute('data-emocion')} "
+              f"({ruta.relative_to(_RAIZ)})")
+
+    # Solo en la ficha.
+    for ruta_app, donde in (("/", "catálogo"), ("/comparar", "comparar"), ("/perfil", "perfil")):
+        _abrir(pagina, f"{base}{ruta_app}")
+        pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        if pagina.get_by_test_id("nia-reaccion").count():
+            problemas.append(f"Nia v2 aparece en {donde}, y solo debe estar en la ficha")
+    print("nia v2:   ausente en el catálogo, /comparar y /perfil")
+
+    # Si el PNG no carga, el globo con el texto se queda.
+    pagina.route("**/nia/ficha-*.png", lambda ruta: ruta.abort())
+    appid = elegidos["alto"]
+    _abrir(pagina, f"{base}/juego/{appid}")
+    try:
+        pagina.get_by_test_id("nia-reaccion-texto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.wait_for_function(
+            "() => !document.querySelector(\"[data-testid='nia-reaccion-imagen']\")", timeout=_TIMEOUT_MS
+        )
+        _esperar_quietud(pagina)
+        ruta = destino / "nia-reaccion-sin-imagen.png"
+        pagina.get_by_test_id("segunda-opinion").screenshot(path=ruta)
+        print(f"nia v2:   sin la imagen, el texto sigue ({ruta.relative_to(_RAIZ)})")
+    except TiempoAgotado:
+        problemas.append("si el PNG de Nia falla, la reacción no queda en pie solo con el texto")
+    pagina.unroute("**/nia/ficha-*.png")
+
+    # Con movimiento reducido, quieta; y a 390 px, sin desborde.
+    navegador = pagina.context.browser
+    if navegador is not None:
+        for ajustes, que in (({"reduced_motion": "reduce"}, "movimiento"), ({}, "móvil")):
+            vista = {"width": 390, "height": 844} if que == "móvil" else _VIEWPORT
+            contexto = navegador.new_context(viewport=vista, **ajustes)
+            _sin_consultas_a_nia(contexto)
+            try:
+                otra = contexto.new_page()
+                _abrir(otra, f"{base}/juego/{elegidos['bajo']}")
+                otra.get_by_test_id("nia-reaccion-imagen").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                if que == "movimiento":
+                    animacion = otra.evaluate(
+                        "() => getComputedStyle(document.querySelector(\"[data-testid='nia-reaccion-imagen']\"))"
+                        ".animationName"
+                    )
+                    if animacion != "none":
+                        problemas.append(f"con prefers-reduced-motion Nia sigue animada ({animacion})")
+                    else:
+                        print("nia v2:   con prefers-reduced-motion queda quieta")
+                else:
+                    medidas = otra.evaluate(
+                        "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
+                    )
+                    if medidas[0] > medidas[1]:
+                        problemas.append(f"a 390 px la ficha desborda {medidas[0] - medidas[1]} px")
+                    _esperar_quietud(otra)
+                    ruta = destino / "nia-reaccion-movil.png"
+                    otra.get_by_test_id("segunda-opinion").screenshot(path=ruta)
+                    print(f"nia v2:   a 390 px sin desborde ({ruta.relative_to(_RAIZ)})")
+            finally:
+                contexto.close()
+
+    _abrir(pagina, url)
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
+        + _angular_nia_reaccion(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)

@@ -14,15 +14,16 @@ const SALUDO =
   ' en sus primeras dos horas. Busca uno aquí arriba y te cuento lo que dicen sus reseñas.';
 const MS_POR_LETRA = 22;
 
-/** Nia en el catálogo: la única pantalla donde aparece, porque es la bienvenida.
- * En la ficha y en la burbuja flotante ya conversa, así que ahí sobraría. */
+/** Nia del catálogo: el retrato de bienvenida, solo en el inicio. La ficha tiene su
+ * propia variante, que reacciona a la banda (ficha/nia-reaccion.ts); los assets de
+ * cada una viven aparte en public/nia/. */
 @Component({
   selector: 'app-nia-mascota',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mascota" data-testid="nia-mascota">
       <img
-        src="nia-agente.png"
+        src="nia/catalogo.png"
         alt="Nia, la asistente de NexPlay"
         width="480"
         height="500"

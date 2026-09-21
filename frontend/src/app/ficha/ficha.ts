@@ -17,6 +17,7 @@ import { FactoresModelo } from './factores-modelo';
 import { HistoriaPerfil } from './historia-perfil';
 import { MetadatosJuego } from './metadatos-juego';
 import { MotivosBarras } from './motivos-barras';
+import { NiaReaccion } from './nia-reaccion';
 import { ValoracionOpinion } from './valoracion-opinion';
 
 @Component({
@@ -32,6 +33,7 @@ import { ValoracionOpinion } from './valoracion-opinion';
     ValoracionOpinion,
     Nia,
     HistoriaPerfil,
+    NiaReaccion,
   ],
   templateUrl: './ficha.html',
   styleUrl: './ficha.css',
