@@ -728,6 +728,7 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
         problemas.append(f"el logo no tiene animación en condiciones normales ({normal})")
 
     contexto = navegador.new_context(viewport=_VIEWPORT, reduced_motion="reduce")
+    _sin_consultas_a_nia(contexto)
     try:
         quieta = contexto.new_page()
         _abrir(quieta, url)
@@ -801,13 +802,35 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
     )
 
 
+# Respuesta fija para /nia. El script NUNCA habla con el modelo de lenguaje: con una
+# clave con crédito en .env, cada corrida gastaría consultas de OpenAI, y lo que se
+# verifica aquí es la interfaz (que el chat muestre la respuesta y su aviso de modo),
+# no lo que responde el modelo. Las pruebas con OpenAI real se hacen a mano.
+_NIA_FALSA = json.dumps({
+    "respuesta": "Respuesta de prueba del script de capturas: no se consultó ningún modelo.",
+    "modo": "demostracion",
+    "modelo": None,
+    "aviso": "Respuesta simulada por scripts/capturar_ui.py; la API no recibió la pregunta.",
+})
+
+
+def _sin_consultas_a_nia(contexto) -> None:
+    """Intercepta /nia en todo el contexto del navegador, antes de cualquier paso."""
+    contexto.route(
+        "**/nia",
+        lambda ruta: ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA),
+    )
+
+
 def capturar(frontend: str, url: str, api: str) -> int:
     destino = _DESTINOS[frontend]
     destino.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         try:
-            pagina = navegador.new_page(viewport=_VIEWPORT)
+            contexto = navegador.new_context(viewport=_VIEWPORT)
+            _sin_consultas_a_nia(contexto)
+            pagina = contexto.new_page()
             if frontend == "angular":
                 problemas = _capturar_angular(pagina, url, destino, api)
             else:
