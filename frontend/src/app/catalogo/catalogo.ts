@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal } from '@angular/core';
-import { Router } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
+import { PildoraBanda } from '../compartido/pildora-banda';
+import { Portada } from '../compartido/portada';
 import { Skeleton } from '../compartido/skeleton';
 import { agruparEnEstantes, ORDEN_BANDAS } from '../dominio/estantes';
 import { filtrarJuegos } from '../dominio/filtros';
@@ -13,7 +22,7 @@ import { FiltrosCatalogo } from './filtros-catalogo';
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Buscador, Estante, FiltrosCatalogo, Skeleton],
+  imports: [RouterLink, Buscador, Estante, FiltrosCatalogo, PildoraBanda, Portada, Skeleton],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })
@@ -35,6 +44,11 @@ export class Catalogo {
   );
   protected readonly estantes = computed(() => agruparEnEstantes(this.filtrados()));
   protected readonly hayFiltro = computed(() => !!this.texto().trim() || !!this.generoActivo());
+  protected readonly destacado = computed(
+    () =>
+      this.catalogo.porAppid().get(1938010) ??
+      this.catalogo.juegos().find((juego) => juego.banda_riesgo === 'alto'),
+  );
 
   protected cambiarTexto(texto: string): void {
     this.texto.set(texto);

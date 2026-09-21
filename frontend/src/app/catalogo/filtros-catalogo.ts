@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-/** Géneros como chips discretos: el protagonista del hero es el buscador. */
+/** Géneros como controles secundarios, con estado visible y desplazamiento horizontal en móvil. */
 @Component({
   selector: 'app-filtros-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,8 +34,43 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     .generos {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: var(--espacio-8);
+    }
+    .chip {
+      min-height: 36px;
+      padding: 7px var(--espacio-12);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      background: transparent;
+      white-space: nowrap;
+      transition:
+        color var(--duracion-rapida) var(--curva),
+        border-color var(--duracion-rapida) var(--curva),
+        background var(--duracion-rapida) var(--curva);
+    }
+    .chip::after {
+      display: none;
+    }
+    .chip:hover {
+      border-color: var(--neon);
+      background: var(--superficie-tarjeta);
+    }
+    .chip[aria-pressed='true'] {
+      border-color: var(--neon);
+      background: var(--neon-tenue);
+      color: var(--texto);
+    }
+    @media (max-width: 640px) {
+      .generos {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        margin-inline-end: calc(var(--espacio-16) * -1);
+        padding: 2px var(--espacio-16) var(--espacio-8) 2px;
+        scrollbar-width: none;
+      }
+      .generos::-webkit-scrollbar {
+        display: none;
+      }
     }
   `,
 })

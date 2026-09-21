@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
@@ -13,24 +21,30 @@ const MAXIMO_SUGERENCIAS = 6;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="buscador">
-      <label class="solo-lector" for="buscador-catalogo">Buscar un juego por nombre</label>
-      <input
-        id="buscador-catalogo"
-        type="search"
-        role="combobox"
-        autocomplete="off"
-        aria-autocomplete="list"
-        aria-controls="sugerencias-catalogo"
-        [attr.aria-expanded]="abierto()"
-        [attr.aria-activedescendant]="activo() >= 0 ? 'sugerencia-' + activo() : null"
-        placeholder="Busca por nombre: Hollow Knight, Cyberpunk, Portal…"
-        data-testid="filtro-texto"
-        [value]="texto()"
-        (input)="alTeclear($any($event.target).value)"
-        (keydown)="alTecla($event)"
-        (focus)="abierto.set(true)"
-        (blur)="cerrarConRetraso()"
-      />
+      <label for="buscador-catalogo">¿Qué juego estás pensando comprar?</label>
+      <div class="campo">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          id="buscador-catalogo"
+          type="search"
+          role="combobox"
+          autocomplete="off"
+          aria-autocomplete="list"
+          aria-controls="sugerencias-catalogo"
+          [attr.aria-expanded]="abierto()"
+          [attr.aria-activedescendant]="activo() >= 0 ? 'sugerencia-' + activo() : null"
+          placeholder="Hollow Knight, Cyberpunk, Portal…"
+          data-testid="filtro-texto"
+          [value]="texto()"
+          (input)="alTeclear($any($event.target).value)"
+          (keydown)="alTecla($event)"
+          (focus)="abierto.set(true)"
+          (blur)="cerrarConRetraso()"
+        />
+      </div>
 
       @if (abierto() && sugerencias().length) {
         <ul class="sugerencias" id="sugerencias-catalogo" role="listbox" data-testid="sugerencias">
@@ -62,6 +76,30 @@ const MAXIMO_SUGERENCIAS = 6;
     .buscador {
       position: relative;
     }
+    label {
+      display: block;
+      margin: 0 0 var(--espacio-8);
+      color: var(--texto);
+      font-size: var(--texto-body-sm);
+      font-weight: var(--peso-clave);
+    }
+    .campo {
+      position: relative;
+    }
+    .campo svg {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: var(--espacio-24);
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: var(--neon);
+      stroke-linecap: round;
+      stroke-width: 1.8;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
     input {
       width: 100%;
       font: inherit;
@@ -70,8 +108,8 @@ const MAXIMO_SUGERENCIAS = 6;
       color: var(--texto);
       background: var(--superficie-tarjeta);
       border: 1px solid var(--borde-control);
-      border-radius: var(--radio-pildora);
-      padding: 16px var(--espacio-24);
+      border-radius: var(--radio-boton);
+      padding: 16px var(--espacio-24) 16px 50px;
       transition: border-color var(--duracion-rapida) var(--curva);
     }
     input::placeholder {
@@ -148,7 +186,9 @@ export class Buscador {
 
   protected readonly sugerencias = computed(() => {
     const texto = this.texto().trim();
-    return texto ? filtrarJuegos(this.juegos(), { texto, genero: '' }).slice(0, MAXIMO_SUGERENCIAS) : [];
+    return texto
+      ? filtrarJuegos(this.juegos(), { texto, genero: '' }).slice(0, MAXIMO_SUGERENCIAS)
+      : [];
   });
 
   protected alTeclear(valor: string): void {

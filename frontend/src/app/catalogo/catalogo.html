@@ -1,30 +1,100 @@
 <div class="catalogo">
-  <section class="hero">
-    <h1 class="titular">Antes de comprar, una segunda opinión</h1>
-    <p class="entrada">
-      Qué tan seguido un juego deja señales de arrepentimiento temprano en sus primeras dos horas.
-    </p>
-    <app-buscador [juegos]="catalogo.juegos()" [texto]="texto()" (textoCambio)="cambiarTexto($event)" />
+  <section class="hero" aria-labelledby="titulo-principal">
+    <div class="hero-mensaje">
+      <p class="sobrelinea mono">Evidencia antes de comprar</p>
+      <h1 class="titular" id="titulo-principal">
+        Descubre qué podría frustrarte en las primeras dos horas
+      </h1>
+      <p class="entrada">
+        NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus
+        motivos frecuentes y el contexto que puede importar para ti.
+      </p>
+      <app-buscador
+        [juegos]="catalogo.juegos()"
+        [texto]="texto()"
+        (textoCambio)="cambiarTexto($event)"
+      />
+      <p class="aclaracion mono">
+        Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.
+      </p>
+    </div>
+
+    @if (destacado(); as juego) {
+      <aside class="demostracion" aria-labelledby="titulo-ejemplo">
+        <p class="demostracion-etiqueta mono">Así se ve una segunda opinión</p>
+        <a
+          class="vistazo"
+          [routerLink]="['/juego', juego.appid]"
+          [attr.aria-label]="'Ver el análisis de ' + juego.nombre"
+          data-testid="hero-ejemplo"
+        >
+          <div class="vistazo-portada">
+            <app-portada [src]="juego.portada_url" [prioritaria]="true" radio="0" />
+          </div>
+          <div class="vistazo-cuerpo">
+            <div class="vistazo-cabecera">
+              <div>
+                <p class="vistazo-sobrelinea mono">Ejemplo del catálogo</p>
+                <h2 id="titulo-ejemplo">{{ juego.nombre }}</h2>
+              </div>
+              <app-pildora-banda [banda]="juego.banda_riesgo" />
+            </div>
+            <ul class="vistazo-lista">
+              <li>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12.5 9.2 17 19 7" /></svg>
+                Motivos frecuentes en reseñas
+              </li>
+              <li>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 18V9m8 9V5m8 13v-6" /></svg>
+                Factores que mueven la estimación
+              </li>
+              <li>
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M12 11v5m0-8h.01" />
+                </svg>
+                Contexto para decidir por tu cuenta
+              </li>
+            </ul>
+            <span class="vistazo-accion"
+              >Ver análisis completo <span aria-hidden="true">→</span></span
+            >
+          </div>
+        </a>
+      </aside>
+    }
+  </section>
+
+  <section class="exploracion" aria-labelledby="titulo-exploracion">
+    <header class="exploracion-cabecera">
+      <div>
+        <p class="sobrelinea mono">Catálogo</p>
+        <h2 id="titulo-exploracion">Explora por género y nivel de riesgo</h2>
+      </div>
+      @if (!catalogo.cargando() && !catalogo.error()) {
+        <p class="meta mono" data-testid="catalogo-conteo">
+          @if (hayFiltro()) {
+            <strong>{{ filtrados().length }}</strong> de {{ catalogo.juegos().length }} juegos
+            coinciden
+          } @else {
+            <strong>{{ catalogo.juegos().length }}</strong> juegos de Steam
+          }
+        </p>
+      }
+    </header>
     <app-filtros-catalogo
       [genero]="generoActivo()"
       [generos]="catalogo.generos()"
       (generoCambio)="cambiarGenero($event)"
     />
-    @if (!catalogo.cargando() && !catalogo.error()) {
-      <p class="meta mono" data-testid="catalogo-conteo">
-        @if (hayFiltro()) {
-          {{ filtrados().length }} de {{ catalogo.juegos().length }} juegos coinciden
-        } @else {
-          {{ catalogo.juegos().length }} juegos de Steam, agrupados por riesgo general de arrepentimiento temprano
-        }
-      </p>
-    }
   </section>
 
   @if (catalogo.error()) {
     <div class="error" data-testid="catalogo-error">
       <p>No se pudo cargar el catálogo. Revisa que la API esté corriendo.</p>
-      <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
+      <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">
+        Reintentar
+      </button>
     </div>
   } @else {
     <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
@@ -35,7 +105,7 @@
           <app-skeleton alto="28px" radio="var(--radio-pildora)" class="titulo-cargando" />
           <div class="fila-cargando">
             @for (n of [1, 2, 3, 4, 5]; track n) {
-              <app-skeleton alto="220px" />
+              <app-skeleton alto="252px" />
             }
           </div>
         </div>
