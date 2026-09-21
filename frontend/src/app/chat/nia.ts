@@ -28,9 +28,12 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="seccion nia" data-testid="nia">
+    <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()">
       @if (muestraTitulo()) {
-        <h2 class="rotulo-seccion">Pregúntale a Nia</h2>
+        <header class="cabecera">
+          <img class="avatar" src="nia/avatar.png" alt="" width="192" height="192" data-testid="nia-avatar" />
+          <h2 class="titulo">Pregúntale a Nia</h2>
+        </header>
       }
       <p class="meta intro">
         Responde con los datos de este juego: su banda, los motivos de las reseñas, la crítica y el precio. No
@@ -100,6 +103,36 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       display: flex;
       flex-direction: column;
       gap: var(--espacio-12);
+    }
+    /* En la ficha el chat es una pieza de interfaz, no texto largo: lleva superficie y un
+       filo neón con brillo, más marcado que el resto de la ficha, que va sin caja. Dentro
+       de la burbuja flotante no, porque ahí el panel ya es la superficie. */
+    .destacada {
+      padding: var(--espacio-24);
+      border: 1px solid color-mix(in srgb, var(--neon) 55%, var(--linea));
+      border-radius: var(--radio-tarjeta);
+      background: var(--superficie-tarjeta);
+      box-shadow:
+        0 0 0 1px rgba(34, 224, 255, 0.1),
+        0 0 24px rgba(34, 224, 255, 0.16);
+    }
+    .cabecera {
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-12);
+    }
+    /* El mismo retrato del saludo del catálogo, recortado a la cara. */
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 1px var(--neon),
+        0 0 10px rgba(34, 224, 255, 0.4);
+    }
+    .titulo {
+      margin: 0;
+      font-size: var(--texto-body-sm);
     }
     .intro {
       margin: 0;

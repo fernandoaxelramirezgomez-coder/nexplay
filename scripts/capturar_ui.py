@@ -839,6 +839,23 @@ def _angular_estrellas(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _angular_panel_nia(pagina: Page, url: str, destino: Path) -> list[str]:
+    """El chat de la ficha: avatar junto al título y superficie con brillo."""
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    panel = pagina.get_by_test_id("nia")
+    panel.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if not pagina.get_by_test_id("nia-avatar").is_visible():
+        problemas.append("el panel de Nia de la ficha no muestra el avatar")
+    if "destacada" not in (panel.get_attribute("class") or ""):
+        problemas.append("el panel de Nia de la ficha no lleva la superficie destacada")
+    _esperar_quietud(pagina)
+    ruta = destino / "nia-panel-ficha.png"
+    panel.screenshot(path=ruta)
+    print(f"panel:    Nia en la ficha con avatar y brillo ({ruta.relative_to(_RAIZ)})")
+    return problemas
+
+
 def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
     problemas = []
@@ -1003,6 +1020,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
         + _angular_estrellas(pagina, url, destino)
+        + _angular_panel_nia(pagina, url, destino)
         + _angular_nia_reaccion(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)

@@ -131,3 +131,8 @@
     position: static;
   }
 }
+
+/* El chat de Nia ya trae su propio borde con brillo: el filete de la pila encima sobraría. */
+.lateral > app-nia {
+  border-top: 0;
+}
