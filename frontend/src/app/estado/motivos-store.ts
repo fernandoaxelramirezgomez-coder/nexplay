@@ -3,8 +3,8 @@ import { Injectable, inject, signal } from '@angular/core';
 import { NexplayApi } from '../api/nexplay-api';
 
 /** Motivo principal por juego, pedido solo cuando una tarjeta lo necesita (al pasar el
- * cursor o al enfocarla) y guardado para no repetir la llamada. Pedir los 83 al cargar
- * el catálogo serían 83 peticiones que casi nadie mira. */
+ * cursor o al enfocarla) y guardado para no repetir la llamada. Pedirlos todos al cargar
+ * el catálogo serían más de cien peticiones que casi nadie mira. */
 @Injectable({ providedIn: 'root' })
 export class MotivosStore {
   private readonly api = inject(NexplayApi);

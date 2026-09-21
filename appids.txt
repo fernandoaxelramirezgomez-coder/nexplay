@@ -148,3 +148,80 @@
 2357570   # Overwatch 2 (el listado de Steam sigue como "Overwatch")
 1063730   # New World (relanzado como "New World: Aeternum")
 2344520   # Diablo IV
+
+
+# ===========================================================================
+# CAPA D - Cobertura del catalogo (huecos de genero, precio y cobertura de
+# critica detectados al analizar los 83 juegos de las capas A, B y C)
+# ===========================================================================
+# Los 83 primeros dejaron tres sesgos medibles:
+#   - Cero juegos de carreras o deporte.
+#   - Solo 2 gratuitos y 3 multijugador masivo, contra 59 juegos de Accion.
+#   - Los 23 juegos SIN nota de Metacritic caian todos en la banda alta, asi
+#     que "alto" se leia como "sin cobertura de critica" y no como riesgo.
+# Esta capa se elige para tapar esos huecos, no por popularidad.
+#
+# Los 40 appid se verificaron uno por uno contra appdetails antes de
+# ingestar: los 40 resuelven, todos son type=game y ninguno repite los 83.
+#
+# Dos descartes con motivo: F1 23 (2108330) y EA SPORTS FC 24 (2195250)
+# resuelven pero Steam no devuelve precio en la tienda mexicana (estan
+# deslistados), asi que entrarian como "precio no disponible". Se cambian por
+# DiRT Rally 2.0 y Need for Speed Heat, que si tienen precio y nota. Por la
+# misma razon quedan fuera Rocket League, F1 24 y EA SPORTS FC 25.
+
+# --- Carreras: el genero no existia en el catalogo ---
+1551360   # Forza Horizon 5
+244210    # Assetto Corsa
+690790    # DiRT Rally 2.0
+1222680   # Need for Speed Heat
+
+# --- Gratuitos y multijugador masivo: eran 2 y 3 ---
+440       # Team Fortress 2
+230410    # Warframe
+238960    # Path of Exile
+1085660   # Destiny 2
+1172470   # Apex Legends
+39210     # Final Fantasy XIV Online
+
+# --- Estrategia: eran 17, casi toda en bajo y medio ---
+813780    # Age of Empires II: Definitive Edition
+1466860   # Age of Empires IV: Anniversary Edition
+268500    # XCOM 2
+323190    # Frostpunk
+1677280   # Company of Heroes 3
+779340    # Total War: Three Kingdoms
+
+# --- Simuladores: eran 16 ---
+227300    # Euro Truck Simulator 2
+220200    # Kerbal Space Program
+954850    # Kerbal Space Program 2 (acceso anticipado con recepcion negativa)
+457140    # Oxygen Not Included
+1248130   # Farming Simulator 22
+
+# --- Casual: eran 7 ---
+1135690   # Unpacking
+1290000   # PowerWash Simulator
+1313140   # Cult of the Lamb
+1455840   # Dorfromantik
+1055540   # A Short Hike
+
+# --- Indie muy bien recibido: alimenta la banda baja ---
+753640    # Outer Wilds
+264710    # Subnautica
+1092790   # Inscryption
+239030    # Papers, Please
+460950    # Katana ZERO
+736260    # Baba Is You
+
+# --- Riesgo alto pero con nota de critica: rompe "alto = sin nota" ---
+1716740   # Starfield
+924970    # Back 4 Blood
+1496790   # Gotham Knights
+1238810   # Battlefield V
+1693980   # Dead Space (2023)
+
+# --- Terror y supervivencia: variedad de motivos (rendimiento, bugs) ---
+739630    # Phasmophobia
+1196590   # Resident Evil Village
+1944430   # Amnesia: The Bunker

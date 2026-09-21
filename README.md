@@ -126,7 +126,7 @@ extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que con
 entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
 entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
 preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
-verificar_bandas.py    compara las bandas de los 83 juegos contra docs/bandas_referencia.json
+verificar_bandas.py    compara las bandas del catálogo contra docs/bandas_referencia.json
 exportar_valoraciones.py  exporta votos y comentarios a CSV (uso local)
 moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
 .env.example           plantilla de variables; el .env real no se versiona

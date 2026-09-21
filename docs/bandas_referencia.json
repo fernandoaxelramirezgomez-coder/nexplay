@@ -1,5 +1,5 @@
 {
-  "generado": "2026-09-19",
+  "generado": "2026-09-20",
   "modelo_version": "logreg-compra-2026-09-16",
   "umbrales": {
     "medio": 0.2679793703558745,
@@ -16,6 +16,10 @@
       "nombre": "Portal",
       "banda": "bajo"
     },
+    "440": {
+      "nombre": "Team Fortress 2",
+      "banda": "bajo"
+    },
     "550": {
       "nombre": "Left 4 Dead 2",
       "banda": "bajo"
@@ -27,6 +31,10 @@
     "8930": {
       "nombre": "Sid Meier's Civilization® V",
       "banda": "bajo"
+    },
+    "39210": {
+      "nombre": "FINAL FANTASY XIV Online",
+      "banda": "medio"
     },
     "105600": {
       "nombre": "Terraria",
@@ -48,12 +56,32 @@
       "nombre": "Grim Dawn",
       "banda": "medio"
     },
+    "220200": {
+      "nombre": "Kerbal Space Program",
+      "banda": "bajo"
+    },
+    "227300": {
+      "nombre": "Euro Truck Simulator 2",
+      "banda": "medio"
+    },
+    "230410": {
+      "nombre": "Warframe",
+      "banda": "medio"
+    },
     "233860": {
       "nombre": "Kenshi",
       "banda": "alto"
     },
     "236850": {
       "nombre": "Europa Universalis IV",
+      "banda": "medio"
+    },
+    "238960": {
+      "nombre": "Path of Exile",
+      "banda": "bajo"
+    },
+    "239030": {
+      "nombre": "Papers, Please",
       "banda": "medio"
     },
     "239140": {
@@ -63,6 +91,10 @@
     "242760": {
       "nombre": "The Forest",
       "banda": "medio"
+    },
+    "244210": {
+      "nombre": "Assetto Corsa",
+      "banda": "bajo"
     },
     "250900": {
       "nombre": "The Binding of Isaac: Rebirth",
@@ -79,6 +111,14 @@
     "261550": {
       "nombre": "Mount & Blade II: Bannerlord",
       "banda": "alto"
+    },
+    "264710": {
+      "nombre": "Subnautica",
+      "banda": "medio"
+    },
+    "268500": {
+      "nombre": "XCOM® 2",
+      "banda": "medio"
     },
     "268910": {
       "nombre": "Cuphead",
@@ -116,6 +156,10 @@
       "nombre": "Don't Starve Together",
       "banda": "medio"
     },
+    "323190": {
+      "nombre": "Frostpunk",
+      "banda": "bajo"
+    },
     "367520": {
       "nombre": "Hollow Knight",
       "banda": "medio"
@@ -147,6 +191,14 @@
     "427520": {
       "nombre": "Factorio",
       "banda": "bajo"
+    },
+    "457140": {
+      "nombre": "Oxygen Not Included",
+      "banda": "medio"
+    },
+    "460950": {
+      "nombre": "Katana ZERO",
+      "banda": "medio"
     },
     "489830": {
       "nombre": "The Elder Scrolls V: Skyrim Special Edition",
@@ -192,8 +244,32 @@
       "nombre": "Slay the Spire",
       "banda": "bajo"
     },
+    "690790": {
+      "nombre": "DiRT Rally 2.0",
+      "banda": "medio"
+    },
+    "736260": {
+      "nombre": "Baba Is You",
+      "banda": "medio"
+    },
+    "739630": {
+      "nombre": "Phasmophobia",
+      "banda": "alto"
+    },
+    "753640": {
+      "nombre": "Outer Wilds",
+      "banda": "medio"
+    },
+    "779340": {
+      "nombre": "Total War: THREE KINGDOMS",
+      "banda": "medio"
+    },
     "782330": {
       "nombre": "DOOM Eternal",
+      "banda": "medio"
+    },
+    "813780": {
+      "nombre": "Age of Empires II: Definitive Edition",
       "banda": "medio"
     },
     "814380": {
@@ -204,6 +280,14 @@
       "nombre": "Valheim",
       "banda": "bajo"
     },
+    "924970": {
+      "nombre": "Back 4 Blood",
+      "banda": "alto"
+    },
+    "954850": {
+      "nombre": "Kerbal Space Program 2",
+      "banda": "alto"
+    },
     "975370": {
       "nombre": "Dwarf Fortress",
       "banda": "bajo"
@@ -212,9 +296,17 @@
       "nombre": "Hogwarts Legacy",
       "banda": "medio"
     },
+    "1055540": {
+      "nombre": "A Short Hike",
+      "banda": "medio"
+    },
     "1063730": {
       "nombre": "New World: Aeternum",
       "banda": "alto"
+    },
+    "1085660": {
+      "nombre": "Destiny 2",
+      "banda": "bajo"
     },
     "1086940": {
       "nombre": "Baldur's Gate 3",
@@ -223,6 +315,14 @@
     "1091500": {
       "nombre": "Cyberpunk 2077",
       "banda": "medio"
+    },
+    "1092790": {
+      "nombre": "Inscryption",
+      "banda": "medio"
+    },
+    "1135690": {
+      "nombre": "Unpacking",
+      "banda": "bajo"
     },
     "1142710": {
       "nombre": "Total War: WARHAMMER III",
@@ -240,21 +340,41 @@
       "nombre": "Crusader Kings III",
       "banda": "bajo"
     },
+    "1172470": {
+      "nombre": "Apex Legends™",
+      "banda": "bajo"
+    },
     "1174180": {
       "nombre": "Red Dead Redemption 2",
+      "banda": "bajo"
+    },
+    "1196590": {
+      "nombre": "Resident Evil Village",
       "banda": "bajo"
     },
     "1222670": {
       "nombre": "The Sims™ 4",
       "banda": "alto"
     },
+    "1222680": {
+      "nombre": "Need for Speed™ Heat",
+      "banda": "medio"
+    },
     "1237970": {
       "nombre": "Titanfall® 2",
       "banda": "medio"
     },
+    "1238810": {
+      "nombre": "Battlefield™ V",
+      "banda": "alto"
+    },
     "1245620": {
       "nombre": "ELDEN RING",
       "banda": "bajo"
+    },
+    "1248130": {
+      "nombre": "Farming Simulator 22",
+      "banda": "alto"
     },
     "1265780": {
       "nombre": "The Lord of the Rings: Gollum™",
@@ -264,13 +384,33 @@
       "nombre": "PAYDAY 3",
       "banda": "alto"
     },
+    "1290000": {
+      "nombre": "PowerWash Simulator",
+      "banda": "alto"
+    },
     "1294810": {
       "nombre": "Redfall",
       "banda": "alto"
     },
+    "1313140": {
+      "nombre": "Cult of the Lamb",
+      "banda": "medio"
+    },
     "1332010": {
       "nombre": "Stray",
       "banda": "medio"
+    },
+    "1455840": {
+      "nombre": "Dorfromantik",
+      "banda": "alto"
+    },
+    "1466860": {
+      "nombre": "Age of Empires IV: Anniversary Edition",
+      "banda": "medio"
+    },
+    "1496790": {
+      "nombre": "Gotham Knights",
+      "banda": "alto"
     },
     "1517290": {
       "nombre": "Battlefield™ 2042",
@@ -278,6 +418,10 @@
     },
     "1544020": {
       "nombre": "The Callisto Protocol™",
+      "banda": "alto"
+    },
+    "1551360": {
+      "nombre": "Forza Horizon 5",
       "banda": "alto"
     },
     "1593500": {
@@ -292,6 +436,10 @@
       "nombre": "Lies of P",
       "banda": "alto"
     },
+    "1677280": {
+      "nombre": "Company of Heroes 3",
+      "banda": "medio"
+    },
     "1680880": {
       "nombre": "Forspoken",
       "banda": "alto"
@@ -299,6 +447,14 @@
     "1687950": {
       "nombre": "Persona 5 Royal",
       "banda": "bajo"
+    },
+    "1693980": {
+      "nombre": "Dead Space",
+      "banda": "bajo"
+    },
+    "1716740": {
+      "nombre": "Starfield",
+      "banda": "alto"
     },
     "1794680": {
       "nombre": "Vampire Survivors",
@@ -314,6 +470,10 @@
     },
     "1938010": {
       "nombre": "WILD HEARTS™",
+      "banda": "alto"
+    },
+    "1944430": {
+      "nombre": "Amnesia: The Bunker",
       "banda": "alto"
     },
     "1966720": {

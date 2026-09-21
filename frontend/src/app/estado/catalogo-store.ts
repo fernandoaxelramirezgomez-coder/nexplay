@@ -6,7 +6,7 @@ import { JuegoCatalogo } from '../api/contrato';
 import { promedioMetacritic } from '../dominio/promedio-metacritic';
 
 /** Catálogo completo, pedido una sola vez por sesión. Filtros, estantes y fichas
- * trabajan sobre esta copia en memoria (83 juegos). */
+ * trabajan sobre esta copia en memoria. */
 @Injectable({ providedIn: 'root' })
 export class CatalogoStore {
   private readonly api = inject(NexplayApi);

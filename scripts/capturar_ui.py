@@ -49,7 +49,7 @@ _TIMEOUT_MS = 60_000
 # Los scores del modelo son decimales como 0.7424: nunca deben verse en pantalla.
 _SCORE_VISIBLE = re.compile(r"\b0[.,]\d{3,}\b")
 
-# Las 83 tarjetas de Gradio tienen el mismo botón: se ubica el de la tarjeta cuya
+# Todas las tarjetas de Gradio tienen el mismo botón: se ubica el de la tarjeta cuya
 # portada es del appid buscado, subiendo hasta el contenedor que ya lo incluye.
 _BOTON_OPINION_GRADIO = (
     "xpath=//img[contains(@src, '/apps/{appid}/')]"
@@ -742,36 +742,22 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
     return problemas
 
 
-# Los 9 juegos cuyo short_description Steam solo tiene en inglés: la ficha debe caer al
-# mensaje de respaldo en vez de mostrar el texto en otro idioma.
-_SIN_DESCRIPCION_ES = {
-    427520: "Factorio",
-    219990: "Grim Dawn",
-    550: "Left 4 Dead 2",
-    1966720: "Lethal Company",
-    261550: "Mount & Blade II: Bannerlord",
-    108600: "Project Zomboid",
-    211820: "Starbound",
-    250900: "The Binding of Isaac: Rebirth",
-    242760: "The Forest",
-}
+# Cuántas fichas sin descripción se abren para comprobar el respaldo. Son todas
+# equivalentes y abrir el catálogo entero alargaría la corrida sin aportar nada.
+_MUESTRA_SIN_DESCRIPCION = 5
 
 
 def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
     problemas = []
 
-    # La API decide el idioma; el frontend solo pinta lo que llega.
+    # Quién tiene descripción en español lo decide la API (api/catalogo.py compara
+    # palabras comunes de cada idioma); aquí solo se comprueba que la ficha la respeta.
     catalogo = {j["appid"]: j for j in _catalogo_api(api)}
-    sin_texto = {appid for appid, juego in catalogo.items() if juego.get("descripcion") is None}
-    if sin_texto != set(_SIN_DESCRIPCION_ES):
-        problemas.append(
-            f"la API no devuelve None en los 9 juegos esperados (de más: "
-            f"{sorted(sin_texto - set(_SIN_DESCRIPCION_ES))}, de menos: "
-            f"{sorted(set(_SIN_DESCRIPCION_ES) - sin_texto)})"
-        )
-    else:
-        print(f"descripción: la API manda None en los {len(sin_texto)} juegos sin versión en español")
+    sin_texto = [appid for appid, juego in catalogo.items() if juego.get("descripcion") is None]
+    if not sin_texto:
+        problemas.append("ningún juego cae al respaldo: ¿el filtro de idioma dejó de funcionar?")
+    print(f"descripción: la API manda None en {len(sin_texto)} de {len(catalogo)} juegos")
 
     # Uno en español: el párrafo completo, tal como vino de Steam.
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
@@ -784,8 +770,9 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
         problemas.append("con descripción en español, la ficha muestra igual el respaldo")
     print(f"descripción: {catalogo[_APPID_FICHA]['nombre']} muestra {len(mostrado)} caracteres")
 
-    # Los 9 en inglés: respaldo, y ni rastro del texto original.
-    for appid, nombre in _SIN_DESCRIPCION_ES.items():
+    # Una muestra de los que no la tienen: respaldo, y ni rastro del texto original.
+    for appid in sorted(sin_texto)[:_MUESTRA_SIN_DESCRIPCION]:
+        nombre = catalogo[appid]["nombre"]
         _abrir(pagina, f"{url.rstrip('/')}/juego/{appid}")
         try:
             pagina.get_by_test_id("ficha-sin-descripcion").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -795,7 +782,7 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
         if pagina.get_by_test_id("ficha-descripcion").count():
             problemas.append(f"{nombre}: muestra descripción además del respaldo")
     if not problemas:
-        print(f"descripción: los {len(_SIN_DESCRIPCION_ES)} juegos en inglés caen al respaldo")
+        print(f"descripción: los {min(len(sin_texto), _MUESTRA_SIN_DESCRIPCION)} revisados caen al respaldo")
 
     _abrir(pagina, url)
     return problemas

@@ -281,6 +281,22 @@ def bajar_juego(con, appid):
     return True
 
 
+def filtrar_nuevos(con, appids):
+    """Deja solo los appid que todavia no estan en 'juegos'.
+
+    bajar_juego() hace INSERT OR REPLACE, asi que correr --catalogo sobre la
+    lista completa reescribiria los juegos ya ingestados con el precio y el
+    descuento de hoy. El precio es una variable del modelo: eso movería bandas
+    de juegos que no se querian tocar. Al ampliar el catalogo se usa este
+    filtro; para refrescar precios a proposito, se corre sin el.
+    """
+    existentes = {f[0] for f in con.execute("SELECT appid FROM juegos")}
+    nuevos = [a for a in appids if a not in existentes]
+    log.info("Catalogo: %s appid en la lista, %s ya estan, %s por bajar",
+             len(appids), len(appids) - len(nuevos), len(nuevos))
+    return nuevos
+
+
 def correr_catalogo(con, appids):
     log.info("Catalogo: %s juegos por bajar", len(appids))
     for i, appid in enumerate(appids, 1):
@@ -456,6 +472,11 @@ def main():
     p.add_argument("--catalogo", action="store_true", help="baja metadatos de juegos")
     p.add_argument("--resenas", action="store_true", help="baja resenas")
     p.add_argument("--estado", action="store_true", help="muestra el avance")
+    p.add_argument(
+        "--solo-nuevos",
+        action="store_true",
+        help="con --catalogo, salta los appid que ya tienen fila en 'juegos'",
+    )
     args = p.parse_args()
 
     con = conectar()
@@ -474,7 +495,7 @@ def main():
     tomar_candado()
     try:
         if args.catalogo:
-            correr_catalogo(con, leer_appids())
+            correr_catalogo(con, filtrar_nuevos(con, leer_appids()) if args.solo_nuevos else leer_appids())
         if args.resenas:
             correr_resenas(con)
         mostrar_estado(con)

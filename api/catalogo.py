@@ -57,7 +57,7 @@ def _generos_de(campo: str | None) -> list[str]:
 
 
 # La ingesta pide las descripciones con l=spanish, pero Steam cae al inglés cuando el
-# juego no la tiene traducida: son 9 de los 83. Se cuentan palabras muy comunes de cada
+# juego no la tiene traducida. Se cuentan palabras muy comunes de cada
 # idioma y gana la mayoría. Basta comparar, no detectar: con una sola palabra inglesa
 # bastaba para tirar ocho descripciones que sí estaban en español pero citaban un título
 # ("The Elder Scrolls V: Skyrim", "Skull and Bones", "The Last of Us").

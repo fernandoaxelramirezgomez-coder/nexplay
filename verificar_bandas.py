@@ -25,7 +25,6 @@ from api import catalogo, scoring
 
 _RAIZ = Path(__file__).resolve().parent
 _REFERENCIA = _RAIZ / "docs" / "bandas_referencia.json"
-_N_JUEGOS = 83
 
 
 def _catalogo_actual() -> dict[str, dict]:
@@ -43,8 +42,8 @@ def _distancia_al_umbral(riesgo: float) -> str:
 
 def generar(ruta: Path) -> int:
     actual = _catalogo_actual()
-    if len(actual) != _N_JUEGOS:
-        print(f"el catálogo tiene {len(actual)} juegos, no {_N_JUEGOS}: no se genera la referencia")
+    if not actual:
+        print("el catálogo está vacío: no se genera la referencia")
         return 1
     referencia = {
         "generado": date.today().isoformat(),
@@ -70,8 +69,8 @@ def comparar(ruta: Path) -> int:
     actual = _catalogo_actual()
 
     problemas = []
-    if len(actual) != _N_JUEGOS:
-        problemas.append(f"el catálogo tiene {len(actual)} juegos, no {_N_JUEGOS}")
+    if len(actual) != len(referencia):
+        problemas.append(f"el catálogo tiene {len(actual)} juegos y la referencia {len(referencia)}")
     for appid in sorted(referencia.keys() - actual.keys(), key=int):
         problemas.append(f"falta {appid} ({referencia[appid]['nombre']}): está en la referencia y no en el catálogo")
     for appid in sorted(actual.keys() - referencia.keys(), key=int):
