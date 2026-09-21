@@ -1,10 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   input,
   linkedSignal,
+  signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -19,6 +21,13 @@ import { CompararStore } from '../estado/comparar-store';
 import { Buscador } from './buscador';
 import { Estante } from './estante';
 import { FiltrosCatalogo } from './filtros-catalogo';
+
+/** Juegos curados a mano para el ejemplo del inicio: uno de cada banda de riesgo con el
+ * perfil neutro de hoy (Hades bajo, Cyberpunk 2077 medio, WILD HEARTS alto) y Outer Wilds
+ * de contraste. La banda que se muestra es la que dé el modelo, no la de esta lista. */
+const EJEMPLOS_PORTADA = [1145360, 1091500, 1938010, 753640];
+/** Lento a propósito: da tiempo a leer el nombre y la banda antes de que cambie. */
+const MS_ROTACION = 7000;
 
 @Component({
   selector: 'app-catalogo',
@@ -45,11 +54,49 @@ export class Catalogo {
   );
   protected readonly estantes = computed(() => agruparEnEstantes(this.filtrados()));
   protected readonly hayFiltro = computed(() => !!this.texto().trim() || !!this.generoActivo());
-  protected readonly destacado = computed(
-    () =>
-      this.catalogo.porAppid().get(1938010) ??
-      this.catalogo.juegos().find((juego) => juego.banda_riesgo === 'alto'),
+  /** Los curados que existan en el catálogo; si faltara alguno, el carrusel sigue. */
+  protected readonly ejemplos = computed(() =>
+    EJEMPLOS_PORTADA.map((appid) => this.catalogo.porAppid().get(appid)).filter((juego) => !!juego),
   );
+  protected readonly indiceEjemplo = signal(0);
+  protected readonly destacado = computed(() => {
+    const ejemplos = this.ejemplos();
+    return ejemplos.length ? ejemplos[this.indiceEjemplo() % ejemplos.length] : undefined;
+  });
+  /** Quieto mientras el ratón está encima o el foco está dentro: nadie lee un ejemplo
+   * que se le escapa. */
+  protected readonly ejemploPausado = signal(false);
+  /** Con prefers-reduced-motion no rota solo; las flechas siguen funcionando. */
+  protected readonly rotaSolo = !this.prefiereMenosMovimiento();
+
+  constructor() {
+    if (this.rotaSolo) {
+      const reloj = setInterval(() => {
+        if (!this.ejemploPausado() && this.ejemplos().length > 1) {
+          this.moverEjemplo(1);
+        }
+      }, MS_ROTACION);
+      inject(DestroyRef).onDestroy(() => clearInterval(reloj));
+    }
+  }
+
+  protected moverEjemplo(paso: 1 | -1): void {
+    const total = this.ejemplos().length;
+    if (total) {
+      this.indiceEjemplo.update((i) => (i + paso + total) % total);
+    }
+  }
+
+  protected alSalirDelEjemplo(evento: FocusEvent): void {
+    const adonde = evento.relatedTarget as Node | null;
+    if (!adonde || !(evento.currentTarget as HTMLElement).contains(adonde)) {
+      this.ejemploPausado.set(false);
+    }
+  }
+
+  private prefiereMenosMovimiento(): boolean {
+    return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   protected cambiarTexto(texto: string): void {
     this.texto.set(texto);

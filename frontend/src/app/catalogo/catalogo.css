@@ -50,6 +50,80 @@
   line-height: var(--interlineado-largo);
 }
 
+/* La etiqueta y los controles del carrusel comparten fila: los bullets de la tarjeta
+   no se mueven de su sitio. */
+.demostracion-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-12);
+  margin: 0 0 var(--espacio-8);
+}
+
+.demostracion-fila .demostracion-etiqueta {
+  margin: 0;
+}
+
+.carrusel-controles {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+}
+
+.carrusel-posicion {
+  margin-inline-end: var(--espacio-8);
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
+.carrusel-flecha {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio-pildora);
+  background: none;
+  color: var(--texto);
+  cursor: pointer;
+  transition:
+    border-color var(--duracion-rapida) var(--curva),
+    color var(--duracion-rapida) var(--curva);
+}
+
+.carrusel-flecha:hover {
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
+.carrusel-flecha svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Cada ejemplo entra con un fundido corto; con movimiento reducido la regla global lo
+   deja en instantáneo. */
+.demostracion .vistazo {
+  animation: entrar-ejemplo 0.45s var(--curva);
+}
+
+@keyframes entrar-ejemplo {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .demostracion-etiqueta {
   margin: 0 0 var(--espacio-8);
   color: var(--texto-meta);

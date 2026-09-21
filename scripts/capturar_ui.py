@@ -839,6 +839,85 @@ def _angular_estrellas(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _ejemplo_actual(pagina: Page) -> str | None:
+    return pagina.get_by_test_id("hero-ejemplo").get_attribute("data-appid")
+
+
+def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
+    """El ejemplo del inicio: curados de las tres bandas, flechas, pausa y rotación."""
+    problemas = []
+    _abrir(pagina, url)
+    carrusel = pagina.get_by_test_id("hero-carrusel")
+    carrusel.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    if pagina.locator("[data-testid='hero-ejemplo'] .vistazo-lista li").count() != 3:
+        problemas.append("la tarjeta del ejemplo perdió sus tres bullets")
+
+    # Una vuelta completa con la flecha: qué juegos y qué bandas hay.
+    pagina.get_by_test_id("hero-siguiente").focus()  # el foco también lo pausa
+    vistos: dict[str, str] = {}
+    for _ in range(6):
+        appid = _ejemplo_actual(pagina)
+        banda = pagina.locator("[data-testid='hero-ejemplo'] [data-testid='pildora-banda']").get_attribute("data-banda")
+        vistos.setdefault(appid, banda)
+        pagina.get_by_test_id("hero-siguiente").click()
+        pagina.wait_for_function(
+            "anterior => document.querySelector(\"[data-testid='hero-ejemplo']\")?.dataset.appid !== anterior",
+            arg=appid, timeout=_TIMEOUT_MS,
+        )
+    if set(vistos.values()) != {"bajo", "medio", "alto"}:
+        problemas.append(f"el carrusel no cubre las tres bandas: {vistos}")
+    print(f"carrusel: {len(vistos)} ejemplos curados, bandas {sorted(set(vistos.values()))}")
+
+    antes = _ejemplo_actual(pagina)
+    pagina.get_by_test_id("hero-anterior").click()
+    pagina.wait_for_function(
+        "anterior => document.querySelector(\"[data-testid='hero-ejemplo']\")?.dataset.appid !== anterior",
+        arg=antes, timeout=_TIMEOUT_MS,
+    )
+    _esperar_quietud(pagina)
+    ruta = destino / "hero-carrusel.png"
+    carrusel.screenshot(path=ruta)
+    print(f"carrusel: flechas en ambos sentidos ({ruta.relative_to(_RAIZ)})")
+
+    # Pausa con el ratón encima: pasados 8 s sigue el mismo.
+    pagina.locator("[data-testid='hero-ejemplo'] .vistazo-cuerpo").hover()
+    quieto = _ejemplo_actual(pagina)
+    pagina.wait_for_timeout(8500)
+    if _ejemplo_actual(pagina) != quieto:
+        problemas.append("el carrusel siguió rotando con el ratón encima")
+
+    # Sin ratón ni foco, rota solo en menos de 9 s.
+    pagina.mouse.move(5, 5)
+    pagina.evaluate("() => document.activeElement?.blur()")
+    try:
+        pagina.wait_for_function(
+            "anterior => document.querySelector(\"[data-testid='hero-ejemplo']\")?.dataset.appid !== anterior",
+            arg=quieto, timeout=9500,
+        )
+        print("carrusel: se pausa con el ratón encima y rota solo cuando se va")
+    except TiempoAgotado:
+        problemas.append("el carrusel no rota solo sin ratón ni foco")
+
+    # Con prefers-reduced-motion no rota solo.
+    navegador = pagina.context.browser
+    if navegador is not None:
+        contexto = navegador.new_context(viewport=_VIEWPORT, reduced_motion="reduce")
+        _sin_consultas_a_nia(contexto)
+        try:
+            quieta = contexto.new_page()
+            _abrir(quieta, url)
+            quieta.get_by_test_id("hero-carrusel").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            primero = _ejemplo_actual(quieta)
+            quieta.wait_for_timeout(8500)
+            if _ejemplo_actual(quieta) != primero:
+                problemas.append("con prefers-reduced-motion el carrusel rota solo")
+            else:
+                print("carrusel: con prefers-reduced-motion no rota solo")
+        finally:
+            contexto.close()
+    return problemas
+
+
 def _angular_panel_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     """El chat de la ficha: avatar junto al título y superficie con brillo."""
     problemas = []
@@ -1021,6 +1100,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_descripcion(pagina, url, api)
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
+        + _angular_carrusel(pagina, url, destino)
         + _angular_nia_reaccion(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
