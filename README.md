@@ -45,9 +45,11 @@ python preparar_entorno.py
 
 1. Verifica que las dependencias estén instaladas.
 2. Descarga el asset de datos publicado en el [release `data-v1`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v1)
-   y valida su SHA-256 antes de tocarlo (mismo patrón que el notebook).
+   y valida su SHA-256 antes de tocarlo (mismo patrón que el notebook). En esta rama el
+   catálogo servido y el corte de entrenamiento son el mismo, data-v1.
 3. Reconstruye `datos/nexplay.db` a partir de ese asset.
-4. Corre `entrenar_modelo.py` para generar `modelo/nexplay.pkl`.
+4. Corre `entrenar_modelo.py` sobre data-v1 para generar `modelo/nexplay.pkl`; el
+   artefacto guarda el tag, el sha256 del asset y las filas y juegos de entrenamiento.
 5. Levanta la API en un puerto de prueba y confirma que `/catalogo` responde, antes de
    apagarla.
 
@@ -141,7 +143,9 @@ todas derivadas por heurística.
 ### `POST /prediccion`
 
 Recibe el perfil derivado (el que devolvió `/perfil`) más un `appid`, y devuelve el
-riesgo con los tres factores que más lo movieron.
+riesgo con los tres factores que más lo movieron. El riesgo es del título (modelo
+`conjunto='juego'`): el perfil se acepta por compatibilidad y solo aporta la nota de
+plataforma; ningún dato suyo mueve el score.
 
 **Request** (`SolicitudPrediccion`): `{ "perfil": {...}, "appid": 1245620 }`
 
@@ -236,14 +240,18 @@ python extracto_reproducible.py        # extracto/nexplay_reproducible.db.xz (pa
 `resumen_resenas` y `progreso` no se copian: son metadata de la ingesta, no las usa ni la
 API ni el entrenamiento.
 
-Subir el asset al release existente (mismo tag `data-v1` que usa el notebook):
+Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
+reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
+seguir bajando exactamente lo mismo. Hoy `preparar_entorno.py` sirve y entrena con
+`data-v1`; el notebook mide con `data-v1` y usa `data-v2` como prueba externa.
 
 ```bash
-gh release upload data-v1 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz --clobber
+gh release create data-vN extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
 ```
 
-Y actualizar `PARQUET_SHA256` en `notebook/nexplay.ipynb` y `ASSET_SHA256` en
-`preparar_entorno.py` con el sha256 que imprime cada script — si no coinciden, la
+Y actualizar los sha256 en `notebook/nexplay.ipynb` (`PARQUET_ENTRENAMIENTO_SHA256`,
+`PARQUET_PRUEBA_SHA256`) y en `preparar_entorno.py` (`SERVIDO_SHA256`,
+`ENTRENAMIENTO_SHA256`) con el que imprime cada script — si no coinciden, la
 descarga se rechaza a propósito en vez de seguir con datos que pudieron cambiar.
 
 ## No versionado

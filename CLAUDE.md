@@ -19,8 +19,16 @@ que no vio. Nunca usar `train_test_split` simple: fuga garantizada.
 
 **Métrica principal.** PR-AUC. La clase está desbalanceada, accuracy no sirve.
 
-**Datos.** 119,791 reseñas de 71 juegos, ingestadas desde la API `appreviews` de Steam.
-Capa A (42 juegos) para contraste novato/veterano. Capa B (29) multiplataforma.
+**Datos.** Reseñas ingestadas desde la API `appreviews` de Steam, publicadas en releases
+con tag fijo. **Entrenamiento: 83 títulos** (release data-v1, 123,972 reseñas); el modelo se
+entrena siempre con ese corte. **Catálogo servido: 123 títulos** (data-v2 en
+`frontend-angular`; `master` sirve data-v1). Los 40 títulos que no están en data-v1 son
+prueba externa: nunca entran al entrenamiento, a la elección de variables ni a los umbrales.
+
+**Modelo de título.** `conjunto='juego'` (`logreg-juego-`): gratuidad, precio, descuento y
+cobertura/nota de crítica. El riesgo es del juego, igual para cualquier persona; el perfil
+declarado **no cambia el riesgo**, sirve para afinidad. `/prediccion` sigue recibiendo el
+perfil por compatibilidad.
 
 **Perfiles privados.** `author.num_games_owned == 0` es bandera de privacidad, no
 biblioteca vacía. No imputar como cero.
@@ -53,9 +61,10 @@ debe cambiar cuando el modelo esté listo.
 ## El perfil del jugador
 
 No hay API de consola que dé historial del jugador, así que el perfil se **declara** en un
-formulario de alta, no se infiere. Variables que recoge:
+formulario de alta, no se infiere. No entra al modelo: sirve para contar qué tanto encaja un
+juego con quien lo declaró (afinidad), nunca para mover el riesgo. Variables que recoge:
 
-- compras al año (sustituto de `num_games_owned`)
+- compras al año (sustituto de `num_games_owned`; el modelo de título no la usa)
 - horas por semana disponibles
 - tolerancia a la fricción
 - etiquetas preferidas y rechazadas, usando **el vocabulario de tags de Steam**, no
