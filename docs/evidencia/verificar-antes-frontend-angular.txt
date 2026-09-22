@@ -1,0 +1,10 @@
+BANDAS DISTINTAS de la referencia bandas_referencia.json (modelo actual logreg-juego-2026-09-21):
+  - Euro Truck Simulator 2 (227300): medio -> alto; score 0.3936, a 2.0e-03 del corte medio/alto (0.391587)
+  - Warframe (230410): medio -> alto; score 0.3918, a 2.1e-04 del corte medio/alto (0.391587)
+  - Cuphead (268910): medio -> bajo; score 0.2745, a 1.1e-02 del corte bajo/medio (0.285849)
+  - Hollow Knight (367520): medio -> bajo; score 0.2857, a 1.5e-04 del corte bajo/medio (0.285849)
+  - Celeste (504230): medio -> bajo; score 0.2796, a 6.2e-03 del corte bajo/medio (0.285849)
+  - Devil May Cry 5 (601150): medio -> bajo; score 0.2828, a 3.0e-03 del corte bajo/medio (0.285849)
+  - DiRT Rally 2.0 (690790): medio -> bajo; score 0.2763, a 9.5e-03 del corte bajo/medio (0.285849)
+  - Baba Is You (736260): medio -> bajo; score 0.2826, a 3.2e-03 del corte bajo/medio (0.285849)
+  - Company of Heroes 3 (1677280): medio -> bajo; score 0.2776, a 8.2e-03 del corte bajo/medio (0.285849)

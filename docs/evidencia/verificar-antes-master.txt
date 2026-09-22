@@ -1,0 +1,5 @@
+BANDAS DISTINTAS de la referencia bandas_referencia.json (modelo actual logreg-juego-2026-09-21):
+  - Cuphead (268910): medio -> bajo; score 0.2745, a 1.1e-02 del corte bajo/medio (0.285849)
+  - Hollow Knight (367520): medio -> bajo; score 0.2857, a 1.5e-04 del corte bajo/medio (0.285849)
+  - Celeste (504230): medio -> bajo; score 0.2796, a 6.2e-03 del corte bajo/medio (0.285849)
+  - Devil May Cry 5 (601150): medio -> bajo; score 0.2828, a 3.0e-03 del corte bajo/medio (0.285849)

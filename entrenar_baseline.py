@@ -43,8 +43,8 @@ N_SPLITS = 5
 SEMILLA = 42
 
 
-def cargar_datos() -> pd.DataFrame:
-    con = sqlite3.connect(DB_PATH)
+def cargar_datos(db_path: Path = DB_PATH) -> pd.DataFrame:
+    con = sqlite3.connect(db_path)
     df = pd.read_sql_query(
         """
         SELECT

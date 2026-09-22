@@ -1,0 +1,497 @@
+{
+ "resumen": {
+  "titulos_nuevos": 40,
+  "evaluables": 40,
+  "errores_de_inferencia": [],
+  "sin_resenas": [],
+  "con_precio_de_pago_imputado": [],
+  "sin_metacritic (dato, no faltante)": 10,
+  "filas": 60395,
+  "positivos": 1412,
+  "prevalencia": 0.02337941882606176,
+  "pr_auc_externo": 0.03557595779593901,
+  "pr_auc_trivial": 0.02337941882606176,
+  "bandas": {
+   "medio": 14,
+   "alto": 13,
+   "bajo": 13
+  }
+ },
+ "por_titulo": [
+  {
+   "appid": 1055540,
+   "nombre": "A Short Hike",
+   "filas": 1500,
+   "positivos": 9,
+   "prevalencia": 0.006,
+   "riesgo": 0.3308,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 813780,
+   "nombre": "Age of Empires II: Definitive Edition",
+   "filas": 1500,
+   "positivos": 12,
+   "prevalencia": 0.008,
+   "riesgo": 0.3372,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1466860,
+   "nombre": "Age of Empires IV: Anniversary Edition",
+   "filas": 1500,
+   "positivos": 22,
+   "prevalencia": 0.014666666666666666,
+   "riesgo": 0.3774,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1944430,
+   "nombre": "Amnesia: The Bunker",
+   "filas": 1500,
+   "positivos": 27,
+   "prevalencia": 0.018,
+   "riesgo": 0.7179,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1172470,
+   "nombre": "Apex Legends™",
+   "filas": 1599,
+   "positivos": 28,
+   "prevalencia": 0.017510944340212633,
+   "riesgo": 0.1808,
+   "banda": "bajo",
+   "nulos": [
+    "precio_final",
+    "descuento"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 244210,
+   "nombre": "Assetto Corsa",
+   "filas": 1500,
+   "positivos": 43,
+   "prevalencia": 0.028666666666666667,
+   "riesgo": 0.1913,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 736260,
+   "nombre": "Baba Is You",
+   "filas": 1500,
+   "positivos": 10,
+   "prevalencia": 0.006666666666666667,
+   "riesgo": 0.2826,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 924970,
+   "nombre": "Back 4 Blood",
+   "filas": 1500,
+   "positivos": 136,
+   "prevalencia": 0.09066666666666667,
+   "riesgo": 0.4627,
+   "banda": "alto",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1238810,
+   "nombre": "Battlefield™ V",
+   "filas": 1500,
+   "positivos": 89,
+   "prevalencia": 0.059333333333333335,
+   "riesgo": 0.5556,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1677280,
+   "nombre": "Company of Heroes 3",
+   "filas": 1500,
+   "positivos": 43,
+   "prevalencia": 0.028666666666666667,
+   "riesgo": 0.2776,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1313140,
+   "nombre": "Cult of the Lamb",
+   "filas": 1500,
+   "positivos": 16,
+   "prevalencia": 0.010666666666666666,
+   "riesgo": 0.3661,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1693980,
+   "nombre": "Dead Space",
+   "filas": 1500,
+   "positivos": 80,
+   "prevalencia": 0.05333333333333334,
+   "riesgo": 0.2042,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1085660,
+   "nombre": "Destiny 2",
+   "filas": 1500,
+   "positivos": 20,
+   "prevalencia": 0.013333333333333334,
+   "riesgo": 0.2264,
+   "banda": "bajo",
+   "nulos": [
+    "precio_final",
+    "descuento"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 690790,
+   "nombre": "DiRT Rally 2.0",
+   "filas": 1500,
+   "positivos": 26,
+   "prevalencia": 0.017333333333333333,
+   "riesgo": 0.2763,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1455840,
+   "nombre": "Dorfromantik",
+   "filas": 1500,
+   "positivos": 41,
+   "prevalencia": 0.027333333333333334,
+   "riesgo": 0.7039,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 227300,
+   "nombre": "Euro Truck Simulator 2",
+   "filas": 1500,
+   "positivos": 7,
+   "prevalencia": 0.004666666666666667,
+   "riesgo": 0.3936,
+   "banda": "alto",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 39210,
+   "nombre": "FINAL FANTASY XIV Online",
+   "filas": 1500,
+   "positivos": 32,
+   "prevalencia": 0.021333333333333333,
+   "riesgo": 0.3441,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1248130,
+   "nombre": "Farming Simulator 22",
+   "filas": 1500,
+   "positivos": 6,
+   "prevalencia": 0.004,
+   "riesgo": 0.7204,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1551360,
+   "nombre": "Forza Horizon 5",
+   "filas": 1500,
+   "positivos": 39,
+   "prevalencia": 0.026,
+   "riesgo": 0.7511,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 323190,
+   "nombre": "Frostpunk",
+   "filas": 1500,
+   "positivos": 32,
+   "prevalencia": 0.021333333333333333,
+   "riesgo": 0.1974,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1496790,
+   "nombre": "Gotham Knights",
+   "filas": 1599,
+   "positivos": 107,
+   "prevalencia": 0.066916823014384,
+   "riesgo": 0.7443,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1092790,
+   "nombre": "Inscryption",
+   "filas": 1500,
+   "positivos": 12,
+   "prevalencia": 0.008,
+   "riesgo": 0.3204,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 460950,
+   "nombre": "Katana ZERO",
+   "filas": 1500,
+   "positivos": 16,
+   "prevalencia": 0.010666666666666666,
+   "riesgo": 0.3338,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 220200,
+   "nombre": "Kerbal Space Program",
+   "filas": 1500,
+   "positivos": 5,
+   "prevalencia": 0.0033333333333333335,
+   "riesgo": 0.1768,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 954850,
+   "nombre": "Kerbal Space Program 2",
+   "filas": 1500,
+   "positivos": 187,
+   "prevalencia": 0.12466666666666666,
+   "riesgo": 0.7326,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1222680,
+   "nombre": "Need for Speed™ Heat",
+   "filas": 1598,
+   "positivos": 86,
+   "prevalencia": 0.05381727158948686,
+   "riesgo": 0.3314,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 753640,
+   "nombre": "Outer Wilds",
+   "filas": 1500,
+   "positivos": 18,
+   "prevalencia": 0.012,
+   "riesgo": 0.3187,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 457140,
+   "nombre": "Oxygen Not Included",
+   "filas": 1500,
+   "positivos": 19,
+   "prevalencia": 0.012666666666666666,
+   "riesgo": 0.3146,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 239030,
+   "nombre": "Papers, Please",
+   "filas": 1500,
+   "positivos": 21,
+   "prevalencia": 0.014,
+   "riesgo": 0.3009,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 238960,
+   "nombre": "Path of Exile",
+   "filas": 1500,
+   "positivos": 18,
+   "prevalencia": 0.012,
+   "riesgo": 0.1981,
+   "banda": "bajo",
+   "nulos": [
+    "precio_final",
+    "descuento"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 739630,
+   "nombre": "Phasmophobia",
+   "filas": 1500,
+   "positivos": 10,
+   "prevalencia": 0.006666666666666667,
+   "riesgo": 0.7133,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1290000,
+   "nombre": "PowerWash Simulator",
+   "filas": 1500,
+   "positivos": 13,
+   "prevalencia": 0.008666666666666666,
+   "riesgo": 0.7239,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1196590,
+   "nombre": "Resident Evil Village",
+   "filas": 1500,
+   "positivos": 16,
+   "prevalencia": 0.010666666666666666,
+   "riesgo": 0.2256,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1716740,
+   "nombre": "Starfield",
+   "filas": 1500,
+   "positivos": 34,
+   "prevalencia": 0.02266666666666667,
+   "riesgo": 0.7443,
+   "banda": "alto",
+   "nulos": [
+    "metacritic"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 264710,
+   "nombre": "Subnautica",
+   "filas": 1500,
+   "positivos": 4,
+   "prevalencia": 0.0026666666666666666,
+   "riesgo": 0.3126,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 440,
+   "nombre": "Team Fortress 2",
+   "filas": 1500,
+   "positivos": 23,
+   "prevalencia": 0.015333333333333332,
+   "riesgo": 0.1498,
+   "banda": "bajo",
+   "nulos": [
+    "precio_final",
+    "descuento"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 779340,
+   "nombre": "Total War: THREE KINGDOMS",
+   "filas": 1500,
+   "positivos": 56,
+   "prevalencia": 0.037333333333333336,
+   "riesgo": 0.3345,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 1135690,
+   "nombre": "Unpacking",
+   "filas": 1599,
+   "positivos": 22,
+   "prevalencia": 0.013758599124452783,
+   "riesgo": 0.2468,
+   "banda": "bajo",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 230410,
+   "nombre": "Warframe",
+   "filas": 1500,
+   "positivos": 6,
+   "prevalencia": 0.004,
+   "riesgo": 0.3918,
+   "banda": "alto",
+   "nulos": [
+    "precio_final",
+    "descuento"
+   ],
+   "precio_de_pago_imputado_0": false
+  },
+  {
+   "appid": 268500,
+   "nombre": "XCOM® 2",
+   "filas": 1500,
+   "positivos": 21,
+   "prevalencia": 0.014,
+   "riesgo": 0.2917,
+   "banda": "medio",
+   "nulos": [],
+   "precio_de_pago_imputado_0": false
+  }
+ ]
+}

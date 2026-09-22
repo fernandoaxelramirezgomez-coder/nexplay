@@ -1,0 +1,18 @@
+modelo guardado en <worktree>/modelo/nexplay.pkl
+version=logreg-juego-2026-09-21  conjunto=juego
+features=['es_gratis', 'log_precio_final', 'descuento', 'metacritic_disponible', 'metacritic']
+datos=data-v1  sha256=2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7
+filas=123972  juegos=83  prevalencia=0.0219
+umbral_medio=0.2858  umbral_alto=0.3916  (tercios de scores OOF)
+descargando https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/download/data-v2/nexplay_reproducible.db.xz ...
+descarga verificada (data-v2): 15.9 MB, sha256 OK
+<worktree>/datos/nexplay.db reconstruida (60.4 MB)
+descargando https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/download/data-v1/nexplay_reproducible.db.xz ...
+descarga verificada (data-v1): 10.9 MB, sha256 OK
+<worktree>/datos/entrenamiento/nexplay_data-v1.db reconstruida (41.3 MB)
+entrenando el modelo de producción con data-v1 (entrenar_modelo.py) ...
+levantando la API en el puerto 8321 para verificarla ...
+API responde OK: 123 juegos en el catálogo.
+Entorno listo. Para levantar el proyecto:
+    uvicorn api.main:app --reload
+    python ui/app.py   # en otra terminal, con requirements-ui.txt instalado

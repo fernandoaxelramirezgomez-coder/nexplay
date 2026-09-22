@@ -1,9 +1,9 @@
 {
-  "generado": "2026-09-19",
-  "modelo_version": "logreg-compra-2026-09-16",
+  "generado": "2026-09-21",
+  "modelo_version": "logreg-juego-2026-09-21",
   "umbrales": {
-    "medio": 0.2679793703558745,
-    "alto": 0.4221301060428699
+    "medio": 0.285848711637061,
+    "alto": 0.39158738771505425
   },
   "perfil": "neutro (api/catalogo.py, _PERFIL_NEUTRO)",
   "nota": "solo 'bandas' se compara; lo demás es trazabilidad",
@@ -82,7 +82,7 @@
     },
     "268910": {
       "nombre": "Cuphead",
-      "banda": "medio"
+      "banda": "bajo"
     },
     "271590": {
       "nombre": "Grand Theft Auto V Legacy",
@@ -118,7 +118,7 @@
     },
     "367520": {
       "nombre": "Hollow Knight",
-      "banda": "medio"
+      "banda": "bajo"
     },
     "374320": {
       "nombre": "DARK SOULS™ III",
@@ -154,7 +154,7 @@
     },
     "504230": {
       "nombre": "Celeste",
-      "banda": "medio"
+      "banda": "bajo"
     },
     "526870": {
       "nombre": "Satisfactory",
@@ -178,7 +178,7 @@
     },
     "601150": {
       "nombre": "Devil May Cry 5",
-      "banda": "medio"
+      "banda": "bajo"
     },
     "632360": {
       "nombre": "Risk of Rain 2",
