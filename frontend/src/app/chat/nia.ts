@@ -31,7 +31,7 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
     <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()">
       @if (muestraTitulo()) {
         <header class="cabecera">
-          <img class="avatar" src="nia/avatar.png" alt="" width="192" height="192" data-testid="nia-avatar" />
+          <img class="avatar" src="nia/chat.png" alt="" width="200" height="233" data-testid="nia-avatar" />
           <h2 class="titulo">Pregúntale a Nia</h2>
         </header>
       }
@@ -122,11 +122,15 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       align-items: center;
       gap: var(--espacio-12);
     }
-    /* El mismo retrato del saludo del catálogo, recortado a la cara. */
+    /* Nia saludando (Wave, de la hoja v2), la misma cara que la burbuja del chat. */
     .avatar {
-      width: 44px;
-      height: 44px;
+      width: 52px;
+      height: 52px;
+      padding: 4px 4px 0;
+      object-fit: contain;
+      object-position: center bottom;
       border-radius: 50%;
+      background: var(--superficie-lienzo);
       box-shadow:
         0 0 0 1px var(--neon),
         0 0 10px rgba(34, 224, 255, 0.4);

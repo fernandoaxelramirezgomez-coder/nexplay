@@ -94,10 +94,10 @@
 
 /* Mientras la burbuja flotante de Nia está en pantalla, el final de la página deja libre
    su alto más el margen: el último párrafo o el pie siempre se pueden subir por encima de
-   ella. Mismos 64 px de la burbuja y mismos márgenes (24 px, 16 px en móvil) que
+   ella. Mismos 80 px de la burbuja y mismos márgenes (24 px, 16 px en móvil) que
    nia-flotante.ts. */
 .pagina.con-burbuja {
-  padding-bottom: calc(64px + 2 * var(--espacio-24) + env(safe-area-inset-bottom));
+  padding-bottom: calc(80px + 2 * var(--espacio-24) + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 640px) {
@@ -110,7 +110,7 @@
   }
 
   .pagina.con-burbuja {
-    padding-bottom: calc(64px + 2 * var(--espacio-16) + env(safe-area-inset-bottom));
+    padding-bottom: calc(80px + 2 * var(--espacio-16) + env(safe-area-inset-bottom));
   }
 
   /* Cuatro enlaces y la píldora de perfil no caben en una fila de 358 px: el nav ocupa

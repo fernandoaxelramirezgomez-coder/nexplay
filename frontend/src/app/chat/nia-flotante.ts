@@ -36,7 +36,7 @@ const MAXIMO_SUGERENCIAS = 6;
         >
           <header class="cabecera">
             <div class="quien">
-              <img class="avatar-chico" src="nia/avatar.png" alt="" width="192" height="192" />
+              <img class="avatar-chico" src="nia/chat.png" alt="" width="200" height="233" />
               <div>
                 <h2 class="nombre" id="nia-flotante-titulo">Nia</h2>
                 <p class="meta subtitulo">Asistente de NexPlay</p>
@@ -96,7 +96,7 @@ const MAXIMO_SUGERENCIAS = 6;
         #burbuja
         (click)="alternar()"
       >
-        <img class="avatar" src="nia/avatar.png" alt="" width="192" height="192" />
+        <img class="avatar" src="nia/chat.png" alt="" width="200" height="233" />
       </button>
     </div>
   `,
@@ -116,8 +116,8 @@ const MAXIMO_SUGERENCIAS = 6;
     /* La burbuja es la cara de Nia dentro de un anillo neón que respira despacio: se
        nota que está ahí sin reclamar atención. Al abrirse, el anillo se queda encendido. */
     .burbuja {
-      width: 64px;
-      height: 64px;
+      width: 80px;
+      height: 80px;
       padding: 3px;
       border: 2px solid var(--neon);
       border-radius: 50%;
@@ -142,10 +142,14 @@ const MAXIMO_SUGERENCIAS = 6;
       animation: none;
       box-shadow: var(--resplandor);
     }
+    /* Nia saludando (Wave, de la hoja v2): el sprite entero cabe en el círculo. */
     .avatar {
       display: block;
       width: 100%;
       height: 100%;
+      padding: 5px 5px 0;
+      object-fit: contain;
+      object-position: center bottom;
       border-radius: 50%;
     }
     .quien {
@@ -154,9 +158,13 @@ const MAXIMO_SUGERENCIAS = 6;
       gap: var(--espacio-12);
     }
     .avatar-chico {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
+      padding: 3px 3px 0;
+      object-fit: contain;
+      object-position: center bottom;
       border-radius: 50%;
+      background: var(--superficie-lienzo);
       box-shadow: 0 0 0 1px var(--neon), 0 0 8px rgba(34, 224, 255, 0.35);
     }
     .nombre {

@@ -1,5 +1,5 @@
 import { MotivoInsatisfaccion, PerfilJugador } from '../api/contrato';
-import { historiaPerfil } from './historia-perfil';
+import { historiaPerfil, partirDatos } from './historia-perfil';
 import { juegoDePrueba } from './juego-prueba';
 
 function perfilDePrueba(cambios: Partial<PerfilJugador> = {}): PerfilJugador {
@@ -112,5 +112,27 @@ describe('historiaPerfil', () => {
       expect(texto.toLowerCase()).not.toContain('te lo recomiendo');
       expect(texto.toLowerCase()).not.toContain('vale la pena');
     }
+  });
+
+  it('con una compra al año dice «1 juego», en singular', () => {
+    const uno = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 1 }), juegoDePrueba(), MOTIVOS));
+    expect(uno).toContain('1 juego al año');
+    expect(uno).not.toContain('1 juegos');
+    const cinco = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 5 }), juegoDePrueba(), MOTIVOS));
+    expect(cinco).toContain('5 juegos al año');
+  });
+});
+
+describe('partirDatos', () => {
+  it('marca porcentajes, horas, días, juegos y compras sin cambiar el texto', () => {
+    const texto = 'Con 6 h por semana, dentro de los 14 días; rendimiento (86% de las clasificadas), 1 juego y 20 compras.';
+    const trozos = partirDatos(texto);
+    expect(trozos.map((t) => t.texto).join('')).toBe(texto);
+    expect(trozos.filter((t) => t.dato).map((t) => t.texto)).toEqual(['6 h', '14 días', '86%', '1 juego', '20 compras']);
+  });
+
+  it('un número suelto o una palabra con h no son datos', () => {
+    const trozos = partirDatos('Half-Life 2 tiene horas de sobra');
+    expect(trozos.some((t) => t.dato)).toBe(false);
   });
 });

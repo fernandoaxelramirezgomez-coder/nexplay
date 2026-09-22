@@ -24,6 +24,11 @@ Lo que quede suelto tocando el borde de la celda se descarta; lo que flote sin
 tocarlo, como el globo de "…", se conserva. Donde nada de esto alcanza —un rincón
 de Happy— se tapa a mano con 'tapar'.
 
+En Idea y Wave la pasada fría encontraba un hueco al costado de la cabeza y bajaba
+hasta el suéter, que es negro azulado (frío): quedaba transparente. 'limite_fria'
+es la fila de la celda de la que esa pasada no pasa: arriba de la cabeza sigue
+limpiando la esquina oscura, pero ya no alcanza el cuerpo.
+
 Intentos que fallaron, para no repetirlos:
 - Sembrar en todo el borde: el de abajo corta el suéter y se inundaba por dentro.
 - Tomar "oscuro" como contorno y rellenar lo que encierra: el fondo también es
@@ -66,6 +71,11 @@ _SPRITES = {
     "ficha-bajo": {"emocion": "Happy", "caja": (512, 130, 768, 398), "tapar": (512, 367, 541, 399)},
     "ficha-medio": {"emocion": "Think", "caja": (768, 110, 1024, 398)},
     "ficha-alto": {"emocion": "Typing", "caja": (1024, 130, 1280, 398)},
+    # Mini Nia de "Por qué te tocaría a ti", junto al botón "Que Nia lo cuente": el foco
+    # encendido es la idea de contarlo con sus palabras.
+    "historia": {"emocion": "Idea", "caja": (1280, 110, 1536, 398), "limite_fria": 130},
+    # Cara del chat (burbuja flotante y panel de la ficha): Nia saludando.
+    "chat": {"emocion": "Wave", "caja": (256, 130, 512, 398), "limite_fria": 110},
 }
 
 # Salto de luminancia entre vecinos a partir del cual hay un borde de dibujo. El
@@ -127,7 +137,7 @@ def _inundar_fondo(px: np.ndarray, muro: np.ndarray, solo_arriba: bool = False) 
     return fondo
 
 
-def recortar(hoja: Image.Image, caja: tuple, tapar: tuple | None) -> Image.Image:
+def recortar(hoja: Image.Image, caja: tuple, tapar: tuple | None, limite_fria: int | None = None) -> Image.Image:
     celda = hoja.crop(caja).convert("RGB")
     px = np.asarray(celda).astype(np.float32)
 
@@ -139,7 +149,11 @@ def recortar(hoja: Image.Image, caja: tuple, tapar: tuple | None) -> Image.Image
     # degradado liso hasta el contorno de la cabeza. La compuerta de brillo que protege
     # el suéter le impedía entrar a la primera pasada; desde arriba no hay suéter que
     # proteger, y el contorno negro de la cabeza es un borde fuerte que la frena.
-    figura = ~(_inundar_fondo(px, muro) | _inundar_fondo(px, muro, solo_arriba=True))
+    muro_frio = muro
+    if limite_fria is not None:
+        muro_frio = muro.copy()
+        muro_frio[limite_fria:, :] = True
+    figura = ~(_inundar_fondo(px, muro) | _inundar_fondo(px, muro_frio, solo_arriba=True))
     if tapar:
         x0, y0, x1, y1 = (tapar[0] - caja[0], tapar[1] - caja[1], tapar[2] - caja[0], tapar[3] - caja[1])
         figura[max(0, y0):y1, max(0, x0):x1] = False
@@ -169,14 +183,14 @@ def recortar(hoja: Image.Image, caja: tuple, tapar: tuple | None) -> Image.Image
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Corta los sprites de Nia para la ficha")
+    parser = argparse.ArgumentParser(description="Corta los sprites de Nia de la hoja de emociones")
     parser.add_argument("--hoja", type=Path, default=_HOJA, help="por defecto %(default)s")
     args = parser.parse_args()
 
     hoja = Image.open(args.hoja)
     _SALIDA.mkdir(parents=True, exist_ok=True)
     for nombre, spec in _SPRITES.items():
-        sprite = recortar(hoja, spec["caja"], spec.get("tapar"))
+        sprite = recortar(hoja, spec["caja"], spec.get("tapar"), spec.get("limite_fria"))
         ruta = _SALIDA / f"{nombre}.png"
         sprite.save(ruta, optimize=True)
         print(f"{nombre:12} ({spec['emocion']:6}) {sprite.size[0]}×{sprite.size[1]}  "

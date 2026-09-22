@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo, MotivoInsatisfaccion } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
-import { AVISO_HISTORIA, historiaPerfil } from '../dominio/historia-perfil';
+import { AVISO_HISTORIA, historiaPerfil, partirDatos } from '../dominio/historia-perfil';
 import { PerfilStore } from '../estado/perfil-store';
 import { UsuarioStore } from '../estado/usuario-store';
 
@@ -24,16 +24,10 @@ const PREGUNTA_A_NIA =
     <section class="historia" data-testid="historia-perfil">
       <h2 class="rotulo-seccion">Por qué te tocaría a ti</h2>
 
-      @if (historia(); as segmentos) {
-        <p class="lectura" data-testid="historia-texto">
-          @for (segmento of segmentos; track $index) {
-            @if (segmento.clave) {
-              <strong>{{ segmento.texto }}</strong>
-            } @else {
-              {{ segmento.texto }}
-            }
-          }
-        </p>
+      @if (historiaConDatos(); as segmentos) {
+        <!-- En una sola línea a propósito: los saltos entre bloques se volverían espacios
+             dentro del párrafo. Los espacios de verdad ya vienen en cada segmento. -->
+        <p class="lectura parrafo" data-testid="historia-texto">@for (segmento of segmentos; track $index) {@if (segmento.clave) {<strong class="clave">{{ segmento.texto }}</strong>} @else {@for (trozo of segmento.trozos; track $index) {@if (trozo.dato) {<span class="dato">{{ trozo.texto }}</span>} @else {<ng-container>{{ trozo.texto }}</ng-container>}}}}</p>
 
         @if (versionDeNia(); as texto) {
           <p class="lectura nia" data-testid="historia-nia">{{ texto }}</p>
@@ -42,17 +36,30 @@ const PREGUNTA_A_NIA =
           }
         }
 
-        <div class="acciones">
-          <button
-            type="button"
-            class="boton-fantasma"
-            data-testid="historia-pedir-nia"
-            [disabled]="esperando()"
-            (click)="pedirANia()"
-          >
-            {{ esperando() ? 'Nia está escribiendo…' : versionDeNia() ? 'Que Nia lo cuente otra vez' : 'Que Nia lo cuente' }}
-          </button>
-          <span class="meta error" role="status" aria-live="polite">{{ error() }}</span>
+        <!-- Mini Nia decorativa: acompaña al botón que le pide contarlo, no dice nada. -->
+        <div class="con-nia" data-testid="historia-con-nia">
+          <img
+            class="mini-nia"
+            src="nia/historia.png"
+            alt=""
+            aria-hidden="true"
+            width="210"
+            height="235"
+            loading="lazy"
+            data-testid="historia-mini-nia"
+          />
+          <div class="acciones">
+            <button
+              type="button"
+              class="boton-fantasma"
+              data-testid="historia-pedir-nia"
+              [disabled]="esperando()"
+              (click)="pedirANia()"
+            >
+              {{ esperando() ? 'Nia está escribiendo…' : versionDeNia() ? 'Que Nia lo cuente otra vez' : 'Que Nia lo cuente' }}
+            </button>
+            <span class="meta error" role="status" aria-live="polite">{{ error() }}</span>
+          </div>
         </div>
 
         <p class="meta aviso">{{ avisoFijo }}</p>
@@ -88,11 +95,64 @@ const PREGUNTA_A_NIA =
       margin: 0;
       line-height: var(--interlineado-largo);
     }
+    /* El párrafo por reglas es lo que se lee de esta sección: Inter un paso más grande que
+       la lectura normal y con más aire entre líneas. */
+    .parrafo {
+      font-family: var(--fuente-texto);
+      font-size: calc(var(--texto-body) + 2px);
+      line-height: 1.7;
+    }
+    /* Las cifras (porcentajes, horas, días) van en la mono, como los datos del resto de
+       la app; un poco más chicas para que igualen la altura de la x de Inter. */
+    .dato {
+      font-family: var(--fuente-mono);
+      font-size: 0.9em;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    /* La palabra clave lleva un subrayado cian que brilla hacia abajo. El brillo es del
+       subrayado: las letras conservan el color de texto, sin sombra, y el contraste AA. */
+    .clave {
+      color: var(--texto);
+      padding-bottom: 3px;
+      background-image:
+        linear-gradient(var(--neon), var(--neon)),
+        linear-gradient(to top, rgba(34, 224, 255, 0.3), rgba(34, 224, 255, 0));
+      background-size:
+        100% 2px,
+        100% 9px;
+      background-position:
+        0 100%,
+        0 100%;
+      background-repeat: no-repeat;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+    }
+    .con-nia {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--espacio-8);
+      margin-top: var(--espacio-8);
+    }
+    /* Nia con el foco encendido (Idea, de la hoja v2): la idea de contarlo con sus palabras. */
+    .mini-nia {
+      width: 84px;
+      height: auto;
+      filter: drop-shadow(0 0 6px rgba(34, 224, 255, 0.3));
+    }
     .acciones {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: var(--espacio-12);
+    }
+    @media (max-width: 640px) {
+      .parrafo {
+        font-size: var(--texto-body);
+        line-height: 1.65;
+      }
     }
     .error:empty {
       display: none;
@@ -116,6 +176,11 @@ export class HistoriaPerfil {
   protected readonly error = signal('');
   protected readonly versionDeNia = signal('');
   protected readonly avisoNia = signal('');
+
+  /** La historia con las cifras separadas, para pintarlas en la mono. */
+  protected readonly historiaConDatos = computed(() =>
+    this.historia()?.map((segmento) => ({ ...segmento, trozos: partirDatos(segmento.texto) })),
+  );
 
   protected readonly historia = computed(() =>
     historiaPerfil(this.perfil.perfil(), this.juego(), this.motivos()),

@@ -20,7 +20,7 @@ const DIAS_DE_REEMBOLSO = 14;
 
 /** Por qué este juego le tocaría a quien declaró este perfil: géneros, fricción, tiempo
  * y cuánto pesa una compra. Es contexto, no una recomendación, y no mueve el riesgo:
- * el modelo solo usa las compras al año, nunca los gustos ni las horas.
+ * el modelo es de título y no usa ningún dato del perfil.
  *
  * Devuelve null si no hay perfil declarado; entonces no hay historia que contar. */
 export function historiaPerfil(
@@ -154,12 +154,32 @@ function parrafoCompra(perfil: PerfilJugador, juego: JuegoCatalogo): Segmento[] 
   const compras = perfil.compras_al_anio;
   if (compras > 0 && compras <= 12) {
     return [
-      { texto: `Compras alrededor de ${compras} juegos al año, así que este sería ` },
+      { texto: `Compras alrededor de ${compras} ${compras === 1 ? 'juego' : 'juegos'} al año, así que este sería ` },
       { texto: 'una de tus pocas compras', clave: true },
       { texto: ` del año.` },
     ];
   }
   return [{ texto: `Con unas ${compras} compras al año, este es uno más de los que pruebas.` }];
+}
+
+/** Trozo de texto; `dato` marca una cifra (porcentaje, horas, días, juegos o compras)
+ * que la vista pinta en la fuente mono, como el resto de los datos de la app. */
+export interface Trozo {
+  texto: string;
+  dato?: boolean;
+}
+
+const PATRON_DATO = '\\d+(?:[.,]\\d+)?\\s?(?:%|h\\b|días?\\b|juegos?\\b|compras?\\b)';
+const PARTIR = new RegExp(`(${PATRON_DATO})`);
+const ES_DATO = new RegExp(`^${PATRON_DATO}$`);
+
+/** Separa las cifras del texto corrido sin cambiar una sola letra: al unir los trozos
+ * sale el texto original. */
+export function partirDatos(texto: string): Trozo[] {
+  return texto
+    .split(PARTIR)
+    .filter((parte) => parte !== '')
+    .map((parte) => (ES_DATO.test(parte) ? { texto: parte, dato: true } : { texto: parte }));
 }
 
 /** La línea que acompaña siempre a la historia, para que nadie la lea como parte del
