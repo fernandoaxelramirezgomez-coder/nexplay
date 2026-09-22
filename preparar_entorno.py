@@ -3,8 +3,14 @@ NexPlay - Prepara un entorno limpio de punta a punta
 =====================================================
 
 Para que el proyecto completo sea reproducible (no solo el notebook): baja
-el asset de datos del release, reconstruye datos/nexplay.db, entrena el
+los assets de datos de los releases, reconstruye datos/nexplay.db, entrena el
 modelo de produccion y verifica que la API levante con esos artefactos.
+
+Son dos cortes de datos distintos, cada uno con su tag y su sha256:
+- el que sirve la API (SERVIDO_*): el catalogo completo, data-v2;
+- el de entrenamiento (ENTRENAMIENTO_*): siempre data-v1, los 83 juegos con
+  los que se valido el modelo. Los titulos que llegaron despues son prueba
+  externa y no entran al entrenamiento (ver entrenar_modelo.py).
 
 No usa la API publica de Steam (ingesta_steam.py) ni credenciales: el asset
 de datos ya paso por esa ingesta una vez y se publico en un GitHub Release
@@ -39,16 +45,19 @@ RAIZ = Path(__file__).resolve().parent
 DB_PATH = RAIZ / "datos" / "nexplay.db"
 MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 
-# Mismo repo/tag que notebook/nexplay.ipynb: un release con tag fijo, nunca
-# "latest", para que este script siga funcionando igual dentro de un año.
+# Releases con tag fijo, nunca "latest", para que este script siga funcionando
+# igual dentro de un año. Cada sha256 es el del asset publicado en ese release
+# (ver salida de extracto_reproducible.py): si se sube uno nuevo, va con un tag
+# nuevo y su sha256 se actualiza aqui.
 GITHUB_REPO = "fernandoaxelramirezgomez-coder/nexplay"
-GITHUB_REF = "data-v2"
 ASSET_NOMBRE = "nexplay_reproducible.db.xz"
-ASSET_URL = f"https://github.com/{GITHUB_REPO}/releases/download/{GITHUB_REF}/{ASSET_NOMBRE}"
-# sha256 real del asset publicado en ese release (ver salida de
-# extracto_reproducible.py). Si se regenera el asset y se sube uno nuevo,
-# este valor tiene que actualizarse junto con el.
-ASSET_SHA256 = "9d5a54f6cbb5f361e397eb043989e592cbff1d553c57ef8a41aae41e2c763d72"
+
+SERVIDO_REF = "data-v2"
+SERVIDO_SHA256 = "9d5a54f6cbb5f361e397eb043989e592cbff1d553c57ef8a41aae41e2c763d72"
+
+ENTRENAMIENTO_REF = "data-v1"
+ENTRENAMIENTO_SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
+ENTRENAMIENTO_DB_PATH = RAIZ / "datos" / "entrenamiento" / f"nexplay_{ENTRENAMIENTO_REF}.db"
 
 PUERTO_PRUEBA_API = 8321
 TIMEOUT_RED = 60
@@ -68,40 +77,60 @@ def _verificar_dependencias() -> None:
         sys.exit(1)
 
 
-def _descargar_y_reconstruir_db(forzar: bool) -> None:
-    if DB_PATH.exists() and not forzar:
-        print(f"{DB_PATH} ya existe, no se reconstruye (usa --force para pisarla).")
+def _descargar(ref: str, sha256_esperado: str, destino: Path, forzar: bool) -> None:
+    """Baja el asset de un release, verifica su sha256 antes de tocar nada y lo
+    descomprime en destino."""
+    if destino.exists() and not forzar:
+        print(f"{destino} ya existe, no se reconstruye (usa --force para pisarla).")
         return
 
-    print(f"descargando {ASSET_URL} ...")
+    url = f"https://github.com/{GITHUB_REPO}/releases/download/{ref}/{ASSET_NOMBRE}"
+    print(f"descargando {url} ...")
     try:
-        with urllib.request.urlopen(ASSET_URL, timeout=TIMEOUT_RED) as resp:
+        with urllib.request.urlopen(url, timeout=TIMEOUT_RED) as resp:
             comprimido = resp.read()
     except urllib.error.URLError as exc:
-        print(f"no se pudo descargar el asset del release: {exc}")
+        print(f"no se pudo descargar el asset del release {ref}: {exc}")
         sys.exit(1)
 
     checksum = sha256(comprimido).hexdigest()
-    if checksum != ASSET_SHA256:
+    if checksum != sha256_esperado:
         print(
-            f"SHA-256 no coincide: esperado {ASSET_SHA256}, obtenido {checksum}. "
+            f"SHA-256 de {ref} no coincide: esperado {sha256_esperado}, obtenido {checksum}. "
             "El asset del release pudo cambiar o la descarga se corrompió; no seguir sin verificarlo."
         )
         sys.exit(1)
-    print(f"descarga verificada: {len(comprimido) / (1024 * 1024):.1f} MB, sha256 OK")
+    print(f"descarga verificada ({ref}): {len(comprimido) / (1024 * 1024):.1f} MB, sha256 OK")
 
-    DB_PATH.parent.mkdir(exist_ok=True)
-    DB_PATH.write_bytes(lzma.decompress(comprimido))
-    print(f"{DB_PATH} reconstruida ({DB_PATH.stat().st_size / (1024 * 1024):.1f} MB)")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_bytes(lzma.decompress(comprimido))
+    print(f"{destino} reconstruida ({destino.stat().st_size / (1024 * 1024):.1f} MB)")
 
 
-def _entrenar_modelo(forzar: bool) -> None:
+def _base_de_entrenamiento(forzar: bool) -> Path:
+    """Si el corte que se sirve es el mismo que el de entrenamiento, se entrena
+    sobre datos/nexplay.db y no se descarga dos veces."""
+    if ENTRENAMIENTO_REF == SERVIDO_REF:
+        return DB_PATH
+    _descargar(ENTRENAMIENTO_REF, ENTRENAMIENTO_SHA256, ENTRENAMIENTO_DB_PATH, forzar)
+    return ENTRENAMIENTO_DB_PATH
+
+
+def _entrenar_modelo(base: Path, forzar: bool) -> None:
     if MODELO_PATH.exists() and not forzar:
         print(f"{MODELO_PATH} ya existe, no se reentrena (usa --force para pisarlo).")
         return
 
-    print("entrenando el modelo de producción (entrenar_modelo.py) ...")
-    resultado = subprocess.run([sys.executable, str(RAIZ / "entrenar_modelo.py")], cwd=RAIZ)
+    print(f"entrenando el modelo de producción con {ENTRENAMIENTO_REF} (entrenar_modelo.py) ...")
+    resultado = subprocess.run(
+        [
+            sys.executable, str(RAIZ / "entrenar_modelo.py"),
+            "--db", str(base),
+            "--tag-datos", ENTRENAMIENTO_REF,
+            "--sha256-asset", ENTRENAMIENTO_SHA256,
+        ],
+        cwd=RAIZ,
+    )
     if resultado.returncode != 0:
         print("entrenar_modelo.py falló; revisa el traceback arriba.")
         sys.exit(1)
@@ -145,8 +174,9 @@ def main():
     args = parser.parse_args()
 
     _verificar_dependencias()
-    _descargar_y_reconstruir_db(args.force)
-    _entrenar_modelo(args.force)
+    _descargar(SERVIDO_REF, SERVIDO_SHA256, DB_PATH, args.force)
+    base = _base_de_entrenamiento(args.force)
+    _entrenar_modelo(base, args.force)
     _verificar_api()
 
     print()

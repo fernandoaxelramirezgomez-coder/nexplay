@@ -1,0 +1,460 @@
+{
+ "modelo_version": "logreg-juego-2026-09-21",
+ "conjunto": "juego",
+ "features": [
+  "es_gratis",
+  "log_precio_final",
+  "descuento",
+  "metacritic_disponible",
+  "metacritic"
+ ],
+ "datos_tag": "data-v1",
+ "datos_sha256": "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7",
+ "filas_entrenamiento": 123972,
+ "juegos_entrenamiento": 83,
+ "umbral_medio": 0.285848711637061,
+ "umbral_alto": 0.39158738771505425,
+ "reparto": {
+  "bajo": 30,
+  "alto": 30,
+  "medio": 23
+ },
+ "n_juegos": 83,
+ "juegos": {
+  "1086940": {
+   "nombre": "Baldur's Gate 3",
+   "banda": "bajo",
+   "riesgo": 0.2294
+  },
+  "1517290": {
+   "nombre": "Battlefield™ 2042",
+   "banda": "alto",
+   "riesgo": 0.7511
+  },
+  "2358720": {
+   "nombre": "Black Myth: Wukong",
+   "banda": "alto",
+   "riesgo": 0.7443
+  },
+  "504230": {
+   "nombre": "Celeste",
+   "banda": "bajo",
+   "riesgo": 0.2796
+  },
+  "255710": {
+   "nombre": "Cities: Skylines",
+   "banda": "medio",
+   "riesgo": 0.3312
+  },
+  "1158310": {
+   "nombre": "Crusader Kings III",
+   "banda": "bajo",
+   "riesgo": 0.2716
+  },
+  "268910": {
+   "nombre": "Cuphead",
+   "banda": "bajo",
+   "riesgo": 0.2745
+  },
+  "1091500": {
+   "nombre": "Cyberpunk 2077",
+   "banda": "medio",
+   "riesgo": 0.3371
+  },
+  "374320": {
+   "nombre": "DARK SOULS™ III",
+   "banda": "medio",
+   "riesgo": 0.296
+  },
+  "570940": {
+   "nombre": "DARK SOULS™: REMASTERED",
+   "banda": "medio",
+   "riesgo": 0.3481
+  },
+  "379720": {
+   "nombre": "DOOM",
+   "banda": "medio",
+   "riesgo": 0.3253
+  },
+  "782330": {
+   "nombre": "DOOM Eternal",
+   "banda": "medio",
+   "riesgo": 0.3008
+  },
+  "588650": {
+   "nombre": "Dead Cells",
+   "banda": "bajo",
+   "riesgo": 0.1949
+  },
+  "381210": {
+   "nombre": "Dead by Daylight",
+   "banda": "alto",
+   "riesgo": 0.7212
+  },
+  "601150": {
+   "nombre": "Devil May Cry 5",
+   "banda": "bajo",
+   "riesgo": 0.2828
+  },
+  "2344520": {
+   "nombre": "Diablo® IV",
+   "banda": "alto",
+   "riesgo": 0.5998
+  },
+  "632470": {
+   "nombre": "Disco Elysium - The Final Cut",
+   "banda": "bajo",
+   "riesgo": 0.2011
+  },
+  "322330": {
+   "nombre": "Don't Starve Together",
+   "banda": "medio",
+   "riesgo": 0.3296
+  },
+  "975370": {
+   "nombre": "Dwarf Fortress",
+   "banda": "bajo",
+   "riesgo": 0.2361
+  },
+  "239140": {
+   "nombre": "Dying Light",
+   "banda": "medio",
+   "riesgo": 0.3044
+  },
+  "1245620": {
+   "nombre": "ELDEN RING",
+   "banda": "bajo",
+   "riesgo": 0.2443
+  },
+  "236850": {
+   "nombre": "Europa Universalis IV",
+   "banda": "medio",
+   "riesgo": 0.3184
+  },
+  "427520": {
+   "nombre": "Factorio",
+   "banda": "bajo",
+   "riesgo": 0.269
+  },
+  "377160": {
+   "nombre": "Fallout 4",
+   "banda": "medio",
+   "riesgo": 0.3378
+  },
+  "1151340": {
+   "nombre": "Fallout 76",
+   "banda": "alto",
+   "riesgo": 0.7376
+  },
+  "1680880": {
+   "nombre": "Forspoken",
+   "banda": "alto",
+   "riesgo": 0.7511
+  },
+  "1593500": {
+   "nombre": "God of War",
+   "banda": "bajo",
+   "riesgo": 0.2515
+  },
+  "271590": {
+   "nombre": "Grand Theft Auto V Legacy",
+   "banda": "bajo",
+   "riesgo": 0.078
+  },
+  "219990": {
+   "nombre": "Grim Dawn",
+   "banda": "medio",
+   "riesgo": 0.3481
+  },
+  "553850": {
+   "nombre": "HELLDIVERS™ 2",
+   "banda": "alto",
+   "riesgo": 0.737
+  },
+  "1145360": {
+   "nombre": "Hades",
+   "banda": "bajo",
+   "riesgo": 0.2305
+  },
+  "220": {
+   "nombre": "Half-Life 2",
+   "banda": "bajo",
+   "riesgo": 0.188
+  },
+  "546560": {
+   "nombre": "Half-Life: Alyx",
+   "banda": "bajo",
+   "riesgo": 0.2455
+  },
+  "394360": {
+   "nombre": "Hearts of Iron IV",
+   "banda": "medio",
+   "riesgo": 0.3692
+  },
+  "990080": {
+   "nombre": "Hogwarts Legacy",
+   "banda": "medio",
+   "riesgo": 0.3758
+  },
+  "367520": {
+   "nombre": "Hollow Knight",
+   "banda": "bajo",
+   "riesgo": 0.2857
+  },
+  "233860": {
+   "nombre": "Kenshi",
+   "banda": "alto",
+   "riesgo": 0.4521
+  },
+  "550": {
+   "nombre": "Left 4 Dead 2",
+   "banda": "bajo",
+   "riesgo": 0.2557
+  },
+  "1966720": {
+   "nombre": "Lethal Company",
+   "banda": "alto",
+   "riesgo": 0.6997
+  },
+  "1627720": {
+   "nombre": "Lies of P",
+   "banda": "alto",
+   "riesgo": 0.748
+  },
+  "1817070": {
+   "nombre": "Marvel’s Spider-Man Remastered",
+   "banda": "alto",
+   "riesgo": 0.7443
+  },
+  "261550": {
+   "nombre": "Mount & Blade II: Bannerlord",
+   "banda": "alto",
+   "riesgo": 0.455
+  },
+  "1063730": {
+   "nombre": "New World: Aeternum",
+   "banda": "alto",
+   "riesgo": 0.4598
+  },
+  "275850": {
+   "nombre": "No Man's Sky",
+   "banda": "alto",
+   "riesgo": 0.5425
+  },
+  "2357570": {
+   "nombre": "Overwatch®",
+   "banda": "alto",
+   "riesgo": 0.5859
+  },
+  "1272080": {
+   "nombre": "PAYDAY 3",
+   "banda": "alto",
+   "riesgo": 0.5834
+  },
+  "1623730": {
+   "nombre": "Palworld",
+   "banda": "alto",
+   "riesgo": 0.7215
+  },
+  "1687950": {
+   "nombre": "Persona 5 Royal",
+   "banda": "bajo",
+   "riesgo": 0.2322
+  },
+  "400": {
+   "nombre": "Portal",
+   "banda": "bajo",
+   "riesgo": 0.2451
+  },
+  "620": {
+   "nombre": "Portal 2",
+   "banda": "bajo",
+   "riesgo": 0.1968
+  },
+  "108600": {
+   "nombre": "Project Zomboid",
+   "banda": "alto",
+   "riesgo": 0.7208
+  },
+  "1174180": {
+   "nombre": "Red Dead Redemption 2",
+   "banda": "bajo",
+   "riesgo": 0.259
+  },
+  "1294810": {
+   "nombre": "Redfall",
+   "banda": "alto",
+   "riesgo": 0.737
+  },
+  "2050650": {
+   "nombre": "Resident Evil 4",
+   "banda": "bajo",
+   "riesgo": 0.1566
+  },
+  "294100": {
+   "nombre": "RimWorld",
+   "banda": "medio",
+   "riesgo": 0.303
+  },
+  "632360": {
+   "nombre": "Risk of Rain 2",
+   "banda": "medio",
+   "riesgo": 0.3154
+  },
+  "252490": {
+   "nombre": "Rust",
+   "banda": "alto",
+   "riesgo": 0.4448
+  },
+  "526870": {
+   "nombre": "Satisfactory",
+   "banda": "bajo",
+   "riesgo": 0.2586
+  },
+  "814380": {
+   "nombre": "Sekiro™: Shadows Die Twice - GOTY Edition",
+   "banda": "medio",
+   "riesgo": 0.3184
+  },
+  "8930": {
+   "nombre": "Sid Meier's Civilization® V",
+   "banda": "bajo",
+   "riesgo": 0.1538
+  },
+  "289070": {
+   "nombre": "Sid Meier’s Civilization® VI",
+   "banda": "bajo",
+   "riesgo": 0.1534
+  },
+  "2853730": {
+   "nombre": "Skull and Bones",
+   "banda": "alto",
+   "riesgo": 0.7242
+  },
+  "646570": {
+   "nombre": "Slay the Spire",
+   "banda": "bajo",
+   "riesgo": 0.1623
+  },
+  "211820": {
+   "nombre": "Starbound",
+   "banda": "medio",
+   "riesgo": 0.3627
+  },
+  "413150": {
+   "nombre": "Stardew Valley",
+   "banda": "bajo",
+   "riesgo": 0.2596
+  },
+  "281990": {
+   "nombre": "Stellaris",
+   "banda": "alto",
+   "riesgo": 0.4369
+  },
+  "1332010": {
+   "nombre": "Stray",
+   "banda": "medio",
+   "riesgo": 0.3624
+  },
+  "315210": {
+   "nombre": "Suicide Squad: Kill the Justice League",
+   "banda": "alto",
+   "riesgo": 0.7443
+  },
+  "105600": {
+   "nombre": "Terraria",
+   "banda": "medio",
+   "riesgo": 0.3252
+  },
+  "250900": {
+   "nombre": "The Binding of Isaac: Rebirth",
+   "banda": "alto",
+   "riesgo": 0.7039
+  },
+  "1544020": {
+   "nombre": "The Callisto Protocol™",
+   "banda": "alto",
+   "riesgo": 0.7344
+  },
+  "489830": {
+   "nombre": "The Elder Scrolls V: Skyrim Special Edition",
+   "banda": "alto",
+   "riesgo": 0.4912
+  },
+  "242760": {
+   "nombre": "The Forest",
+   "banda": "medio",
+   "riesgo": 0.3347
+  },
+  "1888930": {
+   "nombre": "The Last of Us™ Parte I",
+   "banda": "alto",
+   "riesgo": 0.7443
+  },
+  "1265780": {
+   "nombre": "The Lord of the Rings: Gollum™",
+   "banda": "alto",
+   "riesgo": 0.7331
+  },
+  "1222670": {
+   "nombre": "The Sims™ 4",
+   "banda": "alto",
+   "riesgo": 0.5859
+  },
+  "292030": {
+   "nombre": "The Witcher 3: Wild Hunt - Complete Edition",
+   "banda": "bajo",
+   "riesgo": 0.2481
+  },
+  "1237970": {
+   "nombre": "Titanfall® 2",
+   "banda": "medio",
+   "riesgo": 0.3286
+  },
+  "203160": {
+   "nombre": "Tomb Raider Game of the Year",
+   "banda": "medio",
+   "riesgo": 0.3111
+  },
+  "1142710": {
+   "nombre": "Total War: WARHAMMER III",
+   "banda": "medio",
+   "riesgo": 0.3326
+  },
+  "892970": {
+   "nombre": "Valheim",
+   "banda": "bajo",
+   "riesgo": 0.2662
+  },
+  "1794680": {
+   "nombre": "Vampire Survivors",
+   "banda": "bajo",
+   "riesgo": 0.2732
+  },
+  "1938010": {
+   "nombre": "WILD HEARTS™",
+   "banda": "alto",
+   "riesgo": 0.7538
+  }
+ },
+ "prueba_perfil": {
+  "1938010": {
+   "neutro (5 compras)": 0.7538,
+   "0 compras, 1 h, fricción baja": 0.7538,
+   "50 compras, 60 h, fricción alta": 0.7538,
+   "10 compras, PlayStation": 0.7538
+  },
+  "1145360": {
+   "neutro (5 compras)": 0.2305,
+   "0 compras, 1 h, fricción baja": 0.2305,
+   "50 compras, 60 h, fricción alta": 0.2305,
+   "10 compras, PlayStation": 0.2305
+  },
+  "1091500": {
+   "neutro (5 compras)": 0.3371,
+   "0 compras, 1 h, fricción baja": 0.3371,
+   "50 compras, 60 h, fricción alta": 0.3371,
+   "10 compras, PlayStation": 0.3371
+  }
+ }
+}
