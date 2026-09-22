@@ -1107,6 +1107,78 @@ def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]
     return problemas
 
 
+def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
+    """La página central: nav, cuatro pasos y la metodología, que el pie ya no repite."""
+    problemas = []
+    base = url.rstrip("/")
+    _abrir(pagina, base)
+    # El saludo de Nia vive en el pie de la portada, antes del enlace, y en ningún otro lado.
+    orden = pagina.evaluate(
+        "() => [...document.querySelectorAll('footer [data-testid]')].map(e => e.dataset.testid)"
+    )
+    if pagina.locator(".hero [data-testid='nia-mascota']").count():
+        problemas.append("el saludo de Nia sigue arriba, en la portada")
+    if "nia-mascota" not in orden or orden.index("nia-mascota") > orden.index("enlace-metodologia"):
+        problemas.append(f"el saludo de Nia no está en el pie antes del enlace de metodología ({orden})")
+    else:
+        print("saludo:   en el pie de la portada, antes del enlace de metodología")
+    if pagina.locator("footer [data-testid='metodologia']").count():
+        problemas.append("el pie sigue repitiendo el texto de la metodología")
+    pagina.locator("footer [data-testid='enlace-metodologia']").click()
+    metodologia = pagina.get_by_test_id("metodologia")
+    try:
+        metodologia.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        return problemas + ["el enlace del pie no lleva a la metodología"]
+    pagina.wait_for_timeout(600)
+    if not pagina.url.split("#")[0].endswith("/como-funciona"):
+        problemas.append(f"el enlace del pie lleva a {pagina.url}")
+    caja = metodologia.bounding_box()
+    if not caja or caja["y"] > pagina.viewport_size["height"]:
+        problemas.append("el enlace del pie no baja hasta la metodología")
+    if pagina.get_by_test_id("nia-mascota").count():
+        problemas.append("el saludo de Nia aparece fuera de la portada")
+    if pagina.get_by_test_id("nav-como-funciona").get_attribute("aria-current") != "page":
+        problemas.append("'Cómo funciona' no queda marcado en el nav")
+    pasos = pagina.get_by_test_id("paso").count()
+    if pasos != 4:
+        problemas.append(f"'Cómo funciona' tiene {pasos} pasos, no 4")
+    problemas += _revisar_vocabulario(pagina, "cómo funciona")
+    pagina.evaluate("window.scrollTo(0, 0)")
+    _esperar_quietud(pagina)
+    ruta = destino / "como-funciona.png"
+    pagina.screenshot(path=ruta, full_page=True)
+    print(f"cómo funciona: nav, {pasos} pasos y la metodología; el pie solo enlaza ({ruta.relative_to(_RAIZ)})")
+
+    # Sin perfil, la ficha ofrece crearlo con un botón de la misma jerarquía que "Comparar".
+    _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
+    boton = pagina.get_by_test_id("historia-crear-perfil")
+    try:
+        boton.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        return problemas + ["sin perfil, la ficha no muestra el botón 'Crear tu perfil'"]
+    enlace = pagina.get_by_test_id("factores-como-calculamos")
+    if not enlace.count() or "/como-funciona" not in (enlace.get_attribute("href") or ""):
+        problemas.append("'Qué mueve esta estimación' no enlaza a /como-funciona")
+    elif not pagina.get_by_test_id("factores").locator("app-factores-modelo").count():
+        problemas.append("la sección de factores perdió su contenido al agregar el enlace")
+    else:
+        print("factores: la sección conserva los factores y enlaza a 'Cómo calculamos esta estimación'")
+    clases = boton.get_attribute("class") or ""
+    comparar = pagina.get_by_test_id("boton-comparar").get_attribute("class") or ""
+    if "boton-fantasma" not in clases or "boton-fantasma" not in comparar:
+        problemas.append(f"'Crear tu perfil' no tiene la jerarquía de 'Comparar' ({clases!r} vs {comparar!r})")
+    ruta = destino / "historia-crear-perfil.png"
+    pagina.get_by_test_id("historia-perfil").screenshot(path=ruta)
+    boton.click()
+    try:
+        pagina.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        print(f"perfil:   sin perfil, la ficha ofrece 'Crear tu perfil' como botón y lleva a /perfil ({ruta.relative_to(_RAIZ)})")
+    except TiempoAgotado:
+        problemas.append("'Crear tu perfil' no lleva a /perfil")
+    return problemas
+
+
 def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
     """El párrafo de Steam bajo el nombre: completo en español, o el respaldo discreto."""
     problemas = []
@@ -1151,10 +1223,11 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
 # Lo que Nia debe decir en la ficha según la banda. Replica a propósito el dominio
 # (dominio/reaccion-nia.ts) en vez de importarlo: si alguien cambia un texto allá sin
 # querer, aquí salta.
+# El globo no repite el veredicto (la banda ya está arriba): invita al chat.
 _REACCION_ESPERADA = {
-    "bajo": "señal baja",
-    "medio": "señal mixta",
-    "alto": "señal alta",
+    "bajo": "qué la separa del resto del catálogo",
+    "medio": "por qué quedó a la mitad",
+    "alto": "de dónde sale esta banda",
 }
 
 
@@ -1164,6 +1237,36 @@ def _un_juego_por_banda(api: str) -> dict[str, int]:
     for juego in sorted(_catalogo_api(api), key=lambda j: j["appid"]):
         elegidos.setdefault(juego["banda_riesgo"], juego["appid"])
     return elegidos
+
+
+def _preguntar_desde_el_globo(pagina: Page) -> list[str]:
+    """El botón del globo deja el foco en el campo del chat, visible, sin consultar /nia."""
+    consultas = []
+
+    def anotar(peticion) -> None:
+        if peticion.url.rstrip("/").endswith("/nia"):
+            consultas.append(peticion.url)
+
+    pagina.on("request", anotar)
+    pagina.evaluate("window.scrollTo(0, 0)")
+    pagina.get_by_test_id("nia-reaccion-preguntar").click()
+    try:
+        pagina.wait_for_function(
+            "() => document.activeElement?.dataset?.testid === 'nia-pregunta'", timeout=_TIMEOUT_MS
+        )
+    except TiempoAgotado:
+        return ["'Preguntarle a Nia' no deja el foco en el campo del chat"]
+    finally:
+        pagina.wait_for_timeout(800)  # el scroll es suave
+        pagina.remove_listener("request", anotar)
+    campo = pagina.get_by_test_id("nia-pregunta").bounding_box()
+    alto = pagina.viewport_size["height"]
+    if not campo or campo["y"] < 0 or campo["y"] + campo["height"] > alto:
+        return [f"tras 'Preguntarle a Nia' el campo del chat queda fuera de pantalla ({campo})"]
+    if consultas:
+        return [f"'Preguntarle a Nia' consultó /nia por su cuenta ({len(consultas)} veces)"]
+    print("nia v2:   'Preguntarle a Nia' lleva el foco al chat, a la vista, sin consultar /nia")
+    return []
 
 
 def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
@@ -1195,6 +1298,10 @@ def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> li
         if _REACCION_ESPERADA[veredicto] not in texto:
             problemas.append(f"{appid}: el texto no corresponde a la banda {veredicto} ('{texto[:70]}')")
 
+        for repetida in (veredicto, "arrepentimiento", "riesgo"):
+            if re.search(rf"\b{repetida}\b", texto.lower()):
+                problemas.append(f"{appid}: el globo repite '{repetida}' del veredicto ('{texto[:70]}')")
+
         _esperar_portadas(pagina, "[data-testid='ficha'] img")
         _esperar_quietud(pagina)
         ruta = destino / f"nia-reaccion-{banda}.png"
@@ -1202,6 +1309,9 @@ def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> li
         nombre = pagina.get_by_test_id("ficha-nombre").inner_text()
         print(f"nia v2:   {banda:5} {nombre} → {reaccion.get_attribute('data-emocion')} "
               f"({ruta.relative_to(_RAIZ)})")
+
+    # "Preguntarle a Nia" solo lleva al campo del chat: no le pregunta nada.
+    problemas += _preguntar_desde_el_globo(pagina)
 
     # Solo en la ficha.
     for ruta_app, donde in (("/", "catálogo"), ("/comparar", "comparar"), ("/perfil", "perfil")):
@@ -1271,6 +1381,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
         + _angular_video(pagina, url, destino, api)
+        + _angular_como_funciona(pagina, url, destino)
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
         + _angular_carrusel(pagina, url, destino)
