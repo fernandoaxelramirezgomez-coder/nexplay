@@ -1,8 +1,12 @@
 """Regla de oro: esta función tiene firma estable. Carga modelo/nexplay.pkl
-una sola vez al importar el módulo (conjunto 'compra': GroupKFold por appid,
-optimizado a PR-AUC) y predice con las mismas entradas y salida que el
-simulador que reemplaza. Nada fuera de este archivo debe cambiar cuando el
-modelo se re-entrene."""
+una sola vez al importar el módulo (conjunto 'juego', entrenado con data-v1:
+GroupKFold por appid, optimizado a PR-AUC) y predice con las mismas entradas y
+salida que el simulador que reemplaza. Nada fuera de este archivo debe cambiar
+cuando el modelo se re-entrene.
+
+Es un modelo de título: el riesgo depende solo del juego. predecir() sigue
+recibiendo el perfil (el contrato de /prediccion no cambia y el perfil aporta la
+nota de plataforma), pero ningún dato del perfil entra al score."""
 
 import logging
 import pickle
@@ -151,8 +155,9 @@ def _construir_features(perfil: PerfilJugador, appid: int) -> pd.DataFrame:
     juego = _atributos_juego(appid)
     metacritic = juego["metacritic"]
     fila = {
-        # compras_al_anio es el sustituto declarado de num_games_owned (ver
-        # CLAUDE.md).
+        # El modelo de título no usa compras_al_anio: la fila se arma completa y
+        # [_FEATURES] se queda solo con las columnas del artefacto, así el mismo
+        # código sirve a un modelo con o sin lado del jugador.
         "log_num_games_owned": np.log1p(perfil.compras_al_anio),
         "es_gratis": int(juego["es_gratis"] or 0),
         "log_precio_final": np.log1p(juego["precio_final"] or 0.0),

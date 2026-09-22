@@ -54,7 +54,6 @@ def contexto(appid: int, perfil: PerfilJugador | None) -> dict:
     return {
         "nombre": juego.nombre,
         "banda": nivel,
-        "banda_es_del_perfil": prediccion is not None and perfil is not None,
         "generos": juego.generos,
         "metacritic": juego.metacritic,
         "precio": None if juego.es_gratis else juego.precio_final,
@@ -104,7 +103,8 @@ def _demostracion(datos: dict, pregunta: str) -> str:
     """Respuesta por reglas sobre los mismos datos, para que la demo funcione sin clave."""
     pregunta = pregunta.lower()
     nombre, banda = datos["nombre"], datos["banda"]
-    rotulo = "Para tu perfil" if datos["banda_es_del_perfil"] else "Con un perfil neutro"
+    # La banda es del juego (modelo de título): no hay una versión "para tu perfil".
+    rotulo = "Para cualquier perfil"
 
     if any(palabra in pregunta for palabra in ("precio", "cuesta", "caro", "barato", "oferta")):
         return f"{nombre} {_texto_precio(datos)}. {rotulo}, su banda es {banda}."
@@ -125,7 +125,7 @@ def _demostracion(datos: dict, pregunta: str) -> str:
 def _contexto_para_prompt(datos: dict) -> str:
     lineas = [
         f"Juego: {datos['nombre']}",
-        f"Banda de riesgo ({'perfil declarado' if datos['banda_es_del_perfil'] else 'perfil neutro'}): {datos['banda']}",
+        f"Banda de riesgo del juego (la misma para cualquier perfil): {datos['banda']}",
         f"Géneros: {', '.join(datos['generos']) or 'sin datos'}",
         f"Crítica: {_texto_critica(datos)}",
         f"Precio: {_texto_precio(datos)}",

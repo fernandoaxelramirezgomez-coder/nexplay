@@ -12,13 +12,10 @@ cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg y la ficha en
 store.steampowered.com/app/{appid}, verificado contra appids reales del
 catálogo (fase 0).
 
-banda_riesgo usa un perfil neutro (ver _PERFIL_NEUTRO): en el catálogo
-visual no hay un perfil declarado todavía, así que no hay riesgo
-personalizado que mostrar. scoring.predecir() solo lee compras_al_anio del
-perfil -el resto de PerfilJugador no mueve el score-, y el lado del
-jugador aporta ~2% del PR-AUC del modelo (dentro del ruido entre folds,
-ver notebook/nexplay.ipynb sección 6): la banda que sale de este perfil
-neutro se parece mucho a la que saldría de cualquier perfil razonable."""
+banda_riesgo es el riesgo del título: el modelo usa solo datos del juego
+(conjunto 'juego'), así que la banda es la misma para cualquier persona.
+_PERFIL_NEUTRO existe solo porque scoring.predecir() pide un perfil en su
+firma; ningún dato de ese perfil mueve el score."""
 
 import logging
 import re
