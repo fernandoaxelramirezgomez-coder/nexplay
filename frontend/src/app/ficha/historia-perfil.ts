@@ -58,9 +58,10 @@ const PREGUNTA_A_NIA =
         <p class="meta aviso">{{ avisoFijo }}</p>
       } @else {
         <p class="lectura" data-testid="historia-sin-perfil">
-          Todavía no sabemos cómo juegas. <a routerLink="/perfil">Crea tu perfil</a> y aquí aparece por qué este
-          juego te tocaría a ti: tus géneros, tu tolerancia a la fricción y tus horas frente a las dos primeras.
+          Todavía no sabemos cómo juegas. Con tu perfil, aquí aparece por qué este juego te tocaría a ti: tus
+          géneros, tu tolerancia a la fricción y tus horas frente a las dos primeras.
         </p>
+        <a class="boton-fantasma crear-perfil" routerLink="/perfil" data-testid="historia-crear-perfil">Crear tu perfil</a>
       }
     </section>
   `,
@@ -72,6 +73,10 @@ const PREGUNTA_A_NIA =
     }
     p {
       margin: 0;
+    }
+    /* En una columna flex el enlace se estiraría a todo el ancho; va del tamaño de su texto. */
+    .crear-perfil {
+      align-self: flex-start;
     }
     /* Lo que escribe Nia se separa de lo que dicen las reglas con una franja neón:
        se ve de inmediato qué párrafo salió de un modelo. */

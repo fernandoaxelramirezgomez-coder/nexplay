@@ -72,6 +72,7 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       <label class="escribir">
         <span class="solo-lector">Escribe tu pregunta para Nia</span>
         <textarea
+          id="nia-pregunta"
           rows="2"
           placeholder="Pregúntale algo sobre este juego…"
           [attr.maxlength]="maximo"

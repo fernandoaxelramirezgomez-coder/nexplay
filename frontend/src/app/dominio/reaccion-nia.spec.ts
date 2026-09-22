@@ -47,12 +47,15 @@ describe('reaccionPara', () => {
     }
   });
 
-  it('el texto describe la banda que le toca', () => {
-    expect(reaccionPara('bajo').texto).toContain('señal baja');
-    expect(reaccionPara('medio').texto).toContain('señal mixta');
-    expect(reaccionPara('alto').texto).toContain('señal alta');
+  it('el texto no repite el veredicto ni el motivo de la segunda opinión', () => {
+    // Esos dos párrafos están justo arriba del globo; el globo solo invita al chat.
+    const repetido = ['riesgo', 'señal', 'bajo', 'medio', 'alto', 'arrepentimiento', 'motivo'];
     for (const banda of BANDAS) {
-      expect(reaccionPara(banda).texto).toContain('arrepentimiento temprano');
+      const texto = reaccionPara(banda).texto.toLowerCase();
+      for (const palabra of repetido) {
+        expect(texto, `banda ${banda} repite "${palabra}"`).not.toMatch(new RegExp(`\\b${palabra}\\b`));
+      }
+      expect(texto).toContain('pregúntame');
     }
   });
 

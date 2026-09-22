@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal } from '@angular/core';
 
 import { NivelRiesgo } from '../api/contrato';
 import { reaccionPara } from '../dominio/reaccion-nia';
@@ -28,9 +29,12 @@ import { reaccionPara } from '../dominio/reaccion-nia';
           (error)="imagenCaida.set(true)"
         />
       }
-      <figcaption class="globo-nia globo" data-testid="nia-reaccion-texto">
+      <figcaption class="globo-nia globo">
         <span class="quien">Nia</span>
-        {{ reaccion().texto }}
+        <span data-testid="nia-reaccion-texto">{{ reaccion().texto }}</span>
+        <button type="button" class="boton-texto preguntar toque-amplio" data-testid="nia-reaccion-preguntar" (click)="irAlChat()">
+          Preguntarle a Nia →
+        </button>
       </figcaption>
     </figure>
   `,
@@ -103,6 +107,11 @@ import { reaccionPara } from '../dominio/reaccion-nia';
       }
     }
 
+    .preguntar {
+      display: flex;
+      margin-top: var(--espacio-8);
+      color: var(--neon);
+    }
     /* El globo es .globo-nia (base.css), el mismo de la bienvenida del catálogo. Lo
        único propio es el acento de la banda alta: un filo del color de la banda, fijo. */
     [data-banda='alto'] .globo {
@@ -124,7 +133,8 @@ import { reaccionPara } from '../dominio/reaccion-nia';
         flex-direction: column;
         align-items: flex-start;
       }
-      .globo::before {
+      .globo::before,
+      [data-banda='alto'] .globo::before {
         inset-inline-start: 32px;
         top: -7px;
         transform: rotate(135deg);
@@ -138,4 +148,13 @@ export class NiaReaccion {
   protected readonly reaccion = computed(() => reaccionPara(this.nivel()));
   /** Se reinicia si cambia la banda: otra imagen, otra oportunidad de cargar. */
   protected readonly imagenCaida = linkedSignal({ source: this.nivel, computation: () => false });
+
+  private readonly documento = inject(DOCUMENT);
+
+  /** Lleva al campo del chat de la ficha (chat/nia.ts), que en móvil queda muy abajo. Solo
+   * enfoca: el navegador ya desplaza la vista hasta un campo enfocado y, en móvil, lo deja
+   * visible por encima del teclado mejor que cualquier cálculo propio. No pregunta nada. */
+  protected irAlChat(): void {
+    this.documento.getElementById('nia-pregunta')?.focus();
+  }
 }

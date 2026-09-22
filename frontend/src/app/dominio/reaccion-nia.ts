@@ -15,26 +15,28 @@ export interface ReaccionNia {
  * banda. Nia reacciona al riesgo relativo estimado, no a una supuesta confianza del
  * modelo en su estimación.
  *
- * Los tres textos describen la banda con la misma frase y cambian una palabra. Ninguno
- * aconseja qué hacer: el veredicto de arriba ya dice que es comparado con el catálogo, y
- * decidir le toca a quien lee. */
+ * La reacción a la banda está en el gesto, no en el texto. Justo arriba, el veredicto ya
+ * nombra la banda y la segunda opinión el motivo principal: si el globo repitiera
+ * cualquiera de los dos, sería la misma frase dos veces. Lo que ninguno de esos párrafos
+ * ofrece es la conversación, así que el globo invita al chat. Tampoco aconseja qué
+ * hacer: decidir le toca a quien lee. */
 const REACCIONES: Record<NivelRiesgo, ReaccionNia> = {
   bajo: {
     emocion: 'tranquila',
     imagen: 'nia/ficha-bajo.png',
-    texto: 'La estimación muestra una señal baja de arrepentimiento temprano.',
+    texto: '¿Quieres saber qué la separa del resto del catálogo? Pregúntame y te lo explico con los datos de este juego.',
     descripcion: 'Nia sonríe con los brazos arriba: riesgo relativo bajo.',
   },
   medio: {
     emocion: 'pensativa',
     imagen: 'nia/ficha-medio.png',
-    texto: 'La estimación muestra una señal mixta de arrepentimiento temprano.',
+    texto: '¿Quieres saber por qué quedó a la mitad? Pregúntame y te lo explico con los datos de este juego.',
     descripcion: 'Nia piensa con la mano en la barbilla: riesgo relativo medio.',
   },
   alto: {
     emocion: 'cautelosa',
     imagen: 'nia/ficha-alto.png',
-    texto: 'La estimación muestra una señal alta de arrepentimiento temprano.',
+    texto: '¿Quieres saber de dónde sale esta banda? Pregúntame y te lo explico con los datos de este juego.',
     descripcion: 'Nia concentrada frente a su laptop, con gesto serio: riesgo relativo alto.',
   },
 };

@@ -121,6 +121,12 @@
   margin-bottom: var(--espacio-16);
 }
 
+.como-calculamos {
+  margin-top: var(--espacio-16);
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
 
 @media (max-width: 900px) {
   .columnas {
