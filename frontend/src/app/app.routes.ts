@@ -21,5 +21,10 @@ export const routes: Routes = [
     title: 'NexPlay · Tu perfil',
     loadComponent: () => import('./perfil/perfil').then((m) => m.Perfil),
   },
+  {
+    path: 'como-funciona',
+    title: 'NexPlay · Cómo funciona',
+    loadComponent: () => import('./como-funciona/como-funciona').then((m) => m.ComoFunciona),
+  },
   { path: '**', redirectTo: '' },
 ];

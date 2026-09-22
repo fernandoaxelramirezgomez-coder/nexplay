@@ -27,6 +27,13 @@
       <a routerLink="/perfil" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-perfil"
         >Tu perfil</a
       >
+      <a
+        routerLink="/como-funciona"
+        routerLinkActive="activo"
+        ariaCurrentWhenActive="page"
+        data-testid="nav-como-funciona"
+        >Cómo funciona</a
+      >
       @if (perfil.hayPerfil()) {
         <span class="estado-perfil" data-testid="perfil-activo">Perfil activo</span>
       }

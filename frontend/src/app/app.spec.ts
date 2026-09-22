@@ -11,18 +11,20 @@ describe('App (shell)', () => {
     }).compileComponents();
   });
 
-  it('muestra la navegación a Explorar, Comparar y Tu perfil', async () => {
+  it('muestra la navegación a Explorar, Comparar, Tu perfil y Cómo funciona', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
     const enlaces = [...html.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(enlaces).toEqual(['Explorar', 'Comparar', 'Tu perfil']);
+    expect(enlaces).toEqual(['Explorar', 'Comparar', 'Tu perfil', 'Cómo funciona']);
   });
 
-  it('incluye la metodología en el pie', async () => {
+  it('el pie enlaza a la metodología en vez de repetirla', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
-    expect(html.querySelector('[data-testid="metodologia"]')?.textContent).toContain('arrepentimiento temprano');
+    const enlace = html.querySelector('footer [data-testid="enlace-metodologia"]');
+    expect(enlace?.getAttribute('href')).toContain('/como-funciona');
+    expect(html.querySelector('footer [data-testid="metodologia"]')).toBeNull();
   });
 });

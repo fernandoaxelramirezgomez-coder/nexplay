@@ -20,7 +20,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
-      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
+      // anchorScrolling: el enlace del pie lleva a la metodología dentro de /como-funciona.
+      withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
       withViewTransitions({
         // Solo al cambiar de pantalla: los filtros del catálogo cambian la URL en cada
         // tecla y un fundido ahí se sentiría como parpadeo.
