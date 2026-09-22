@@ -15,7 +15,7 @@ import { SALUDO_CATALOGO } from '../dominio/textos-nia';
 const SALUDO = SALUDO_CATALOGO;
 const MS_POR_LETRA = 22;
 
-/** Nia del catálogo: el retrato de bienvenida, solo en el inicio. La ficha tiene su
+/** Nia del catálogo: el retrato de bienvenida, en el pie de la portada (app.html). La ficha tiene su
  * propia variante, que reacciona a la banda (ficha/nia-reaccion.ts); los assets de
  * cada una viven aparte en public/nia/. */
 @Component({

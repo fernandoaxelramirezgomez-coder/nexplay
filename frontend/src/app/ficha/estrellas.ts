@@ -53,8 +53,8 @@ const ESTRELLAS = [1, 2, 3, 4, 5] as const;
     .estrella {
       display: grid;
       place-items: center;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 0;
       border-radius: var(--radio-pildora);

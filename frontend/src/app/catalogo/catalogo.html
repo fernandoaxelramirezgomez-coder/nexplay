@@ -1,7 +1,6 @@
 <div class="catalogo">
   <section class="hero" aria-labelledby="titulo-principal">
     <div class="hero-mensaje">
-      <app-nia-mascota />
       <p class="sobrelinea mono">Evidencia antes de comprar</p>
       <h1 class="titular" id="titulo-principal">
         Descubre qué podría frustrarte en las primeras dos horas
@@ -42,7 +41,7 @@
               >
               <button
                 type="button"
-                class="carrusel-flecha"
+                class="carrusel-flecha toque-amplio"
                 aria-label="Ejemplo anterior"
                 data-testid="hero-anterior"
                 (click)="moverEjemplo(-1)"
@@ -51,7 +50,7 @@
               </button>
               <button
                 type="button"
-                class="carrusel-flecha"
+                class="carrusel-flecha toque-amplio"
                 aria-label="Ejemplo siguiente"
                 data-testid="hero-siguiente"
                 (click)="moverEjemplo(1)"

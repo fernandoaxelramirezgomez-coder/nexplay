@@ -21,7 +21,7 @@ import { MotivosStore } from '../estado/motivos-store';
         <app-portada [src]="juego().portada_url" [prioritaria]="prioritaria()" radio="0" />
         <button
           type="button"
-          class="comparar"
+          class="comparar toque-amplio"
           data-testid="boton-comparar"
           [attr.aria-pressed]="enComparacion()"
           [attr.aria-label]="
@@ -125,6 +125,8 @@ import { MotivosStore } from '../estado/motivos-store';
       border: 1px solid var(--texto);
       border-radius: var(--radio-pildora);
       background: var(--superficie-lienzo);
+      /* Sombra para que se despegue también de portadas claras (Wild Hearts, Civilization). */
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
       color: var(--texto);
       font-size: var(--texto-caption);
       cursor: pointer;

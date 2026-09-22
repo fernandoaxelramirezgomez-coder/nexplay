@@ -67,11 +67,11 @@
 .carrusel-controles {
   display: flex;
   align-items: center;
-  gap: var(--espacio-4);
+  gap: var(--espacio-12);
 }
 
 .carrusel-posicion {
-  margin-inline-end: var(--espacio-8);
+  white-space: nowrap;
   color: var(--texto-meta);
   font-size: var(--texto-caption);
 }
@@ -336,13 +336,35 @@
     font-size: clamp(38px, 11vw, 50px);
   }
 
+  /* En móvil la acción principal va primero: el buscador sube justo debajo del titular y
+     el párrafo de entrada baja después. El carrusel ya queda debajo, en la rejilla de una
+     columna. */
+  .hero-mensaje {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-mensaje app-buscador {
+    order: 1;
+    margin-top: var(--espacio-24);
+  }
+
+  .aclaracion {
+    order: 2;
+  }
+
   .entrada {
-    margin: var(--espacio-16) 0 var(--espacio-24);
+    order: 3;
+    margin: var(--espacio-24) 0 0;
   }
 
   .vistazo {
-    grid-template-columns: 108px minmax(0, 1fr);
-    min-height: 190px;
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .vistazo-portada {
+    aspect-ratio: 460 / 215;
   }
 
   .vistazo-cuerpo {

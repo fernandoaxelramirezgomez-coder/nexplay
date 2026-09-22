@@ -29,11 +29,38 @@
   gap: var(--espacio-16);
 }
 
+/* La posición solo tiene sentido cuando las columnas se desplazan. */
+.posicion {
+  display: none;
+  margin: 0;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
 @media (max-width: 900px) {
-  /* En pantallas chicas las columnas se desplazan en horizontal en vez de encogerse. */
+  /* En pantallas chicas las columnas se desplazan en horizontal en vez de encogerse, y
+     cada una encaja completa al soltar el dedo. */
   .columnas {
     grid-auto-columns: minmax(280px, 80vw);
     overflow-x: auto;
     padding-bottom: var(--espacio-8);
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+  }
+
+  .columnas > * {
+    scroll-snap-align: start;
+  }
+
+  .posicion {
+    display: block;
+    align-self: flex-end;
+  }
+}
+
+/* En un teléfono, una columna ocupa todo el ancho: no queda un pedazo de la siguiente. */
+@media (max-width: 640px) {
+  .columnas {
+    grid-auto-columns: 100%;
   }
 }

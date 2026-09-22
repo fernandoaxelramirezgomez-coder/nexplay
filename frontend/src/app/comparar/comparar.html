@@ -20,7 +20,12 @@
       <a class="boton-cta" routerLink="/">Ir al catálogo</a>
     </section>
   } @else {
-    <div class="columnas">
+    @if (juegos().length > 1) {
+      <p class="posicion mono" data-testid="comparar-posicion" aria-live="polite">
+        <span class="solo-lector">Juego</span> {{ visible() + 1 }} / {{ juegos().length }}
+      </p>
+    }
+    <div class="columnas" data-testid="comparar-columnas" (scroll)="alDesplazar($event)">
       @for (juego of juegos(); track juego.appid) {
         <app-columna-comparar [juego]="juego" [promedioMetacritic]="catalogo.promedioMetacritic()" />
       }

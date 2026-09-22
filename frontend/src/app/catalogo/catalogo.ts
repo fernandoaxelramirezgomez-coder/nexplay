@@ -12,7 +12,6 @@ import { Router, RouterLink } from '@angular/router';
 
 import { PildoraBanda } from '../compartido/pildora-banda';
 import { Portada } from '../compartido/portada';
-import { NiaMascota } from '../compartido/nia-mascota';
 import { Skeleton } from '../compartido/skeleton';
 import { agruparEnEstantes, ORDEN_BANDAS } from '../dominio/estantes';
 import { filtrarJuegos } from '../dominio/filtros';
@@ -32,7 +31,7 @@ const MS_ROTACION = 7000;
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Buscador, Estante, FiltrosCatalogo, NiaMascota, PildoraBanda, Portada, Skeleton],
+  imports: [RouterLink, Buscador, Estante, FiltrosCatalogo, PildoraBanda, Portada, Skeleton],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })

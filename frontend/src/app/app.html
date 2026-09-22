@@ -1,4 +1,4 @@
-<div class="pagina" data-testid="shell">
+<div class="pagina" data-testid="shell" [class.con-burbuja]="muestraNiaFlotante()">
   <header class="cabecera">
     <a routerLink="/" class="marca" aria-label="NexPlay, ir al catálogo">
       <img src="logo-oscuro.png" alt="" width="81" height="70" />
@@ -45,6 +45,9 @@
   </main>
 
   <footer class="pie">
+    @if (enPortada()) {
+      <app-nia-mascota />
+    }
     <app-metodologia />
   </footer>
 

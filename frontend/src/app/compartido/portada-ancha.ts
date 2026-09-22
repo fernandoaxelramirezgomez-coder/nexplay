@@ -113,8 +113,8 @@ type EstadoVideo = 'cargando' | 'reproduciendo' | 'pausado' | 'fallido';
       inset-inline-end: var(--espacio-8);
       display: grid;
       place-items: center;
-      width: 36px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 1px solid color-mix(in srgb, var(--neon) 45%, transparent);
       border-radius: var(--radio-pildora);
@@ -146,6 +146,14 @@ type EstadoVideo = 'cargando' | 'reproduciendo' | 'pausado' | 'fallido';
     @keyframes pulso {
       50% {
         opacity: 0.55;
+      }
+    }
+    /* La franja de 1200×340 está pensada para escritorio; en una pantalla angosta queda
+       de ~100 px de alto. Ahí toma la proporción del tráiler y de la imagen de 616×353. */
+    @media (max-width: 900px) {
+      .marco {
+        aspect-ratio: 16 / 9;
+        max-height: none;
       }
     }
   `,

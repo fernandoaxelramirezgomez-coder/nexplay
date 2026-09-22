@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { Skeleton } from '../compartido/skeleton';
@@ -37,6 +37,17 @@ export class Comparar {
       .map((appid) => porAppid.get(appid))
       .filter((juego) => juego !== undefined);
   });
+
+  /** Columna a la vista cuando se desplazan en horizontal (pantallas angostas). */
+  protected readonly visible = signal(0);
+
+  protected alDesplazar(evento: Event): void {
+    const pista = evento.target as HTMLElement;
+    const total = this.juegos().length;
+    // Con scroll-snap cada columna encaja completa: el paso es el ancho entre columnas.
+    const paso = total ? pista.scrollWidth / total : 0;
+    this.visible.set(paso ? Math.min(total - 1, Math.round(pista.scrollLeft / paso)) : 0);
+  }
 
   protected readonly faltantes = computed(
     () => !this.catalogo.cargando() && this.comparar.cantidad() > this.juegos().length,

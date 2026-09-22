@@ -235,6 +235,25 @@ b {
   color: var(--texto);
 }
 
+/* Área de toque de al menos 44×44 sin cambiar lo que se ve: un ::before invisible,
+   centrado sobre el elemento, recibe el toque. Para íconos, chips y enlaces de texto que
+   visualmente son más chicos. (::after ya lo usan .chip y otros para su subrayado.) */
+.toque-amplio,
+.chip {
+  position: relative;
+}
+
+.toque-amplio::before,
+.chip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 .chip:hover::after {
   background: var(--borde-control);
 }

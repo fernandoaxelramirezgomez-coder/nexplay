@@ -29,7 +29,7 @@ const MOTIVOS_VISIBLES = 3;
       <app-portada [src]="juego().portada_url" [prioritaria]="true" radio="0" />
 
       <h2 class="nombre">
-        <a [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
+        <a class="toque-amplio" [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
       </h2>
 
       <div class="fila-veredicto">

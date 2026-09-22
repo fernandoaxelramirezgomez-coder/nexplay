@@ -42,7 +42,7 @@ const MAXIMO_SUGERENCIAS = 6;
                 <p class="meta subtitulo">Asistente de NexPlay</p>
               </div>
             </div>
-            <button type="button" class="boton-texto" data-testid="nia-flotante-cerrar" (click)="cerrar()">
+            <button type="button" class="boton-texto toque-amplio" data-testid="nia-flotante-cerrar" (click)="cerrar()">
               Cerrar
             </button>
           </header>
@@ -171,6 +171,20 @@ const MAXIMO_SUGERENCIAS = 6;
         animation: none;
       }
     }
+    /* En móvil el margen baja a 16 px, el mismo de la página, siempre por dentro del área
+       segura. Abierto, el panel toma el ancho entre los dos márgenes, centrado. */
+    @media (max-width: 640px) {
+      .flotante {
+        right: calc(var(--espacio-16) + env(safe-area-inset-right));
+        bottom: calc(var(--espacio-16) + env(safe-area-inset-bottom));
+      }
+      .flotante.abierto {
+        left: calc(var(--espacio-16) + env(safe-area-inset-left));
+      }
+      .abierto .panel {
+        width: 100%;
+      }
+    }
     .panel {
       width: min(380px, calc(100vw - var(--espacio-48)));
       max-height: min(70vh, 560px);
@@ -199,6 +213,7 @@ const MAXIMO_SUGERENCIAS = 6;
       flex-direction: column;
     }
     input {
+      min-height: 44px;
       font: inherit;
       letter-spacing: inherit;
       color: var(--texto);
@@ -222,6 +237,7 @@ const MAXIMO_SUGERENCIAS = 6;
     }
     .sugerencia {
       width: 100%;
+      min-height: 44px;
       display: flex;
       align-items: center;
       gap: var(--espacio-12);

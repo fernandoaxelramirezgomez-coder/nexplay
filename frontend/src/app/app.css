@@ -61,6 +61,7 @@
 }
 
 .navegacion a {
+  white-space: nowrap;
   color: var(--texto-meta);
   text-decoration: none;
   padding: var(--espacio-4) 0;
@@ -84,8 +85,19 @@
 }
 
 .pie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
   border-top: 1px solid var(--linea);
   padding-top: var(--espacio-24);
+}
+
+/* Mientras la burbuja flotante de Nia está en pantalla, el final de la página deja libre
+   su alto más el margen: el último párrafo o el pie siempre se pueden subir por encima de
+   ella. Mismos 64 px de la burbuja y mismos márgenes (24 px, 16 px en móvil) que
+   nia-flotante.ts. */
+.pagina.con-burbuja {
+  padding-bottom: calc(64px + 2 * var(--espacio-24) + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 640px) {
@@ -95,6 +107,25 @@
 
   .lema {
     display: none;
+  }
+
+  .pagina.con-burbuja {
+    padding-bottom: calc(64px + 2 * var(--espacio-16) + env(safe-area-inset-bottom));
+  }
+
+  /* Cuatro enlaces y la píldora de perfil no caben en una fila de 358 px: el nav ocupa
+     su propia fila y, si hace falta, la píldora baja sola. Ningún enlace se parte. */
+  .navegacion {
+    width: 100%;
+    flex-wrap: wrap;
+    column-gap: var(--espacio-16);
+    row-gap: 0;
+  }
+
+  .navegacion a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 }
 
