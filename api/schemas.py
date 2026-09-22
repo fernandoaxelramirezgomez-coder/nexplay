@@ -94,10 +94,10 @@ class JuegoCatalogo(BaseModel):
     portada_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     tienda_url: str = Field(..., description="Campo derivado del appid, no una columna de la base")
     banda_riesgo: NivelRiesgo = Field(
-        ..., description="Riesgo estimado con un perfil neutro (ver catalogo.py); orientativo para el catálogo, no personalizado"
+        ..., description="Riesgo estimado del título (ver catalogo.py); es el mismo para cualquier perfil"
     )
     riesgo: float = Field(
-        ..., ge=0, le=1, description="Score numérico del mismo perfil neutro; para ordenar dentro de una banda, no para mostrar como probabilidad"
+        ..., ge=0, le=1, description="Score numérico del título; para ordenar dentro de una banda, no para mostrar como probabilidad"
     )
 
 

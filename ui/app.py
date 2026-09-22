@@ -486,7 +486,7 @@ with gr.Blocks(title="NexPlay") as demo:
 
         with gr.Tab("Tu perfil", id="tu_perfil"):
             gr.Markdown(
-                "Declarás cómo jugás para afinar el riesgo estimado. **Es opcional:** sin perfil, "
+                "Declarás cómo jugás para ver qué tanto encaja cada juego contigo; el riesgo estimado es del juego y no cambia con tu perfil. **Es opcional:** sin perfil, "
                 "\"Ver segunda opinión\" en Explorar usa un perfil neutro."
             )
             biblioteca = gr.Radio(
