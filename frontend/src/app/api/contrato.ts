@@ -27,7 +27,7 @@ export interface JuegoCatalogo {
   /** Primer tráiler de Steam en HLS (.m3u8); null si el juego no tiene videos. */
   video_url: string | null;
   tienda_url: string;
-  /** "Riesgo general": calculado con el perfil neutro de api/catalogo.py. */
+  /** "Riesgo general": el riesgo del título, igual para cualquier perfil. */
   banda_riesgo: NivelRiesgo;
   /** Solo para ordenar dentro de una banda. Nunca se muestra. */
   riesgo: number;

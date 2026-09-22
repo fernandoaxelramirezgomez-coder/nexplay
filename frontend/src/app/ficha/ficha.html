@@ -47,7 +47,7 @@
       <app-skeleton alto="120px" />
     } @else {
       <section class="veredicto" [attr.data-banda]="prediccion()!.nivel" data-testid="ficha-veredicto">
-        <p class="rotulo mono">{{ rotulo() }}</p>
+        <p class="rotulo mono">{{ rotulo }}</p>
         <p class="titular">
           Riesgo <span class="palabra">{{ prediccion()!.nivel }}</span> de arrepentimiento temprano
         </p>
@@ -60,16 +60,6 @@
             }
           }
         </p>
-        @if (bandaGeneralDistinta(); as general) {
-          <p class="meta" data-testid="ficha-banda-general">
-            Con el perfil neutro del catálogo aparece como riesgo general {{ general }}.
-          </p>
-        }
-        @if (!perfil.hayPerfil()) {
-          <p class="meta">
-            <a class="toque-amplio" routerLink="/perfil" data-testid="veredicto-crear-perfil">Crea tu perfil</a> para ajustar esta estimación a cómo juegas.
-          </p>
-        }
         @if (prediccion()!.nota_plataforma; as nota) {
           <p class="meta nota">{{ nota }}</p>
         }

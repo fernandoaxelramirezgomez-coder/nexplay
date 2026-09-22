@@ -165,5 +165,5 @@ function parrafoCompra(perfil: PerfilJugador, juego: JuegoCatalogo): Segmento[] 
 /** La línea que acompaña siempre a la historia, para que nadie la lea como parte del
  * cálculo. Va aparte porque no es narración: es una advertencia. */
 export const AVISO_HISTORIA =
-  'Esto es contexto sobre ti y el juego, no una recomendación. Tus gustos y tus horas no cambian el riesgo' +
-  ' estimado: el modelo no los usa.';
+  'Esto es contexto sobre ti y el juego, no una recomendación. Tu perfil no cambia el riesgo estimado: el' +
+  ' modelo solo usa datos del juego.';

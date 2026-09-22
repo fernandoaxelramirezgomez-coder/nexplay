@@ -1,14 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { NivelRiesgo } from '../api/contrato';
+import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 
 /** Banda de riesgo: relleno del color de banda con texto oscuro (el blanco encima no
- * pasa AA). El rótulo dice de dónde sale la banda: "Riesgo general" o "Riesgo para tu perfil". */
+ * pasa AA). El rótulo es uno solo: la banda es del juego, no del perfil. */
 @Component({
   selector: 'app-pildora-banda',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<span class="pildora" [attr.data-banda]="banda()" data-testid="pildora-banda"
-    >{{ rotulo() }} · {{ banda() }}</span
+    >{{ rotulo }} · {{ banda() }}</span
   >`,
   styles: `
     .pildora {
@@ -32,5 +33,5 @@ import { NivelRiesgo } from '../api/contrato';
 })
 export class PildoraBanda {
   readonly banda = input.required<NivelRiesgo>();
-  readonly rotulo = input('Riesgo general');
+  protected readonly rotulo = ROTULO_RIESGO;
 }

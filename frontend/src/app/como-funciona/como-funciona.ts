@@ -23,7 +23,7 @@ export const PASOS: readonly Paso[] = [
   {
     titulo: 'Crear tu perfil (opcional)',
     texto:
-      'Con cuántos juegos compras al año, tus horas por semana y tu tolerancia a la fricción, la estimación deja el perfil neutro y se ajusta a cómo juegas.',
+      'Con tus géneros, tus horas por semana y tu tolerancia a la fricción, la ficha cuenta qué tanto encaja el juego contigo. El riesgo no cambia: es del juego.',
     enlace: { ruta: '/perfil', texto: 'Crear tu perfil' },
   },
   {
@@ -74,8 +74,8 @@ export const PASOS: readonly Paso[] = [
         </p>
         <p class="lectura">
           El riesgo ordena riesgo relativo; no es una probabilidad calibrada. Por eso se muestra como nivel (bajo, medio
-          o alto) y nunca como porcentaje. El «riesgo general» usa un perfil neutro; el «riesgo para tu perfil» usa el
-          perfil que declaras.
+          o alto) y nunca como porcentaje. El riesgo es del juego y es el mismo para todos: el perfil que declaras no lo
+          cambia.
         </p>
       </section>
     </div>

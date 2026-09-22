@@ -1,5 +1,3 @@
-/** El rótulo dice de dónde sale la banda: sin perfil declarado, la predicción usa el
- * perfil neutro y llamarla "para tu perfil" sería falso. */
-export function rotuloRiesgo(hayPerfilDeclarado: boolean): string {
-  return hayPerfilDeclarado ? 'Riesgo para tu perfil' : 'Riesgo general';
-}
+/** El rótulo de la banda. El modelo estima el riesgo del título, igual para cualquier
+ * persona: no hay una versión "para tu perfil", así que el rótulo es uno solo. */
+export const ROTULO_RIESGO = 'Riesgo general';

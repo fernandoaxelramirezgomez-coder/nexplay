@@ -7,7 +7,7 @@ import { NexplayApi } from '../api/nexplay-api';
 import { Portada } from '../compartido/portada';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
-import { rotuloRiesgo } from '../dominio/etiqueta-riesgo';
+import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { factoresVisibles } from '../dominio/factores';
 import { porcentaje, textoMetacritic, textoPrecio } from '../dominio/formato';
 import { segundaOpinion } from '../dominio/segunda-opinion';
@@ -35,7 +35,7 @@ const MOTIVOS_VISIBLES = 3;
       <div class="fila-veredicto">
         @if (prediccion(); as prediccion) {
           <p class="veredicto" [attr.data-banda]="prediccion.nivel">
-            <span class="rotulo mono">{{ rotulo() }}</span>
+            <span class="rotulo mono">{{ rotulo }}</span>
             <span class="titular">Riesgo <span class="palabra">{{ prediccion.nivel }}</span></span>
           </p>
         } @else if (error()) {
@@ -277,7 +277,7 @@ export class ColumnaComparar {
 
   protected readonly prediccion = this.prediccionRecurso.value;
   protected readonly error = computed(() => this.prediccionRecurso.error());
-  protected readonly rotulo = computed(() => rotuloRiesgo(this.perfil.hayPerfil()));
+  protected readonly rotulo = ROTULO_RIESGO;
 
   protected readonly motivos = computed(
     () => this.explicacionRecurso.value()?.motivos.slice(0, MOTIVOS_VISIBLES) ?? [],

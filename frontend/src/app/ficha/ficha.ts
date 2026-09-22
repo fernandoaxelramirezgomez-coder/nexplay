@@ -7,7 +7,7 @@ import { NexplayApi } from '../api/nexplay-api';
 import { Nia } from '../chat/nia';
 import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
-import { rotuloRiesgo } from '../dominio/etiqueta-riesgo';
+import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { factoresVisibles, fraseFactor } from '../dominio/factores';
 import { fraseBanda, segundaOpinion } from '../dominio/segunda-opinion';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -76,13 +76,7 @@ export class Ficha {
   protected readonly cargandoMotivos = computed(() => this.explicacionRecurso.isLoading());
   protected readonly esperandoOpinion = computed(() => this.cargando() || this.explicacionRecurso.isLoading());
 
-  protected readonly rotulo = computed(() => rotuloRiesgo(this.perfil.hayPerfil()));
-  /** Con perfil declarado la banda puede diferir de la del catálogo (perfil neutro). */
-  protected readonly bandaGeneralDistinta = computed(() => {
-    const juego = this.juego();
-    const nivel = this.prediccion()?.nivel;
-    return this.perfil.hayPerfil() && juego && nivel && juego.banda_riesgo !== nivel ? juego.banda_riesgo : null;
-  });
+  protected readonly rotulo = ROTULO_RIESGO;
 
   protected readonly frase = computed(() => {
     const nivel = this.prediccion()?.nivel;

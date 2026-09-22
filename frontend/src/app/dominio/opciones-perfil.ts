@@ -53,7 +53,8 @@ export const VALORES_POR_DEFECTO: ValoresPerfil = {
 };
 
 /** Los géneros elegidos viajan en tags_preferidos: la API los valida y los normaliza,
- * pero el modelo no los usa (solo lee compras_al_anio y plataforma). */
+ * pero el modelo no usa ningún dato del perfil (es un modelo de título); la plataforma
+ * solo agrega la nota de plataforma a la predicción. */
 export function formularioDesde(valores: ValoresPerfil): FormularioAlta {
   return {
     compras_al_anio: valores.compras,

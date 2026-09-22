@@ -96,6 +96,15 @@ def _esperar_quietud(pagina: Page) -> None:
     )
 
 
+_PROMESA_DE_AJUSTE = (
+    "para tu perfil",
+    "ajusta la estimación",
+    "ajustar esta estimación",
+    "se ajusta a cómo juegas",
+    "afinar el riesgo",
+)
+
+
 def _revisar_vocabulario(pagina: Page, donde: str) -> list[str]:
     texto = pagina.inner_text("body")
     problemas = []
@@ -103,6 +112,10 @@ def _revisar_vocabulario(pagina: Page, donde: str) -> list[str]:
         problemas.append(f"{donde}: aparece 'abandono'")
     if scores := _SCORE_VISIBLE.findall(texto):
         problemas.append(f"{donde}: scores visibles {scores[:5]}")
+    # Modelo de título: el perfil no cambia el riesgo, ningún texto puede prometerlo.
+    for frase in _PROMESA_DE_AJUSTE:
+        if frase in texto.lower():
+            problemas.append(f"{donde}: promete ajustar el riesgo con el perfil ('{frase}')")
     return problemas
 
 
@@ -501,6 +514,7 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     _abrir(pagina, f"{url.rstrip('/')}/perfil")
     pagina.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
     pagina.get_by_test_id("chip-genero").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    problemas += _revisar_vocabulario(pagina, "perfil")
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "perfil.png", full_page=True)
 
@@ -524,8 +538,9 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
     veredicto = pagina.get_by_test_id("ficha-veredicto").inner_text()
-    if "riesgo para tu perfil" not in veredicto.lower():
-        problemas.append(f"con perfil declarado, el veredicto sigue diciendo '{veredicto.splitlines()[0]}'")
+    # Modelo de título: con o sin perfil, la banda es la misma y el rótulo también.
+    if not veredicto.lower().startswith("riesgo general"):
+        problemas.append(f"con perfil declarado, el veredicto cambió de rótulo: '{veredicto.splitlines()[0]}'")
     # La historia reemplaza a la línea suelta de afinidad: con perfil se cuenta entera.
     historia = pagina.get_by_test_id("historia-texto").inner_text()
     plano = " ".join(historia.split())
@@ -1406,12 +1421,25 @@ _NIA_FALSA = json.dumps({
 })
 
 
+# Cuántas veces la interfaz pidió /nia y cuántas respondió la intercepción. Si las dos
+# cifras coinciden, ninguna llegó a la API (ni, por tanto, al modelo de lenguaje).
+_NIA_PEDIDAS: list[str] = []
+_NIA_INTERCEPTADAS: list[str] = []
+
+
 def _sin_consultas_a_nia(contexto) -> None:
     """Intercepta /nia en todo el contexto del navegador, antes de cualquier paso."""
-    contexto.route(
-        "**/nia",
-        lambda ruta: ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA),
-    )
+
+    def anotar(peticion) -> None:
+        if peticion.url.split("?")[0].rstrip("/").endswith("/nia"):
+            _NIA_PEDIDAS.append(peticion.url)
+
+    def responder(ruta) -> None:
+        _NIA_INTERCEPTADAS.append(ruta.request.url)
+        ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA)
+
+    contexto.on("request", anotar)
+    contexto.route("**/nia", responder)
 
 
 def capturar(frontend: str, url: str, api: str) -> int:
@@ -1429,6 +1457,10 @@ def capturar(frontend: str, url: str, api: str) -> int:
                 problemas = _capturar_gradio(pagina, url, destino)
         finally:
             navegador.close()
+    print(f"nia:      la interfaz pidió /nia {len(_NIA_PEDIDAS)} veces; interceptadas {len(_NIA_INTERCEPTADAS)}, "
+          f"llegaron a la API {len(_NIA_PEDIDAS) - len(_NIA_INTERCEPTADAS)}")
+    if len(_NIA_PEDIDAS) != len(_NIA_INTERCEPTADAS):
+        problemas.append("alguna consulta a /nia no pasó por la intercepción")
     for problema in problemas:
         print(f"PROBLEMA: {problema}")
     return 1 if problemas else 0
