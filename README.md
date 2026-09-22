@@ -44,10 +44,13 @@ python preparar_entorno.py
 `preparar_entorno.py` hace, en orden:
 
 1. Verifica que las dependencias estén instaladas.
-2. Descarga el asset de datos publicado en el [release `data-v2`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v2)
-   y valida su SHA-256 antes de tocarlo (mismo patrón que el notebook).
-3. Reconstruye `datos/nexplay.db` a partir de ese asset.
-4. Corre `entrenar_modelo.py` para generar `modelo/nexplay.pkl`.
+2. Descarga el asset del [release `data-v2`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v2)
+   (el catálogo que sirve la API) y el del [release `data-v1`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v1)
+   (el corte de entrenamiento), y valida el SHA-256 de cada uno antes de tocarlo.
+3. Reconstruye `datos/nexplay.db` con data-v2 y `datos/entrenamiento/nexplay_data-v1.db`
+   con data-v1.
+4. Corre `entrenar_modelo.py` sobre data-v1 para generar `modelo/nexplay.pkl`; el
+   artefacto guarda el tag, el sha256 del asset y las filas y juegos de entrenamiento.
 5. Levanta la API en un puerto de prueba y confirma que `/catalogo` responde, antes de
    apagarla.
 
@@ -190,7 +193,9 @@ todas derivadas por heurística.
 ### `POST /prediccion`
 
 Recibe el perfil derivado (el que devolvió `/perfil`) más un `appid`, y devuelve el
-riesgo con los tres factores que más lo movieron.
+riesgo con los tres factores que más lo movieron. El riesgo es del título (modelo
+`conjunto='juego'`): el perfil se acepta por compatibilidad y solo aporta la nota de
+plataforma; ningún dato suyo mueve el score.
 
 **Request** (`SolicitudPrediccion`): `{ "perfil": {...}, "appid": 1245620 }`
 
@@ -354,15 +359,16 @@ API ni el entrenamiento.
 
 Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
 reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
-seguir bajando exactamente lo mismo. Hoy el notebook y `preparar_entorno.py` usan
-`data-v2`:
+seguir bajando exactamente lo mismo. Hoy `preparar_entorno.py` sirve `data-v2` y entrena
+con `data-v1`; el notebook mide con `data-v1` y usa `data-v2` como prueba externa:
 
 ```bash
 gh release create data-v2 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
 ```
 
-Y actualizar `PARQUET_SHA256` en `notebook/nexplay.ipynb` y `ASSET_SHA256` en
-`preparar_entorno.py` con el sha256 que imprime cada script — si no coinciden, la
+Y actualizar los sha256 en `notebook/nexplay.ipynb` (`PARQUET_ENTRENAMIENTO_SHA256`,
+`PARQUET_PRUEBA_SHA256`) y en `preparar_entorno.py` (`SERVIDO_SHA256`,
+`ENTRENAMIENTO_SHA256`) con el que imprime cada script — si no coinciden, la
 descarga se rechaza a propósito en vez de seguir con datos que pudieron cambiar.
 
 ## No versionado
