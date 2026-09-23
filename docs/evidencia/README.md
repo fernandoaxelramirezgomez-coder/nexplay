@@ -34,6 +34,48 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   artefacto de data-v1. 40/40 evaluables, sin errores ni features faltantes; 60,395 filas,
   prevalencia 2.34 %, PR-AUC 0.0356 contra 0.0234 del clasificador trivial. Esos títulos no
   intervienen en el entrenamiento, la elección de variables, los parámetros ni los umbrales.
+- `verificacion-40-steam.csv`: Metacritic, descuento y precio de los 40 títulos nuevos,
+  comparados en vivo contra `appdetails` de Steam el 2026-09-21.
+- `simulacion_123.py` y `simulacion_123.txt`: la simulación de entrenar con los 123 (solo
+  validación cruzada, sin escribir artefactos) y su salida completa.
+
+## Los 40 títulos nuevos son prueba externa, no entrenamiento
+
+El modelo se entrena con los 83 de data-v1. Los 40 títulos que llegaron con data-v2 se
+puntúan con ese modelo, con sus umbrales y su mediana de Metacritic: **PR-AUC 0.0356
+contra 0.0234 del clasificador trivial** (1.52 veces), sobre 60,395 reseñas con 2.34% de
+prevalencia. Los 40 pasaron por inferencia uno por uno: 40 evaluables, 0 errores, 0
+variables faltantes (`prueba-externa.json`).
+
+Antes de decidirlo se verificó que esos 40 estuvieran tan limpios como los 83
+(`verificacion-40-steam.csv`): mismo volumen por juego (1,500–1,599 reseñas, contra
+682–1,599 de los originales), ninguno de pago sin precio —los dos que hay están entre los
+83—, y su Metacritic coincide exactamente con lo que la página de Steam muestra hoy, así
+que la ausencia en 10 de ellos no es un error de ingesta. Dos matices que valen para todo
+el catálogo: `metacritic_disponible = 0` significa "Steam no muestra Metacritic", no "no
+tiene crítica" (Forza Horizon 5 y Starfield la tienen), y el precio con su descuento es la
+foto del día de ingesta (10 de los 40 estaban en oferta, contra 8 de los 83).
+
+## Por qué no se entrena con los 123 (simulación, sin reentrenar)
+
+`simulacion_123.py` compara los dos cortes solo con validación cruzada —sin escribir
+ningún artefacto—, con el GroupKFold de producción y con 30 particiones aleatorias de los
+juegos en 5 folds. Salida completa en `simulacion_123.txt`.
+
+Con 123 juegos el ruido baja: la desviación entre folds del conjunto `'juego'` pasa de
+0.0415 a 0.0264 en el GroupKFold de producción, y de 0.0402 a 0.0278 como promedio de las
+30 particiones, alrededor de 31% menos. **Aun así, el lado del jugador sigue sin
+distinguirse del ruido.** Con 123, `'compra'` aporta 3.8% de PR-AUC en promedio, pero su
+intervalo del 95% va de −8.1% a +11.5%, la diferencia media es de +0.0022 de PR-AUC y en
+el GroupKFold de producción `'compra'` sale peor (−5.1%). Gana en 24 de 30 particiones,
+que suena a tendencia, pero las 30 particiones se calculan sobre los mismos datos: no son
+30 pruebas independientes, así que ese conteo no es evidencia de una señal real.
+
+**Decisión: el modelo se queda entrenado con los 83 de data-v1.** Lo que se ganaría con
+123 es menos ruido; lo que se perdería es la única evaluación fuera de muestra que existe,
+porque esos 40 títulos pasarían a ser entrenamiento y ya no quedaría ningún juego que el
+modelo no haya visto. Mientras el aporte del perfil siga dentro del ruido, ese cambio no
+compra nada que justifique quedarse sin prueba externa.
 
 ## Casos al filo del corte: no usar como demo
 
