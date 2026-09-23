@@ -74,4 +74,9 @@
       <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
     }
   </div>
+
+  <!-- Solo con perfil declarado: sin géneros elegidos no hay con qué comparar. -->
+  @if (perfil.hayPerfil()) {
+    <app-sugerencias-perfil />
+  }
 </div>

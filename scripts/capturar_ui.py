@@ -509,6 +509,67 @@ def _nivel_api(api: str, formulario: dict, appid: int) -> str:
         return json.load(r)["nivel"]
 
 
+def _angular_sugerencias(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Las sugerencias por afinidad de /perfil: solo con perfil declarado, cada una con el
+    género que coincidió y su banda al lado, y sin mezclar afinidad con riesgo."""
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/perfil")
+    seccion = pagina.get_by_test_id("sugerencias")
+    try:
+        seccion.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        return ["con perfil declarado no aparece la sección de sugerencias en /perfil"]
+
+    declarados = {"acción", "rol"}  # los mismos que eligió el paso anterior
+    catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+    tarjetas = pagina.get_by_test_id("sugerencia")
+    if not tarjetas.count():
+        return problemas + ["la sección de sugerencias no muestra ningún juego"]
+    for i in range(tarjetas.count()):
+        tarjeta = tarjetas.nth(i)
+        appid = int(tarjeta.get_attribute("data-appid"))
+        generos = {g.lower() for g in catalogo[appid]["generos"]}
+        if not generos & declarados:
+            problemas.append(f"sugiere {catalogo[appid]['nombre']}, que no comparte ningún género declarado")
+        porque = tarjeta.get_by_test_id("sugerencia-porque").inner_text()
+        if "coincide en" not in porque.lower():
+            problemas.append(f"la sugerencia {appid} no explica qué coincidió ('{porque[:60]}')")
+        if not tarjeta.get_by_test_id("pildora-banda").count():
+            problemas.append(f"la sugerencia {appid} no muestra la banda de riesgo")
+        # La nota que lleva a la segunda opinión es solo de la banda alta.
+        nota = tarjeta.get_by_test_id("sugerencia-nota-alto")
+        es_alto = catalogo[appid]["banda_riesgo"] == "alto"
+        if es_alto and not nota.count():
+            problemas.append(f"la sugerencia {appid} es de banda alta y no dice dónde están los motivos")
+        if not es_alto and nota.count():
+            problemas.append(f"la sugerencia {appid} no es de banda alta y aun así lleva la nota")
+        if es_alto and "segunda opinión" not in nota.inner_text().lower():
+            problemas.append(f"la nota de {appid} no menciona la segunda opinión")
+
+    texto = " ".join(seccion.inner_text().split()).lower()
+    for frase in ("recomendación de compra",):  # la entrada aclara justo lo que no es
+        if frase not in texto:
+            problemas.append(f"la sección de sugerencias no aclara que no es una {frase}")
+    for frase in _PROMESA_DE_AJUSTE + ("te recomiendo", "deberías", "conviene", "vale la pena", "buena compra"):
+        if frase in texto:
+            problemas.append(f"las sugerencias usan una fórmula prohibida ('{frase}')")
+
+    _esperar_portadas(pagina, "[data-testid='sugerencias'] img")
+    _esperar_quietud(pagina)
+    ruta = destino / "sugerencias-perfil.png"
+    seccion.screenshot(path=ruta)
+    altos = [t for t in (tarjetas.nth(i) for i in range(tarjetas.count()))
+             if t.get_by_test_id("sugerencia-nota-alto").count()]
+    if altos:
+        ruta_alto = destino / "sugerencia-banda-alta.png"
+        altos[0].screenshot(path=ruta_alto)
+        print(f"afinidad: {len(altos)} de {tarjetas.count()} son de banda alta y dicen dónde están los motivos "
+              f"({ruta_alto.relative_to(_RAIZ)})")
+    print(f"afinidad: {tarjetas.count()} sugerencias, todas con género coincidente y banda "
+          f"({ruta.relative_to(_RAIZ)})")
+    return problemas
+
+
 def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     problemas = []
     _abrir(pagina, f"{url.rstrip('/')}/perfil")
@@ -534,6 +595,8 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
         print("perfil:   creado, y sigue activo después de recargar")
     except TiempoAgotado:
         problemas.append("el perfil no sobrevivió a la recarga")
+
+    problemas += _angular_sugerencias(pagina, url, destino, api)
 
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)

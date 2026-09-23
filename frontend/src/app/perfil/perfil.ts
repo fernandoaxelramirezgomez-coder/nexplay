@@ -15,12 +15,13 @@ import {
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { SelectorGeneros } from './selector-generos';
+import { SugerenciasPerfil } from './sugerencias-perfil';
 import { TarjetasOpcion } from './tarjetas-opcion';
 
 @Component({
   selector: 'app-perfil',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TarjetasOpcion, SelectorGeneros],
+  imports: [RouterLink, TarjetasOpcion, SelectorGeneros, SugerenciasPerfil],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
