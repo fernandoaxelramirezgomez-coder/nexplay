@@ -1,0 +1,28 @@
+
+===== data-v1 (83): filas=123,972 juegos=83 prevalencia=0.0219
+GroupKFold de producción (mismos folds para los dos conjuntos):
+  juego  por fold: [0.1459 0.0367 0.0809 0.0436 0.0399]  media=0.0694  std=0.0415
+  compra por fold: [0.1135 0.0502 0.0898 0.0402 0.0607]  media=0.0709  std=0.0270
+  compra - juego por fold: [-0.0324  0.0135  0.0088 -0.0034  0.0209]  media=+0.0015  std=0.0209
+  aporte del jugador: 2.1% del PR-AUC; folds donde compra gana: 3/5
+  diferencia de medias / std entre folds de juego = 0.04  (t pareado = 0.16, con 4 gl)
+30 particiones aleatorias de juegos en 5 folds:
+  std entre folds de 'juego': media=0.0402  (rango 0.0298–0.0500)
+  aporte del jugador: media=0.5%  percentil 2.5–97.5 = -4.9% a 5.4%
+  compra - juego (media por partición): media=+0.0003  rango -0.0046 a +0.0042
+  particiones donde compra supera a juego: 16/30
+  diferencia media / std entre folds media = 0.01
+
+===== data-v2 (123): filas=184,367 juegos=123 prevalencia=0.0224
+GroupKFold de producción (mismos folds para los dos conjuntos):
+  juego  por fold: [0.1104 0.0405 0.0385 0.0534 0.0519]  media=0.0589  std=0.0264
+  compra por fold: [0.0812 0.0421 0.0437 0.0547 0.0587]  media=0.0561  std=0.0140
+  compra - juego por fold: [-0.0292  0.0016  0.0052  0.0014  0.0068]  media=-0.0028  std=0.0149
+  aporte del jugador: -5.1% del PR-AUC; folds donde compra gana: 4/5
+  diferencia de medias / std entre folds de juego = 0.11  (t pareado = -0.43, con 4 gl)
+30 particiones aleatorias de juegos en 5 folds:
+  std entre folds de 'juego': media=0.0278  (rango 0.0100–0.0410)
+  aporte del jugador: media=3.8%  percentil 2.5–97.5 = -8.1% a 11.5%
+  compra - juego (media por partición): media=+0.0022  rango -0.0054 a +0.0067
+  particiones donde compra supera a juego: 24/30
+  diferencia media / std entre folds media = 0.08
