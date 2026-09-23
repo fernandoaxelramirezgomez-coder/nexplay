@@ -13,6 +13,7 @@ comprar ni no comprar.
 
 import logging
 import re
+import unicodedata
 
 from . import catalogo, scoring
 from .config import configuracion
@@ -39,6 +40,11 @@ Reglas que no puedes romper:
   los datos y deja la decisión a quien pregunta.
 - Responde solo con los datos del contexto. Si te preguntan algo que no está ahí, dilo
   con claridad en vez de inventarlo.
+- Si preguntan por un juego que no es el del contexto y que el contexto no marca como
+  parte del catálogo, empieza la respuesta con esta frase, con el nombre que usaron:
+  "<Juego> no está en este catálogo de Steam, así que no tengo ninguna señal sobre él
+  para comparar." Después sigue con lo que sí sabes del juego del contexto. No inventes
+  nada de ese otro juego.
 """
 
 
@@ -130,7 +136,43 @@ def _demostracion(datos: dict, pregunta: str) -> str:
     )
 
 
-def _contexto_para_prompt(datos: dict) -> str:
+def _sin_acentos(texto: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", texto.lower()) if unicodedata.category(c) != "Mn")
+
+
+def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[str]:
+    """Nombres del catálogo que aparecen en la pregunta, sin contar el juego abierto.
+
+    Nia solo recibe los datos de un juego, así que sin esto no puede distinguir "no está
+    en el catálogo" de "está, pero no es el que tienes abierto", y diría lo primero de
+    cualquiera.
+
+    Se compara sin acentos, sin los símbolos de marca y también por la parte antes de los
+    dos puntos ("Cities: Skylines" se reconoce con "Cities"). Prefiere equivocarse de más:
+    una palabra común que coincide con un título ("celeste") solo agrega una línea al
+    contexto, mientras que no reconocer un juego del catálogo haría que Nia dijera que no
+    está."""
+    texto = _sin_acentos(pregunta)
+    encontrados = []
+    for juego in catalogo.buscar():
+        if juego.appid == appid_abierto:
+            continue
+        for variante in _variantes_del_nombre(juego.nombre):
+            if re.search(rf"(?<!\w){re.escape(variante)}(?!\w)", texto):
+                encontrados.append(juego.nombre)
+                break
+    # "Portal 2" ya implica "Portal": se queda el título más largo de cada coincidencia.
+    return [n for n in encontrados if not any(n != otro and _sin_acentos(n) in _sin_acentos(otro) for otro in encontrados)]
+
+
+def _variantes_del_nombre(nombre: str) -> list[str]:
+    """El nombre completo y su primera parte, normalizados; descarta lo muy corto."""
+    limpio = _sin_acentos(nombre.replace("™", "").replace("®", "")).strip()
+    variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
+    return [v for v in variantes if len(v) >= 4]
+
+
+def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> str:
     lineas = [
         f"Juego: {datos['nombre']}",
         f"Banda de riesgo del juego (la misma para cualquier perfil): {datos['banda']}",
@@ -146,6 +188,11 @@ def _contexto_para_prompt(datos: dict) -> str:
         lineas.append(f"Motivos (sobre las clasificadas): {motivos}")
     else:
         lineas.append("Motivos: no hay suficientes reseñas para señalar uno")
+    if mencionados:
+        lineas.append(
+            "Otros juegos del catálogo que nombra la pregunta (no tienes sus datos aquí, así que NO son"
+            f" juegos fuera del catálogo): {', '.join(mencionados)}"
+        )
     return "\n".join(lineas)
 
 
@@ -207,13 +254,13 @@ def _crear_con_reintentos(cliente, conversacion: list[dict]):
     return respuesta
 
 
-def _preguntar_a_openai(datos: dict, mensajes: list[MensajeChat]) -> str:
+def _preguntar_a_openai(datos: dict, mensajes: list[MensajeChat], mencionados: list[str]) -> str:
     from openai import OpenAI  # perezoso: sin el paquete, Nia sigue en modo demostración
 
     cliente = OpenAI(api_key=configuracion.openai_api_key, timeout=configuracion.nexplay_nia_timeout)
     conversacion = [
         {"role": "system", "content": _SISTEMA},
-        {"role": "system", "content": f"Datos del juego:\n{_contexto_para_prompt(datos)}"},
+        {"role": "system", "content": f"Datos del juego:\n{_contexto_para_prompt(datos, mencionados)}"},
         *(
             {"role": "user" if mensaje.rol == "usuario" else "assistant", "content": mensaje.contenido}
             for mensaje in mensajes
@@ -237,7 +284,7 @@ def responder(appid: int, mensajes: list[MensajeChat], perfil: PerfilJugador | N
         }
 
     try:
-        texto = _preguntar_a_openai(datos, mensajes)
+        texto = _preguntar_a_openai(datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid))
         if texto:
             return {"respuesta": texto, "modo": "openai", "modelo": configuracion.nexplay_modelo_nia, "aviso": None}
         logger.warning("OpenAI devolvió una respuesta vacía para appid=%s; se usa el modo demostración", appid)
