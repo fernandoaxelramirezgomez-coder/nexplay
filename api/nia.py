@@ -154,6 +154,59 @@ def _sin_claves(texto: str) -> str:
     return re.sub(r"sk-[A-Za-z0-9_\-]{4,}", "sk-…", texto)[:500]
 
 
+# Los modelos de OpenAI no aceptan los mismos parámetros: los nuevos piden
+# max_completion_tokens y rechazan max_tokens (y algunos solo admiten la temperatura por
+# omisión). Cuál es el bueno depende del modelo que esté en .env, así que en vez de
+# fijarlo se empieza por el nuevo y se corrige con lo que responde la propia API.
+_EQUIVALENTES = {"max_completion_tokens": "max_tokens", "max_tokens": "max_completion_tokens"}
+_MAXIMO_REINTENTOS = 3
+# Lo que el modelo configurado aceptó la primera vez, para no volver a gastar una petición
+# rechazada en cada pregunta. Vive en memoria: se recalcula al reiniciar la API.
+_PARAMETROS_APRENDIDOS: dict[str, dict] = {}
+_PARAMETRO_RECHAZADO = re.compile(r"'param': '([^']+)'")
+_CODIGO_RECHAZO = re.compile(r"'code': '(unsupported_parameter|unsupported_value)'")
+
+
+def _parametro_rechazado(error: str) -> tuple[str, str] | None:
+    """Qué parámetro rechazó OpenAI y por qué, leído del cuerpo del 400."""
+    codigo = _CODIGO_RECHAZO.search(error)
+    parametro = _PARAMETRO_RECHAZADO.search(error)
+    return (parametro.group(1), codigo.group(1)) if codigo and parametro else None
+
+
+def _crear_con_reintentos(cliente, conversacion: list[dict]):
+    """Llama al modelo y, si rechaza un parámetro, lo traduce a su equivalente o lo quita.
+
+    Un modelo nuevo responde 400 'Unsupported parameter: max_tokens ... use
+    max_completion_tokens'; uno viejo hace lo contrario. Así funcionan los dos sin tener
+    que adivinar cuál está configurado."""
+    modelo = configuracion.nexplay_modelo_nia
+    opcionales = _PARAMETROS_APRENDIDOS.get(
+        modelo, {"max_completion_tokens": configuracion.nexplay_nia_max_tokens, "temperature": 0.3}
+    )
+    parametros = {"model": modelo, "messages": conversacion, **opcionales}
+    for _ in range(_MAXIMO_REINTENTOS):
+        try:
+            respuesta = cliente.chat.completions.create(**parametros)
+            _PARAMETROS_APRENDIDOS[modelo] = {k: v for k, v in parametros.items() if k not in ("model", "messages")}
+            return respuesta
+        except Exception as exc:
+            rechazado = _parametro_rechazado(str(exc))
+            if not rechazado or rechazado[0] not in parametros:
+                raise
+            nombre, codigo = rechazado
+            valor = parametros.pop(nombre)
+            equivalente = _EQUIVALENTES.get(nombre) if codigo == "unsupported_parameter" else None
+            if equivalente:
+                parametros[equivalente] = valor
+                logger.info("el modelo no acepta %s; se reintenta con %s", nombre, equivalente)
+            else:
+                logger.info("el modelo no acepta %s=%r; se reintenta sin ese parámetro", nombre, valor)
+    respuesta = cliente.chat.completions.create(**parametros)
+    _PARAMETROS_APRENDIDOS[modelo] = {k: v for k, v in parametros.items() if k not in ("model", "messages")}
+    return respuesta
+
+
 def _preguntar_a_openai(datos: dict, mensajes: list[MensajeChat]) -> str:
     from openai import OpenAI  # perezoso: sin el paquete, Nia sigue en modo demostración
 
@@ -166,12 +219,7 @@ def _preguntar_a_openai(datos: dict, mensajes: list[MensajeChat]) -> str:
             for mensaje in mensajes
         ),
     ]
-    respuesta = cliente.chat.completions.create(
-        model=configuracion.nexplay_modelo_nia,
-        messages=conversacion,
-        max_tokens=configuracion.nexplay_nia_max_tokens,
-        temperature=0.3,
-    )
+    respuesta = _crear_con_reintentos(cliente, conversacion)
     return (respuesta.choices[0].message.content or "").strip()
 
 
