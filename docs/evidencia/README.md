@@ -38,6 +38,8 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
 - `simulacion_123.py` y `simulacion_123.txt`: la simulación de entrenar con los 123 (solo
   validación cruzada, sin escribir artefactos) y su salida completa.
+- `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
+  a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 
 ## Los 40 títulos nuevos son prueba externa, no entrenamiento
 
