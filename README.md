@@ -4,7 +4,7 @@
 qué banda de riesgo tiene cada título y por qué (motivos reales de reseñas de Steam,
 no una nota genérica), y decidís con eso encima.
 
-![Catálogo visual de NexPlay: tarjetas con portada, banda de riesgo y filtros por género](docs/captura-interfaz.png)
+![Catálogo de NexPlay: buscador, un ejemplo de segunda opinión y los estantes por banda de riesgo](docs/captura-interfaz.png)
 
 ## Qué es
 
