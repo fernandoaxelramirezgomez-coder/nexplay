@@ -105,3 +105,50 @@ El pulgar del voto y de las reacciones es un trazo propio
 (`src/app/compartido/icono-pulgar.ts`), no un emoji: el emoji depende de una fuente que no todos
 los sistemas traen y en Linux sin fuente de emoji salía un cuadro. El pulgar hacia abajo es el
 mismo dibujo girado media vuelta.
+
+## Tema claro y barra lateral
+
+La navegación vive en una **barra lateral** de 240 px con dos grupos —`PRINCIPAL` y
+`TRANSPARENCIA`—, el ítem abierto con fondo propio (`--acento-sistema` más filo neón) y, al
+pie, el interruptor de tema. En escritorio se encoge a 64 px, que es la columna de íconos con
+su área de toque de 44; el nombre no se borra del DOM, se esconde con la técnica de
+`.solo-lector` y vuelve como `title`. Por debajo de 900 px la barra es un cajón que entra desde
+la izquierda con velo, se cierra al navegar, con `Escape`, con el velo o con su X, y mientras
+está abierto la página queda `inert` para que el tabulador no se escape detrás del velo.
+
+Los cortes de dos y tres columnas del catálogo, la ficha y comparar pasaron de `@media` a
+`@container`: con la barra abierta la ventana sigue siendo ancha aunque al contenido le queden
+736 px, y con un `@media` el hero se rompía y comparar sacaba una barra de scroll horizontal.
+
+**El tema claro no es el oscuro invertido.** Cada valor se midió contra los tres fondos claros
+(lienzo `#f6f7fb`, tarjeta `#ffffff`, hover `#eceff8`) y se eligió el primer tono que pasa:
+
+| Token | Claro | lienzo | tarjeta | hover | Mínimo |
+|---|---|---|---|---|---|
+| `--texto` | `#14173d` | 16.1:1 | 17.2:1 | 15.0:1 | 4.5 |
+| `--texto-meta` | `#4d5178` | 7.1:1 | 7.6:1 | 6.6:1 | 4.5 |
+| `--borde-control` | `#7f83aa` | 3.4:1 | 3.7:1 | 3.2:1 | 3.0 |
+| `--neon` | `#0b6f8c` | 5.4:1 | 5.7:1 | 5.0:1 | 4.5 |
+| `--banda-bajo-texto` | `#0d7a52` | 5.0:1 | 5.4:1 | 4.7:1 | 4.5 |
+| `--banda-medio-texto` | `#8a5a00` | 5.5:1 | 5.9:1 | 5.2:1 | 4.5 |
+| `--banda-alto-texto` | `#c0136a` | 5.5:1 | 5.9:1 | 5.2:1 | 4.5 |
+
+Se descartaron por medición `#8b8fb4` para el borde de control (2.9:1 contra el lienzo) y
+`#0e7f9e` para el acento (4.3:1 sobre el hover de tarjeta).
+
+**Los rellenos cromáticos no cambian de color**: el cian del botón primario y las tres bandas
+son el mismo hex en los dos temas, con texto tinta encima (11.7, 12.9, 11.8 y 6.0:1). Lo que
+cambia es que en claro llevan un filo de 1 px de su tinta, porque el borde del relleno contra el
+papel da 1.4, 1.5 y 2.9:1 y un control pide 3:1. En oscuro ese filo vale el color del propio
+relleno, así que no se ve y la caja mide lo mismo (el relleno baja 1 px de padding).
+
+**El resplandor cambia de luz emitida a contorno.** El cian tiene menos luminancia que el papel,
+así que sobre blanco un halo aditivo *baja* el brillo y se lee como suciedad. En claro
+`--resplandor` pasa a un anillo sólido más una sombra suave, y los halos de sprite se escalan con
+`--halo-radio` (a la mitad) y `--halo-alfa` (0.62) en vez de reescribirse uno por uno.
+
+El tema se guarda en `localStorage` y la primera vez toma `prefers-color-scheme`; sin preferencia
+declarada se queda en oscuro. Un script de cinco líneas en `index.html` pone el atributo
+`data-tema` antes de que Angular pinte, para que no haya destello. Los 22 pares de contraste se
+vuelven a medir en cada corrida de `herramientas/capturar_ui.py`, sobre los tokens que el
+navegador resolvió, en los dos temas.

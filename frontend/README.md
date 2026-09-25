@@ -68,5 +68,11 @@ La identidad es un id anónimo en `localStorage` (`UsuarioStore`): identifica, n
   que además lleva el contraste medido de cada par de colores. Todo vive como tokens en
   `src/styles/tokens.css`. Sin Tailwind ni librería de componentes, sin gradientes y sin sombras
   de elevación: la única sombra es el resplandor corto del foco y del estado activo.
+- **Barra lateral y dos temas**: la navegación es una barra lateral que se encoge a la
+  columna de íconos en escritorio y se vuelve cajón por debajo de 900 px
+  (`src/app/barra-lateral/`). El tema claro u oscuro se elige en su pie, se guarda en
+  `localStorage` y la primera vez sale de `prefers-color-scheme`
+  (`src/app/estado/tema-store.ts`). Las dos paletas viven en `src/styles/tokens.css` con sus
+  contrastes medidos; el script de capturas los vuelve a medir en cada corrida.
 - **Vocabulario**: "arrepentimiento temprano", nunca "abandono". El score numérico de riesgo
   nunca se muestra: solo la banda (bajo, medio, alto).

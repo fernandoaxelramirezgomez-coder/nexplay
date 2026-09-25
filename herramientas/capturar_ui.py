@@ -1402,6 +1402,185 @@ def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> li
     return problemas
 
 
+# Qué pares de color tienen que pasar, y cuánto piden: 4.5:1 el texto, 3:1 los bordes y
+# los controles (WCAG 1.4.3 y 1.4.11). Se miden sobre los tokens ya resueltos por el
+# navegador, no sobre lo que dice la documentación.
+_CONTRASTES = [
+    ("--texto", "--superficie-lienzo", 4.5),
+    ("--texto", "--superficie-tarjeta", 4.5),
+    ("--texto-meta", "--superficie-lienzo", 4.5),
+    ("--texto-meta", "--superficie-tarjeta", 4.5),
+    ("--texto-meta", "--superficie-tarjeta-hover", 4.5),
+    ("--neon", "--superficie-lienzo", 4.5),
+    ("--neon", "--superficie-tarjeta", 4.5),
+    ("--neon-hover", "--superficie-tarjeta", 4.5),
+    ("--borde-control", "--superficie-lienzo", 3.0),
+    ("--borde-control", "--superficie-tarjeta-hover", 3.0),
+    ("--foco", "--superficie-lienzo", 3.0),
+    ("--banda-bajo-texto", "--superficie-lienzo", 4.5),
+    ("--banda-medio-texto", "--superficie-lienzo", 4.5),
+    ("--banda-alto-texto", "--superficie-lienzo", 4.5),
+    ("--banda-bajo-texto", "--superficie-tarjeta-hover", 4.5),
+    ("--banda-medio-texto", "--superficie-tarjeta-hover", 4.5),
+    ("--banda-alto-texto", "--superficie-tarjeta-hover", 4.5),
+    ("--texto-sobre-banda", "--banda-bajo", 4.5),
+    ("--texto-sobre-banda", "--banda-medio", 4.5),
+    ("--texto-sobre-banda", "--banda-alto", 4.5),
+    ("--cta-texto", "--cta-fondo", 4.5),
+    # El filo es lo que separa el relleno cromático del fondo de la página.
+    ("--cta-filo", "--superficie-lienzo", 3.0),
+]
+
+_JS_TOKENS = """
+nombres => {
+    const estilo = getComputedStyle(document.documentElement);
+    const lienzo = document.createElement('canvas').getContext('2d');
+    return Object.fromEntries(nombres.map(nombre => {
+        lienzo.fillStyle = '#000';
+        lienzo.fillStyle = estilo.getPropertyValue(nombre).trim();
+        return [nombre, lienzo.fillStyle];
+    }));
+}
+"""
+
+
+def _luminancia(hexa: str) -> float:
+    crudo = hexa.lstrip("#")
+    canales = [int(crudo[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    lineal = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in canales]
+    return 0.2126 * lineal[0] + 0.7152 * lineal[1] + 0.0722 * lineal[2]
+
+
+def _contraste(uno: str, otro: str) -> float:
+    a, b = _luminancia(uno), _luminancia(otro)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+
+def _revisar_contrastes(pagina: Page, tema: str) -> list[str]:
+    nombres = sorted({nombre for par in _CONTRASTES for nombre in par[:2]})
+    tokens = pagina.evaluate(_JS_TOKENS, nombres)
+    faltan = [nombre for nombre, valor in tokens.items() if not valor.startswith("#")]
+    if faltan:
+        return [f"en tema {tema} no se resolvieron los tokens {faltan}"]
+    problemas = []
+    peor = ("", 99.0)
+    for frente, fondo, minimo in _CONTRASTES:
+        razon = _contraste(tokens[frente], tokens[fondo])
+        if razon < minimo:
+            problemas.append(
+                f"en tema {tema}, {frente} sobre {fondo} da {razon:.2f}:1 y pide {minimo}:1"
+            )
+        elif razon < peor[1]:
+            peor = (f"{frente} sobre {fondo}", razon)
+    if not problemas:
+        print(f"contraste: tema {tema}, {len(_CONTRASTES)} pares pasan; el más justo es {peor[0]} con {peor[1]:.2f}:1")
+    return problemas
+
+
+def _desborde(pagina: Page) -> int:
+    ancho, visible = pagina.evaluate(
+        "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
+    )
+    return max(0, ancho - visible)
+
+
+def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
+    """La barra lateral y los dos temas: sin desborde a 390 px, con los contrastes medidos
+    sobre los tokens que el navegador resolvió, y el cajón de móvil abriéndose y
+    cerrándose como debe."""
+    problemas = []
+    base = url.rstrip("/")
+    navegador = pagina.context.browser
+    if navegador is None:
+        return ["sin navegador para revisar la barra y los temas"]
+
+    # 1. Encoger la barra le devuelve ancho al contenido. Se mide en una ventana de
+    # 1280 px: a 1440 la página ya topa con su ancho máximo de 1200 y no cambiaría nada.
+    contexto = navegador.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
+    _sin_consultas_a_nia(contexto)
+    try:
+        estrecha = contexto.new_page()
+        _abrir(estrecha, base)
+        estrecha.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        barra = estrecha.locator("app-barra-lateral").bounding_box()
+        contenido = estrecha.locator(".contenido").bounding_box()
+        if not barra or not contenido:
+            return problemas + ["la barra lateral no se ve en escritorio"]
+        estrecha.get_by_test_id("colapsar-barra").click()
+        estrecha.wait_for_timeout(400)
+        corta = estrecha.locator("app-barra-lateral").bounding_box()
+        contenido_corto = estrecha.locator(".contenido").bounding_box()
+        if not corta or not contenido_corto or corta["width"] >= barra["width"]:
+            problemas.append("encoger la barra no la hace más angosta")
+        elif contenido_corto["width"] <= contenido["width"]:
+            problemas.append("encoger la barra no le devuelve ancho al contenido")
+        else:
+            print(
+                f"barra:    a 1280 px, {barra['width']:.0f} px expandida y {corta['width']:.0f} encogida; "
+                f"el contenido pasa de {contenido['width']:.0f} a {contenido_corto['width']:.0f} px"
+            )
+        _esperar_quietud(estrecha)
+        estrecha.screenshot(path=destino / "barra-encogida.png")
+    finally:
+        contexto.close()
+
+    # 2. Los dos temas, en escritorio y a 390 px: contrastes y desborde.
+    rutas = ["/", f"/juego/{_APPID_FICHA}", "/comparar", "/perfil", "/como-funciona"]
+    for tema in ("oscuro", "claro"):
+        for vista, nombre in ((_VIEWPORT, "escritorio"), ({"width": 390, "height": 844}, "movil")):
+            contexto = navegador.new_context(viewport=vista, reduced_motion="reduce")
+            _sin_consultas_a_nia(contexto)
+            contexto.add_init_script(f"localStorage.setItem('nexplay.tema.v1', '{tema}')")
+            try:
+                otra = contexto.new_page()
+                _abrir(otra, base)
+                otra.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                puesto = otra.evaluate("() => document.documentElement.dataset.tema")
+                if puesto != tema:
+                    problemas.append(f"con '{tema}' guardado, <html> quedó en '{puesto}'")
+                if nombre == "escritorio":
+                    problemas += _revisar_contrastes(otra, tema)
+                for ruta_app in rutas:
+                    _abrir(otra, f"{base}{ruta_app}")
+                    otra.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                    otra.wait_for_timeout(600)
+                    sobra = _desborde(otra)
+                    if sobra:
+                        problemas.append(f"tema {tema} en {nombre}: {ruta_app} desborda {sobra} px")
+                _abrir(otra, base)
+                otra.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                # La captura espera al catálogo: si no, sale la página con el centro vacío.
+                otra.get_by_test_id("catalogo-conteo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                _recorrer_pagina(otra)
+                if nombre == "movil":
+                    otra.get_by_test_id("abrir-menu").click()
+                    otra.wait_for_timeout(500)
+                    if not otra.get_by_test_id("velo-menu").count():
+                        problemas.append(f"tema {tema}: el cajón no pone velo sobre la página")
+                    if not otra.locator("[data-testid='shell'][inert]").count():
+                        problemas.append(f"tema {tema}: con el cajón abierto la página no queda inerte")
+                    if _desborde(otra):
+                        problemas.append(f"tema {tema}: el cajón abierto desborda a 390 px")
+                _esperar_quietud(otra)
+                ruta = destino / f"barra-{tema}-{nombre}.png"
+                otra.screenshot(path=ruta, full_page=nombre == "escritorio")
+                print(f"tema:     {tema} en {nombre}, {len(rutas)} rutas sin desborde ({ruta.relative_to(_RAIZ)})")
+                if nombre == "movil":
+                    # El velo cubre toda la ventana, pero el cajón le tapa los 280 px
+                    # de la izquierda: el toque va del lado del contenido.
+                    otra.get_by_test_id("velo-menu").click(position={"x": 350, "y": 400})
+                    otra.wait_for_timeout(500)
+                    if otra.get_by_test_id("velo-menu").count():
+                        problemas.append(f"tema {tema}: el velo no cierra el cajón")
+                    elif otra.evaluate("() => document.activeElement?.dataset.testid") != "abrir-menu":
+                        problemas.append(f"tema {tema}: al cerrar el cajón el foco no vuelve a la hamburguesa")
+            finally:
+                contexto.close()
+
+    _abrir(pagina, url)
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
@@ -1418,6 +1597,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_comparar(pagina, url, destino)
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)
+        + _angular_barra_y_tema(pagina, url, destino)
     )
 
 
