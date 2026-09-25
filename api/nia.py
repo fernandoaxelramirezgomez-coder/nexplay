@@ -21,14 +21,18 @@ from .schemas import MensajeChat, PerfilJugador
 
 logger = logging.getLogger(__name__)
 
+_REFERENCIAS: dict | None = None
+
 _FRASES_BANDA = {
     "bajo": "tiende a generar menos arrepentimiento temprano que el resto del catálogo",
     "medio": "no se distingue del resto del catálogo en arrepentimiento temprano",
     "alto": "tiende a generar más arrepentimiento temprano que el resto del catálogo",
 }
 
-_SISTEMA = """Eres Nia, la asistente de NexPlay. Respondes en español, en tono cercano y
-en menos de 120 palabras, sobre UN juego concreto.
+_SISTEMA = """Eres Nia, la asistente de NexPlay y experta en crítica de videojuegos:
+lees los datos del catálogo como los leería alguien que reseña juegos, y explicas qué
+dicen. Respondes en español, en tono cercano y en menos de 120 palabras, sobre UN juego
+concreto.
 
 Reglas que no puedes romper:
 - Usa siempre "arrepentimiento temprano", nunca "abandono".
@@ -40,6 +44,11 @@ Reglas que no puedes romper:
   los datos y deja la decisión a quien pregunta.
 - Responde solo con los datos del contexto. Si te preguntan algo que no está ahí, dilo
   con claridad en vez de inventarlo.
+- Cuando venga al caso, nombra las fortalezas y las debilidades del juego, siempre salidas
+  de los datos: la nota de la crítica o su ausencia, la banda, el precio frente al
+  catálogo y los motivos más mencionados. No opines por tu cuenta ni inventes otras.
+- Para decir en qué se destaca o en qué se queda corto frente a otros juegos, usa solo las
+  cifras de la línea "Catálogo" del contexto. Nunca inventes datos de otro juego.
 - Si preguntan por un juego que no es el del contexto y que el contexto no marca como
   parte del catálogo, empieza la respuesta con esta frase, con el nombre que usaron:
   "<Juego> no está en este catálogo de Steam, así que no tengo ninguna señal sobre él
@@ -136,6 +145,24 @@ def _demostracion(datos: dict, pregunta: str) -> str:
     )
 
 
+def _referencias_del_catalogo() -> dict:
+    """Cifras del catálogo para que la comparación tenga con qué compararse. Se calculan
+    una vez: el catálogo se carga al importar y no cambia mientras corre la API."""
+    global _REFERENCIAS
+    if _REFERENCIAS is None:
+        juegos = catalogo.buscar()
+        precios = sorted(j.precio_final for j in juegos if j.precio_final)
+        notas = [j.metacritic for j in juegos if j.metacritic is not None]
+        _REFERENCIAS = {
+            "juegos": len(juegos),
+            "precio_mediano": precios[len(precios) // 2] if precios else None,
+            "metacritic_promedio": round(sum(notas) / len(notas)) if notas else None,
+            "con_nota": len(notas),
+            "bandas": {b: sum(1 for j in juegos if j.banda_riesgo.value == b) for b in ("bajo", "medio", "alto")},
+        }
+    return _REFERENCIAS
+
+
 def _sin_acentos(texto: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFD", texto.lower()) if unicodedata.category(c) != "Mn")
 
@@ -172,6 +199,33 @@ def _variantes_del_nombre(nombre: str) -> list[str]:
     return [v for v in variantes if len(v) >= 4]
 
 
+def _donde(valor: float, referencia: float, igual: str = "igual a") -> str:
+    """Arriba, abajo o igual. Sin el caso de empate, un valor idéntico al promedio se
+    contaba como "por debajo"."""
+    if valor > referencia:
+        return "por encima del" if igual == "igual al" else "por encima de"
+    if valor < referencia:
+        return "por debajo del" if igual == "igual al" else "por debajo de"
+    return igual
+
+
+def _texto_comparacion(datos: dict, ref: dict) -> str:
+    """Dónde cae este juego dentro del catálogo, en palabras y sin adjetivos de valor."""
+    partes = []
+    if datos["es_gratis"]:
+        partes.append("es gratuito, y el precio mediano del catálogo es"
+                      f" {ref['precio_mediano']:.0f} MXN")
+    elif datos["precio"] is not None and ref["precio_mediano"]:
+        partes.append(f"su precio está {_donde(datos['precio'], ref['precio_mediano'])} la mediana del catálogo")
+    if datos["metacritic"] is None:
+        partes.append("no tiene nota de Metacritic, como otros del catálogo")
+    elif ref["metacritic_promedio"]:
+        donde = _donde(datos["metacritic"], ref["metacritic_promedio"], "igual al")
+        partes.append(f"su nota está {donde} promedio de los que sí tienen")
+    partes.append(f"su banda es {datos['banda']}")
+    return "; ".join(partes)
+
+
 def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> str:
     lineas = [
         f"Juego: {datos['nombre']}",
@@ -188,6 +242,14 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
         lineas.append(f"Motivos (sobre las clasificadas): {motivos}")
     else:
         lineas.append("Motivos: no hay suficientes reseñas para señalar uno")
+    ref = _referencias_del_catalogo()
+    bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
+    lineas.append(
+        f"Catálogo ({ref['juegos']} juegos, para comparar): precio mediano"
+        f" {ref['precio_mediano']:.0f} MXN; Metacritic promedio {ref['metacritic_promedio']}"
+        f" entre los {ref['con_nota']} que tienen nota; bandas {bandas}"
+    )
+    lineas.append(f"Este juego frente al catálogo: {_texto_comparacion(datos, ref)}")
     if mencionados:
         lineas.append(
             "Otros juegos del catálogo que nombra la pregunta (no tienes sus datos aquí, así que NO son"
