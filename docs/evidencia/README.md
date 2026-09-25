@@ -3,7 +3,7 @@
 El modelo pasó del conjunto `'compra'` (lado del juego + compras al año) al conjunto
 `'juego'` (solo el lado del juego), entrenado siempre con el release **data-v1**. Estos
 archivos son la salida de esa validación, corrida desde entornos limpios
-(`preparar_entorno.py --force` en un worktree sin `datos/` ni `modelo/`).
+(`herramientas/preparar_entorno.py --force` en un worktree sin `datos/` ni `modelo/`).
 
 ## Procedencia del artefacto
 
@@ -21,8 +21,8 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
 
 ## Archivos
 
-- `entrenamiento-*.log`: salida de `preparar_entorno.py --force` en cada rama.
-- `verificar-antes-*.txt`: `verificar_bandas.py` del modelo nuevo contra la referencia
+- `entrenamiento-*.log`: salida de `herramientas/preparar_entorno.py --force` en cada rama.
+- `verificar-antes-*.txt`: `modelado/verificar_bandas.py` del modelo nuevo contra la referencia
   `'compra'`, antes de regenerarla (exit 1: los juegos que cambian de banda).
 - `verificar-despues-*.txt`: la misma verificación contra la referencia regenerada (exit 0).
 - `compra-*.json` y `juego-*.json`: banda y score de cada juego con el modelo anterior y con
@@ -38,6 +38,8 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
 - `simulacion_123.py` y `simulacion_123.txt`: la simulación de entrenar con los 123 (solo
   validación cruzada, sin escribir artefactos) y su salida completa.
+- `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
+  a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 
 ## Los 40 títulos nuevos son prueba externa, no entrenamiento
 

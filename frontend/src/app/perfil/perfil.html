@@ -1,0 +1,82 @@
+<div class="perfil" data-testid="perfil">
+  <header class="hero">
+    <h1>Cuéntanos cómo juegas</h1>
+    <p class="lectura entrada">
+      Es opcional. El riesgo de cada juego es el mismo para todos; tu perfil sirve para ver qué tanto encaja contigo.
+    </p>
+    @if (resumen(); as texto) {
+      <p class="meta activo" data-testid="perfil-resumen">{{ texto }}</p>
+    }
+  </header>
+
+  <div class="tarjetas">
+    <section class="seccion">
+      <app-tarjetas-opcion
+        nombre="compras"
+        etiqueta="Juegos que compras al año"
+        [opciones]="compras"
+        [valor]="valores().compras"
+        (valorCambio)="cambiar('compras', $event)"
+      />
+    </section>
+
+    <section class="seccion">
+      <app-tarjetas-opcion
+        nombre="horas"
+        etiqueta="Horas por semana para jugar"
+        [opciones]="horas"
+        [valor]="valores().horas"
+        (valorCambio)="cambiar('horas', $event)"
+      />
+    </section>
+
+    <section class="seccion">
+      <app-tarjetas-opcion
+        nombre="friccion"
+        etiqueta="Tolerancia a la fricción"
+        ayuda="Bugs, curva de aprendizaje, dificultad."
+        [opciones]="friccion"
+        [valor]="valores().friccion"
+        (valorCambio)="cambiar('friccion', $event)"
+      />
+    </section>
+
+    <section class="seccion">
+      <app-tarjetas-opcion
+        nombre="plataforma"
+        etiqueta="Plataforma"
+        ayuda="El catálogo es solo de juegos de Steam. En otra plataforma, el lado del juego transfiere, pero no hay una fuente de entrenamiento propia: la ficha lo aclara."
+        [opciones]="plataformas"
+        [valor]="valores().plataforma"
+        (valorCambio)="cambiarPlataforma($event)"
+      />
+    </section>
+
+    <section class="seccion ancha">
+      <app-selector-generos
+        [generos]="catalogo.generos()"
+        [elegidos]="valores().generos"
+        (alternar)="alternarGenero($event)"
+      />
+    </section>
+  </div>
+
+  @if (error()) {
+    <p class="error" role="alert" data-testid="perfil-error">{{ error() }}</p>
+  }
+
+  <div class="acciones">
+    <button type="button" class="boton-cta" data-testid="crear-perfil" [disabled]="guardando()" (click)="crear()">
+      {{ guardando() ? 'Creando…' : perfil.hayPerfil() ? 'Actualizar perfil' : 'Crear perfil' }}
+    </button>
+    <a class="boton-fantasma" routerLink="/">Saltar y explorar juegos</a>
+    @if (perfil.hayPerfil()) {
+      <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
+    }
+  </div>
+
+  <!-- Solo con perfil declarado: sin géneros elegidos no hay con qué comparar. -->
+  @if (perfil.hayPerfil()) {
+    <app-sugerencias-perfil />
+  }
+</div>

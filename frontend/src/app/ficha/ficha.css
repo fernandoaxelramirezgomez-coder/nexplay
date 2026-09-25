@@ -1,0 +1,144 @@
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-16);
+}
+
+.volver {
+  align-self: flex-start;
+}
+
+.titulos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-12);
+}
+
+.titulos h1 {
+  font-size: var(--texto-heading);
+}
+
+.acciones {
+  display: flex;
+  gap: var(--espacio-8);
+}
+
+.aviso:empty {
+  display: none;
+}
+
+/* Lo primero que se lee de un juego, antes del riesgo, como en cualquier tienda. */
+.descripcion {
+  margin: 0;
+}
+
+/* Veredicto: el bloque protagonista. Franja del color de la banda sobre el lienzo,
+   donde los tres colores sí pasan contraste como texto. */
+.veredicto {
+  border-left: 6px solid;
+  padding: var(--espacio-12) 0 var(--espacio-12) var(--espacio-24);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-8);
+}
+
+.veredicto[data-banda='bajo'] {
+  border-color: var(--banda-bajo);
+}
+
+.veredicto[data-banda='medio'] {
+  border-color: var(--banda-medio);
+}
+
+.veredicto[data-banda='alto'] {
+  border-color: var(--banda-alto);
+}
+
+.rotulo {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--texto-caption);
+  color: var(--texto-meta);
+}
+
+.titular {
+  font-size: clamp(var(--texto-subheading), 3.2vw, var(--texto-heading));
+  line-height: 1.15;
+}
+
+.veredicto[data-banda='bajo'] .palabra {
+  color: var(--banda-bajo);
+}
+
+.veredicto[data-banda='medio'] .palabra {
+  color: var(--banda-medio);
+}
+
+.veredicto[data-banda='alto'] .palabra {
+  color: var(--banda-alto);
+}
+
+.frase,
+.veredicto .meta {
+  margin: 0;
+  max-width: var(--medida-lectura);
+}
+
+.nota {
+  line-height: var(--interlineado-largo);
+}
+
+.veredicto-error {
+  margin: 0;
+}
+
+/* Dos columnas en escritorio; la derecha acompaña el scroll. */
+.columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+  gap: var(--espacio-64);
+  align-items: start;
+  margin-top: var(--espacio-24);
+}
+
+.principal,
+.lateral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-40);
+}
+
+
+.lateral {
+  position: sticky;
+  top: var(--espacio-16);
+}
+
+.rotulo-seccion {
+  margin-bottom: var(--espacio-16);
+}
+
+.como-calculamos {
+  margin-top: var(--espacio-16);
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
+
+@media (max-width: 900px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+
+  .lateral {
+    position: static;
+  }
+}
+
+/* El chat de Nia ya trae su propio borde con brillo: el filete de la pila encima sobraría. */
+.lateral > app-nia {
+  border-top: 0;
+}

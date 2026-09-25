@@ -1,0 +1,411 @@
+.catalogo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
+  gap: clamp(var(--espacio-40), 6vw, 72px);
+  align-items: center;
+  padding: var(--espacio-48) 0 var(--espacio-40);
+}
+
+.hero-mensaje,
+.demostracion {
+  min-width: 0;
+}
+
+.sobrelinea {
+  margin: 0 0 var(--espacio-12);
+  color: var(--neon);
+  font-size: var(--texto-caption);
+  font-weight: var(--peso-titular);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.titular {
+  max-width: 17ch;
+  font-size: clamp(var(--texto-heading-sm), 4.7vw, var(--texto-display));
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.entrada {
+  margin: var(--espacio-24) 0;
+  max-width: 59ch;
+  color: var(--texto-meta);
+  font-size: var(--texto-body);
+  font-weight: var(--peso-tenue);
+  line-height: var(--interlineado-largo);
+}
+
+.aclaracion {
+  margin: var(--espacio-12) 0 0;
+  max-width: 66ch;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: var(--interlineado-largo);
+}
+
+/* La etiqueta y los controles del carrusel comparten fila: los bullets de la tarjeta
+   no se mueven de su sitio. */
+.demostracion-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-12);
+  margin: 0 0 var(--espacio-8);
+}
+
+.demostracion-fila .demostracion-etiqueta {
+  margin: 0;
+}
+
+.carrusel-controles {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-12);
+}
+
+.carrusel-posicion {
+  white-space: nowrap;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
+.carrusel-flecha {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio-pildora);
+  background: none;
+  color: var(--texto);
+  cursor: pointer;
+  transition:
+    border-color var(--duracion-rapida) var(--curva),
+    color var(--duracion-rapida) var(--curva);
+}
+
+.carrusel-flecha:hover {
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
+.carrusel-flecha svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Cada ejemplo entra con un fundido corto; con movimiento reducido la regla global lo
+   deja en instantáneo. */
+.demostracion .vistazo {
+  animation: entrar-ejemplo 0.45s var(--curva);
+}
+
+@keyframes entrar-ejemplo {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.demostracion-etiqueta {
+  margin: 0 0 var(--espacio-8);
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vistazo {
+  display: grid;
+  grid-template-columns: 142px minmax(0, 1fr);
+  min-height: 248px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  background: var(--superficie-tarjeta);
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio-tarjeta);
+  transition:
+    border-color var(--duracion) var(--curva),
+    background var(--duracion) var(--curva),
+    transform var(--duracion) var(--curva);
+}
+
+.vistazo:hover {
+  border-color: var(--neon);
+  background: var(--superficie-tarjeta-hover);
+  transform: translateY(-2px);
+}
+
+.vistazo:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 3px;
+}
+
+.vistazo-portada {
+  min-height: 100%;
+  overflow: hidden;
+  background: var(--superficie-lienzo);
+}
+
+.vistazo-portada app-portada {
+  display: block;
+  height: 100%;
+}
+
+.vistazo-portada ::ng-deep .marco {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.vistazo-portada ::ng-deep img {
+  object-fit: cover;
+}
+
+.vistazo-cuerpo {
+  display: flex;
+  min-width: 0;
+  padding: var(--espacio-24);
+  flex-direction: column;
+}
+
+.vistazo-cabecera {
+  display: flex;
+  gap: var(--espacio-12);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.vistazo-sobrelinea {
+  margin: 0 0 var(--espacio-4);
+  color: var(--neon);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vistazo h2 {
+  margin: 0;
+  color: var(--texto);
+  font-size: 21px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.vistazo-lista {
+  display: grid;
+  gap: 10px;
+  margin: var(--espacio-24) 0 var(--espacio-24);
+  padding: 0;
+  list-style: none;
+}
+
+.vistazo-lista li {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--texto-meta);
+  font-size: var(--texto-body-sm);
+  line-height: 1.3;
+}
+
+.vistazo-lista svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: var(--neon);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.vistazo-accion {
+  margin-top: auto;
+  color: var(--texto);
+  font-size: var(--texto-body-sm);
+  font-weight: var(--peso-clave);
+}
+
+.vistazo-accion span {
+  margin-left: var(--espacio-4);
+  color: var(--neon);
+}
+
+.exploracion {
+  padding-top: var(--espacio-24);
+  border-top: var(--filete);
+}
+
+.exploracion-cabecera {
+  display: flex;
+  gap: var(--espacio-24);
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--espacio-16);
+}
+
+.exploracion h2 {
+  margin: 0;
+  font-size: clamp(var(--texto-subheading), 2.4vw, var(--texto-heading-sm));
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.exploracion .meta {
+  margin: 0 0 var(--espacio-4);
+  white-space: nowrap;
+}
+
+.exploracion .meta strong {
+  color: var(--texto);
+}
+
+.aviso:empty {
+  display: none;
+}
+
+.aviso {
+  margin: 0;
+}
+
+.estante-cargando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-12);
+}
+
+.titulo-cargando {
+  max-width: 220px;
+}
+
+.fila-cargando {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 296px;
+  gap: var(--espacio-16);
+  overflow: hidden;
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-12);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: var(--espacio-40);
+  }
+
+  .titular {
+    max-width: 19ch;
+  }
+
+  .demostracion {
+    max-width: 620px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    gap: var(--espacio-24);
+    padding: var(--espacio-40) 0 var(--espacio-24);
+  }
+
+  .titular {
+    font-size: clamp(38px, 11vw, 50px);
+  }
+
+  /* En móvil la acción principal va primero: el buscador sube justo debajo del titular y
+     el párrafo de entrada baja después. El carrusel ya queda debajo, en la rejilla de una
+     columna. */
+  .hero-mensaje {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-mensaje app-buscador {
+    order: 1;
+    margin-top: var(--espacio-24);
+  }
+
+  .aclaracion {
+    order: 2;
+  }
+
+  .entrada {
+    order: 3;
+    margin: var(--espacio-24) 0 0;
+  }
+
+  .vistazo {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .vistazo-portada {
+    aspect-ratio: 460 / 215;
+  }
+
+  .vistazo-cuerpo {
+    padding: var(--espacio-16);
+  }
+
+  .vistazo-cabecera {
+    display: block;
+  }
+
+  .vistazo-cabecera app-pildora-banda {
+    display: block;
+    margin-top: var(--espacio-8);
+  }
+
+  .vistazo h2 {
+    font-size: 18px;
+  }
+
+  .vistazo-lista {
+    gap: 7px;
+    margin: var(--espacio-12) 0;
+  }
+
+  .vistazo-lista li {
+    font-size: 11px;
+  }
+
+  .vistazo-lista li:nth-child(3) {
+    display: none;
+  }
+
+  .vistazo-accion {
+    font-size: var(--texto-caption);
+  }
+
+  .exploracion-cabecera {
+    display: block;
+  }
+
+  .exploracion .meta {
+    margin-top: var(--espacio-8);
+  }
+}

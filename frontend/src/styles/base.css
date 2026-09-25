@@ -1,0 +1,330 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--superficie-lienzo);
+  color: var(--texto);
+  font-family: var(--fuente-texto);
+  font-weight: var(--peso-regular);
+  font-size: var(--texto-body-sm);
+  line-height: var(--interlineado-corto);
+  letter-spacing: var(--tracking);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+  font-weight: var(--peso-regular);
+}
+
+/* Los titulares van en caja normal: el peso y el tamaño alcanzan para la jerarquía y
+   una pregunta en mayúsculas grita más de lo que dice. Las mayúsculas se quedan en
+   .rotulo-seccion, que es donde hacen falta ahora que no hay cajas. */
+h1,
+h2 {
+  font-weight: var(--peso-titular);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--interlineado-display);
+}
+
+h1 {
+  font-size: var(--texto-heading);
+}
+
+h2 {
+  font-size: var(--texto-heading-sm);
+}
+
+h3 {
+  font-size: var(--texto-subheading);
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+strong,
+b {
+  font-weight: var(--peso-clave);
+}
+
+/* Rótulo de sección: ahora que las secciones no tienen caja, este rótulo es lo que
+   marca dónde empieza cada una. Mayúsculas chicas con tracking positivo, como el
+   "RIESGO GENERAL" del veredicto. */
+.rotulo-seccion {
+  margin: 0;
+  color: var(--texto-meta);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  font-weight: var(--peso-regular);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Estructura en mono: fechas, géneros, conteos, porcentajes. */
+.mono {
+  font-family: var(--fuente-mono);
+  letter-spacing: 0;
+}
+
+.meta {
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+}
+
+/* Texto largo: segunda opinión, contexto de motivos, metodología. */
+.lectura {
+  font-size: var(--texto-body);
+  line-height: var(--interlineado-largo);
+  max-width: var(--medida-lectura);
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Botones: tres variantes y nada más. Todas comparten forma de píldora, la misma
+   altura y el mismo movimiento; lo único que cambia es cuánto peso tienen.
+   Sin gradientes y sin sombra de elevación: el :active enciende el resplandor. */
+.boton-cta,
+.boton-fantasma,
+.boton-texto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-8);
+  border-radius: var(--radio-pildora);
+  font-size: var(--texto-body-sm);
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--duracion-rapida) var(--curva),
+    border-color var(--duracion-rapida) var(--curva),
+    color var(--duracion-rapida) var(--curva),
+    transform var(--duracion-rapida) var(--curva);
+}
+
+.boton-cta:active:not([disabled]),
+.boton-fantasma:active:not([disabled]) {
+  transform: translateY(1px);
+  box-shadow: var(--resplandor);
+}
+
+/* Primario: el único relleno cromático de la página. */
+.boton-cta {
+  padding: 12px var(--espacio-24);
+  border: 1px solid transparent;
+  background: var(--cta-fondo);
+  color: var(--cta-texto);
+}
+
+.boton-cta:hover:not([disabled]) {
+  background: var(--cta-fondo-hover);
+}
+
+/* Secundario: el mismo neón, en borde. */
+.boton-fantasma {
+  padding: 12px var(--espacio-24);
+  border: 1px solid var(--borde-control);
+  background: transparent;
+  color: var(--texto);
+}
+
+.boton-fantasma:hover:not([disabled]) {
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
+/* Terciario: solo texto, para acciones que no compiten (volver, editar, quitar). */
+.boton-texto {
+  padding: var(--espacio-4) 0;
+  border: 0;
+  background: none;
+  color: var(--texto-meta);
+  text-underline-offset: 4px;
+}
+
+.boton-texto:hover:not([disabled]) {
+  color: var(--neon);
+  text-decoration: underline;
+}
+
+.boton-cta[disabled],
+.boton-fantasma[disabled],
+.boton-texto[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Chips sin caja: son texto. El área clicable se conserva con padding y lo elegido se
+   marca con una barra de neón debajo de la palabra, no con un recuadro. La barra va en
+   ::after para que no mueva el texto al aparecer. */
+.chip {
+  position: relative;
+  padding: var(--espacio-8) var(--espacio-4);
+  border: 0;
+  background: none;
+  color: var(--texto-meta);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: color var(--duracion-rapida) var(--curva);
+}
+
+.chip::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--espacio-4);
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background var(--duracion-rapida) var(--curva);
+}
+
+.chip:hover {
+  color: var(--texto);
+}
+
+/* Área de toque de al menos 44×44 sin cambiar lo que se ve: un ::before invisible,
+   centrado sobre el elemento, recibe el toque. Para íconos, chips y enlaces de texto que
+   visualmente son más chicos. (::after ya lo usan .chip y otros para su subrayado.) */
+.toque-amplio,
+.chip {
+  position: relative;
+}
+
+.toque-amplio::before,
+.chip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.chip:hover::after {
+  background: var(--borde-control);
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--neon);
+}
+
+.chip[aria-pressed='true']::after {
+  background: var(--neon);
+}
+
+.boton-fantasma[aria-pressed='true'] {
+  background: var(--acento-sistema);
+  border-color: var(--neon);
+  color: var(--texto);
+}
+
+/* El lienzo ES la superficie: lo que antes encerraba una caja ahora lo separa un filete
+   y el aire de arriba. Una superficie con fondo solo existe cuando encierra una portada o
+   flota sobre el contenido: para eso está .superficie.
+
+   .seccion solo agrupa; la línea la pone .pila-separada en el contenedor, porque varias
+   secciones vienen dentro de un componente y desde afuera no se puede entrar a tocarlas. */
+.pila-separada > * + * {
+  padding-top: var(--espacio-24);
+  border-top: var(--filete);
+}
+
+.superficie {
+  background: var(--superficie-tarjeta);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-tarjeta);
+  padding: var(--espacio-24);
+}
+
+/* Globo de Nia: lo comparten la bienvenida del catálogo y la reacción de la ficha, para
+   que hable igual en las dos. El filo lleva un poco de neón y el nombre va en cian: es
+   lo que la distingue de un bloque de texto cualquiera. La cola apunta a la izquierda;
+   cada componente la mueve arriba cuando se apila en pantallas angostas. */
+.globo-nia {
+  position: relative;
+  margin: 0;
+  padding: var(--espacio-16) var(--espacio-24);
+  border: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie-tarjeta);
+  font-size: var(--texto-body-sm);
+  line-height: var(--interlineado-largo);
+}
+
+.globo-nia::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -7px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%) rotate(45deg);
+  /* Explícito y no inherit: en la banda alta el filo izquierdo del globo es grueso y de
+     color, y la cola heredaría ese grosor solo de un lado. */
+  border-inline-start: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  border-block-end: 1px solid color-mix(in srgb, var(--neon) 30%, var(--linea));
+  background: var(--superficie-tarjeta);
+}
+
+.globo-nia .quien {
+  display: block;
+  margin-bottom: var(--espacio-4);
+  color: var(--neon);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-caption);
+  letter-spacing: 0.04em;
+}

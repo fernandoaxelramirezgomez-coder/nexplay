@@ -35,16 +35,29 @@ biblioteca vacía. No imputar como cero.
 
 ## Arquitectura
 
+La raíz solo tiene carpetas: cada una es un paso del flujo o una salida generada.
+
 ```
-api/        FastAPI. Contrato estable, lógica delgada.
-  main.py       endpoints
-  schemas.py    modelos Pydantic de entrada y salida
-  scoring.py    carga el modelo y predice
-  catalogo.py   búsqueda de juegos
-modelo/     artefactos entrenados (.pkl), no versionados
-datos/      SQLite: nexplay.db, tablas `juegos` y `resenas` (más `resumen_resenas`
-            y `progreso`), no versionado
-ui/         Gradio
+api/           FastAPI. Contrato estable, lógica delgada.
+  main.py         endpoints
+  schemas.py      modelos Pydantic de entrada y salida
+  scoring.py      carga el modelo y predice
+  catalogo.py     búsqueda de juegos
+  nia.py          chat con el modelo de lenguaje, con respaldo por reglas
+frontend/      Angular: el único frontend
+notebook/      la narrativa ejecutable (clona un tag fijo, no depende de estas rutas)
+
+ingesta/       ingesta_steam.py y appids.txt: bajar datos de Steam
+modelado/      entrenar_baseline.py, entrenar_modelo.py, verificar_bandas.py
+publicacion/   extracto_datos.py y extracto_reproducible.py: lo que va a un release
+herramientas/  preparar_entorno.py (la entrada del proyecto), exportar_valoraciones.py,
+               moderar_comentarios.py, capturar_ui.py, recortar_nia.py
+
+modelo/        artefactos entrenados (.pkl), no versionados
+datos/         SQLite: nexplay.db, tablas `juegos` y `resenas` (más `resumen_resenas`
+               y `progreso`), no versionado
+extracto/      lo que se sube a un release, no versionado
+registros/     lo que deja la ingesta al correr, no versionado
 ```
 
 **Regla de oro del back:** `scoring.py` expone una función con firma estable.

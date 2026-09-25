@@ -1,0 +1,94 @@
+/* Tokens de NexPlay. Punto de partida: docs/diseno/referencia-estilo.md y el entorno
+   índigo profundo de la referencia de Discord, con la paleta neón del proyecto en vez
+   de un solo color de marca. Las decisiones de color están medidas contra WCAG
+   (4.5:1 texto, 3:1 bordes y controles); los números están en el README del frontend. */
+:root {
+  /* Superficies: un solo ambiente índigo de punta a punta. La elevación se marca por
+     paso de color, nunca con sombra. */
+  --superficie-lienzo: #0e0f2d;
+  --superficie-tarjeta: #181a3a;
+  --superficie-tarjeta-hover: #22254c;
+  --linea: #262a57;
+
+  /* Texto: blanco con un punto de azul para no chocar con el fondo (16.9:1 en página,
+     15.3:1 en tarjeta). El meta es el Fog de la referencia, que se queda en 9:1. */
+  --texto: #f2f3ff;
+  --texto-meta: #babcd9;
+
+  /* Bordes de control: 4.1:1 en página y 3.2:1 en el hover de tarjeta. */
+  --borde-control: #6d72a8;
+
+  /* Neón: el cian es el color de la acción y del foco. Es el único acento cromático
+     de la interfaz fuera de las bandas, y nunca se usa como fondo de un área grande. */
+  --neon: #22e0ff;
+  --neon-hover: #7aeaff;
+  --neon-tenue: rgba(34, 224, 255, 0.12);
+  /* Resplandor: se usa solo en foco y en estado activo, no para simular elevación. */
+  --resplandor: 0 0 0 1px rgba(34, 224, 255, 0.45), 0 0 16px rgba(34, 224, 255, 0.25);
+
+  /* Relleno del estado activo. Contra la tarjeta casi no contrasta (1.3:1), así que
+     nunca va solo: siempre acompañado del borde neón, que sí da 10.6:1. */
+  --acento-sistema: #242a63;
+
+  /* Bandas: los otros tres colores del sistema. Siempre de relleno con texto oscuro
+     (12.9 / 11.8 / 6.0:1) y, como texto sobre tarjeta, 11.6 / 10.7 / 5.4:1. */
+  --banda-bajo: #3df2a7;
+  --banda-medio: #ffc53d;
+  --banda-alto: #ff4d97;
+  --texto-sobre-banda: #0e0f2d;
+
+  --cta-fondo: #22e0ff;
+  --cta-fondo-hover: #7aeaff;
+  --cta-texto: #0e0f2d;
+  --foco: #22e0ff;
+
+  /* Tipografía */
+  --fuente-texto: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --peso-tenue: 300; /* subtítulos y descriptores: la voz baja */
+  --peso-regular: 400;
+  --peso-clave: 700; /* solo la palabra clave de la frase de riesgo */
+  --peso-titular: 600; /* titulares; el referente no pasa de aquí */
+  --peso-display: 800; /* reservado para el titular del inicio */
+  --tracking: -0.014em;
+  --tracking-display: -0.02em;
+
+  --texto-caption: 14px;
+  --texto-body-sm: 16px;
+  --texto-body: 20px;
+  --texto-subheading: 24px;
+  --texto-heading-sm: 28px;
+  --texto-heading: 36px;
+  --texto-display: 56px; /* solo el titular del hero */
+  --interlineado-corto: 1.2;
+  /* La referencia usa 0.86, pero en inglés y sin acentos: en español el acento de una
+     MAYÚSCULA de la segunda línea se come con la primera. 1.05 es lo mínimo que deja
+     respirar a Á, É, Í, Ó, Ú y Ñ en un titular de dos líneas. */
+  --interlineado-display: 1.05;
+  --interlineado-largo: 1.5;
+  --medida-lectura: 65ch;
+
+  /* Espacio y ritmo (unidad de 4px) */
+  --espacio-4: 4px;
+  --espacio-8: 8px;
+  --espacio-12: 12px;
+  --espacio-16: 16px;
+  --espacio-24: 24px;
+  --espacio-40: 40px;
+  --espacio-48: 48px;
+  --espacio-64: 64px;
+  --ancho-pagina: 1200px;
+
+  /* El filete que separa secciones ahora que no hay cajas. */
+  --filete: 1px solid var(--linea);
+
+  /* Radios: solo tres valores en todo el sistema */
+  --radio-tarjeta: 16px;
+  --radio-boton: 24px;
+  --radio-pildora: 64px;
+
+  /* Movimiento */
+  --duracion-rapida: 150ms;
+  --duracion: 200ms;
+  --curva: cubic-bezier(0.2, 0, 0, 1);
+}
