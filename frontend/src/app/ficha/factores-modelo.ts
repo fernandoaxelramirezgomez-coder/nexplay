@@ -56,10 +56,10 @@ const NOTA_METACRITIC = 'nota de Metacritic';
       margin-top: 2px;
     }
     .factor[data-direccion='aumenta'] .flecha {
-      color: var(--banda-alto);
+      color: var(--banda-alto-texto);
     }
     .factor[data-direccion='reduce'] .flecha {
-      color: var(--banda-bajo);
+      color: var(--banda-bajo-texto);
     }
     .etiqueta {
       font-size: var(--texto-body-sm);

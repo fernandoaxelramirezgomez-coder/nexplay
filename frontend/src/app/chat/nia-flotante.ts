@@ -129,10 +129,14 @@ const MAXIMO_SUGERENCIAS = 6;
     @keyframes respirar-anillo {
       0%,
       100% {
-        box-shadow: 0 0 0 0 rgba(34, 224, 255, 0), 0 0 6px rgba(34, 224, 255, 0.25);
+        box-shadow:
+          0 0 0 0 rgb(var(--neon-canal) / 0),
+          0 0 6px rgb(var(--neon-canal) / calc(0.25 * var(--halo-alfa)));
       }
       50% {
-        box-shadow: 0 0 0 3px rgba(34, 224, 255, 0.12), 0 0 14px rgba(34, 224, 255, 0.45);
+        box-shadow:
+          0 0 0 3px rgb(var(--neon-canal) / calc(0.12 * var(--halo-alfa))),
+          0 0 calc(14px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.45 * var(--halo-alfa)));
       }
     }
     .burbuja:hover {
@@ -165,7 +169,9 @@ const MAXIMO_SUGERENCIAS = 6;
       object-position: center bottom;
       border-radius: 50%;
       background: var(--superficie-lienzo);
-      box-shadow: 0 0 0 1px var(--neon), 0 0 8px rgba(34, 224, 255, 0.35);
+      box-shadow:
+        0 0 0 1px var(--neon),
+        0 0 calc(8px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.35 * var(--halo-alfa)));
     }
     .nombre {
       margin: 0;

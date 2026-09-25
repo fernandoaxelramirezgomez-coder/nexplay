@@ -3,6 +3,8 @@
    de un solo color de marca. Las decisiones de color están medidas contra WCAG
    (4.5:1 texto, 3:1 bordes y controles); los números están en el README del frontend. */
 :root {
+  color-scheme: dark;
+
   /* Superficies: un solo ambiente índigo de punta a punta. La elevación se marca por
      paso de color, nunca con sombra. */
   --superficie-lienzo: #0e0f2d;
@@ -91,4 +93,87 @@
   --duracion-rapida: 150ms;
   --duracion: 200ms;
   --curva: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Barra lateral. El ancho y el alto de la barra de móvil salen de las variables del
+     estilo "Data-Dense Dashboard" de la guía de diseño (--sidebar-width: 240px,
+     --header-height: 56px). Colapsada deja 64 px: un ícono con su área de toque de 44. */
+  --superficie-barra: #181a3a;
+  --ancho-barra: 240px;
+  --ancho-barra-corta: 64px;
+  --alto-barra-movil: 56px;
+
+  /* Canales del neón: rgba() pide los tres por separado, y en el tema claro el acento es
+     otro color. Con esto ningún componente escribe el cian a mano. --halo-radio y
+     --halo-alfa escalan todos los halos a la vez: en claro el halo se encoge a la mitad,
+     porque sobre papel un halo cian baja el brillo en vez de subirlo. */
+  --neon-canal: 34 224 255;
+  --halo-radio: 1;
+  --halo-alfa: 1;
+
+  /* Elevación de la tarjeta al pasar el ratón, y el velo del cajón de la barra. */
+  --sombra-tarjeta: 0 2px 10px rgba(0, 0, 0, 0.55);
+  --velo: rgba(6, 7, 24, 0.62);
+
+  /* Tinta de banda: la banda cuando es texto, filo o halo, no relleno. Aquí vale lo mismo
+     que el relleno; en claro se oscurece, porque un verde neón sobre papel da 1.5:1. */
+  --banda-bajo-texto: var(--banda-bajo);
+  --banda-medio-texto: var(--banda-medio);
+  --banda-alto-texto: var(--banda-alto);
+
+  /* Filo del relleno cromático: contra el lienzo oscuro el relleno ya da 11:1, así que
+     aquí el filo es del color del propio relleno y no se ve. */
+  --cta-filo: var(--cta-fondo);
+}
+
+/* Tema claro. Ninguno de estos valores es el oscuro invertido: cada uno se midió contra
+   los tres fondos claros (lienzo #f6f7fb, tarjeta #ffffff, hover #eceff8) y se eligió el
+   primer tono que pasa. Los contrastes, en ese orden:
+
+     --texto          16.08 / 17.22 / 14.98   (pide 4.5)
+     --texto-meta      7.10 /  7.60 /  6.61   (pide 4.5)
+     --borde-control   3.42 /  3.67 /  3.19   (pide 3.0; #8b8fb4 daba 2.93 y se descartó)
+     --neon            5.35 /  5.73 /  4.98   (pide 4.5; #0e7f9e daba 4.31 y se descartó)
+     --banda-*-texto   5.00 /  5.35 /  4.66   bajo
+                       5.54 /  5.93 /  5.16   medio y alto
+
+   Los rellenos cromáticos no cambian de color: el cian y las tres bandas son el mismo hex
+   en los dos temas, con texto tinta encima (11.71, 12.85, 11.83 y 6.01:1). Lo que cambia
+   es que en claro llevan filo, porque el borde del relleno contra el papel da 1.36, 1.47
+   y 2.90:1 y los controles piden 3:1. */
+:root[data-tema='claro'] {
+  color-scheme: light;
+
+  --superficie-lienzo: #f6f7fb;
+  --superficie-tarjeta: #ffffff;
+  --superficie-tarjeta-hover: #eceff8;
+  --superficie-barra: #ffffff;
+  --linea: #d6d9ea;
+
+  --texto: #14173d;
+  --texto-meta: #4d5178;
+  --borde-control: #7f83aa;
+
+  /* El acento deja de ser un cian que emite luz y pasa a ser uno que se lee sobre papel.
+     El hover va más oscuro, no más claro: aclararlo lo borraría. */
+  --neon: #0b6f8c;
+  --neon-hover: #07566e;
+  --neon-tenue: rgb(11 111 140 / 0.1);
+  --neon-canal: 11 111 140;
+  --halo-radio: 0.5;
+  --halo-alfa: 0.62;
+  /* El resplandor cambia de luz emitida a contorno con profundidad: en claro la elevación
+     viene de una sombra, no de un halo. */
+  --resplandor: 0 0 0 1px #0b6f8c, 0 2px 10px rgba(11, 111, 140, 0.22);
+  --sombra-tarjeta: 0 2px 10px rgba(20, 23, 61, 0.12);
+  --velo: rgba(20, 23, 61, 0.35);
+
+  /* Relleno del estado activo: el texto encima da 14.7:1 y el acento 4.9:1. */
+  --acento-sistema: #dff0f8;
+
+  --banda-bajo-texto: #0d7a52;
+  --banda-medio-texto: #8a5a00;
+  --banda-alto-texto: #c0136a;
+
+  --cta-filo: #0b6f8c;
+  --foco: #0b6f8c;
 }

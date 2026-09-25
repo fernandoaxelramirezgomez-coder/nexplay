@@ -4,10 +4,6 @@
   box-sizing: border-box;
 }
 
-html {
-  color-scheme: dark;
-}
-
 body {
   margin: 0;
   background: var(--superficie-lienzo);
@@ -161,7 +157,7 @@ b {
 /* Primario: el único relleno cromático de la página. */
 .boton-cta {
   padding: 12px var(--espacio-24);
-  border: 1px solid transparent;
+  border: 1px solid var(--cta-filo);
   background: var(--cta-fondo);
   color: var(--cta-texto);
 }

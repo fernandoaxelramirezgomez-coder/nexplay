@@ -148,13 +148,13 @@ const MOTIVOS_VISIBLES = 3;
       gap: 2px;
     }
     .veredicto[data-banda='bajo'] {
-      border-color: var(--banda-bajo);
+      border-color: var(--banda-bajo-texto);
     }
     .veredicto[data-banda='medio'] {
-      border-color: var(--banda-medio);
+      border-color: var(--banda-medio-texto);
     }
     .veredicto[data-banda='alto'] {
-      border-color: var(--banda-alto);
+      border-color: var(--banda-alto-texto);
     }
     .rotulo {
       font-size: var(--texto-caption);
@@ -166,13 +166,13 @@ const MOTIVOS_VISIBLES = 3;
       font-size: var(--texto-subheading);
     }
     .veredicto[data-banda='bajo'] .palabra {
-      color: var(--banda-bajo);
+      color: var(--banda-bajo-texto);
     }
     .veredicto[data-banda='medio'] .palabra {
-      color: var(--banda-medio);
+      color: var(--banda-medio-texto);
     }
     .veredicto[data-banda='alto'] .palabra {
-      color: var(--banda-alto);
+      color: var(--banda-alto-texto);
     }
     .fila-veredicto,
     .bloque,

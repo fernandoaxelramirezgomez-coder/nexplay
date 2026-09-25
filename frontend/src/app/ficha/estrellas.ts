@@ -86,7 +86,7 @@ const ESTRELLAS = [1, 2, 3, 4, 5] as const;
     .previa {
       color: var(--neon-hover);
       transform: scale(1.12);
-      filter: drop-shadow(0 0 6px rgba(34, 224, 255, 0.55));
+      filter: drop-shadow(0 0 calc(6px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.55 * var(--halo-alfa))));
     }
     .previa svg {
       fill: var(--neon-hover);

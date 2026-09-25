@@ -59,19 +59,23 @@ import { TarjetaJuego } from './tarjeta-juego';
       font-size: var(--texto-body);
     }
     .banda {
-      padding: 2px var(--espacio-12);
+      padding: 1px 11px;
+      border: 1px solid var(--filo-banda);
       border-radius: var(--radio-pildora);
       color: var(--texto-sobre-banda);
       font-size: var(--texto-body-sm);
     }
     .banda[data-banda='bajo'] {
       background: var(--banda-bajo);
+      --filo-banda: var(--banda-bajo-texto);
     }
     .banda[data-banda='medio'] {
       background: var(--banda-medio);
+      --filo-banda: var(--banda-medio-texto);
     }
     .banda[data-banda='alto'] {
       background: var(--banda-alto);
+      --filo-banda: var(--banda-alto-texto);
     }
     .conteo {
       color: var(--texto-meta);

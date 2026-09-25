@@ -117,7 +117,7 @@ const PREGUNTA_A_NIA =
       padding-bottom: 3px;
       background-image:
         linear-gradient(var(--neon), var(--neon)),
-        linear-gradient(to top, rgba(34, 224, 255, 0.3), rgba(34, 224, 255, 0));
+        linear-gradient(to top, rgb(var(--neon-canal) / 0.3), rgb(var(--neon-canal) / 0));
       background-size:
         100% 2px,
         100% 9px;
@@ -139,7 +139,7 @@ const PREGUNTA_A_NIA =
     .mini-nia {
       width: 84px;
       height: auto;
-      filter: drop-shadow(0 0 6px rgba(34, 224, 255, 0.3));
+      filter: drop-shadow(0 0 calc(6px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.3 * var(--halo-alfa))));
     }
     .acciones {
       display: flex;

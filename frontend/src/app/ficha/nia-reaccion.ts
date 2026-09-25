@@ -51,13 +51,13 @@ import { reaccionPara } from '../dominio/reaccion-nia';
       height: auto;
       flex: 0 0 auto;
       /* El halo toma el color de la banda: la misma señal que la franja del veredicto. */
-      --halo: var(--banda-medio);
+      --halo: var(--banda-medio-texto);
     }
     [data-banda='bajo'] img {
-      --halo: var(--banda-bajo);
+      --halo: var(--banda-bajo-texto);
     }
     [data-banda='alto'] img {
-      --halo: var(--banda-alto);
+      --halo: var(--banda-alto-texto);
     }
 
     /* Tranquila: flota y respira. Es la que más se mueve, y aun así poco. */
@@ -115,7 +115,7 @@ import { reaccionPara } from '../dominio/reaccion-nia';
     /* El globo es .globo-nia (base.css), el mismo de la bienvenida del catálogo. Lo
        único propio es el acento de la banda alta: un filo del color de la banda, fijo. */
     [data-banda='alto'] .globo {
-      border-inline-start: 3px solid var(--banda-alto);
+      border-inline-start: 3px solid var(--banda-alto-texto);
     }
     [data-banda='alto'] .globo::before {
       inset-inline-start: -9px;

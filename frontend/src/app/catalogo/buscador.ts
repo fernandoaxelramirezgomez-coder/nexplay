@@ -160,17 +160,21 @@ const MAXIMO_SUGERENCIAS = 6;
     .punto {
       width: 10px;
       height: 10px;
+      border: 1px solid var(--filo-banda);
       border-radius: 50%;
       flex: none;
     }
     .punto[data-banda='bajo'] {
       background: var(--banda-bajo);
+      --filo-banda: var(--banda-bajo-texto);
     }
     .punto[data-banda='medio'] {
       background: var(--banda-medio);
+      --filo-banda: var(--banda-medio-texto);
     }
     .punto[data-banda='alto'] {
       background: var(--banda-alto);
+      --filo-banda: var(--banda-alto-texto);
     }
   `,
 })

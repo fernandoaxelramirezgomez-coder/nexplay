@@ -118,6 +118,7 @@ type EstadoVideo = 'cargando' | 'reproduciendo' | 'pausado' | 'fallido';
       padding: 0;
       border: 1px solid color-mix(in srgb, var(--neon) 45%, transparent);
       border-radius: var(--radio-pildora);
+      /* Flota sobre el video, no sobre la página: sigue siendo oscuro en los dos temas. */
       background: rgba(11, 12, 36, 0.72);
       color: var(--texto);
       cursor: pointer;

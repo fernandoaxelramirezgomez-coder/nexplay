@@ -114,8 +114,8 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       border-radius: var(--radio-tarjeta);
       background: var(--superficie-tarjeta);
       box-shadow:
-        0 0 0 1px rgba(34, 224, 255, 0.1),
-        0 0 24px rgba(34, 224, 255, 0.16);
+        0 0 0 1px rgb(var(--neon-canal) / 0.1),
+        0 0 calc(24px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.16 * var(--halo-alfa)));
     }
     .cabecera {
       display: flex;
@@ -133,7 +133,7 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       background: var(--superficie-lienzo);
       box-shadow:
         0 0 0 1px var(--neon),
-        0 0 10px rgba(34, 224, 255, 0.4);
+        0 0 calc(10px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.4 * var(--halo-alfa)));
     }
     .titulo {
       margin: 0;

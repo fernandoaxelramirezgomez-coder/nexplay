@@ -128,7 +128,7 @@ export const PASOS: readonly Paso[] = [
       border-radius: var(--radio-pildora);
       color: var(--neon);
       font-size: var(--texto-caption);
-      box-shadow: 0 0 12px rgba(34, 224, 255, 0.18);
+      box-shadow: 0 0 calc(12px * var(--halo-radio)) rgb(var(--neon-canal) / 0.18);
     }
     .titulo {
       margin: var(--espacio-4) 0 0;

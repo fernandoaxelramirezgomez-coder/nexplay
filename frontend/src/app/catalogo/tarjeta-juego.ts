@@ -126,7 +126,7 @@ import { MotivosStore } from '../estado/motivos-store';
       border-radius: var(--radio-pildora);
       background: var(--superficie-lienzo);
       /* Sombra para que se despegue también de portadas claras (Wild Hearts, Civilization). */
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+      box-shadow: var(--sombra-tarjeta);
       color: var(--texto);
       font-size: var(--texto-caption);
       cursor: pointer;

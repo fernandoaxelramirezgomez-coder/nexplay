@@ -56,11 +56,11 @@ const MS_POR_LETRA = 22;
       0%,
       100% {
         transform: translateY(0) rotate(0deg);
-        filter: drop-shadow(0 0 2px rgba(34, 224, 255, 0.2));
+        filter: drop-shadow(0 0 2px rgb(var(--neon-canal) / 0.2));
       }
       50% {
         transform: translateY(-6px) rotate(-1.2deg);
-        filter: drop-shadow(0 0 10px rgba(34, 224, 255, 0.45));
+        filter: drop-shadow(0 0 calc(10px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.45 * var(--halo-alfa))));
       }
     }
     /* El globo es .globo-nia (base.css). Solo se reserva su alto final, para que la
