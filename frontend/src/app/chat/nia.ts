@@ -103,13 +103,13 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
     .nia {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-12);
+      gap: var(--espacio-8);
     }
     /* En la ficha el chat es una pieza de interfaz, no texto largo: lleva superficie y un
        filo neón con brillo, más marcado que el resto de la ficha, que va sin caja. Dentro
        de la burbuja flotante no, porque ahí el panel ya es la superficie. */
     .destacada {
-      padding: var(--espacio-24);
+      padding: var(--espacio-16);
       border: 1px solid color-mix(in srgb, var(--neon) 55%, var(--linea));
       border-radius: var(--radio-tarjeta);
       background: var(--superficie-tarjeta);
@@ -124,8 +124,8 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
     }
     /* Nia saludando (Wave, de la hoja v2), la misma cara que la burbuja del chat. */
     .avatar {
-      width: 52px;
-      height: 52px;
+      width: 40px;
+      height: 40px;
       padding: 4px 4px 0;
       object-fit: contain;
       object-position: center bottom;
@@ -139,8 +139,11 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       margin: 0;
       font-size: var(--texto-body-sm);
     }
+    /* El chat es para leer la respuesta, no la introducción: lo de alrededor va compacto
+       y el alto que se gana se lo queda la conversación. */
     .intro {
       margin: 0;
+      font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
     }
     .conversacion {
@@ -150,13 +153,13 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       display: flex;
       flex-direction: column;
       gap: var(--espacio-8);
-      max-height: 320px;
+      max-height: min(60vh, 460px);
       overflow-y: auto;
     }
     .mensaje {
       background: var(--superficie-lienzo);
       border-radius: var(--radio-tarjeta);
-      padding: var(--espacio-12);
+      padding: var(--espacio-8) var(--espacio-12);
     }
     .mensaje[data-rol='usuario'] {
       background: var(--acento-sistema);
