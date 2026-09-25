@@ -6,10 +6,21 @@
   <meta name="description" content="Una segunda opinión antes de comprar tu próximo juego.">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="logo-header.png">
 </head>
 <body>
+  <script>
+    // El tema se aplica antes de que Angular pinte: si no, se vería un destello del tema
+    // que no se eligió. La clave y el orden son los mismos de app/estado/tema-store.ts.
+    try {
+      var tema = localStorage.getItem('nexplay.tema.v1');
+      if (tema !== 'claro' && tema !== 'oscuro') {
+        tema = matchMedia('(prefers-color-scheme: light)').matches ? 'claro' : 'oscuro';
+      }
+      document.documentElement.dataset.tema = tema;
+    } catch (e) {}
+  </script>
   <app-root></app-root>
 </body>
 </html>

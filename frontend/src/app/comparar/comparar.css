@@ -37,11 +37,12 @@
   font-size: var(--texto-caption);
 }
 
-@media (max-width: 900px) {
-  /* En pantallas chicas las columnas se desplazan en horizontal en vez de encogerse, y
-     cada una encaja completa al soltar el dedo. */
+/* Cuando el contenedor se angosta, las columnas se desplazan en horizontal en vez de
+   encogerse, y cada una encaja completa al soltar el dedo. Tres juegos piden 872 px: sin
+   esto, con la barra abierta la página entera se iría de ancho. */
+@container contenido (max-width: 900px) {
   .columnas {
-    grid-auto-columns: minmax(280px, 80vw);
+    grid-auto-columns: minmax(280px, 80cqw);
     overflow-x: auto;
     padding-bottom: var(--espacio-8);
     scroll-snap-type: x mandatory;

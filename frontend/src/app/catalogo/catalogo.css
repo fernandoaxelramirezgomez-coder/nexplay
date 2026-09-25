@@ -311,7 +311,9 @@
   gap: var(--espacio-12);
 }
 
-@media (max-width: 900px) {
+/* El corte mide .contenido (app.css): con la barra lateral abierta la ventana sigue
+   siendo ancha aunque al hero le queden 736 px, y ahí el mensaje no cabe. */
+@container contenido (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
     gap: var(--espacio-40);

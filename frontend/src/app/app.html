@@ -1,57 +1,57 @@
-<div class="pagina" data-testid="shell" [class.con-burbuja]="muestraNiaFlotante()">
-  <header class="cabecera">
-    <a routerLink="/" class="marca" aria-label="NexPlay, ir al catálogo">
-      <img src="logo-oscuro.png" alt="" width="81" height="70" />
-      <span class="lema">Una segunda opinión antes de comprar tu próximo juego</span>
-    </a>
-    <nav class="navegacion" aria-label="Secciones">
-      <a
-        routerLink="/"
-        routerLinkActive="activo"
-        [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }"
-        ariaCurrentWhenActive="page"
-        data-testid="nav-explorar"
-        >Explorar</a
-      >
-      <a
-        routerLink="/comparar"
-        [queryParams]="parametrosComparar()"
-        routerLinkActive="activo"
-        ariaCurrentWhenActive="page"
-        data-testid="nav-comparar"
-        >Comparar
-        @if (comparar.cantidad()) {
-          <span class="mono" data-testid="nav-comparar-cantidad">({{ comparar.cantidad() }})</span>
-        }</a
-      >
-      <a routerLink="/perfil" routerLinkActive="activo" ariaCurrentWhenActive="page" data-testid="nav-perfil"
-        >Tu perfil</a
-      >
-      <a
-        routerLink="/como-funciona"
-        routerLinkActive="activo"
-        ariaCurrentWhenActive="page"
-        data-testid="nav-como-funciona"
-        >Cómo funciona</a
-      >
-      @if (perfil.hayPerfil()) {
-        <span class="estado-perfil" data-testid="perfil-activo">Perfil activo</span>
-      }
-    </nav>
-  </header>
+<div class="armazon" [class.barra-corta]="!barra.expandida()">
+  <app-barra-lateral />
 
-  <main class="contenido">
-    <router-outlet />
-  </main>
+  <div class="columna">
+    <header class="barra-movil">
+      <button
+        #hamburguesa
+        type="button"
+        class="hamburguesa"
+        data-testid="abrir-menu"
+        aria-label="Menú"
+        aria-controls="riel"
+        [attr.aria-expanded]="barra.cajonAbierto()"
+        (click)="barra.alternarCajon()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" />
+        </svg>
+      </button>
+      <a routerLink="/" class="marca-movil" aria-label="NexPlay, ir al catálogo">
+        <img [src]="tema.esClaro() ? 'logo-header.png' : 'logo-oscuro.png'" alt="" width="46" height="40" />
+      </a>
+    </header>
 
-  <footer class="pie">
-    @if (enPortada()) {
-      <app-nia-mascota />
+    @if (barra.cajonAbierto()) {
+      <button
+        type="button"
+        class="velo"
+        data-testid="velo-menu"
+        aria-label="Cerrar el menú"
+        (click)="barra.cerrarCajon()"
+      ></button>
     }
-    <app-metodologia />
-  </footer>
 
-  @if (muestraNiaFlotante()) {
-    <app-nia-flotante />
-  }
+    <div
+      class="pagina"
+      data-testid="shell"
+      [class.con-burbuja]="muestraNiaFlotante()"
+      [attr.inert]="barra.cajonAbierto() ? '' : null"
+    >
+      <main class="contenido">
+        <router-outlet />
+      </main>
+
+      <footer class="pie">
+        @if (enPortada()) {
+          <app-nia-mascota />
+        }
+        <app-metodologia />
+      </footer>
+    </div>
+
+    @if (muestraNiaFlotante()) {
+      <app-nia-flotante [attr.inert]="barra.cajonAbierto() ? '' : null" />
+    }
+  </div>
 </div>
