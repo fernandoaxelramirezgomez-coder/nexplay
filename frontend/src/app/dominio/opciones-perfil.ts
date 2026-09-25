@@ -7,7 +7,7 @@ export interface Opcion<T> {
 
 // Compras al año, no tamaño de la biblioteca: el formulario preguntaba una cosa y
 // mandaba el número como si fuera la otra. El valor de cada opción es el punto medio
-// del rango. Mismos rangos que el formulario de Gradio (ui/app.py).
+// del rango. Mismos rangos que valida la API en FormularioAlta (api/schemas.py).
 export const COMPRAS: Opcion<number>[] = [
   { etiqueta: 'Casi ninguno (0–2 al año)', valor: 1 },
   { etiqueta: 'Pocos (3–6 al año)', valor: 4 },

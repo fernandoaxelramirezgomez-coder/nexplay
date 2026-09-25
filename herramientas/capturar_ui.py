@@ -1,11 +1,7 @@
 """Captura la UI de NexPlay con Chromium headless, para revisar los cambios
 visuales sin abrir un navegador a mano.
 
---frontend gradio (por defecto, http://localhost:7860) guarda en docs/capturas/:
-  catalogo.png             catálogo completo
-  ficha-wild-hearts.png    ficha de Wild Hearts tras "Ver segunda opinión"
-
---frontend angular (http://localhost:4200) guarda en docs/capturas/angular/:
+Guarda en docs/capturas/angular/:
   catalogo.png, catalogo-inicio.png, catalogo-filtrado.png
   ficha-wild-hearts.png, perfil.png, ficha-con-perfil.png, comparar.png
 y verifica contra la API (--api): total de tarjetas, conteo y orden de cada
@@ -14,17 +10,17 @@ inexistente, perfil que sobrevive a la recarga, la historia del perfil sin que
 cambie el nivel de riesgo, y la comparación sincronizada con ?appids=.
 
 docs/capturas/ está ignorada por git; la captura del README es otra,
-docs/captura-interfaz.png, y este script no la toca. En ambos modos revisa que
-no aparezca "abandono" ni un score de riesgo con decimales.
+docs/captura-interfaz.png, y este script no la toca. Revisa además que no
+aparezca "abandono" ni un score de riesgo con decimales.
 
-Requiere la API y la UI corriendo (uvicorn api.main:app, y python ui/app.py o
-npx ng serve en frontend/). Una sola vez:
+Requiere la API y el frontend corriendo (uvicorn api.main:app y npx ng serve en
+frontend/). Una sola vez:
   pip install -r requirements-dev.txt
   playwright install chromium
   sudo playwright install-deps chromium   # librerías del sistema (Linux/WSL)
 
 Uso:
-  python scripts/capturar_ui.py [--frontend gradio|angular] [--url URL]
+  python herramientas/capturar_ui.py [--url URL]
 """
 
 import argparse
@@ -39,8 +35,8 @@ from playwright.sync_api import Page, sync_playwright
 from playwright.sync_api import TimeoutError as TiempoAgotado
 
 _RAIZ = Path(__file__).resolve().parent.parent
-_DESTINOS = {"gradio": _RAIZ / "docs" / "capturas", "angular": _RAIZ / "docs" / "capturas" / "angular"}
-_URLS = {"gradio": "http://localhost:7860", "angular": "http://localhost:4200"}
+_DESTINO = _RAIZ / "docs" / "capturas" / "angular"
+_URL = "http://localhost:4200"
 
 _APPID_FICHA = 1938010  # Wild Hearts
 _VIEWPORT = {"width": 1440, "height": 900}
@@ -49,14 +45,7 @@ _TIMEOUT_MS = 60_000
 # Los scores del modelo son decimales como 0.7424: nunca deben verse en pantalla.
 _SCORE_VISIBLE = re.compile(r"\b0[.,]\d{3,}\b")
 
-# Todas las tarjetas de Gradio tienen el mismo botón: se ubica el de la tarjeta cuya
-# portada es del appid buscado, subiendo hasta el contenedor que ya lo incluye.
-_BOTON_OPINION_GRADIO = (
-    "xpath=//img[contains(@src, '/apps/{appid}/')]"
-    "/ancestor::div[.//button[normalize-space()='Ver segunda opinión']][1]"
-    "//button[normalize-space()='Ver segunda opinión']"
-)
-
+# Cuántas portadas cayeron al SVG de respaldo, de las que están a la vista.
 _JS_CONTAR_FALLBACKS = """
 selector => {
     const imgs = [...document.querySelectorAll(selector)].filter(i => i.offsetParent !== null);
@@ -125,48 +114,8 @@ def _abrir(pagina: Page, url: str) -> None:
     except ErrorPlaywright as exc:
         sys.exit(
             f"No pude abrir {url}: {exc.message.splitlines()[0]}\n"
-            "¿Están corriendo la API y la UI? (uvicorn api.main:app / python ui/app.py / npx ng serve)"
+            "¿Están corriendo la API y el frontend? (uvicorn api.main:app / npx ng serve en frontend/)"
         )
-
-
-# --- Gradio ---------------------------------------------------------------
-
-
-def _gradio_catalogo(pagina: Page, destino: Path) -> list[str]:
-    try:
-        pagina.locator(".nexplay-card-wrap").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
-    except TiempoAgotado:
-        sys.exit("La UI cargó pero el catálogo está vacío: ¿está corriendo la API?")
-
-    _recorrer_pagina(pagina)
-    fallbacks, total = _esperar_portadas(pagina, ".nexplay-card-inner img")
-    ruta = destino / "catalogo.png"
-    pagina.screenshot(path=ruta, full_page=True)
-    print(f"catálogo: {ruta.relative_to(_RAIZ)} ({total} portadas, {fallbacks} con imagen de respaldo)")
-    return _revisar_vocabulario(pagina, "catálogo")
-
-
-def _gradio_ficha(pagina: Page, destino: Path) -> list[str]:
-    pagina.locator(_BOTON_OPINION_GRADIO.format(appid=_APPID_FICHA)).click()
-
-    # .nexplay-ficha-nombre solo existe en la ficha real, no en el skeleton de
-    # carga; "Segunda opinión" es lo último que llena _abrir_ficha().
-    nombre = pagina.locator(".nexplay-ficha-nombre")
-    nombre.wait_for(state="visible", timeout=_TIMEOUT_MS)
-    pagina.get_by_role("heading", name="Segunda opinión").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    fallbacks, _ = _esperar_portadas(pagina, "div:has(> .nexplay-ficha-nombre) img")
-
-    pagina.wait_for_timeout(600)  # deja terminar el fade-in del panel (0.35 s)
-    pagina.evaluate("window.scrollTo(0, 0)")
-    ruta = destino / "ficha-wild-hearts.png"
-    pagina.screenshot(path=ruta, full_page=True)
-    print(f"ficha:    {ruta.relative_to(_RAIZ)} ({nombre.inner_text()}, {fallbacks} con imagen de respaldo)")
-    return _revisar_vocabulario(pagina, "ficha")
-
-
-def _capturar_gradio(pagina: Page, url: str, destino: Path) -> list[str]:
-    _abrir(pagina, url)
-    return _gradio_catalogo(pagina, destino) + _gradio_ficha(pagina, destino)
 
 
 # --- Angular --------------------------------------------------------------
@@ -181,7 +130,7 @@ def _catalogo_api(api: str) -> list[dict]:
 
 
 def _orden_esperado(juegos: list[dict], banda: str) -> list[int]:
-    """Mismo criterio que dominio/estantes.ts y ui/app.py."""
+    """Mismo criterio que dominio/estantes.ts en el frontend."""
     del_estante = [j for j in juegos if j["banda_riesgo"] == banda]
     return [j["appid"] for j in sorted(del_estante, key=lambda j: j["riesgo"], reverse=banda != "bajo")]
 
@@ -1480,7 +1429,7 @@ _NIA_FALSA = json.dumps({
     "respuesta": "Respuesta de prueba del script de capturas: no se consultó ningún modelo.",
     "modo": "demostracion",
     "modelo": None,
-    "aviso": "Respuesta simulada por scripts/capturar_ui.py; la API no recibió la pregunta.",
+    "aviso": "Respuesta simulada por herramientas/capturar_ui.py; la API no recibió la pregunta.",
 })
 
 
@@ -1505,8 +1454,8 @@ def _sin_consultas_a_nia(contexto) -> None:
     contexto.route("**/nia", responder)
 
 
-def capturar(frontend: str, url: str, api: str) -> int:
-    destino = _DESTINOS[frontend]
+def capturar(url: str, api: str) -> int:
+    destino = _DESTINO
     destino.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as p:
         navegador = p.chromium.launch()
@@ -1514,10 +1463,7 @@ def capturar(frontend: str, url: str, api: str) -> int:
             contexto = navegador.new_context(viewport=_VIEWPORT)
             _sin_consultas_a_nia(contexto)
             pagina = contexto.new_page()
-            if frontend == "angular":
-                problemas = _capturar_angular(pagina, url, destino, api)
-            else:
-                problemas = _capturar_gradio(pagina, url, destino)
+            problemas = _capturar_angular(pagina, url, destino, api)
         finally:
             navegador.close()
     print(f"nia:      la interfaz pidió /nia {len(_NIA_PEDIDAS)} veces; interceptadas {len(_NIA_INTERCEPTADAS)}, "
@@ -1530,9 +1476,8 @@ def capturar(frontend: str, url: str, api: str) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Captura la UI de NexPlay (Gradio o Angular).")
-    parser.add_argument("--frontend", choices=sorted(_URLS), default="gradio", help="por defecto %(default)s")
-    parser.add_argument("--url", help="URL de la UI (por defecto, la del frontend elegido)")
+    parser = argparse.ArgumentParser(description="Captura la UI de NexPlay (Angular).")
+    parser.add_argument("--url", default=_URL, help="URL del frontend (por defecto %(default)s)")
     parser.add_argument("--api", default="http://localhost:8000", help="API con la que comparar (por defecto %(default)s)")
     args = parser.parse_args()
-    sys.exit(capturar(args.frontend, args.url or _URLS[args.frontend], args.api))
+    sys.exit(capturar(args.url, args.api))

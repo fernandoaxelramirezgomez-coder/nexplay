@@ -35,9 +35,9 @@ app = FastAPI(
     description="Riesgo de arrepentimiento temprano al comprar un videojuego (señal proxy, no observada).",
 )
 
-# Orígenes de desarrollo (Gradio y Angular locales) siempre permitidos;
+# Origen de desarrollo (el frontend de Angular local) siempre permitido;
 # NEXPLAY_CORS_ORIGENES agrega orígenes adicionales separados por coma.
-_ORIGENES_DEV = ["http://localhost:7860", "http://localhost:4200"]
+_ORIGENES_DEV = ["http://localhost:4200"]
 _origenes_extra = [o.strip() for o in os.environ.get("NEXPLAY_CORS_ORIGENES", "").split(",") if o.strip()]
 _origenes_permitidos = list(dict.fromkeys(_ORIGENES_DEV + _origenes_extra))
 

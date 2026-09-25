@@ -1,7 +1,7 @@
 import { COMPRAS, FRICCION, formularioDesde, HORAS, VALORES_POR_DEFECTO } from './opciones-perfil';
 
 describe('opciones-perfil', () => {
-  it('mantiene los rangos del formulario de Gradio', () => {
+  it('mantiene los rangos que valida la API', () => {
     expect(COMPRAS.map((o) => o.valor)).toEqual([1, 4, 11, 25]);
     expect(HORAS.map((o) => o.valor)).toEqual([2, 6, 15]);
     expect(FRICCION.map((o) => o.valor)).toEqual([1, 2, 3, 4, 5]);

@@ -19,7 +19,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent
+RAIZ = Path(__file__).resolve().parents[1]
 VALORACIONES_PATH = Path(os.environ.get("NEXPLAY_VALORACIONES_DB", RAIZ / "datos" / "valoraciones.db"))
 CATALOGO_PATH = RAIZ / "datos" / "nexplay.db"
 COLUMNAS_VOTOS = ["appid", "nombre", "usuario", "calificacion", "creado", "actualizado"]

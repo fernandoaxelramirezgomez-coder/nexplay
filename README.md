@@ -38,10 +38,10 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt -r requirements-modelo.txt
 
-python preparar_entorno.py
+python herramientas/preparar_entorno.py
 ```
 
-`preparar_entorno.py` hace, en orden:
+`herramientas/preparar_entorno.py` hace, en orden:
 
 1. Verifica que las dependencias estén instaladas.
 2. Descarga el asset del [release `data-v2`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v2)
@@ -49,32 +49,17 @@ python preparar_entorno.py
    (el corte de entrenamiento), y valida el SHA-256 de cada uno antes de tocarlo.
 3. Reconstruye `datos/nexplay.db` con data-v2 y `datos/entrenamiento/nexplay_data-v1.db`
    con data-v1.
-4. Corre `entrenar_modelo.py` sobre data-v1 para generar `modelo/nexplay.pkl`; el
+4. Corre `modelado/entrenar_modelo.py` sobre data-v1 para generar `modelo/nexplay.pkl`; el
    artefacto guarda el tag, el sha256 del asset y las filas y juegos de entrenamiento.
 5. Levanta la API en un puerto de prueba y confirma que `/catalogo` responde, antes de
    apagarla.
 
 Es idempotente: si `datos/nexplay.db` o `modelo/nexplay.pkl` ya existen, no los pisa
-(usa `python preparar_entorno.py --force` para reconstruirlos de cero).
+(usa `python herramientas/preparar_entorno.py --force` para reconstruirlos de cero).
 
-Con eso, el proyecto ya está funcional. Para usarlo:
+## Frontend en Angular
 
-```bash
-# terminal 1
-uvicorn api.main:app --reload
-
-# terminal 2
-pip install -r requirements-ui.txt
-python ui/app.py
-```
-
-La API queda en `http://127.0.0.1:8000` (docs interactivas en `/docs`) y la UI de Gradio
-en `http://127.0.0.1:7860`.
-
-## Frontend en Angular (rama `frontend-angular`)
-
-El frontend nuevo vive en `frontend/` y consume la misma API por HTTP, sin cambiarla.
-Está en la rama `frontend-angular`; en `master`, Gradio sigue siendo la UI que funciona.
+El frontend vive en `frontend/` y consume la API por HTTP, sin cambiarla.
 
 ```bash
 # terminal 1, desde la raíz
@@ -95,8 +80,7 @@ diseño, decisiones y deuda conocida en [frontend/README.md](frontend/README.md)
 Para revisar los cambios visuales sin abrir un navegador a mano:
 
 ```bash
-python scripts/capturar_ui.py --frontend angular   # capturas en docs/capturas/angular/
-python scripts/capturar_ui.py                      # la UI de Gradio, en docs/capturas/
+python herramientas/capturar_ui.py    # capturas en docs/capturas/angular/
 ```
 
 ## Estructura
@@ -111,43 +95,45 @@ api/                módulos de la API
   nia.py              el chat: contexto del juego, reglas de vocabulario y modo demostración
   config.py           variables de .env (clave y modelo de Nia, topes)
   limites.py          límite de frecuencia en memoria, por usuario e IP
-ui/                 UI en Gradio (consume la API por HTTP)
-  app.py              layout y llamadas HTTP
-  theme.py            identidad visual: tema de gr.themes + CSS propio
-  assets/             logo (logo.png original, logo-header.png con fondo transparente)
+frontend/           el frontend en Angular, consume la API por HTTP
+notebook/           narrativa completa, ejecutable en Colab
+
+ingesta/            de dónde salen los datos
+  ingesta_steam.py    ingesta original desde la API pública de Steam (no hace falta correrla)
+  appids.txt          el catálogo declarado que baja esa ingesta
+modelado/           el modelo y su validación
+  entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
+  entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
+  verificar_bandas.py    compara las bandas del catálogo contra docs/bandas_referencia.json
+publicacion/        lo que se sube a un release
+  extracto_datos.py         genera el extracto mínimo en Parquet que consume el notebook
+  extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db
+herramientas/       operación del proyecto
+  preparar_entorno.py       deja el proyecto funcional de punta a punta en una máquina limpia
+  exportar_valoraciones.py  exporta calificaciones y comentarios a CSV (uso local)
+  moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
+  capturar_ui.py            captura la UI con Playwright para revisar cambios visuales
+  recortar_nia.py           corta los sprites de Nia de la hoja de emociones
+
 modelo/             artefactos entrenados (.pkl) — no versionado, lo genera preparar_entorno.py
 datos/              nexplay.db (SQLite) — no versionado, lo reconstruye preparar_entorno.py
-notebook/           narrativa completa, ejecutable en Colab
 extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
-docs/               capturas y material para este README
-frontend/           opcional: frontend en Angular (rama frontend-angular), consume la API por HTTP
-scripts/            opcional: capturar_ui.py captura la UI con Playwright para revisar cambios visuales;
-                    ni el notebook ni preparar_entorno.py lo necesitan
-ingesta_steam.py       ingesta original desde la API pública de Steam (no hace falta correrla)
-extracto_datos.py      genera el extracto mínimo en Parquet que consume el notebook
-extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db que consume preparar_entorno.py
-entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
-entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
-preparar_entorno.py    deja el proyecto funcional de punta a punta en una máquina limpia
-verificar_bandas.py    compara las bandas del catálogo contra docs/bandas_referencia.json
-exportar_valoraciones.py  exporta calificaciones y comentarios a CSV (uso local)
-moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
-.env.example           plantilla de variables; el .env real no se versiona
-requirements-dev.txt   opcional: Playwright para scripts/capturar_ui.py; el notebook y preparar_entorno.py no lo usan
+registros/          el log y el candado que deja la ingesta — no versionado
+docs/               capturas, evidencia y material para este README
+.env.example        plantilla de variables; el .env real no se versiona
+requirements-dev.txt  opcional: Playwright para herramientas/capturar_ui.py; el notebook y
+                      preparar_entorno.py no lo usan
 ```
 
 `datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
-entrenados, no código). `preparar_entorno.py` los reconstruye sin necesidad de volver a
-correr la ingesta de Steam.
+entrenados, no código). `herramientas/preparar_entorno.py` los reconstruye sin necesidad
+de volver a correr la ingesta de Steam.
 
 ## Configuración
 
 - `NEXPLAY_CORS_ORIGENES`: orígenes adicionales permitidos por CORS, separados por
   coma (p. ej. `https://nexplay.example.com,https://otra.example.com`).
-  `http://localhost:7860` (Gradio) y `http://localhost:4200` (Angular) están siempre
-  permitidos para desarrollo local.
-- `NEXPLAY_API_URL`: URL de la API que consume `ui/app.py`. Por defecto
-  `http://localhost:8000`.
+  `http://localhost:4200`, el frontend en desarrollo, está siempre permitido.
 - `NEXPLAY_VALORACIONES_DB`: dónde vive la base de valoraciones y comentarios. Por
   defecto `datos/valoraciones.db`.
 - `NEXPLAY_COMENTARIOS_POR_MINUTO` (3), `NEXPLAY_REACCIONES_POR_MINUTO` (30) y
@@ -326,14 +312,14 @@ también frena al modelo real, no solo al modo demostración.
 
 ## Contenido de usuarios y moderación
 
-- **`datos/valoraciones.db` no se regenera.** `preparar_entorno.py` reconstruye
+- **`datos/valoraciones.db` no se regenera.** `herramientas/preparar_entorno.py` reconstruye
   `nexplay.db`, pero esta base es contenido de quienes usan la app y no está en ningún
   release. En un contenedor el disco es efímero: en el despliegue necesita un volumen
   persistente (un disco en Render, `/data` en Spaces) o las valoraciones se pierden en
   cada reinicio. Respaldarla es copiar el archivo.
-- `python exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
+- `python herramientas/exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
   El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
-- `python moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
+- `python herramientas/moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
   `--borrar ID` elimina uno, con sus reacciones. Cada quien puede borrar los suyos desde
   la app; para **el comentario de alguien más, este script es el único camino**.
 - El id anónimo no es autenticación: cualquiera puede mandar otro id y editar esa
@@ -342,24 +328,24 @@ también frena al modelo real, no solo al modo demostración.
 ## Regenerar los datos publicados (mantenedores)
 
 Solo hace falta si se vuelve a ingestar Steam o cambia el esquema. No es parte de la
-puesta en marcha normal — `preparar_entorno.py` ya descarga estos assets, no los genera.
+puesta en marcha normal — `herramientas/preparar_entorno.py` ya descarga estos assets, no los genera.
 
 ```bash
-python ingesta_steam.py --catalogo
-python ingesta_steam.py --resenas      # tarda horas; reanuda si se interrumpe
+python ingesta/ingesta_steam.py --catalogo
+python ingesta/ingesta_steam.py --resenas      # tarda horas; reanuda si se interrumpe
 
-python extracto_datos.py               # extracto/nexplay_extracto.parquet (para el notebook)
-python extracto_reproducible.py        # extracto/nexplay_reproducible.db.xz (para preparar_entorno.py)
+python publicacion/extracto_datos.py        # extracto/nexplay_extracto.parquet (para el notebook)
+python publicacion/extracto_reproducible.py # extracto/nexplay_reproducible.db.xz (para herramientas/preparar_entorno.py)
 ```
 
-`extracto_reproducible.py` copia `juegos` y `resenas` completas salvo la columna
+`publicacion/extracto_reproducible.py` copia `juegos` y `resenas` completas salvo la columna
 `steamid` (identifica cuentas reales de Steam; nada en el proyecto la usa). Las tablas
 `resumen_resenas` y `progreso` no se copian: son metadata de la ingesta, no las usa ni la
 API ni el entrenamiento.
 
 Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
 reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
-seguir bajando exactamente lo mismo. Hoy `preparar_entorno.py` sirve `data-v2` y entrena
+seguir bajando exactamente lo mismo. Hoy `herramientas/preparar_entorno.py` sirve `data-v2` y entrena
 con `data-v1`; el notebook mide con `data-v1` y usa `data-v2` como prueba externa:
 
 ```bash
@@ -367,12 +353,12 @@ gh release create data-v2 extracto/nexplay_extracto.parquet extracto/nexplay_rep
 ```
 
 Y actualizar los sha256 en `notebook/nexplay.ipynb` (`PARQUET_ENTRENAMIENTO_SHA256`,
-`PARQUET_PRUEBA_SHA256`) y en `preparar_entorno.py` (`SERVIDO_SHA256`,
+`PARQUET_PRUEBA_SHA256`) y en `herramientas/preparar_entorno.py` (`SERVIDO_SHA256`,
 `ENTRENAMIENTO_SHA256`) con el que imprime cada script — si no coinciden, la
 descarga se rechaza a propósito en vez de seguir con datos que pudieron cambiar.
 
 ## No versionado
 
 `datos/`, `modelo/` y `extracto/` están en `.gitignore`. `datos/` y `modelo/` los
-reconstruye `preparar_entorno.py`; `extracto/` solo hace falta para publicar un release
+reconstruye `herramientas/preparar_entorno.py`; `extracto/` solo hace falta para publicar un release
 nuevo (sección anterior).

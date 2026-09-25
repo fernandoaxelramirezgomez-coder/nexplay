@@ -40,8 +40,8 @@ Intentos que fallaron, para no repetirlos:
 - Sembrar la pasada fría también desde los lados: se comía las mangas de Happy.
 
 Uso:
-    python scripts/recortar_nia.py
-    python scripts/recortar_nia.py --hoja otra/ruta.png
+    python herramientas/recortar_nia.py
+    python herramientas/recortar_nia.py --hoja otra/ruta.png
 """
 
 import argparse

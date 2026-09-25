@@ -31,8 +31,9 @@ from pathlib import Path
 
 import pandas as pd
 
-DB_PATH = Path(__file__).resolve().parent / "datos" / "nexplay.db"
-SALIDA_PATH = Path(__file__).resolve().parent / "extracto" / "nexplay_extracto.parquet"
+RAIZ = Path(__file__).resolve().parents[1]
+DB_PATH = RAIZ / "datos" / "nexplay.db"
+SALIDA_PATH = RAIZ / "extracto" / "nexplay_extracto.parquet"
 
 _COLUMNAS = [
     "appid",

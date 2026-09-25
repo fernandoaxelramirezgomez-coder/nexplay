@@ -6,7 +6,7 @@ export interface FiltroCatalogo {
   genero: string;
 }
 
-/** Misma semántica que ui/app.py (_filtrar_catalogo_visual): el texto se busca como
+/** Filtro del catálogo visual, en el cliente: el texto se busca como
  * subcadena del nombre sin distinguir mayúsculas; el género debe coincidir exacto. */
 export function filtrarJuegos(juegos: readonly JuegoCatalogo[], filtro: FiltroCatalogo): JuegoCatalogo[] {
   const texto = filtro.texto.trim().toLowerCase();

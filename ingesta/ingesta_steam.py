@@ -37,10 +37,15 @@ import requests
 # Configuracion
 # ---------------------------------------------------------------------------
 
-BASE = Path(__file__).resolve().parent
-DB_PATH = BASE / "datos" / "nexplay.db"
-APPIDS_PATH = BASE / "appids.txt"
-LOCK_PATH = BASE / "ingesta.lock"
+AQUI = Path(__file__).resolve().parent
+RAIZ = AQUI.parent
+DB_PATH = RAIZ / "datos" / "nexplay.db"
+# La lista de appid es la entrada declarada de esta ingesta: vive junto al script.
+APPIDS_PATH = AQUI / "appids.txt"
+# Lo que se genera al correr (registro y candado) no ensucia la raíz.
+REGISTROS = RAIZ / "registros"
+REGISTROS.mkdir(exist_ok=True)
+LOCK_PATH = REGISTROS / "ingesta.lock"
 
 URL_DETALLES = "https://store.steampowered.com/api/appdetails"
 URL_RESENAS = "https://store.steampowered.com/appreviews/{appid}"
@@ -66,7 +71,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(BASE / "ingesta.log", encoding="utf-8"),
+        logging.FileHandler(REGISTROS / "ingesta.log", encoding="utf-8"),
     ],
 )
 log = logging.getLogger("nexplay")

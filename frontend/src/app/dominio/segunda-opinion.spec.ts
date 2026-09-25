@@ -8,7 +8,7 @@ describe('segundaOpinion', () => {
     { motivo: 'bugs', frecuencia: 0.25 },
   ];
 
-  it('reproduce la frase de Wild Hearts de Gradio (alto, rendimiento 86%, sin nota)', () => {
+  it('arma la frase de Wild Hearts (alto, rendimiento 86%, sin nota)', () => {
     expect(texto(segundaOpinion('alto', motivos, null))).toBe(
       'Comparado con el resto del catálogo, este juego tiende a generar más arrepentimiento temprano.' +
         ' Entre las reseñas con señal de arrepentimiento temprano, el motivo más mencionado es rendimiento' +

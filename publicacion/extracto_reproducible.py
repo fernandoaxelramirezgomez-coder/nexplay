@@ -26,8 +26,9 @@ import lzma
 import sqlite3
 from pathlib import Path
 
-DB_ORIGEN = Path(__file__).resolve().parent / "datos" / "nexplay.db"
-DB_SALIDA = Path(__file__).resolve().parent / "extracto" / "nexplay_reproducible.db"
+RAIZ = Path(__file__).resolve().parents[1]
+DB_ORIGEN = RAIZ / "datos" / "nexplay.db"
+DB_SALIDA = RAIZ / "extracto" / "nexplay_reproducible.db"
 COMPRIMIDO_SALIDA = DB_SALIDA.with_suffix(".db.xz")
 
 # Todas las columnas de 'resenas' salvo steamid.

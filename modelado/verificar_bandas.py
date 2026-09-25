@@ -21,9 +21,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from api import catalogo, scoring
+# Corre desde modelado/, así que la raíz no está en sys.path y `api` no se encontraría.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-_RAIZ = Path(__file__).resolve().parent
+from api import catalogo, scoring  # noqa: E402
+
+_RAIZ = Path(__file__).resolve().parents[1]
 _REFERENCIA = _RAIZ / "docs" / "bandas_referencia.json"
 
 

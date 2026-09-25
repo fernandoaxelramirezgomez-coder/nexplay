@@ -9,7 +9,7 @@ import { ValoresPerfil } from '../dominio/opciones-perfil';
 // compras al año. Los perfiles v1 no se migran porque su número no es comparable.
 const CLAVE = 'nexplay.perfil.v2';
 
-/** Mismo _FORMULARIO_NEUTRO de ui/app.py: se manda a /perfil para no duplicar aquí
+/** El perfil neutro lo deriva la API: se manda a /perfil para no duplicar aquí
  * las heurísticas de segmento y disponibilidad. */
 const FORMULARIO_NEUTRO: FormularioAlta = {
   compras_al_anio: 5,

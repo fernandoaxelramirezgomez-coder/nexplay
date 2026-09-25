@@ -7,7 +7,7 @@ export interface Segmento {
   clave?: boolean;
 }
 
-// Mismas frases que _FRASES_BANDA en ui/app.py.
+// Mismas frases que _FRASES_BANDA en api/nia.py, para que Nia y la ficha digan lo mismo.
 const FRASES_BANDA: Record<NivelRiesgo, Segmento[]> = {
   bajo: [
     { texto: 'Comparado con el resto del catálogo, este juego tiende a generar ' },
@@ -31,7 +31,7 @@ export function fraseBanda(nivel: NivelRiesgo): Segmento[] {
 }
 
 /** Síntesis por reglas (banda + motivo dominante + Metacritic), igual que
- * _segunda_opinion_md en ui/app.py: describe los datos, no recomienda comprar. */
+ * describe los datos, no recomienda comprar. */
 export function segundaOpinion(
   nivel: NivelRiesgo,
   motivos: readonly MotivoInsatisfaccion[],

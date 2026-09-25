@@ -2,7 +2,7 @@ import { JuegoCatalogo, NivelRiesgo } from '../api/contrato';
 
 export const ORDEN_BANDAS: readonly NivelRiesgo[] = ['bajo', 'medio', 'alto'];
 
-// Mismo criterio que ui/app.py (_DESCENDENTE_POR_BANDA): en "bajo" los más seguros
+// Criterio de orden dentro de cada estante: en "bajo" los más seguros
 // primero; en "medio" y "alto", los más riesgosos primero.
 const DESCENDENTE: Record<NivelRiesgo, boolean> = { bajo: false, medio: true, alto: true };
 

@@ -41,7 +41,7 @@ import urllib.request
 from hashlib import sha256
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent
+RAIZ = Path(__file__).resolve().parents[1]
 DB_PATH = RAIZ / "datos" / "nexplay.db"
 MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 
@@ -124,7 +124,7 @@ def _entrenar_modelo(base: Path, forzar: bool) -> None:
     print(f"entrenando el modelo de producción con {ENTRENAMIENTO_REF} (entrenar_modelo.py) ...")
     resultado = subprocess.run(
         [
-            sys.executable, str(RAIZ / "entrenar_modelo.py"),
+            sys.executable, str(RAIZ / "modelado" / "entrenar_modelo.py"),
             "--db", str(base),
             "--tag-datos", ENTRENAMIENTO_REF,
             "--sha256-asset", ENTRENAMIENTO_SHA256,
@@ -182,7 +182,7 @@ def main():
     print()
     print("Entorno listo. Para levantar el proyecto:")
     print("    uvicorn api.main:app --reload")
-    print("    python ui/app.py   # en otra terminal, con requirements-ui.txt instalado")
+    print("    cd frontend && npx ng serve   # en otra terminal")
 
 
 if __name__ == "__main__":

@@ -4,10 +4,10 @@ __pycache__/
 datos/
 modelo/
 extracto/
+# lo que deja la ingesta al correr: su registro y su candado
+registros/
 .env
-ingesta.log
-ingesta.lock
 .claude/
 
-# capturas que genera scripts/capturar_ui.py (la del README es docs/captura-interfaz.png)
+# capturas que genera herramientas/capturar_ui.py (la del README es docs/captura-interfaz.png)
 docs/capturas/

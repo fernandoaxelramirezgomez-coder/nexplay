@@ -38,7 +38,7 @@ from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-DB_PATH = Path(__file__).resolve().parent / "datos" / "nexplay.db"
+DB_PATH = Path(__file__).resolve().parents[1] / "datos" / "nexplay.db"
 N_SPLITS = 5
 SEMILLA = 42
 

@@ -4,8 +4,8 @@ export const MAXIMO_COMPARAR = 4;
 
 export type ResultadoComparar = 'agregado' | 'quitado' | 'lleno';
 
-/** Juegos elegidos para comparar: hasta 4 y sin repetidos, como _agregar_a_comparar en
- * ui/app.py. La vista /comparar la lleva también en la URL (?appids=). */
+/** Juegos elegidos para comparar: hasta 4 y sin repetidos. La selección vive en el
+ * cliente, y la vista /comparar la lleva también en la URL (?appids=). */
 @Injectable({ providedIn: 'root' })
 export class CompararStore {
   private readonly elegidos = signal<number[]>([]);

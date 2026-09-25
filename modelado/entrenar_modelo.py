@@ -36,7 +36,7 @@ from sklearn.model_selection import GroupKFold
 
 from entrenar_baseline import N_SPLITS, cargar_datos, construir_features, construir_pipeline
 
-MODELO_PATH = Path(__file__).resolve().parent / "modelo" / "nexplay.pkl"
+MODELO_PATH = Path(__file__).resolve().parents[1] / "modelo" / "nexplay.pkl"
 VERSION_MODELO = f"logreg-juego-{date.today().isoformat()}"
 CONJUNTO = "juego"
 
