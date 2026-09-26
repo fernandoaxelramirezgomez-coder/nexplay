@@ -252,7 +252,9 @@ _LIMITE_NIA = limites.LimitePorVentana(maximo=configuracion.nexplay_nia_por_minu
 
 @app.post("/nia", response_model=RespuestaNia)
 def preguntar_a_nia(solicitud: SolicitudNia, peticion: Request) -> RespuestaNia:
-    _exigir_juego(solicitud.appid)
+    # Sin appid, la pregunta es del catálogo entero y no hay juego que exigir.
+    if solicitud.appid is not None:
+        _exigir_juego(solicitud.appid)
 
     ip = peticion.client.host if peticion.client else "sin-ip"
     espera = _LIMITE_NIA.revisar(f"nia-usuario:{solicitud.usuario}", f"nia-ip:{ip}")

@@ -171,7 +171,8 @@ export interface MensajeChat {
 export interface SolicitudNia {
   /** Id anónimo del navegador; solo se usa para el límite de frecuencia. */
   usuario: string;
-  appid: number;
+  /** El juego del que se habla; sin él, Nia habla del catálogo entero. */
+  appid?: number;
   /** Hasta 10 mensajes, incluida la pregunta nueva. */
   mensajes: MensajeChat[];
   /** Si va, la banda del contexto es la del perfil declarado. */
@@ -186,6 +187,10 @@ export interface RespuestaNia {
   aviso: string | null;
   /** Identifica esta respuesta para poder votarla. */
   id: string;
+  /** Qué consultó antes de responder, en orden; vacío si no consultó nada. */
+  pasos: string[];
+  /** Appids que la respuesta menciona y que una herramienta le devolvió en ese turno. */
+  juegos: number[];
   /** Qué prompt la produjo; 'reglas' en modo demostración. No se muestra. */
   version_prompt: string;
 }

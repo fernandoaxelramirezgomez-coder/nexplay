@@ -11,8 +11,8 @@ existe y comprobar que la retención borra lo vencido y respeta lo reciente.
 
 Uso:
   python verificar_nia.py            revisa contexto, respuestas por reglas y votos; sale 1 si algo falla
-  python verificar_nia.py --openai   además manda las dos preguntas al modelo configurado
-                                     e imprime la respuesta (eso sí consume cuota)
+  python verificar_nia.py --openai   manda las quince preguntas del recorrido al modelo
+                                     configurado e imprime lo que responde (consume cuota)
 """
 
 import argparse
@@ -31,7 +31,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 _BASE_DE_PRUEBA = Path(tempfile.mkdtemp(prefix="nexplay-verificar-nia-")) / "valoraciones.db"
 os.environ["NEXPLAY_VALORACIONES_DB"] = str(_BASE_DE_PRUEBA)
 
-from api import catalogo, nia, valoraciones  # noqa: E402
+from api import catalogo, nia, nia_herramientas, valoraciones  # noqa: E402
+from api.schemas import MensajeChat  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.
 _PREGUNTAS = [
@@ -161,19 +162,6 @@ def _revisar_respuestas(juego) -> list[str]:
     return problemas
 
 
-def _preguntar_de_verdad(juego) -> list[str]:
-    """Las dos preguntas al modelo configurado. Consume cuota: solo con --openai."""
-    from api.schemas import MensajeChat
-
-    problemas = []
-    for pregunta in _PREGUNTAS[:2]:
-        salida = nia.responder(juego.appid, [MensajeChat(rol="usuario", contenido=pregunta)], None)
-        print(f"{salida['modo']}: {juego.nombre} · {pregunta}\n          {salida['respuesta']}")
-        if salida["modo"] != "openai":
-            problemas.append(f"la pregunta {pregunta!r} no llegó al modelo (modo {salida['modo']})")
-    return problemas
-
-
 def _revisar_votos() -> list[str]:
     """El almacén de los votos, contra la base temporal que se fijó al importar."""
     temporal = _BASE_DE_PRUEBA
@@ -241,20 +229,128 @@ def _revisar_votos() -> list[str]:
     return problemas
 
 
+# Las quince del recorrido de catálogo (fase 5a): filtros, un juego que no está, las dos
+# formas de pedir que elija por uno, metodología, comparar, seguimiento y fuera de tema.
+# El primer valor es el juego del que se habla; None es modo catálogo.
+_RECORRIDO = [
+    (None, "¿Qué juegos de acción tienen riesgo bajo?"),
+    (None, "¿Hay algo gratis en el catálogo?"),
+    (None, "Juegos de estrategia de menos de 300 pesos"),
+    (None, "¿Tienen Elden Ring?"),
+    (None, "¿Y Super Mario Odyssey?"),
+    (None, "¿Cuál me compro?"),
+    (None, "¿Cuál es el mejor juego del catálogo?"),
+    (None, "¿De dónde salen estos datos?"),
+    (None, "¿Cómo calculan el riesgo?"),
+    (None, "Compara Hades y Hollow Knight"),
+    (None, "¿Y el más barato de esos dos?"),
+    (None, "¿Qué opina la gente en los comentarios?"),
+    (None, "¿Quién ganó el mundial de 2022?"),
+    (1145360, "¿Por qué quedó en esa banda?"),
+    (1145360, "¿Cuánto cuesta?"),
+]
+
+# Nada de esto puede salir de Nia, conteste el modelo o las reglas.
+_NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar")
+
+
+def _revisar_recorrido(con_openai: bool) -> list[str]:
+    """Las quince preguntas, en el modo que esté configurado.
+
+    En demostración se comprueban las reglas que valen siempre; las semánticas —que diga
+    que un juego no está, que no elija por nadie— solo se pueden afirmar con el modelo, y
+    ahí además se imprimen para leerlas."""
+    problemas = []
+    del_catalogo = {j.appid for j in catalogo.buscar()}
+    nombres = {j.nombre for j in catalogo.buscar()}
+
+    for appid, pregunta in _RECORRIDO:
+        salida = nia.responder(appid, [MensajeChat(rol="usuario", contenido=pregunta)], "verificador01")
+        texto = salida["respuesta"]
+        bajo = texto.lower()
+        donde = f"[{'catálogo' if appid is None else appid}] {pregunta!r}"
+
+        if not texto.strip():
+            problemas.append(f"{donde}: respuesta vacía")
+        for prohibido in _NUNCA:
+            if prohibido in bajo:
+                problemas.append(f"{donde}: dice {prohibido!r}")
+        fuera = [a for a in salida["juegos"] if a not in del_catalogo]
+        if fuera:
+            problemas.append(f"{donde}: devuelve appids que no están en el catálogo ({fuera})")
+
+        if con_openai:
+            print(f"{salida['modo']}: {donde}\n          {texto}")
+            if salida["pasos"]:
+                print(f"          pasos: {' · '.join(salida['pasos'])}")
+            if salida["modo"] != "openai":
+                problemas.append(f"{donde}: no llegó al modelo (modo {salida['modo']})")
+            if pregunta == "¿Y Super Mario Odyssey?" and "no está" not in bajo:
+                problemas.append(f"{donde}: no dice que el juego no está en el catálogo")
+            # Un juego nombrado sin haberlo consultado no se puede pintar ni citar.
+            nombrados = {n for n in nombres if n.lower() in bajo}
+            if nombrados and not salida["juegos"]:
+                problemas.append(f"{donde}: nombra juegos sin haberlos consultado ({sorted(nombrados)[:3]})")
+
+    if not problemas:
+        print(f"catálogo: las {len(_RECORRIDO)} preguntas del recorrido pasan"
+              f" {'con el modelo' if con_openai else 'en demostración'}")
+    return problemas
+
+
+def _revisar_herramientas() -> list[str]:
+    """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
+    problemas = []
+    del_catalogo = {j.appid for j in catalogo.buscar()}
+
+    busqueda = nia_herramientas.buscar_juegos(genero="Acción")
+    if any(j["appid"] not in del_catalogo for j in busqueda["juegos"]):
+        problemas.append("buscar_juegos devolvió un appid que no está en el catálogo")
+    if len(busqueda["juegos"]) > nia_herramientas.MAXIMO_RESULTADOS:
+        problemas.append(f"buscar_juegos devolvió más de {nia_herramientas.MAXIMO_RESULTADOS}")
+    if busqueda["total"] > len(busqueda["juegos"]) and not busqueda["hay_mas"]:
+        problemas.append("buscar_juegos recorta la lista sin decir cuántos faltan")
+
+    # Orden neutro salvo que se pida otro: ordenar por precio sin que nadie lo pidiera es
+    # recomendar con otro nombre.
+    nombres = [j["nombre"] for j in busqueda["juegos"]]
+    if nombres != sorted(nombres, key=str.lower):
+        problemas.append(f"buscar_juegos no ordena alfabéticamente por omisión ({nombres[:3]})")
+    por_precio = nia_herramientas.buscar_juegos(genero="Acción", orden="precio")
+    if [j["nombre"] for j in por_precio["juegos"]] == nombres and len(nombres) > 1:
+        problemas.append("pedir orden por precio no cambia nada")
+
+    # La misma consulta hecha a mano tiene que dar lo mismo.
+    a_mano = catalogo.buscar(genero="Acción")
+    if busqueda["total"] != len(a_mano):
+        problemas.append(f"buscar_juegos cuenta {busqueda['total']} y el catálogo {len(a_mano)}")
+
+    if not nia_herramientas.resolver_juego("Hollow Knight")["encontrado"]:
+        problemas.append("resolver_juego no encuentra un juego que sí está")
+    if nia_herramientas.resolver_juego("Super Mario Odyssey")["encontrado"]:
+        problemas.append("resolver_juego encuentra un juego que no está en el catálogo")
+    if nia_herramientas.ficha_juego(999999)["encontrado"]:
+        problemas.append("ficha_juego responde por un appid que no existe")
+
+    if not problemas:
+        print(f"herramientas: {len(nia_herramientas.ESQUEMAS)} declaradas, orden alfabético por"
+              " omisión y sin appids inventados")
+    return problemas
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--openai", action="store_true", help="manda las dos preguntas al modelo configurado")
+    parser.add_argument("--openai", action="store_true", help="manda el recorrido al modelo configurado")
     argumentos = parser.parse_args()
 
     juegos = _uno_por_banda()
     problemas = _mismas_frases_que_la_ficha()
     problemas += _revisar_votos()
+    problemas += _revisar_herramientas()
+    problemas += _revisar_recorrido(argumentos.openai)
     for juego in juegos:
         problemas += _revisar_contexto(juego)
         problemas += _revisar_respuestas(juego)
-    if argumentos.openai:
-        problemas += _preguntar_de_verdad(juegos[0])
-
     print()
     if problemas:
         for problema in problemas:

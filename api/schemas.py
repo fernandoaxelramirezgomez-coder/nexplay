@@ -260,7 +260,9 @@ class SolicitudNia(BaseModel):
         pattern=r"^[A-Za-z0-9._-]+$",
         description="Id anónimo del navegador; solo se usa para el límite de frecuencia",
     )
-    appid: int
+    appid: Optional[int] = Field(
+        None, description="El juego del que se habla; sin él, Nia habla del catálogo entero"
+    )
     mensajes: list[MensajeChat] = Field(..., min_length=1, max_length=10)
     perfil: Optional[PerfilJugador] = Field(
         None, description="Se acepta por compatibilidad; la banda del contexto es la del juego, igual para cualquier perfil"
@@ -273,6 +275,13 @@ class RespuestaNia(BaseModel):
     modelo: Optional[str] = Field(None, description="Modelo usado; None en modo demostración")
     aviso: Optional[str] = Field(None, description="Qué mostrar cuando la respuesta no vino del modelo")
     id: str = Field(..., description="Identifica esta respuesta para poder votarla")
+    pasos: list[str] = Field(
+        default_factory=list, description="Qué consultó antes de responder, en orden; vacío si no consultó nada"
+    )
+    juegos: list[int] = Field(
+        default_factory=list,
+        description="Appids que la respuesta menciona y que una herramienta devolvió en este turno",
+    )
     version_prompt: str = Field(
         ..., description="Qué prompt la produjo: hash del texto del sistema, o 'reglas' en modo demostración"
     )

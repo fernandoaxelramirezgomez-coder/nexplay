@@ -24,14 +24,15 @@ const MAXIMO_SUGERENCIAS = 12;
         <div>
           <h1>Habla con Nia</h1>
           <p class="lectura entrada">
-            Responde con los datos del juego que elijas: su banda, los motivos que más aparecen en las
-            reseñas, la crítica y el precio. No recomienda comprar ni no comprar.
+            Responde con los datos del catálogo: qué juegos hay y con qué banda, los motivos que más
+            aparecen en sus reseñas, la crítica y el precio. Puedes fijar un juego o preguntar por
+            todos. No recomienda comprar ni no comprar.
           </p>
         </div>
       </header>
 
-      @if (elegido(); as juego) {
-        <div class="conversacion">
+      <div class="conversacion">
+        @if (elegido(); as juego) {
           <aside class="juego panel-vidrio" data-testid="nia-juego">
             <a class="ficha" [routerLink]="['/juego', juego.appid]">
               <app-portada class="portada" [src]="juego.portada_url" />
@@ -39,21 +40,21 @@ const MAXIMO_SUGERENCIAS = 12;
             </a>
             <app-pildora-banda [banda]="juego.banda_riesgo" />
             <p class="meta">
-              Nia responde con los datos de este juego. Para hablar de otro, cámbialo aquí.
+              Nia responde con los datos de este juego. Suéltalo para volver a hablar de todo el catálogo.
             </p>
             <div class="acciones">
               <a class="boton-texto" [routerLink]="['/juego', juego.appid]">Ver su ficha completa →</a>
               <button type="button" class="boton-texto" data-testid="nia-cambiar" (click)="soltar()">
-                Cambiar de juego
+                Hablar de todo el catálogo
               </button>
             </div>
           </aside>
-          <div class="chat panel-vidrio">
-            <app-nia [appid]="juego.appid" [muestraTitulo]="false" [muestraIntro]="false" [llenaAlto]="true" />
-          </div>
-        </div>
-      } @else {
-        <section class="elegir" data-testid="nia-elegir">
+        } @else {
+          <aside class="elegir panel-vidrio" data-testid="nia-elegir">
+            <p class="meta">
+              Estás hablando de los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo. Si quieres
+              centrarte en uno, elígelo aquí.
+            </p>
           <label class="buscar">
             <span class="etiqueta">¿De qué juego quieres hablar?</span>
             <input
@@ -77,11 +78,22 @@ const MAXIMO_SUGERENCIAS = 12;
                 </button>
               </li>
             } @empty {
-              <li class="meta vacio" data-testid="nia-vacio">Ningún juego del catálogo se llama así.</li>
+              @if (texto().trim()) {
+                <li class="meta vacio" data-testid="nia-vacio">Ningún juego del catálogo se llama así.</li>
+              }
             }
           </ul>
-        </section>
-      }
+          </aside>
+        }
+        <div class="chat panel-vidrio">
+          <app-nia
+            [appid]="elegido()?.appid ?? null"
+            [muestraTitulo]="false"
+            [muestraIntro]="false"
+            [llenaAlto]="true"
+          />
+        </div>
+      </div>
     </div>
   `,
   styles: `
@@ -253,7 +265,7 @@ export class NiaPagina {
   /** ?appid=: la ficha enlaza aquí con el juego ya elegido. */
   readonly appid = input<string>();
 
-  private readonly catalogo = inject(CatalogoStore);
+  protected readonly catalogo = inject(CatalogoStore);
   private readonly router = inject(Router);
 
   protected readonly texto = signal('');
@@ -272,10 +284,11 @@ export class NiaPagina {
     computation: (juego) => juego,
   });
 
+  /** Solo al teclear: el chat ya funciona sin elegir nada, así que una lista de 123
+   * juegos abierta al entrar es una columna infinita al lado de la conversación. */
   protected readonly sugerencias = computed(() => {
-    const juegos = this.catalogo.juegos();
     const texto = this.texto().trim();
-    return (texto ? filtrarJuegos(juegos, { texto, genero: '' }) : juegos).slice(0, MAXIMO_SUGERENCIAS);
+    return texto ? filtrarJuegos(this.catalogo.juegos(), { texto, genero: '' }).slice(0, MAXIMO_SUGERENCIAS) : [];
   });
 
   protected elegir(juego: JuegoCatalogo): void {

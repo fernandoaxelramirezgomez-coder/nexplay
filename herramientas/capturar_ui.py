@@ -1027,6 +1027,39 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _angular_nia_catalogo(pagina: Page, url: str, destino: Path) -> list[str]:
+    """En /nia se puede hablar del catálogo entero sin fijar ningún juego (fase 5a)."""
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/nia")
+    pagina.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+
+    if not pagina.get_by_test_id("nia-elegir").count():
+        problemas.append("/nia no ofrece elegir un juego")
+    # La lista de juegos solo aparece al teclear: 123 al entrar es una columna infinita.
+    if pagina.get_by_test_id("nia-sugerencia").count():
+        problemas.append("el selector de /nia lista juegos sin que nadie haya escrito nada")
+    pagina.get_by_test_id("nia-buscar").fill("hollow")
+    try:
+        pagina.get_by_test_id("nia-sugerencia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        problemas.append("el selector de /nia no propone nada al teclear")
+    pagina.get_by_test_id("nia-buscar").fill("")
+    pagina.wait_for_timeout(300)
+
+    # Y se puede preguntar sin elegir: la API recibe la pregunta sin appid.
+    sugerencias = pagina.get_by_test_id("sugerencia-nia")
+    if not sugerencias.count():
+        return problemas + ["/nia no ofrece preguntas de arranque sin juego elegido"]
+    sugerencias.first.click()
+    pagina.get_by_test_id("mensaje-nia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    _esperar_quietud(pagina)
+    ruta = destino / "nia-catalogo.png"
+    pagina.get_by_test_id("nia-pagina").screenshot(path=ruta)
+    if not problemas:
+        print(f"catálogo: /nia responde sin juego elegido y propone fijar uno ({ruta.relative_to(_RAIZ)})")
+    return problemas
+
+
 def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
     """El ejemplo del inicio: curados de las tres bandas, flechas, pausa y rotación."""
     problemas = []
@@ -1866,6 +1899,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
         + _angular_voto_nia(pagina, url, destino)
+        + _angular_nia_catalogo(pagina, url, destino)
         + _angular_carrusel(pagina, url, destino)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
@@ -1891,6 +1925,8 @@ _NIA_FALSA = json.dumps({
     # revisa aquí es la interfaz. El almacén de verdad lo prueba verificar_nia.py.
     "id": _ID_RESPUESTA_FALSA,
     "version_prompt": "reglas",
+    "pasos": [],
+    "juegos": [],
 })
 
 
