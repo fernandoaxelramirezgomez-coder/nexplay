@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="es" data-tema="oscuro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NexPlay · Identidad 6A</title>
+<!-- Mockup de revisión, no la app. Las fuentes vienen de Google Fonts solo aquí; en la
+     app se instalan como paquetes @fontsource (OFL) para que funcione sin conexión. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Orbitron:wght@700;900&family=Exo+2:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+/>
+<style>
+  /* ── Tokens propuestos ─────────────────────────────────────────────────────── */
+  :root {
+    --display: 'Chakra Petch', 'Exo 2', system-ui, sans-serif;
+    --lectura: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* Escala con piso de 16 px: nada de lectura por debajo. */
+    --t-16: 16px;
+    --t-17: 17px;
+    --t-20: 20px;
+    --t-24: 24px;
+    --t-32: clamp(26px, 3.2vw, 32px);
+    --t-titulo-vista: clamp(44px, 7.2vw, 92px);
+
+    --fondo-base: #05060f;
+    --fondo-medio: #0b0a24;
+    --fondo-final: #1a0b33;
+    --tinta: #f1f3ff;
+    --tinta-lectura: #d8dbf7;
+    --tinta-meta: #b8bce6;
+    --titulo: linear-gradient(180deg, #ffffff 0%, #d6fbff 54%, #8eeeff 100%);
+    --titulo-sombra: 0 18px 50px rgb(34 211 238 / 0.18);
+    --superficie: rgb(9 10 26 / 0.78);
+    --superficie-borde: rgb(255 255 255 / 0.14);
+    --estrella-a: rgb(255 255 255 / 0.55);
+    --estrella-b: rgb(190 210 255 / 0.35);
+    --rejilla-a: rgb(34 211 238 / 0.05);
+    --rejilla-b: rgb(168 85 247 / 0.045);
+    --nebulosa-alfa: 0.35;
+    --brillo-alfa: 0.14;
+
+    /* Un color por acción, con su tinta para leerse encima de la superficie. */
+    --cian: #22e0ff;       --cian-tinta: #22e0ff;       --cian-canal: 34 224 255;
+    --dorado: #fbbf24;     --dorado-tinta: #fcd34d;     --dorado-canal: 251 191 36;
+    --morado: #a855f7;     --morado-tinta: #c4b5fd;     --morado-canal: 168 85 247;
+    --verde: #34d399;      --verde-tinta: #6ee7b7;      --verde-canal: 52 211 153;
+    --rosa: #f472b6;       --rosa-tinta: #f9a8d4;       --rosa-canal: 244 114 182;
+
+    --banda-baja: #3df2a7; --banda-media: #ffc53d; --banda-alta: #ff4d97;
+    --radio: 18px;
+  }
+
+  /* En claro los títulos pierden el degradado: uno claro sobre papel no se lee. */
+  :root[data-tema='claro'] {
+    --fondo-base: #f6f7ff;
+    --fondo-medio: #eceefe;
+    --fondo-final: #f1e9ff;
+    --tinta: #11143a;
+    --tinta-lectura: #23275a;
+    --tinta-meta: #454a78;
+    --titulo: linear-gradient(180deg, #11143a, #11143a);
+    --titulo-sombra: none;
+    --superficie: rgb(255 255 255 / 0.9);
+    --superficie-borde: rgb(17 20 58 / 0.14);
+    --estrella-a: rgb(40 44 110 / 0.22);
+    --estrella-b: rgb(90 60 160 / 0.16);
+    --rejilla-a: rgb(11 111 140 / 0.06);
+    --rejilla-b: rgb(109 40 217 / 0.05);
+    --nebulosa-alfa: 0.18;
+    --brillo-alfa: 0.12;
+
+    --cian-tinta: #0b6f8c;
+    --dorado-tinta: #92400e;
+    --morado-tinta: #6d28d9;
+    --verde-tinta: #047857;
+    --rosa-tinta: #be185d;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  :root[data-tema='claro'] { color-scheme: light; }
+  body {
+    margin: 0;
+    font-family: var(--lectura);
+    font-size: var(--t-17);
+    line-height: 1.55;
+    color: var(--tinta-lectura);
+    background: var(--fondo-base);
+  }
+  img { max-width: 100%; display: block; }
+  p { margin: 0; }
+
+  /* ── Fondo espacial, por contexto ──────────────────────────────────────────── */
+  /* Todo CSS: dos capas de estrellas de tamaños que no se repiten igual, dos nebulosas
+     con el color del contexto, la rejilla fina de la referencia y el brillo detrás del
+     contenido principal. Sin imágenes de nadie. */
+  .escenario {
+    --neb1: 139 92 246;
+    --neb2: 34 224 255;
+    --acento: var(--cian-canal);
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(ellipse 42% 34% at 50% 38%, rgb(var(--acento) / var(--brillo-alfa)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 0.6px, transparent 1.2px) 17px 29px / 53px 61px,
+      radial-gradient(ellipse 58% 48% at 78% 12%, rgb(var(--neb1) / var(--nebulosa-alfa)), transparent 70%),
+      radial-gradient(ellipse 52% 58% at 10% 92%, rgb(var(--neb2) / calc(var(--nebulosa-alfa) * 0.72)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo-base) 0%, var(--fondo-medio) 45%, var(--fondo-final) 100%);
+  }
+  .escenario[data-contexto='inicio']   { --neb1: 139 92 246; --neb2: 34 224 255;  --acento: var(--morado-canal); }
+  .escenario[data-contexto='explorar'] { --neb1: 34 224 255; --neb2: 59 130 246;  --acento: var(--cian-canal); }
+  .escenario[data-contexto='ficha']    { --neb1: 99 102 241; --neb2: 244 114 182; --acento: 99 102 241; }
+  .escenario[data-contexto='perfil']   { --neb1: 236 72 153; --neb2: 139 92 246;  --acento: var(--rosa-canal); }
+  .escenario[data-contexto='nia']      { --neb1: 168 85 247; --neb2: 244 114 182; --acento: var(--morado-canal); }
+  .escenario[data-contexto='panorama'] { --neb1: 52 211 153; --neb2: 34 224 255;  --acento: var(--verde-canal); }
+  .escenario[data-contexto='comparar'] { --neb1: 251 191 36; --neb2: 249 115 22;  --acento: var(--dorado-canal); }
+  /* Cuánta nebulosa aguanta cada color antes de que la nota baje de 4.5:1 sobre su zona
+     más clara: los morados, mucha; el cian, el verde y el dorado, que son claros, poca. */
+  :root:not([data-tema='claro']) .escenario[data-contexto='inicio']   { --nebulosa-alfa: 0.4; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='explorar'] { --nebulosa-alfa: 0.2; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='ficha']    { --nebulosa-alfa: 0.4; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='perfil']   { --nebulosa-alfa: 0.34; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='nia']      { --nebulosa-alfa: 0.4; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='panorama'] { --nebulosa-alfa: 0.24; }
+  :root:not([data-tema='claro']) .escenario[data-contexto='comparar'] { --nebulosa-alfa: 0.2; }
+
+  /* ── Tipografía ────────────────────────────────────────────────────────────── */
+  .titulo-vista {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: var(--t-titulo-vista);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    background: var(--titulo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: var(--titulo-sombra);
+  }
+  .titulo-seccion {
+    margin: 0 0 8px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: var(--t-32);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--titulo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Mayúsculas espaciadas solo para lo que se pulsa o rotula una acción. */
+  .etiqueta-accion {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-16);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .entrada {
+    max-width: 62ch;
+    margin-top: 20px;
+    font-size: var(--t-20);
+    line-height: 1.5;
+    color: var(--tinta-lectura);
+  }
+  .meta { color: var(--tinta-meta); font-size: var(--t-16); }
+  .dato { font-family: var(--mono); font-size: var(--t-16); }
+
+  /* ── Estructura del mockup ─────────────────────────────────────────────────── */
+  .portada { padding: clamp(48px, 8vw, 110px) clamp(16px, 5vw, 72px) clamp(40px, 6vw, 80px); }
+  .sobrelinea { color: var(--cian-tinta); margin-bottom: 18px; }
+  main { display: flex; flex-direction: column; gap: 0; }
+  section.bloque {
+    padding: clamp(40px, 6vw, 72px) clamp(16px, 5vw, 72px);
+    border-top: 1px solid var(--superficie-borde);
+  }
+  .bloque > .intro { max-width: 66ch; margin-bottom: 28px; }
+  .rejilla { display: grid; gap: 18px; }
+  .tres { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .panel {
+    padding: 22px;
+    border: 1px solid var(--superficie-borde);
+    border-radius: var(--radio);
+    background: var(--superficie);
+    backdrop-filter: blur(6px);
+  }
+  .rotulo { font-family: var(--mono); font-size: var(--t-16); color: var(--tinta-meta); margin-bottom: 12px; }
+  .recomendada { color: var(--verde-tinta); }
+
+  /* Muestras de tipografía */
+  .especimen .grande { font-size: clamp(34px, 4vw, 46px); line-height: 1; text-transform: uppercase; }
+  .especimen .mediano { font-size: 24px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .especimen .cuerpo { margin-top: 14px; font-family: var(--lectura); font-size: var(--t-17); color: var(--tinta-lectura); }
+  .f-chakra { font-family: 'Chakra Petch', sans-serif; font-weight: 700; }
+  .f-orbitron { font-family: 'Orbitron', sans-serif; font-weight: 900; }
+  .f-exo { font-family: 'Exo 2', sans-serif; font-weight: 800; }
+  .degradado {
+    background: var(--titulo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Fondos por contexto */
+  .fondos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .fondo {
+    min-height: 260px;
+    padding: 26px;
+    border-radius: var(--radio);
+    border: 1px solid var(--superficie-borde);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .fondo .titulo-vista { font-size: clamp(36px, 4vw, 48px); }
+  .fondo .contraste { font-family: var(--mono); font-size: var(--t-16); color: var(--tinta-meta); }
+
+  /* Barra lateral: expandida y contraída */
+  .barras { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .barra {
+    width: 264px;
+    padding: 20px 14px;
+    border-radius: var(--radio);
+    border: 1px solid var(--superficie-borde);
+    background: var(--superficie);
+  }
+  .barra.corta { width: 84px; padding: 20px 10px; }
+  .barra .logo { width: 100%; height: auto; margin-bottom: 18px; }
+  /* Contraída: solo la marca, recortada del mismo PNG, a todo el ancho de la columna. */
+  /* display: block, o el recorte no recorta: un span en línea ignora alto y overflow. */
+  .marca-recorte { display: block; width: 64px; height: 54px; overflow: hidden; margin: 0 auto 18px; }
+  .marca-recorte img { width: 99px; max-width: none; margin-left: -20px; }
+  .menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .menu a {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    align-items: center;
+    column-gap: 12px;
+    padding: 10px 10px;
+    border-radius: 14px;
+    color: var(--tinta);
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .menu a .nombre { font-family: var(--display); font-weight: 600; font-size: 18px; letter-spacing: 0.04em; }
+  .menu a .sub { grid-column: 2; font-size: var(--t-16); color: var(--tinta-meta); line-height: 1.3; }
+  .menu a .icono { grid-row: span 2; }
+  .menu a.activo { border-color: rgb(var(--cian-canal) / 0.6); background: rgb(var(--cian-canal) / 0.12); }
+  .menu a.activo .nombre { color: var(--cian-tinta); }
+  .barra.corta .menu a { grid-template-columns: 1fr; justify-items: center; padding: 10px 0; }
+  .barra.corta .menu a .nombre, .barra.corta .menu a .sub { display: none; }
+  .icono {
+    width: 36px; height: 36px; display: grid; place-items: center;
+    border-radius: 10px;
+    color: var(--c, var(--cian-tinta));
+    background: rgb(var(--canal, var(--cian-canal)) / 0.14);
+  }
+  .icono svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .perfil-activo {
+    margin-top: 14px; padding: 12px; border-radius: 14px;
+    border: 1px solid rgb(var(--verde-canal) / 0.55);
+    background: rgb(var(--verde-canal) / 0.1);
+    color: var(--verde-tinta); font-size: var(--t-16);
+  }
+  .barra.corta .perfil-activo { padding: 8px; text-align: center; font-size: 18px; }
+  .solo-lector {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ── Botones ───────────────────────────────────────────────────────────────── */
+  .accion-principal {
+    --canal: var(--cian-canal);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 22px 26px;
+    align-items: center;
+    padding: clamp(22px, 3vw, 34px);
+    border-radius: 24px;
+    border: 1px solid rgb(var(--canal) / 0.55);
+    background:
+      radial-gradient(ellipse 60% 90% at 0% 0%, rgb(var(--canal) / 0.18), transparent 70%),
+      var(--superficie);
+    box-shadow: 0 0 0 1px rgb(var(--canal) / 0.12), 0 24px 60px rgb(0 0 0 / 0.35);
+  }
+  .accion-principal .icono-grande {
+    width: 84px; height: 84px; border-radius: 22px; display: grid; place-items: center;
+    color: var(--cian-tinta); background: rgb(var(--canal) / 0.16);
+    box-shadow: 0 0 40px rgb(var(--canal) / 0.25);
+  }
+  .accion-principal .icono-grande svg { width: 44px; height: 44px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .accion-principal h3 {
+    margin: 0; font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    font-size: clamp(30px, 4.4vw, 52px); line-height: 1; letter-spacing: 0.02em;
+    background: var(--titulo); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .accion-principal .sub { margin-top: 8px; font-size: var(--t-20); color: var(--tinta-lectura); }
+  .accion-principal .buscar {
+    grid-column: 1 / -1;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .campo {
+    flex: 1; min-height: 56px; padding: 0 20px; border-radius: 14px;
+    border: 1px solid var(--superficie-borde); background: rgb(0 0 0 / 0.25);
+    display: flex; align-items: center; color: var(--tinta-meta); font-size: var(--t-17);
+  }
+  :root[data-tema='claro'] .campo { background: #fff; }
+  .boton-cta {
+    min-height: 56px; padding: 0 26px; border: 0; border-radius: 14px;
+    background: var(--cian); color: #04121a; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    box-shadow: 0 0 28px rgb(var(--cian-canal) / 0.35);
+  }
+  :root[data-tema='claro'] .boton-cta { background: #0b6f8c; color: #fff; box-shadow: none; }
+
+  .tarjetas-accion { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 760px) { .tarjetas-accion { grid-template-columns: 1fr; } }
+  .tarjeta-accion {
+    --canal: var(--cian-canal); --c: var(--cian-tinta);
+    display: grid; grid-template-columns: 52px 1fr 24px; gap: 4px 16px; align-items: center;
+    min-height: 92px; padding: 18px 20px;
+    border-radius: var(--radio);
+    border: 1px solid rgb(var(--canal) / 0.4);
+    background: linear-gradient(90deg, rgb(var(--canal) / 0.12), transparent 60%), var(--superficie);
+    color: var(--tinta); text-decoration: none; cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  }
+  .tarjeta-accion .icono { width: 52px; height: 52px; border-radius: 14px; grid-row: span 2; }
+  .tarjeta-accion .icono svg { width: 26px; height: 26px; }
+  .tarjeta-accion .titulo { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c); }
+  .tarjeta-accion .sub { grid-column: 2; font-size: var(--t-16); color: var(--tinta-lectura); line-height: 1.35; }
+  .tarjeta-accion .chevron { grid-column: 3; grid-row: 1 / span 2; color: var(--c); font-size: 26px; font-family: var(--display); }
+  .tarjeta-accion:hover, .tarjeta-accion.es-hover {
+    transform: translateY(-3px);
+    border-color: rgb(var(--canal) / 0.95);
+    box-shadow: 0 0 0 1px rgb(var(--canal) / 0.5), 0 0 34px rgb(var(--canal) / 0.35);
+  }
+  .tarjeta-accion:active, .tarjeta-accion.es-activo {
+    transform: translateY(1px) scale(0.99);
+    background: linear-gradient(90deg, rgb(var(--canal) / 0.3), rgb(var(--canal) / 0.12)), var(--superficie);
+    box-shadow: inset 0 0 0 2px rgb(var(--canal) / 0.9);
+  }
+  .tarjeta-accion[aria-disabled='true'] {
+    filter: grayscale(1); opacity: 0.5; cursor: not-allowed;
+    border-style: dashed; transform: none; box-shadow: none;
+  }
+
+  .estados { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+  .estados .rotulo { margin-bottom: 8px; }
+
+  /* Compactos: pastilla de 44 px, etiqueta de acción, el mismo trato de estados. */
+  .compactos { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .compacto {
+    --canal: var(--cian-canal); --c: var(--cian-tinta);
+    min-height: 44px; padding: 0 18px; border-radius: 999px;
+    border: 1px solid rgb(var(--canal) / 0.55); background: rgb(var(--canal) / 0.1);
+    color: var(--c); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .compacto.es-hover { background: rgb(var(--canal) / 0.22); border-color: rgb(var(--canal)); box-shadow: 0 0 18px rgb(var(--canal) / 0.35); }
+  .compacto.es-activo { background: rgb(var(--canal) / 0.34); box-shadow: inset 0 0 0 2px rgb(var(--canal)); }
+  .compacto[disabled] { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; border-style: dashed; }
+  /* En claro, el borde del color casi no se ve sobre blanco: hover y activo usan su tinta. */
+  :root[data-tema='claro'] .compacto.es-hover,
+  :root[data-tema='claro'] .compacto.es-activo,
+  :root[data-tema='claro'] .tarjeta-accion.es-hover,
+  :root[data-tema='claro'] .tarjeta-accion:hover { border-color: var(--c); }
+  :root[data-tema='claro'] .compacto.es-activo { box-shadow: inset 0 0 0 2px var(--c); }
+
+  /* Los colores por acción van al final: declarados antes, el cian por omisión de
+     .compacto los pisaba y todos los compactos salían cian. */
+  .cian   { --canal: var(--cian-canal);   --c: var(--cian-tinta); }
+  .dorado { --canal: var(--dorado-canal); --c: var(--dorado-tinta); }
+  .morado { --canal: var(--morado-canal); --c: var(--morado-tinta); }
+  .verde  { --canal: var(--verde-canal);  --c: var(--verde-tinta); }
+  .rosa   { --canal: var(--rosa-canal);   --c: var(--rosa-tinta); }
+
+  /* Tema: botón redondo flotante. */
+  .boton-tema {
+    position: fixed; right: 18px; bottom: 18px; z-index: 10;
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 1px solid rgb(var(--cian-canal) / 0.6);
+    background: var(--superficie); color: var(--cian-tinta);
+    display: grid; place-items: center; cursor: pointer;
+    box-shadow: 0 0 26px rgb(var(--cian-canal) / 0.3);
+  }
+  .boton-tema svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* ── Nombre de la banda ────────────────────────────────────────────────────── */
+  .ficha-muestra { display: flex; flex-direction: column; gap: 14px; }
+  .ficha-muestra .juego { font-family: var(--display); font-weight: 700; font-size: 36px; text-transform: uppercase;
+    background: var(--titulo); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .chip-senal {
+    position: relative;
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 40px; padding: 0 8px 0 16px; border-radius: 999px;
+    border: 1px solid; font-size: var(--t-16); font-weight: 600;
+  }
+  .chip-senal.baja  { color: #04241a; background: var(--banda-baja);  border-color: #0f7a52; }
+  .chip-senal.media { color: #2a1c00; background: var(--banda-media); border-color: #8a5a00; }
+  .chip-senal.alta  { color: #2d0014; background: var(--banda-alta);  border-color: #9d1450; }
+  .chip-senal .info {
+    width: 28px; height: 28px; border-radius: 50%; border: 0; display: grid; place-items: center;
+    background: rgb(0 0 0 / 0.18); color: inherit; cursor: help;
+  }
+  .chip-senal .info svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+  /* La explicación de una línea: al pasar el cursor y con foco, para teclado y táctil. */
+  .chip-senal .ayuda {
+    position: absolute; left: 0; top: calc(100% + 8px); z-index: 5;
+    width: max-content; max-width: min(92vw, 520px);
+    padding: 10px 14px; border-radius: 12px;
+    background: #0d0f26; color: #eef0ff; border: 1px solid rgb(var(--cian-canal) / 0.5);
+    font-size: var(--t-16); font-weight: 500; line-height: 1.4;
+    opacity: 0; pointer-events: none; transform: translateY(-4px);
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+  :root[data-tema='claro'] .chip-senal .ayuda { background: #fff; color: #11143a; border-color: #0b6f8c; }
+  .chip-senal:hover .ayuda, .chip-senal:focus-within .ayuda, .chip-senal.abierta .ayuda { opacity: 1; transform: none; }
+  /* En la muestra, la explicación se ancla a su tarjeta y no al chip: pegada al chip, en
+     la tercera columna se salía de la pantalla. */
+  .opcion-nombre { position: relative; padding-bottom: 96px; }
+  .opcion-nombre > .rotulo { min-height: 3.2em; }
+  .opcion-nombre .chip-senal { position: static; }
+  .opcion-nombre .chip-senal .ayuda { left: 22px; right: 22px; top: auto; bottom: 22px; width: auto; max-width: none; }
+
+  /* ── Medidas ───────────────────────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; font-size: var(--t-16); }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--superficie-borde); }
+  th { font-family: var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta); font-weight: 600; }
+  td.num { font-family: var(--mono); }
+  .pasa { color: var(--verde-tinta); }
+  .falla { color: var(--rosa-tinta); font-weight: 700; }
+  .tabla-scroll { overflow-x: auto; }
+
+  @media (max-width: 640px) {
+    .accion-principal { grid-template-columns: 1fr; }
+    .accion-principal .icono-grande { width: 64px; height: 64px; }
+    .accion-principal .buscar { flex-direction: column; align-items: stretch; }
+    .boton-cta { justify-content: center; }
+    .barra { width: 100%; }
+    .barra.corta { width: 84px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Iconos: trazos propios, sin biblioteca. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-inicio" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-explorar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-comparar" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></symbol>
+  <symbol id="i-nia" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-historial" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-panorama" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-como" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.6M12 17h.01"/></symbol>
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-luna" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+</svg>
+
+<button class="boton-tema" type="button" aria-label="Cambiar a tema claro" id="boton-tema">
+  <svg><use href="#i-sol" /></svg>
+</button>
+
+<header class="portada escenario" data-contexto="inicio">
+  <p class="sobrelinea etiqueta-accion">Fase 6A · propuesta para revisar</p>
+  <h1 class="titulo-vista">Identidad<br />visual</h1>
+  <p class="entrada">
+    Cómo se vería NexPlay con fondos espaciales por vista, títulos que no se confunden con
+    el texto, botones con color propio y letra de lectura de 16 px para arriba. Nada de
+    esto está en la app todavía: es para decidir antes de programar.
+  </p>
+</header>
+
+<main>
+
+  <!-- ── 2. Tipografía ─────────────────────────────────────────────────────── -->
+  <section class="bloque escenario muestra" data-contexto="explorar" id="tipografia">
+    <h2 class="titulo-seccion">Tipografía</h2>
+    <p class="intro meta">Tres candidatas para títulos, con el mismo texto, acentos y eñes. El cuerpo es Inter a 17 px en las tres.</p>
+    <div class="rejilla tres">
+      <article class="panel especimen">
+        <p class="rotulo recomendada">Chakra Petch · recomendada</p>
+        <p class="grande f-chakra degradado">Explorar</p>
+        <p class="mediano f-chakra">¿Qué juego te espera? · 123 juegos · 2 h</p>
+        <p class="cuerpo">Añade un juego a comparar y mira qué dicen las reseñas de quien jugó menos de dos horas.</p>
+      </article>
+      <article class="panel especimen">
+        <p class="rotulo">Orbitron</p>
+        <p class="grande f-orbitron degradado">Explorar</p>
+        <p class="mediano f-orbitron">¿Qué juego te espera? · 123 juegos · 2 h</p>
+        <p class="cuerpo">Añade un juego a comparar y mira qué dicen las reseñas de quien jugó menos de dos horas.</p>
+      </article>
+      <article class="panel especimen">
+        <p class="rotulo">Exo 2</p>
+        <p class="grande f-exo degradado">Explorar</p>
+        <p class="mediano f-exo">¿Qué juego te espera? · 123 juegos · 2 h</p>
+        <p class="cuerpo">Añade un juego a comparar y mira qué dicen las reseñas de quien jugó menos de dos horas.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ── 1. Fondos por contexto ────────────────────────────────────────────── -->
+  <section class="bloque muestra" id="fondos">
+    <h2 class="titulo-seccion">Fondos por vista</h2>
+    <p class="intro meta">Siete fondos hechos solo con CSS: estrellas en tres capas, dos nebulosas con el color de la vista, la rejilla fina y un brillo detrás del contenido. Debajo de cada uno, el contraste medido del texto de lectura sobre su zona más clara.</p>
+    <div class="rejilla fondos">
+      <div class="fondo escenario" data-contexto="inicio"><h3 class="titulo-vista">Inicio</h3><p>Qué es NexPlay y por dónde empezar.</p><p class="contraste" data-medir="inicio"></p></div>
+      <div class="fondo escenario" data-contexto="explorar"><h3 class="titulo-vista">Explorar</h3><p>Los 123 juegos, por nivel de señal.</p><p class="contraste" data-medir="explorar"></p></div>
+      <div class="fondo escenario" data-contexto="ficha"><h3 class="titulo-vista">Hades</h3><p>La ficha de un juego y lo que dicen sus reseñas.</p><p class="contraste" data-medir="ficha"></p></div>
+      <div class="fondo escenario" data-contexto="perfil"><h3 class="titulo-vista">Tu perfil</h3><p>Cuéntanos cómo juegas · 1 minuto.</p><p class="contraste" data-medir="perfil"></p></div>
+      <div class="fondo escenario" data-contexto="nia"><h3 class="titulo-vista">Nia</h3><p>Pregúntale lo que quieras del catálogo.</p><p class="contraste" data-medir="nia"></p></div>
+      <div class="fondo escenario" data-contexto="panorama"><h3 class="titulo-vista">Panorama</h3><p>Los datos del catálogo en gráficas.</p><p class="contraste" data-medir="panorama"></p></div>
+      <div class="fondo escenario" data-contexto="comparar"><h3 class="titulo-vista">Comparar</h3><p>Hasta cuatro juegos lado a lado.</p><p class="contraste" data-medir="comparar"></p></div>
+    </div>
+  </section>
+
+  <!-- ── 3 y 5. Logo y menú ────────────────────────────────────────────────── -->
+  <section class="bloque escenario muestra" data-contexto="nia" id="logo-menu">
+    <h2 class="titulo-seccion">Logo y menú</h2>
+    <p class="intro meta">El logo ocupa todo el ancho de la barra: hoy es una marca apilada casi cuadrada metida en 240 px, con un lema de letra muy fina. Contraída, queda solo la marca, recortada del mismo archivo. Cada vista con icono, nombre y una línea que dice qué hay ahí.</p>
+    <div class="barras">
+      <nav class="barra" aria-label="Menú expandido">
+        <img class="logo logo-tema" src="../../../frontend/public/logo-oscuro.png" alt="NexPlay" width="1035" height="894" />
+        <ul class="menu">
+          <li><a href="#"><span class="icono" style="--c:var(--morado-tinta);--canal:var(--morado-canal)"><svg><use href="#i-inicio"/></svg></span><span class="nombre">Inicio</span><span class="sub">Qué es NexPlay</span></a></li>
+          <li><a href="#" class="activo"><span class="icono"><svg><use href="#i-explorar"/></svg></span><span class="nombre">Explorar</span><span class="sub">Los 123 juegos</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--dorado-tinta);--canal:var(--dorado-canal)"><svg><use href="#i-comparar"/></svg></span><span class="nombre">Comparar</span><span class="sub">Hasta 4 lado a lado</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--morado-tinta);--canal:var(--morado-canal)"><svg><use href="#i-nia"/></svg></span><span class="nombre">Nia</span><span class="sub">Tu asistente</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--rosa-tinta);--canal:var(--rosa-canal)"><svg><use href="#i-perfil"/></svg></span><span class="nombre">Tu perfil</span><span class="sub">Cómo juegas tú</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--tinta-meta);--canal:150 150 190"><svg><use href="#i-historial"/></svg></span><span class="nombre">Historial</span><span class="sub">Lo que ya viste</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--verde-tinta);--canal:var(--verde-canal)"><svg><use href="#i-panorama"/></svg></span><span class="nombre">Panorama</span><span class="sub">Los datos en gráficas</span></a></li>
+          <li><a href="#"><span class="icono" style="--c:var(--tinta-meta);--canal:150 150 190"><svg><use href="#i-como"/></svg></span><span class="nombre">Cómo funciona</span><span class="sub">Método y fuentes</span></a></li>
+        </ul>
+        <p class="perfil-activo">✓ Perfil activo · Acción, Rol</p>
+      </nav>
+      <nav class="barra corta" aria-label="Menú contraído">
+        <span class="marca-recorte"><img class="logo-tema" src="../../../frontend/public/logo-oscuro.png" alt="NexPlay" /></span>
+        <ul class="menu">
+          <li><a href="#" aria-label="Inicio"><span class="icono" style="--c:var(--morado-tinta);--canal:var(--morado-canal)"><svg><use href="#i-inicio"/></svg></span></a></li>
+          <li><a href="#" class="activo" aria-label="Explorar"><span class="icono"><svg><use href="#i-explorar"/></svg></span></a></li>
+          <li><a href="#" aria-label="Comparar"><span class="icono" style="--c:var(--dorado-tinta);--canal:var(--dorado-canal)"><svg><use href="#i-comparar"/></svg></span></a></li>
+          <li><a href="#" aria-label="Nia"><span class="icono" style="--c:var(--morado-tinta);--canal:var(--morado-canal)"><svg><use href="#i-nia"/></svg></span></a></li>
+          <li><a href="#" aria-label="Tu perfil"><span class="icono" style="--c:var(--rosa-tinta);--canal:var(--rosa-canal)"><svg><use href="#i-perfil"/></svg></span></a></li>
+          <li><a href="#" aria-label="Panorama"><span class="icono" style="--c:var(--verde-tinta);--canal:var(--verde-canal)"><svg><use href="#i-panorama"/></svg></span></a></li>
+        </ul>
+        <p class="perfil-activo"><span aria-hidden="true">✓</span><span class="solo-lector">Perfil activo</span></p>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ── 4. Botones ────────────────────────────────────────────────────────── -->
+  <section class="bloque escenario muestra" data-contexto="inicio" id="botones">
+    <h2 class="titulo-seccion">Botones</h2>
+    <p class="intro meta">Una acción principal por pantalla, las secundarias como tarjetas anchas con su color, y compactos para lo pequeño. Los cuatro estados, lado a lado.</p>
+
+    <div class="accion-principal">
+      <span class="icono-grande"><svg><use href="#i-buscar"/></svg></span>
+      <div>
+        <h3>Buscar un juego</h3>
+        <p class="sub">Escribe el nombre y mira su señal antes de comprarlo.</p>
+      </div>
+      <div class="buscar">
+        <span class="campo">Hollow Knight, Cyberpunk, Portal…</span>
+        <button class="boton-cta etiqueta-accion" type="button">Buscar un juego →</button>
+      </div>
+    </div>
+
+    <p class="rotulo" style="margin-top:32px">Qué puedes hacer aquí</p>
+    <div class="rejilla tarjetas-accion">
+      <a class="tarjeta-accion cian" href="#"><span class="icono"><svg><use href="#i-explorar"/></svg></span><span class="titulo">Explorar</span><span class="sub">Los 123 juegos, por nivel de señal</span><span class="chevron">›</span></a>
+      <a class="tarjeta-accion dorado" href="#"><span class="icono"><svg><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Hasta cuatro juegos lado a lado</span><span class="chevron">›</span></a>
+      <a class="tarjeta-accion morado" href="#"><span class="icono"><svg><use href="#i-nia"/></svg></span><span class="titulo">Preguntar a Nia</span><span class="sub">Tu asistente del catálogo</span><span class="chevron">›</span></a>
+      <a class="tarjeta-accion verde" href="#"><span class="icono"><svg><use href="#i-panorama"/></svg></span><span class="titulo">Panorama</span><span class="sub">Los datos del catálogo en gráficas</span><span class="chevron">›</span></a>
+    </div>
+
+    <p class="rotulo" style="margin-top:32px">Estados de una tarjeta</p>
+    <div class="rejilla estados">
+      <div><p class="rotulo">Reposo</p><a class="tarjeta-accion dorado" href="#"><span class="icono"><svg><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Hasta cuatro juegos</span><span class="chevron">›</span></a></div>
+      <div><p class="rotulo">Hover / foco</p><a class="tarjeta-accion dorado es-hover" href="#"><span class="icono"><svg><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Hasta cuatro juegos</span><span class="chevron">›</span></a></div>
+      <div><p class="rotulo">Activo</p><a class="tarjeta-accion dorado es-activo" href="#"><span class="icono"><svg><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Hasta cuatro juegos</span><span class="chevron">›</span></a></div>
+      <div><p class="rotulo">Deshabilitado</p><a class="tarjeta-accion dorado" aria-disabled="true"><span class="icono"><svg><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Elige al menos un juego</span><span class="chevron">›</span></a></div>
+    </div>
+
+    <p class="rotulo" style="margin-top:32px">Compactos: reposo · hover · activo · deshabilitado</p>
+    <div class="compactos">
+      <button class="compacto cian etiqueta-accion" type="button">+ Comparar</button>
+      <button class="compacto cian etiqueta-accion es-hover" type="button">+ Comparar</button>
+      <button class="compacto cian etiqueta-accion es-activo" type="button">✓ En comparación</button>
+      <button class="compacto cian etiqueta-accion" type="button" disabled>+ Comparar</button>
+      <button class="compacto morado etiqueta-accion" type="button">Preguntar</button>
+      <button class="compacto verde etiqueta-accion" type="button">Ver en Steam ↗</button>
+    </div>
+  </section>
+
+  <!-- ── 6. Nombre de "banda" ──────────────────────────────────────────────── -->
+  <section class="bloque escenario muestra" data-contexto="ficha" id="nombre">
+    <h2 class="titulo-seccion">Cómo llamar a la banda</h2>
+    <p class="intro meta">La misma ficha con los tres nombres. Pasa el cursor o toca el icono de información para ver la explicación de una línea. Ninguno habla de probabilidad ni de abandono.</p>
+    <div class="rejilla tres">
+      <article class="panel ficha-muestra opcion-nombre">
+        <p class="rotulo recomendada">A · Señal de arrepentimiento · recomendada</p>
+        <p class="juego">Hades</p>
+        <span class="chip-senal baja abierta">Señal de arrepentimiento: baja
+          <button class="info" type="button" aria-label="Qué es la señal de arrepentimiento"><svg><use href="#i-info"/></svg></button>
+          <span class="ayuda" role="tooltip">Qué tan seguido lo reseñan mal quienes lo jugaron menos de 2&nbsp;h.</span>
+        </span>
+        <p class="meta">Es lo que el dato es: una señal, igual para cualquiera.</p>
+      </article>
+      <article class="panel ficha-muestra opcion-nombre">
+        <p class="rotulo">B · Riesgo de arrepentirte · la del usuario</p>
+        <p class="juego">Hades</p>
+        <span class="chip-senal baja abierta">Riesgo de arrepentirte: bajo
+          <button class="info" type="button" aria-label="Qué es el riesgo de arrepentirte"><svg><use href="#i-info"/></svg></button>
+          <span class="ayuda" role="tooltip">Qué tan seguido se reseña mal antes de 2&nbsp;h. Es igual para todos.</span>
+        </span>
+        <p class="meta">Se entiende a la primera, pero suena a que es tuyo y es del juego.</p>
+      </article>
+      <article class="panel ficha-muestra opcion-nombre">
+        <p class="rotulo">C · Arrepentimiento temprano</p>
+        <p class="juego">Hades</p>
+        <span class="chip-senal baja abierta">Arrepentimiento temprano: bajo
+          <button class="info" type="button" aria-label="Qué es el arrepentimiento temprano"><svg><use href="#i-info"/></svg></button>
+          <span class="ayuda" role="tooltip">Reseñas negativas de quien jugó menos de 2&nbsp;h, frente al catálogo.</span>
+        </span>
+        <p class="meta">La más fiel al término del proyecto, la menos inmediata.</p>
+      </article>
+    </div>
+    <p class="rotulo" style="margin-top:28px">Los tres niveles, con la opción A</p>
+    <div class="compactos">
+      <span class="chip-senal baja">Señal de arrepentimiento: baja</span>
+      <span class="chip-senal media">Señal de arrepentimiento: media</span>
+      <span class="chip-senal alta">Señal de arrepentimiento: alta</span>
+    </div>
+  </section>
+
+  <!-- ── Medidas ───────────────────────────────────────────────────────────── -->
+  <section class="bloque escenario muestra" data-contexto="panorama" id="medidas">
+    <h2 class="titulo-seccion">Medidas</h2>
+    <p class="intro meta">Calculadas en esta misma página con los colores de arriba, sobre la zona más clara de cada fondo (base + nebulosa + brillo), que es el peor caso para texto claro. En tema claro, la más oscura. Lectura pide 4.5:1; títulos grandes, 3:1.</p>
+    <div class="tabla-scroll">
+      <table>
+        <thead><tr><th>Fondo</th><th>Título</th><th>Lectura</th><th>Nota</th><th>Tarjeta · su color</th></tr></thead>
+        <tbody id="tabla-contraste"></tbody>
+      </table>
+    </div>
+    <p style="margin-top:18px" id="letra-minima" class="dato"></p>
+  </section>
+
+</main>
+
+<script>
+  // Tema: el botón redondo lo alterna; #claro en la URL lo fija, para las capturas.
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.setAttribute('aria-label', tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro');
+    boton.querySelector('use').setAttribute('href', tema === 'claro' ? '#i-luna' : '#i-sol');
+    // El logo tiene dos versiones: "Nex" es blanco en la oscura y marino en la clara.
+    document.querySelectorAll('.logo-tema').forEach((img) => {
+      img.src = '../../../frontend/public/' + (tema === 'claro' ? 'logo-header.png' : 'logo-oscuro.png');
+    });
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const canal = (s) => s.trim().split(/\s+/).map(Number);
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  const NEBULOSAS = {
+    inicio: ['139 92 246', 'var(--morado-canal)', 'morado'],
+    explorar: ['34 224 255', 'var(--cian-canal)', 'cian'],
+    ficha: ['99 102 241', '99 102 241', 'morado'],
+    perfil: ['236 72 153', 'var(--rosa-canal)', 'rosa'],
+    nia: ['168 85 247', 'var(--morado-canal)', 'morado'],
+    panorama: ['52 211 153', 'var(--verde-canal)', 'verde'],
+    comparar: ['251 191 36', 'var(--dorado-canal)', 'dorado'],
+  };
+
+  function medir() {
+    const claro = raiz.dataset.tema === 'claro';
+    const alfaBrillo = Number(token('--brillo-alfa'));
+    // Peor caso: en oscuro, la esquina más clara del degradado con la nebulosa y el
+    // brillo encima; en claro, la zona más oscura (la nebulosa tiñe hacia abajo).
+    const base = hex(claro ? token('--fondo-medio') : token('--fondo-final'));
+    const filas = [];
+    for (const [nombre, [neb, , color]] of Object.entries(NEBULOSAS)) {
+      const escenario = document.querySelector(`.fondo[data-contexto='${nombre}']`);
+      const acento = canal(getComputedStyle(escenario).getPropertyValue('--acento'));
+      const alfaNeb = Number(getComputedStyle(escenario).getPropertyValue('--nebulosa-alfa'));
+      const fondo = mezcla(acento, alfaBrillo, mezcla(canal(neb), alfaNeb, base));
+      // El título: en oscuro el degradado termina en #8eeeff, que es su parada más baja
+      // contra un fondo oscuro; en claro es tinta sólida.
+      const titulo = claro ? hex(token('--tinta')) : hex('#8eeeff');
+      const lectura = hex(token('--tinta-lectura'));
+      const nota = hex(token('--tinta-meta'));
+      // La tarjeta: su superficie sobre ese fondo, y la tinta de su color encima.
+      const sup = claro ? mezcla([255, 255, 255], 0.9, fondo) : mezcla([9, 10, 26], 0.78, fondo);
+      const tinta = hex(token(`--${color}-tinta`));
+      const c = [contraste(titulo, fondo), contraste(lectura, fondo), contraste(nota, fondo), contraste(tinta, sup)];
+      filas.push({ nombre, c });
+      const celda = document.querySelector(`[data-medir='${nombre}']`);
+      if (celda) celda.textContent = `lectura ${c[1].toFixed(2)}:1 · nota ${c[2].toFixed(2)}:1`;
+    }
+    const marca = (v, pide) => `<td class="num ${v >= pide ? 'pasa' : 'falla'}">${v.toFixed(2)}:1</td>`;
+    document.getElementById('tabla-contraste').innerHTML = filas
+      .map(({ nombre, c }) => `<tr><td>${nombre}</td>${marca(c[0], 3)}${marca(c[1], 4.5)}${marca(c[2], 4.5)}${marca(c[3], 4.5)}</tr>`)
+      .join('');
+
+    // La letra más chica de todo lo que es muestra de la app.
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      if (el.closest('.solo-lector')) return;
+      if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return;
+      const px = parseFloat(getComputedStyle(el).fontSize);
+      if (px < minima) { minima = px; donde = (el.textContent || '').trim().slice(0, 40); }
+    });
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+    raiz.dataset.medido = 'si';
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  document.fonts.ready.then(medir);
+</script>
+</body>
+</html>

@@ -17,7 +17,10 @@
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
 > Estado: plan guardado el 2026-09-25. Fase en curso: **6A, esperando el visto bueno del
-> mockup** (`docs/plan/mockups/6a-identidad.html`).
+> mockup** (`docs/plan/mockups/6a-identidad.html`). Decisiones pendientes para arrancar la
+> 6A: la fuente de títulos (recomendada Chakra Petch) y el nombre de la banda
+> (recomendado «Señal de arrepentimiento»). Las capturas del mockup no se versionan; salen
+> con `python docs/plan/mockups/capturar_mockup.py`.
 
 ---
 
@@ -233,3 +236,12 @@ detente en su ALTO con el mockup de la identidad visual.
   costo), 37 (búsqueda web: costo por consulta y tope diario), 39 (catálogo de ~400:
   tiempo y espacio estimados).
 - La fase 5c (poses de Nia) queda absorbida por la 6F.
+- **Mockup 6A** (2026-09-25): medido por la propia página en 1440, 1024 y 390, claro y
+  oscuro: 0 contrastes que no pasan, sin desborde, letra mínima 16 px. Para que el texto
+  de nota pase 4.5:1 sobre la zona más clara, la nebulosa se gradúa por color: 0.40 en los
+  morados (inicio, ficha, Nia), 0.34 en perfil, 0.24 en panorama y 0.20 en explorar y
+  comparar, que son claros. Con 0.35 parejo, la nota caía a 2.74:1 en explorar.
+- **Notas para programar la 6A**: el botón de tema flotante tiene que reservar su esquina
+  como ya lo hace la burbuja de Nia; en teléfono, el espaciado de 0.14 em parte «Preguntar
+  a Nia» en dos líneas y conviene bajarlo; la ⓘ no puede escribirse como carácter (Inter
+  no tiene U+24D8), va dibujada, como ya se hace en `compartido/nota-info.ts`.

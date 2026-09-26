@@ -11,6 +11,8 @@ registros/
 
 # capturas que genera herramientas/capturar_ui.py (la del README es docs/captura-interfaz.png)
 docs/capturas/
+# Las capturas de los mockups pesan decenas de MB y salen del HTML con un comando.
+docs/plan/mockups/capturas/
 
 # herramienta local del túnel y carpetas de utilidades de agentes: nada de esto es del proyecto
 *.deb
