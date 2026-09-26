@@ -1029,6 +1029,51 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+# Escribir y pulsar Enter en la misma tarea de JavaScript: lo que pasa al pegar y dar Enter
+# de inmediato. Así el control no depende de que la detección de cambios llegue o no a
+# pintar lo escrito antes del envío, que era justo la carrera que dejaba el campo lleno.
+_JS_ESCRIBIR_Y_ENVIAR = """(texto) => {
+  const campo = document.querySelector('[data-testid=nia-pregunta]');
+  campo.value = texto;
+  campo.dispatchEvent(new Event('input', { bubbles: true }));
+  campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+}"""
+
+
+def _angular_campo_nia(pagina: Page, url: str) -> list[str]:
+    """Punto 30 de la fase 6: el campo se vacía al enviar y la segunda pregunta llega sola.
+    Antes, si se enviaba antes de que Angular pintara lo escrito, el texto viejo se quedaba
+    y la pregunta siguiente llegaba pegada: «uno» y luego «unodos»."""
+    problemas = []
+    enviados: list[str] = []
+
+    def anotar(peticion) -> None:
+        if peticion.method == "POST" and peticion.url.split("?")[0].rstrip("/").endswith("/nia"):
+            enviados.append(json.loads(peticion.post_data or "{}")["mensajes"][-1]["contenido"])
+
+    pagina.on("request", anotar)
+    try:
+        for ruta in ("/nia", f"/juego/{_APPID_FICHA}"):
+            enviados.clear()
+            _abrir(pagina, f"{url.rstrip('/')}{ruta}")
+            campo = pagina.get_by_test_id("nia-pregunta")
+            campo.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            for pregunta in ("primera pregunta", "segunda pregunta"):
+                pagina.evaluate(_JS_ESCRIBIR_Y_ENVIAR, pregunta)
+                pagina.wait_for_function(
+                    "() => !document.querySelector('[data-testid=nia-pregunta]').disabled", timeout=_TIMEOUT_MS
+                )
+                if campo.input_value():
+                    problemas.append(f"{ruta}: tras enviar «{pregunta}», el campo se queda con «{campo.input_value()}»")
+            if enviados != ["primera pregunta", "segunda pregunta"]:
+                problemas.append(f"{ruta}: la API recibió {enviados} en vez de las dos preguntas por separado")
+    finally:
+        pagina.remove_listener("request", anotar)
+    if not problemas:
+        print("campo:    en /nia y en la ficha, el campo se vacía al enviar y la segunda pregunta llega sola")
+    return problemas
+
+
 def _angular_nia_catalogo(pagina: Page, url: str, destino: Path) -> list[str]:
     """En /nia se puede hablar del catálogo entero sin fijar ningún juego (fase 5a)."""
     problemas = []
@@ -2017,6 +2062,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_panel_nia(pagina, url, destino)
         + _angular_voto_nia(pagina, url, destino)
         + _angular_nia_catalogo(pagina, url, destino)
+        + _angular_campo_nia(pagina, url)
         + _angular_carrusel(pagina, url, destino)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)

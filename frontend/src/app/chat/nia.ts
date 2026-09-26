@@ -156,6 +156,7 @@ const BIENVENIDA_CATALOGO =
       <label class="escribir">
         <span class="solo-lector">Escribe tu pregunta para Nia</span>
         <textarea
+          #campo
           id="nia-pregunta"
           rows="2"
           [attr.placeholder]="appid() === null ? 'Pregúntale algo del catálogo…' : 'Pregúntale algo sobre este juego…'"
@@ -439,6 +440,7 @@ export class Nia {
   private readonly catalogo = inject(CatalogoStore);
   private readonly historial = inject(HistorialStore);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
+  private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
 
   protected readonly maximo = MAXIMO_TEXTO;
   protected readonly sugerencias = computed(() => (this.appid() === null ? SUGERENCIAS_CATALOGO : SUGERENCIAS_JUEGO));
@@ -524,6 +526,15 @@ export class Nia {
       });
     }
     this.texto.set('');
+    // [value] solo escribe en el DOM cuando el valor cambia respecto al último que pintó.
+    // Si se escribe y se envía antes de que Angular alcance a pintar lo escrito (pegar y
+    // dar Enter, teclear rápido), lo último pintado sigue siendo '' y volver a '' "no
+    // cambia nada": el contador marcaba 0 y el texto viejo se quedaba en el campo, y la
+    // pregunta siguiente llegaba pegada a la anterior. Se vacía a mano.
+    const campo = this.campo()?.nativeElement;
+    if (campo) {
+      campo.value = '';
+    }
     this.error.set('');
     this.esperando.set(true);
     this.progreso.set('Escribiendo…');

@@ -161,7 +161,7 @@ FASE 6F — Nia (personalidad, entendimiento y presencia)
 Lo que dijo el usuario: parece una grabadora, es triste y seria, no resume lo que ella
 misma dijo, no entiende las preguntas, su texto no es legible y la burbuja no la muestra.
 
-- [ ] 30. Bug prioritario: el textarea no se vacía al enviar (el contador vuelve a 0 pero el
+- [x] 30. Bug prioritario: el textarea no se vacía al enviar (el contador vuelve a 0 pero el
     texto viejo se queda y se concatena con lo siguiente). Arreglar y cubrir en el
     recorrido: dos preguntas seguidas, la segunda llega sola.
 - [ ] 31. Personalidad: cercana y cálida, con emojis moderados (1–3 por respuesta), saluda,
@@ -282,3 +282,10 @@ detente en su ALTO con el mockup de la identidad visual.
     escondía. En escritorio los estantes terminan ahora 64 px antes del borde, en la
     columna de la burbuja; comprobado a 1024, 1280, 1440 y 1920. Si en la 6F la burbuja
     crece (punto 35), esa reserva tiene que crecer con ella.
+- **Punto 30 adelantado de la 6F** (2026-09-25), por ser bug prioritario y no tener diseño
+  que aprobar. Reproducido de forma determinista escribiendo y pulsando Enter en la misma
+  tarea de JavaScript: pasaba en `/nia` **y en la ficha**. Causa: `[value]="texto()"` solo
+  escribe en el DOM cuando el valor cambia respecto al último pintado; si se envía antes de
+  que Angular pinte lo escrito, volver a '' no se detecta como cambio. El campo se vacía a
+  mano al enviar. El recorrido lo cubre con la misma técnica, y se probó que el control
+  falla sin el arreglo (cuatro PROBLEMA) y pasa con él.
