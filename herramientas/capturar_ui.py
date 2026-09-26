@@ -54,6 +54,11 @@ selector => {
 """
 
 
+def _explorar(url: str) -> str:
+    """El catálogo vive en /explorar; la raíz es el inicio."""
+    return f"{url.rstrip('/')}/explorar"
+
+
 def _esperar_portadas(pagina: Page, selector: str) -> tuple[int, int]:
     """Devuelve (portadas que cayeron al SVG de respaldo, portadas visibles)."""
     pagina.wait_for_function(
@@ -154,7 +159,7 @@ def _revisar_overlay(pagina: Page) -> None:
 
 
 def _angular_catalogo(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    _abrir(pagina, url)
+    _abrir(pagina, _explorar(url))
     _revisar_overlay(pagina)
     pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
     try:
@@ -242,15 +247,19 @@ def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
     pagina.locator(f"[data-testid='tarjeta-juego'][data-appid='{_APPID_FICHA}'] a").click()
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
     pagina.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    # El párrafo de "segunda opinión" salió de la ficha: lo que hay que esperar ahora son
+    # los factores, que llegan con la predicción.
     pagina.wait_for_function(
-        "() => (document.querySelector(\"[data-testid='segunda-opinion'] p\")?.textContent || '').trim().length > 20",
+        "() => document.querySelectorAll(\"[data-testid='factores-lista'] li\").length > 0",
         timeout=_TIMEOUT_MS,
     )
     factores = pagina.get_by_test_id("factores").inner_text()
     if "nota de Metacritic" in factores:
         problemas.append("ficha de Wild Hearts: muestra 'nota de Metacritic' aunque el juego no tiene nota")
     plano = " ".join(factores.lower().split())
-    if "cobertura de crítica especializada" not in plano or "aumenta el riesgo" not in plano:
+    # Los factores se leen en lenguaje de jugador: "No tiene nota de la crítica · en este
+    # catálogo eso sube el riesgo estimado", no la etiqueta nominal de la API.
+    if "no tiene nota de la crítica" not in plano or "sube el riesgo" not in plano:
         problemas.append(f"ficha de Wild Hearts: falta el factor de cobertura de crítica ({plano[:120]})")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
     _esperar_quietud(pagina)
@@ -258,6 +267,7 @@ def _angular_ficha(pagina: Page, url: str, destino: Path) -> list[str]:
     pagina.screenshot(path=ruta, full_page=True)
     print(f"ficha:    {ruta.relative_to(_RAIZ)} ({pagina.get_by_test_id('ficha-nombre').inner_text()})")
     problemas += _revisar_vocabulario(pagina, "ficha")
+    problemas += _sin_filetes_dobles(pagina, "la ficha")
 
     # Respaldo de la cabecera: si capsule_616x353 no existe, debe usar portada_url.
     pagina.route("**/capsule_616x353.jpg", lambda ruta: ruta.abort())
@@ -528,16 +538,29 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "perfil.png", full_page=True)
 
+    # El formulario arranca vacío: hay que responder las cuatro preguntas antes de que
+    # "Crear perfil" se habilite. Que empiece deshabilitado es parte de lo que se revisa.
+    if pagina.get_by_test_id("crear-perfil").is_enabled():
+        problemas.append("el formulario vacío ya deja crear el perfil")
     pagina.get_by_test_id("grupo-compras").get_by_text("Muchos (más de 15 al año)").click()
+    pagina.get_by_test_id("grupo-horas").get_by_text("Media (4 a 9 h)").click()
+    pagina.get_by_test_id("grupo-friccion").get_by_text("Media", exact=True).click()
+    pagina.get_by_test_id("grupo-plataforma").get_by_text("PC", exact=True).click()
     for genero in ("Acción", "Rol"):
         pagina.locator(f"[data-testid='chip-genero'][data-genero='{genero}']").click()
+    if not pagina.get_by_test_id("crear-perfil").is_enabled():
+        problemas.append("con las cuatro respuestas puestas, 'Crear perfil' sigue deshabilitado")
     pagina.get_by_test_id("crear-perfil").click()
 
     pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    try:
-        pagina.wait_for_url(lambda url: not url.rstrip("/").endswith("/perfil"), timeout=_TIMEOUT_MS)
-    except TiempoAgotado:
-        problemas.append(f"tras crear el perfil no volvió al catálogo ({pagina.url})")
+    # Crear el perfil se queda en la misma página: lo único que el perfil cambia son los
+    # juegos parecidos, que aparecen justo debajo. Irse al catálogo los dejaba sin ver.
+    if not pagina.url.rstrip("/").endswith("/perfil"):
+        problemas.append(f"tras crear el perfil se fue de la página ({pagina.url})")
+    elif not pagina.get_by_test_id("perfil-guardado").count():
+        problemas.append("tras crear el perfil no dice que quedó guardado")
+    else:
+        print("perfil:   al crearlo se queda en su página, lo dice y baja a los juegos parecidos")
     pagina.reload()
     try:
         pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -549,17 +572,21 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
 
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
     pagina.get_by_test_id("ficha-nombre").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    veredicto = pagina.get_by_test_id("ficha-veredicto").inner_text()
-    # Modelo de título: con o sin perfil, la banda es la misma y el rótulo también.
-    if not veredicto.lower().startswith("riesgo general"):
-        problemas.append(f"con perfil declarado, el veredicto cambió de rótulo: '{veredicto.splitlines()[0]}'")
-    # La historia reemplaza a la línea suelta de afinidad: con perfil se cuenta entera.
+    # Modelo de título: con o sin perfil, la banda es la misma y el rótulo también. El
+    # rótulo vive en la píldora del encabezado; el veredicto es la línea de riesgo.
+    rotulo = " ".join(pagina.get_by_test_id("pildora-banda").first.inner_text().lower().split())
+    if not rotulo.startswith("riesgo general"):
+        problemas.append(f"con perfil declarado, la banda cambió de rótulo: '{rotulo}'")
+    veredicto = " ".join(pagina.get_by_test_id("ficha-veredicto").inner_text().lower().split())
+    if "arrepentimiento temprano" not in veredicto:
+        problemas.append(f"el veredicto no usa el vocabulario del proyecto ('{veredicto[:80]}')")
+    # La historia son tres líneas; la primera reconoce el género en común.
     historia = pagina.get_by_test_id("historia-texto").inner_text()
     plano = " ".join(historia.split())
     if "dentro" not in plano.lower() or "Acción" not in plano:
         problemas.append(f"la historia no reconoce el género en común ('{plano[:120]}')")
-    if "arrepentimiento temprano" not in plano.lower():
-        problemas.append("la historia no usa el vocabulario del proyecto")
+    if len(pagina.get_by_test_id("historia-texto").locator("li").all()) != 3:
+        problemas.append(f"la historia no son tres líneas ('{plano[:120]}')")
     if pagina.get_by_test_id("historia-sin-perfil").count():
         problemas.append("con perfil declarado, la historia sigue pidiendo crear uno")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
@@ -567,14 +594,6 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     pagina.screenshot(path=destino / "ficha-con-perfil.png", full_page=True)
     print(f"ficha:    ficha-con-perfil.png ({veredicto.splitlines()[0]}; historia: {plano[:70]}…)")
 
-    # Nia cuenta la misma historia con sus palabras, aunque sea en modo demostración.
-    pagina.get_by_test_id("historia-pedir-nia").click()
-    try:
-        pagina.get_by_test_id("historia-nia").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        modo = "demostración" if pagina.get_by_test_id("historia-nia-demo").count() else "modelo"
-        print(f"historia: Nia la cuenta con sus palabras ({modo})")
-    except TiempoAgotado:
-        problemas.append("el botón 'Que Nia lo cuente' no trajo respuesta")
     _esperar_quietud(pagina)
     pagina.get_by_test_id("historia-perfil").screenshot(path=destino / "historia-perfil.png")
     print(f"historia: {(destino / 'historia-perfil.png').relative_to(_RAIZ)}")
@@ -600,7 +619,7 @@ def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
     problemas = []
     elegidos = [_APPID_FICHA, 271590, 1091500]  # Wild Hearts, GTA V Legacy, Cyberpunk 2077
 
-    _abrir(pagina, url)
+    _abrir(pagina, _explorar(url))
     pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
     for appid in elegidos:
         pagina.locator(f"[data-testid='tarjeta-juego'][data-appid='{appid}'] [data-testid='boton-comparar']").click()
@@ -655,20 +674,52 @@ def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
     )
     print(f"directa:  /comparar?appids= abre 2 columnas y el shell dice {pagina.get_by_test_id('nav-comparar-cantidad').inner_text()}")
 
+    # Entrar a /comparar desde el menú, sin ?appids=, no puede borrar lo elegido: la
+    # selección vive en el navegador y la URL sin parámetro no dice nada.
     _abrir(pagina, f"{url.rstrip('/')}/comparar")
+    pagina.get_by_test_id("comparar-conteo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_timeout(600)
+    quedan = pagina.get_by_test_id("comparar-columnas").locator("[data-testid='columna-comparar']").count()
+    if quedan != 2:
+        problemas.append(f"entrar a /comparar sin ?appids= dejó {quedan} juegos en vez de 2")
+    else:
+        print("directa:  entrar sin ?appids= conserva la selección y la vuelve a poner en la URL")
+
+    # Y se puede agregar otro sin salir de la vista.
+    pagina.get_by_test_id("abrir-agregar").click()
+    pagina.wait_for_timeout(400)
+    if pagina.evaluate("() => document.activeElement?.dataset?.testid") != "filtro-texto":
+        problemas.append("'+ Agregar juego' no deja el foco en el campo de búsqueda")
+    pagina.keyboard.type("portal")
+    pagina.wait_for_timeout(600)
+    pagina.locator("[data-testid='sugerencias'] li").first.dispatch_event("mousedown")
+    pagina.wait_for_timeout(900)
+    if pagina.get_by_test_id("comparar-columnas").locator("[data-testid='columna-comparar']").count() != 3:
+        problemas.append("agregar un juego desde '+ Agregar juego' no lo suma a la comparación")
+    else:
+        print("comparar: '+ Agregar juego' busca y agrega sin salir de la vista")
+
+    # El estado vacío es el de una bandeja vacía de verdad: la selección se guarda en el
+    # navegador, así que quitar los juegos es lo que lo enseña, no cambiar de URL.
+    for _ in range(MAXIMO := 4):
+        quitar = pagina.get_by_test_id("quitar-comparar")
+        if not quitar.count():
+            break
+        quitar.first.click()
+        pagina.wait_for_timeout(300)
     try:
         pagina.get_by_test_id("comparar-vacio").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        print("vacío:    /comparar sin appids explica cómo elegir juegos")
+        print("vacío:    al quitar el último juego, /comparar explica cómo elegir otros")
     except TiempoAgotado:
-        problemas.append("/comparar sin appids no muestra el estado vacío")
+        problemas.append("al quitar todos los juegos, /comparar no muestra el estado vacío")
     return problemas
 
 
 def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
-    """La burbuja de la esquina: pide un juego antes de conversar, y no sale en la ficha."""
+    """La burbuja de la esquina: solo en el catálogo, pide un juego antes de conversar."""
     problemas = []
 
-    _abrir(pagina, url)
+    _abrir(pagina, _explorar(url))
     pagina.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
     pagina.get_by_test_id("nia-flotante-burbuja").click()
     pagina.get_by_test_id("nia-flotante-panel").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -729,7 +780,47 @@ def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
     else:
         print("burbuja:  no aparece en la ficha, donde Nia ya está en la columna")
 
-    _abrir(pagina, url)
+    # La burbuja acompaña en todo el sitio; la única excepción es la ficha, donde Nia ya
+    # vive en la columna lateral.
+    faltan = []
+    # En /nia y en la ficha no: ahí ya hay una conversación abierta y la burbuja sería la
+    # misma, ofrecida dos veces.
+    for ruta_app, donde in (("", "el inicio"), ("/explorar", "el catálogo"), ("/comparar", "comparar"),
+                            ("/perfil", "tu perfil"), ("/historial", "el historial"),
+                            ("/panorama", "panorama"), ("/como-funciona", "cómo funciona")):
+        _abrir(pagina, f"{url.rstrip('/')}{ruta_app}")
+        pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.wait_for_timeout(400)
+        if not pagina.get_by_test_id("nia-flotante-burbuja").count():
+            faltan.append(donde)
+    if faltan:
+        problemas.append(f"la burbuja falta en {', '.join(faltan)}")
+    else:
+        print("burbuja:  en las siete vistas que la llevan; ni en la ficha ni en /nia")
+    for ruta_app, donde in (("/nia", "la página de Nia"), (f"/juego/{_APPID_FICHA}", "la ficha")):
+        _abrir(pagina, f"{url.rstrip('/')}{ruta_app}")
+        pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.wait_for_timeout(400)
+        if pagina.get_by_test_id("nia-flotante-burbuja").count():
+            problemas.append(f"la burbuja aparece en {donde}, donde ya hay una conversación")
+
+    # Y no se posa encima de un botón o un enlace: la esquina de abajo a la derecha tiene
+    # que quedar libre mientras se recorre el catálogo.
+    _abrir(pagina, _explorar(url))
+    pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    altura = pagina.evaluate("() => document.documentElement.scrollHeight")
+    tapados = []
+    for y in range(0, max(1, altura - _VIEWPORT["height"]), 120):
+        pagina.evaluate("y => window.scrollTo(0, y)", y)
+        pagina.wait_for_timeout(80)
+        tapados += pagina.evaluate(_JS_BAJO_LA_BURBUJA)
+    pagina.evaluate("window.scrollTo(0, 0)")
+    if tapados:
+        problemas.append(f"la burbuja tapa controles del catálogo: {sorted(set(tapados))[:3]}")
+    else:
+        print("burbuja:  no tapa ningún control del catálogo al recorrerlo")
+
+    _abrir(pagina, _explorar(url))
     pagina.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
     return problemas
 
@@ -998,19 +1089,39 @@ def _opacidad(localizador) -> float:
     return float(localizador.evaluate("b => getComputedStyle(b).opacity"))
 
 
-def _pausa_del_video(pagina: Page, destino: Path) -> list[str]:
-    """WCAG 2.2.2: un botón que pausa el tráiler, oculto hasta hover o foco de teclado."""
+def _volumen_del_video(pagina: Page) -> float:
+    return float(pagina.get_by_test_id("portada-video").evaluate("v => v.volume"))
+
+
+def _mudo(pagina: Page) -> bool:
+    return bool(pagina.get_by_test_id("portada-video").evaluate("v => v.muted"))
+
+
+def _mover_volumen(pagina: Page, tecla: str, veces: int) -> None:
+    pagina.get_by_test_id("portada-volumen").focus()
+    for _ in range(veces):
+        pagina.keyboard.press(tecla)
+    pagina.wait_for_timeout(200)
+
+
+def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
+    """Pausar el tráiler (WCAG 2.2.2) y callar su audio (1.4.2), ocultos hasta hover o foco.
+
+    El tráiler arranca mudo, porque el navegador no deja otra cosa y porque audio que suena
+    solo en cada ficha que se abre no lo quiere nadie: el sonido es siempre una acción."""
     problemas = []
+    controles = pagina.get_by_test_id("portada-controles")
     boton = pagina.get_by_test_id("portada-pausa")
+    silenciar = pagina.get_by_test_id("portada-silenciar")
     video = pagina.get_by_test_id("portada-video")
     pagina.mouse.move(0, 0)
     pagina.wait_for_timeout(400)
-    if _opacidad(boton) > 0.05:
-        problemas.append("el botón de pausa se ve sin hover ni foco")
+    if _opacidad(controles) > 0.05:
+        problemas.append("los controles del tráiler se ven sin hover ni foco")
     pagina.get_by_test_id("portada-ancha").hover()
     pagina.wait_for_timeout(400)
-    if _opacidad(boton) < 0.95:
-        problemas.append("el botón de pausa no aparece al pasar el ratón")
+    if _opacidad(controles) < 0.95:
+        problemas.append("los controles del tráiler no aparecen al pasar el ratón")
     pagina.mouse.move(0, 0)
 
     # Con teclado: foco visible, Enter pausa y el video deja de avanzar.
@@ -1019,8 +1130,8 @@ def _pausa_del_video(pagina: Page, destino: Path) -> list[str]:
     pagina.keyboard.press("Tab")
     boton.focus()
     pagina.wait_for_timeout(400)
-    if _opacidad(boton) < 0.95:
-        problemas.append("el botón de pausa no aparece con foco de teclado")
+    if _opacidad(controles) < 0.95:
+        problemas.append("los controles del tráiler no aparecen con foco de teclado")
     ruta = destino / "video-pausa-foco.png"
     pagina.get_by_test_id("portada-ancha").screenshot(path=ruta)
     pagina.keyboard.press("Enter")
@@ -1034,12 +1145,69 @@ def _pausa_del_video(pagina: Page, destino: Path) -> list[str]:
     if not _avanza_el_video(pagina) or boton.get_attribute("aria-label") != "Pausar el tráiler":
         problemas.append("Enter otra vez no reanuda el tráiler")
     if not problemas:
-        print(f"video:    botón de pausa: oculto en reposo, aparece con hover y con foco; Enter pausa y reanuda ({ruta.relative_to(_RAIZ)})")
+        print(f"video:    controles: ocultos en reposo, aparecen con hover y con foco; Enter pausa y reanuda ({ruta.relative_to(_RAIZ)})")
+
+    # El sonido: arranca mudo, el botón lo activa y la corredera mueve el volumen real.
+    problemas += _sonido_del_video(pagina, silenciar)
     pagina.locator("body").focus()
     return problemas
 
 
+def _sonido_del_video(pagina: Page, silenciar) -> list[str]:
+    problemas = []
+    if not _mudo(pagina):
+        problemas.append("el tráiler no arranca mudo")
+    silenciar.click()
+    pagina.wait_for_timeout(200)
+    etiqueta = silenciar.get_attribute("aria-label")
+    if _mudo(pagina) or etiqueta != "Silenciar el tráiler":
+        problemas.append(f"el botón no activa el sonido (mudo={_mudo(pagina)}, etiqueta={etiqueta!r})")
+
+    antes = _volumen_del_video(pagina)
+    _mover_volumen(pagina, "ArrowDown", 4)
+    bajado = _volumen_del_video(pagina)
+    if bajado >= antes - 0.01:
+        problemas.append(f"la corredera no baja el volumen con el teclado ({antes} → {bajado})")
+
+    # Hasta cero: dejar la corredera en el fondo es pedir silencio, no un volumen de cero.
+    _mover_volumen(pagina, "ArrowDown", 12)
+    if _volumen_del_video(pagina) > 0.001 or not _mudo(pagina):
+        problemas.append(f"con la corredera en cero el tráiler no queda mudo (volumen={_volumen_del_video(pagina)})")
+
+    # Se deja como se encontró: el volumen se recuerda entre fichas y las demás vistas del
+    # recorrido lo heredarían en cero.
+    silenciar.click()
+    pagina.wait_for_timeout(200)
+    restaurado = _volumen_del_video(pagina)
+    if restaurado <= 0 or _mudo(pagina):
+        problemas.append(f"activar el sonido con la corredera en cero no sube el volumen ({restaurado})")
+    silenciar.click()
+    pagina.wait_for_timeout(200)
+    if not problemas:
+        print(f"video:    arranca mudo; el botón activa el sonido y la corredera lo mueve ({restaurado:.2f}) y silencia en cero")
+    return problemas
+
+
 _APPID_SIN_VIDEO = 690790  # DiRT Rally 2.0, el único del catálogo sin tráiler
+
+
+def _portada_del_ancho_del_titulo(pagina: Page) -> list[str]:
+    """La portada tiene que abarcar lo mismo que la fila del título y los botones: con
+    aspect-ratio más max-height, el techo de alto encogía también el ancho."""
+    anchos = pagina.evaluate(
+        "() => {"
+        " const p = document.querySelector('[data-testid=portada-ancha]');"
+        " const t = document.querySelector('.titulos');"
+        " return p && t ? [p.getBoundingClientRect().width, t.getBoundingClientRect().width] : null;"
+        "}"
+    )
+    if not anchos:
+        return ["no se encontró la portada o la fila del título para medir su ancho"]
+    portada, titulo = anchos
+    if abs(portada - titulo) > 1:
+        return [f"la portada no mide lo mismo que la fila del título ({portada:.0f} contra {titulo:.0f} px)"]
+    print(f"ficha:    la portada abarca el mismo ancho que el título y los botones ({portada:.0f} px)")
+    return []
 
 
 def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
@@ -1065,8 +1233,9 @@ def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]
         problemas.append("el tráiler de la ficha está visible pero no avanza")
     else:
         print(f"video:    la ficha reproduce el tráiler con <video> {via}, mudo y en loop")
+    problemas += _portada_del_ancho_del_titulo(pagina)
     if estado == "reproduciendo":
-        problemas += _pausa_del_video(pagina, destino)
+        problemas += _controles_del_video(pagina, destino)
     pagina.wait_for_timeout(2500)
     ruta = destino / "video-ficha.png"
     pagina.screenshot(path=ruta)
@@ -1139,16 +1308,9 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
     problemas = []
     base = url.rstrip("/")
     _abrir(pagina, base)
-    # El saludo de Nia vive en el pie de la portada, antes del enlace, y en ningún otro lado.
-    orden = pagina.evaluate(
-        "() => [...document.querySelectorAll('footer [data-testid]')].map(e => e.dataset.testid)"
-    )
-    if pagina.locator(".hero [data-testid='nia-mascota']").count():
-        problemas.append("el saludo de Nia sigue arriba, en la portada")
-    if "nia-mascota" not in orden or orden.index("nia-mascota") > orden.index("enlace-metodologia"):
-        problemas.append(f"el saludo de Nia no está en el pie antes del enlace de metodología ({orden})")
-    else:
-        print("saludo:   en el pie de la portada, antes del enlace de metodología")
+    # Nia ya no saluda desde el pie: en el inicio está su tarjeta y la burbuja.
+    if pagina.get_by_test_id("nia-mascota").count():
+        problemas.append("el saludo grande de Nia sigue en el inicio, duplicando la burbuja")
     if pagina.locator("footer [data-testid='metodologia']").count():
         problemas.append("el pie sigue repitiendo el texto de la metodología")
     pagina.locator("footer [data-testid='enlace-metodologia']").click()
@@ -1163,8 +1325,6 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
     caja = metodologia.bounding_box()
     if not caja or caja["y"] > pagina.viewport_size["height"]:
         problemas.append("el enlace del pie no baja hasta la metodología")
-    if pagina.get_by_test_id("nia-mascota").count():
-        problemas.append("el saludo de Nia aparece fuera de la portada")
     if pagina.get_by_test_id("nav-como-funciona").get_attribute("aria-current") != "page":
         problemas.append("'Cómo funciona' no queda marcado en el nav")
     pasos = pagina.get_by_test_id("paso").count()
@@ -1266,145 +1426,28 @@ def _un_juego_por_banda(api: str) -> dict[str, int]:
     return elegidos
 
 
-def _preguntar_desde_el_globo(pagina: Page) -> list[str]:
-    """El botón del globo deja el foco en el campo del chat, visible, sin consultar /nia."""
-    consultas = []
-
-    def anotar(peticion) -> None:
-        if peticion.url.rstrip("/").endswith("/nia"):
-            consultas.append(peticion.url)
-
-    pagina.on("request", anotar)
-    pagina.evaluate("window.scrollTo(0, 0)")
-    pagina.get_by_test_id("nia-reaccion-preguntar").click()
-    try:
-        pagina.wait_for_function(
-            "() => document.activeElement?.dataset?.testid === 'nia-pregunta'", timeout=_TIMEOUT_MS
-        )
-    except TiempoAgotado:
-        return ["'Preguntarle a Nia' no deja el foco en el campo del chat"]
-    finally:
-        pagina.wait_for_timeout(800)  # el scroll es suave
-        pagina.remove_listener("request", anotar)
-    campo = pagina.get_by_test_id("nia-pregunta").bounding_box()
-    alto = pagina.viewport_size["height"]
-    if not campo or campo["y"] < 0 or campo["y"] + campo["height"] > alto:
-        return [f"tras 'Preguntarle a Nia' el campo del chat queda fuera de pantalla ({campo})"]
-    if consultas:
-        return [f"'Preguntarle a Nia' consultó /nia por su cuenta ({len(consultas)} veces)"]
-    print("nia v2:   'Preguntarle a Nia' lleva el foco al chat, a la vista, sin consultar /nia")
+def _una_sola_entrada_a_nia(pagina: Page) -> list[str]:
+    """En la ficha se habla con Nia en un solo sitio: su tarjeta de la columna. Ni el globo
+    de la reacción ni la mascota de la historia vuelven a ofrecer lo mismo."""
+    sobran = []
+    for testid, donde in (("nia-reaccion", "la mascota de la reacción"),
+                          ("historia-pedir-nia", "la mascota de la historia"),
+                          ("historia-mini-nia", "la mascota de la historia")):
+        if pagina.get_by_test_id(testid).count():
+            sobran.append(donde)
+    if sobran:
+        return [f"la ficha ofrece más de una entrada a Nia: {', '.join(sorted(set(sobran)))}"]
+    if not pagina.get_by_test_id("nia").count():
+        return ["la ficha se quedó sin la tarjeta del chat de Nia"]
+    print("nia v2:   una sola entrada al chat en la ficha, la tarjeta de la columna")
     return []
-
-
-def _angular_nia_reaccion(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    """Nia v2 en la ficha: una emoción por banda, la misma banda que el veredicto."""
-    problemas = []
-    base = url.rstrip("/")
-    elegidos = _un_juego_por_banda(api)
-    if set(elegidos) != {"bajo", "medio", "alto"}:
-        return [f"el catálogo no tiene juegos de las tres bandas ({sorted(elegidos)})"]
-
-    for banda, appid in elegidos.items():
-        _abrir(pagina, f"{base}/juego/{appid}")
-        reaccion = pagina.get_by_test_id("nia-reaccion")
-        try:
-            reaccion.wait_for(state="visible", timeout=_TIMEOUT_MS)
-        except TiempoAgotado:
-            problemas.append(f"{banda} ({appid}): Nia no aparece en la ficha")
-            continue
-
-        # La única fuente de verdad es la banda que ya muestra el veredicto.
-        veredicto = pagina.get_by_test_id("ficha-veredicto").get_attribute("data-banda")
-        de_nia = reaccion.get_attribute("data-banda")
-        if de_nia != veredicto:
-            problemas.append(f"{appid}: Nia reacciona a '{de_nia}' y el veredicto dice '{veredicto}'")
-        imagen = pagina.get_by_test_id("nia-reaccion-imagen").get_attribute("src") or ""
-        if not imagen.endswith(f"nia/ficha-{veredicto}.png"):
-            problemas.append(f"{appid}: banda {veredicto} con la imagen {imagen}")
-        texto = " ".join(pagina.get_by_test_id("nia-reaccion-texto").inner_text().split())
-        if _REACCION_ESPERADA[veredicto] not in texto:
-            problemas.append(f"{appid}: el texto no corresponde a la banda {veredicto} ('{texto[:70]}')")
-
-        for repetida in (veredicto, "arrepentimiento", "riesgo"):
-            if re.search(rf"\b{repetida}\b", texto.lower()):
-                problemas.append(f"{appid}: el globo repite '{repetida}' del veredicto ('{texto[:70]}')")
-
-        _esperar_portadas(pagina, "[data-testid='ficha'] img")
-        _esperar_quietud(pagina)
-        ruta = destino / f"nia-reaccion-{banda}.png"
-        pagina.get_by_test_id("segunda-opinion").screenshot(path=ruta)
-        nombre = pagina.get_by_test_id("ficha-nombre").inner_text()
-        print(f"nia v2:   {banda:5} {nombre} → {reaccion.get_attribute('data-emocion')} "
-              f"({ruta.relative_to(_RAIZ)})")
-
-    # "Preguntarle a Nia" solo lleva al campo del chat: no le pregunta nada.
-    problemas += _preguntar_desde_el_globo(pagina)
-
-    # Solo en la ficha.
-    for ruta_app, donde in (("/", "catálogo"), ("/comparar", "comparar"), ("/perfil", "perfil")):
-        _abrir(pagina, f"{base}{ruta_app}")
-        pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        if pagina.get_by_test_id("nia-reaccion").count():
-            problemas.append(f"Nia v2 aparece en {donde}, y solo debe estar en la ficha")
-    print("nia v2:   ausente en el catálogo, /comparar y /perfil")
-
-    # Si el PNG no carga, el globo con el texto se queda.
-    pagina.route("**/nia/ficha-*.png", lambda ruta: ruta.abort())
-    appid = elegidos["alto"]
-    _abrir(pagina, f"{base}/juego/{appid}")
-    try:
-        pagina.get_by_test_id("nia-reaccion-texto").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        pagina.wait_for_function(
-            "() => !document.querySelector(\"[data-testid='nia-reaccion-imagen']\")", timeout=_TIMEOUT_MS
-        )
-        _esperar_quietud(pagina)
-        ruta = destino / "nia-reaccion-sin-imagen.png"
-        pagina.get_by_test_id("segunda-opinion").screenshot(path=ruta)
-        print(f"nia v2:   sin la imagen, el texto sigue ({ruta.relative_to(_RAIZ)})")
-    except TiempoAgotado:
-        problemas.append("si el PNG de Nia falla, la reacción no queda en pie solo con el texto")
-    pagina.unroute("**/nia/ficha-*.png")
-
-    # Con movimiento reducido, quieta; y a 390 px, sin desborde.
-    navegador = pagina.context.browser
-    if navegador is not None:
-        for ajustes, que in (({"reduced_motion": "reduce"}, "movimiento"), ({}, "móvil")):
-            vista = {"width": 390, "height": 844} if que == "móvil" else _VIEWPORT
-            contexto = navegador.new_context(viewport=vista, **ajustes)
-            _sin_consultas_a_nia(contexto)
-            try:
-                otra = contexto.new_page()
-                _abrir(otra, f"{base}/juego/{elegidos['bajo']}")
-                otra.get_by_test_id("nia-reaccion-imagen").wait_for(state="visible", timeout=_TIMEOUT_MS)
-                if que == "movimiento":
-                    animacion = otra.evaluate(
-                        "() => getComputedStyle(document.querySelector(\"[data-testid='nia-reaccion-imagen']\"))"
-                        ".animationName"
-                    )
-                    if animacion != "none":
-                        problemas.append(f"con prefers-reduced-motion Nia sigue animada ({animacion})")
-                    else:
-                        print("nia v2:   con prefers-reduced-motion queda quieta")
-                else:
-                    medidas = otra.evaluate(
-                        "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
-                    )
-                    if medidas[0] > medidas[1]:
-                        problemas.append(f"a 390 px la ficha desborda {medidas[0] - medidas[1]} px")
-                    _esperar_quietud(otra)
-                    ruta = destino / "nia-reaccion-movil.png"
-                    otra.get_by_test_id("segunda-opinion").screenshot(path=ruta)
-                    print(f"nia v2:   a 390 px sin desborde ({ruta.relative_to(_RAIZ)})")
-            finally:
-                contexto.close()
-
-    _abrir(pagina, url)
-    return problemas
 
 
 # Qué pares de color tienen que pasar, y cuánto piden: 4.5:1 el texto, 3:1 los bordes y
 # los controles (WCAG 1.4.3 y 1.4.11). Se miden sobre los tokens ya resueltos por el
-# navegador, no sobre lo que dice la documentación.
+# navegador, no sobre lo que dice la documentación. El vidrio no entra: es una mezcla de
+# dos superficies que ya están aquí, así que lo que quede debajo del texto está entre las
+# dos y ninguna de las dos reprueba.
 _CONTRASTES = [
     ("--texto", "--superficie-lienzo", 4.5),
     ("--texto", "--superficie-tarjeta", 4.5),
@@ -1440,6 +1483,23 @@ nombres => {
         lienzo.fillStyle = estilo.getPropertyValue(nombre).trim();
         return [nombre, lienzo.fillStyle];
     }));
+}
+"""
+
+# Botones y enlaces que quedan debajo de la burbuja de Nia. Un enlace grande puede
+# solaparse por una esquina sin estorbar; lo que importa son los controles chicos, así que
+# se miran solo los que caben casi enteros dentro de ella.
+_JS_BAJO_LA_BURBUJA = """
+() => {
+    const burbuja = document.querySelector('.burbuja')?.getBoundingClientRect();
+    if (!burbuja) return [];
+    return [...document.querySelectorAll('button, a')]
+        .filter(elemento => !elemento.closest('.flotante'))
+        .map(elemento => ({ elemento, caja: elemento.getBoundingClientRect() }))
+        .filter(({ caja }) => caja.width && caja.width < 260 && caja.height < 120 &&
+                caja.right > burbuja.left && caja.left < burbuja.right &&
+                caja.bottom > burbuja.top && caja.top < burbuja.bottom)
+        .map(({ elemento }) => elemento.getAttribute('aria-label') || elemento.textContent.trim().slice(0, 40));
 }
 """
 
@@ -1484,6 +1544,50 @@ def _desborde(pagina: Page) -> int:
     return max(0, ancho - visible)
 
 
+# Elementos con filete arriba que van pegados a otro filete sin texto en medio: en la
+# ficha salían dos líneas seguidas cuando un bloque ponía su borde y la pila el suyo.
+_JS_FILETES_SEGUIDOS = """
+() => {
+    const conFilete = e => parseFloat(getComputedStyle(e).borderTopWidth) > 0;
+    const sobra = [];
+    for (const padre of document.querySelectorAll('.pila-separada, .principal, .lateral')) {
+        for (const hijo of padre.children) {
+            if (!conFilete(hijo)) continue;
+            const primero = hijo.firstElementChild;
+            if (primero && conFilete(primero) && !primero.previousSibling?.textContent?.trim()) {
+                sobra.push((hijo.tagName + '.' + hijo.className).slice(0, 40));
+            }
+        }
+    }
+    return sobra;
+}
+"""
+
+
+def _sin_filetes_dobles(pagina: Page, donde: str) -> list[str]:
+    sobra = pagina.evaluate(_JS_FILETES_SEGUIDOS)
+    if sobra:
+        return [f"{donde}: filetes seguidos sin contenido en medio ({sorted(set(sobra))[:3]})"]
+    print(f"filetes:  {donde} sin líneas dobles")
+    return []
+
+
+def _contenido_estrecho(pagina: Page, ancho: int) -> str | None:
+    """A 390 px el contenido tiene que ocupar la pantalla menos sus márgenes.
+
+    Con la barra convertida en cajón, su columna de la rejilla se quedaba con 240 de los
+    390 px y todo lo demás se apretaba en 150: nada desbordaba, así que el control de
+    desborde no lo veía."""
+    medido = pagina.evaluate(
+        "() => { const c = document.querySelector('.contenido');"
+        " return c ? Math.round(c.getBoundingClientRect().width) : null; }"
+    )
+    if medido is None:
+        return "no tiene .contenido que medir"
+    minimo = round(ancho * 0.85)
+    return None if medido >= minimo else f"aprieta el contenido en {medido} px de {ancho} (mínimo {minimo})"
+
+
 def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     """La barra lateral y los dos temas: sin desborde a 390 px, con los contrastes medidos
     sobre los tokens que el navegador resolvió, y el cajón de móvil abriéndose y
@@ -1498,6 +1602,7 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     # 1280 px: a 1440 la página ya topa con su ancho máximo de 1200 y no cambiaría nada.
     contexto = navegador.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
     _sin_consultas_a_nia(contexto)
+    contexto.add_init_script("localStorage.setItem('nexplay.tema.v1', 'oscuro')")
     try:
         estrecha = contexto.new_page()
         _abrir(estrecha, base)
@@ -1524,8 +1629,70 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     finally:
         contexto.close()
 
-    # 2. Los dos temas, en escritorio y a 390 px: contrastes y desborde.
-    rutas = ["/", f"/juego/{_APPID_FICHA}", "/comparar", "/perfil", "/como-funciona"]
+    # 2. La barra entera cabe sin scroll propio en una pantalla de portátil.
+    contexto = navegador.new_context(viewport={"width": 1440, "height": 674}, reduced_motion="reduce")
+    _sin_consultas_a_nia(contexto)
+    contexto.add_init_script("localStorage.setItem('nexplay.tema.v1', 'oscuro')")
+    try:
+        baja = contexto.new_page()
+        _abrir(baja, f"{base}/explorar")
+        baja.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        baja.wait_for_timeout(600)
+        medidas = baja.evaluate(
+            "() => { const r = document.querySelector('.riel');"
+            " return [Math.round(r.scrollHeight), Math.round(r.clientHeight)]; }"
+        )
+        if medidas[0] > medidas[1] + 1:
+            problemas.append(f"a 674 px de alto la barra necesita scroll propio ({medidas[0]} en {medidas[1]})")
+        else:
+            print(f"barra:    cabe entera en 674 px de alto sin scroll propio ({medidas[0]} px)")
+        # Y el veredicto de la ficha entra sin desplazarse en esa misma pantalla.
+        _abrir(baja, f"{base}/juego/{_APPID_FICHA}")
+        baja.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        baja.wait_for_timeout(800)
+        caja = baja.get_by_test_id("ficha-veredicto").bounding_box()
+        if not caja or caja["y"] + caja["height"] > 674:
+            problemas.append(f"a 674 px de alto el veredicto no entra sin desplazarse ({caja})")
+        else:
+            print(f"ficha:    el veredicto entra sin desplazarse a 674 px (termina en {caja['y'] + caja['height']:.0f})")
+
+        # Y al bajar hasta el final, el chat de la ficha tiene que quedar a la vista: la
+        # columna derecha es más alta que la pantalla y antes se llevaba el campo de
+        # "Preguntar" al último píxel de la página.
+        baja.keyboard.press("End")
+        baja.wait_for_timeout(900)
+        enviar = baja.get_by_test_id("nia-enviar").bounding_box()
+        if not enviar or enviar["y"] < 0 or enviar["y"] + enviar["height"] > 674:
+            problemas.append(f"en la ficha a 674 px, el botón de preguntar no queda a la vista al final del scroll ({enviar})")
+        else:
+            print(f"ficha:    al final del scroll, el botón de preguntar queda a la vista (y={enviar['y']:.0f})")
+
+        # El chat de /nia también tiene que caber: el botón de preguntar es lo último.
+        _abrir(baja, f"{base}/nia?appid={_APPID_FICHA}")
+        baja.get_by_test_id("nia-enviar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        baja.wait_for_timeout(700)
+        boton = baja.get_by_test_id("nia-enviar").bounding_box()
+        if not boton or boton["y"] + boton["height"] > 674:
+            problemas.append(f"a 674 px de alto el botón de preguntar queda fuera ({boton})")
+        elif not baja.get_by_test_id("nia-bienvenida").count():
+            problemas.append("el chat vacío de /nia no saluda: queda el hueco")
+        else:
+            print(f"nia:      el botón de preguntar entra a 674 px (termina en {boton['y'] + boton['height']:.0f})")
+    finally:
+        contexto.close()
+
+    # 3. Los dos temas, en escritorio y a 390 px: contrastes y desborde.
+    rutas = [
+        "/",
+        "/explorar",
+        f"/juego/{_APPID_FICHA}",
+        "/comparar",
+        "/nia",
+        "/perfil",
+        "/historial",
+        "/panorama",
+        "/como-funciona",
+    ]
     for tema in ("oscuro", "claro"):
         for vista, nombre in ((_VIEWPORT, "escritorio"), ({"width": 390, "height": 844}, "movil")):
             contexto = navegador.new_context(viewport=vista, reduced_motion="reduce")
@@ -1547,9 +1714,25 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                     sobra = _desborde(otra)
                     if sobra:
                         problemas.append(f"tema {tema} en {nombre}: {ruta_app} desborda {sobra} px")
-                _abrir(otra, base)
+                    # Lo contrario del desborde y igual de roto: que el contenido se
+                    # apriete en una franja porque algo se quedó con el ancho.
+                    if nombre == "movil":
+                        estrecho = _contenido_estrecho(otra, vista["width"])
+                        if estrecho:
+                            problemas.append(f"tema {tema} en móvil: {ruta_app} {estrecho}")
+                    # El inicio y panorama son las dos que cambian con los datos: se guardan
+                    # enteras para poder revisar las cifras de una corrida a otra.
+                    if nombre == "escritorio" and ruta_app in ("/", "/panorama"):
+                        if ruta_app == "/":
+                            otra.get_by_test_id("cadena-datos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                        _recorrer_pagina(otra)
+                        _esperar_quietud(otra)
+                        pagina_nombre = "inicio" if ruta_app == "/" else "panorama"
+                        destino_ruta = destino / f"{pagina_nombre}-{tema}.png"
+                        otra.screenshot(path=destino_ruta, full_page=True)
+                        print(f"{pagina_nombre}: tema {tema} ({destino_ruta.relative_to(_RAIZ)})")
+                _abrir(otra, f"{base}/explorar")
                 otra.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
-                # La captura espera al catálogo: si no, sale la página con el centro vacío.
                 otra.get_by_test_id("catalogo-conteo").wait_for(state="visible", timeout=_TIMEOUT_MS)
                 _recorrer_pagina(otra)
                 if nombre == "movil":
@@ -1564,10 +1747,12 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                 _esperar_quietud(otra)
                 ruta = destino / f"barra-{tema}-{nombre}.png"
                 otra.screenshot(path=ruta, full_page=nombre == "escritorio")
-                print(f"tema:     {tema} en {nombre}, {len(rutas)} rutas sin desborde ({ruta.relative_to(_RAIZ)})")
+                limpias = len(rutas) - sum(f"tema {tema} en {nombre}" in p for p in problemas)
+                print(f"tema:     {tema} en {nombre}, {limpias} de {len(rutas)} rutas sin desborde "
+                      f"({ruta.relative_to(_RAIZ)})")
                 if nombre == "movil":
-                    # El velo cubre toda la ventana, pero el cajón le tapa los 280 px
-                    # de la izquierda: el toque va del lado del contenido.
+                    # El velo cubre toda la ventana, pero el cajón le tapa los 280 px de la
+                    # izquierda: el toque va del lado del contenido.
                     otra.get_by_test_id("velo-menu").click(position={"x": 350, "y": 400})
                     otra.wait_for_timeout(500)
                     if otra.get_by_test_id("velo-menu").count():
@@ -1591,7 +1776,6 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
         + _angular_carrusel(pagina, url, destino)
-        + _angular_nia_reaccion(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
@@ -1623,10 +1807,15 @@ def _sin_consultas_a_nia(contexto) -> None:
     """Intercepta /nia en todo el contexto del navegador, antes de cualquier paso."""
 
     def anotar(peticion) -> None:
-        if peticion.url.split("?")[0].rstrip("/").endswith("/nia"):
+        # Solo el POST de la API: /nia también es una ruta del sitio, y su documento
+        # es un GET que no tiene nada que ver con el modelo de lenguaje.
+        if peticion.method == "POST" and peticion.url.split("?")[0].rstrip("/").endswith("/nia"):
             _NIA_PEDIDAS.append(peticion.url)
 
     def responder(ruta) -> None:
+        if ruta.request.method != "POST":
+            ruta.fallback()
+            return
         _NIA_INTERCEPTADAS.append(ruta.request.url)
         ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA)
 
@@ -1641,6 +1830,11 @@ def capturar(url: str, api: str) -> int:
         navegador = p.chromium.launch()
         try:
             contexto = navegador.new_context(viewport=_VIEWPORT)
+            # Desde que el tema sale de prefers-color-scheme, un Chromium sin preferencia
+            # declarada abre en claro y las capturas de referencia cambiaban de tema de una
+            # corrida a otra. El recorrido general va en oscuro; _angular_barra_y_tema es
+            # quien recorre los dos temas a propósito.
+            contexto.add_init_script("localStorage.setItem('nexplay.tema.v1', 'oscuro')")
             _sin_consultas_a_nia(contexto)
             pagina = contexto.new_page()
             problemas = _capturar_angular(pagina, url, destino, api)
