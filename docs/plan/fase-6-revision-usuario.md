@@ -16,10 +16,10 @@
 > - **Tareas largas** (descarga de datos, capturas de las tres resoluciones) en segundo
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
-> Estado: plan guardado el 2026-09-25. Fase en curso: **6A**. Hechos los puntos 2
-> (tipografía) y 6 (nombre del riesgo). **Pendientes de la confirmación del dueño sobre el
-> mockup**: 1 (fondos), 3 (logo), 4 (botones) y 5 (menú). Las capturas del mockup no se
-> versionan; salen con `python docs/plan/mockups/capturar_mockup.py`.
+> Estado: plan guardado el 2026-09-25. **6A hecha** (puntos 1 a 6) el 2026-09-26; lo
+> siguiente es el mockup de la **6B**. Las capturas no se versionan: las de la app salen
+> con `python herramientas/capturar_ui.py` y las del mockup con
+> `python docs/plan/mockups/capturar_mockup.py`.
 
 ---
 
@@ -61,7 +61,7 @@ No copies su contenido ni su marca: copia la jerarquía y el trato de los botone
 El usuario no vio el logo, no vio los títulos de las vistas, no distinguió el título del
 texto y el fondo le pareció el mismo en todas partes.
 
-- [ ] 1. Fondos: espacio/futurista, distinto por contexto (inicio, explorar, ficha, perfil,
+- [x] 1. Fondos: espacio/futurista, distinto por contexto (inicio, explorar, ficha, perfil,
    Nia, panorama, comparar). Que se vean bien en PC, iPad y teléfono (1440, 1024, 390).
    Sin imágenes con derechos: genera los fondos con CSS/SVG (gradientes, estrellas,
    nebulosas, partículas) o arte propio. Guarda cada uno como asset y documenta su origen.
@@ -69,12 +69,12 @@ texto y el fondo le pareció el mismo en todas partes.
    legible) y una de lectura clara para el cuerpo. Títulos de vista con el tratamiento
    de omoggle (grande, mayúsculas, degradado). Cuerpo nunca menor a 16 px; nada de
    "letras chiquitas" en descripciones ni notas.
-- [ ] 3. Logo: más grande y acomodado al ancho de la barra en modo expandido y contraído.
-- [ ] 4. Botones: sistema propio con estilo omoggle (tarjeta ancha con icono, título,
+- [x] 3. Logo: más grande y acomodado al ancho de la barra en modo expandido y contraído.
+- [x] 4. Botones: sistema propio con estilo omoggle (tarjeta ancha con icono, título,
    subtítulo, chevron y color por acción), más botones compactos para acciones
    pequeñas. Estados hover/activo/deshabilitado inconfundibles. Que se distingan del
    fondo en los dos temas.
-- [ ] 5. Etiquetas de las vistas (ítems del menú y encabezados): revisar nombres y estilo para
+- [x] 5. Etiquetas de las vistas (ítems del menú y encabezados): revisar nombres y estilo para
    que se entiendan sin contexto; icono + nombre + una línea de subtítulo en el menú
    expandido.
 - [x] 6. Renombrar "banda" y "Riesgo general". El usuario no sabe qué es "banda". Propón tres
@@ -289,3 +289,55 @@ detente en su ALTO con el mockup de la identidad visual.
   que Angular pinte lo escrito, volver a '' no se detecta como cambio. El campo se vacía a
   mano al enviar. El recorrido lo cubre con la misma técnica, y se probó que el control
   falla sin el arreglo (cuatro PROBLEMA) y pasa con él.
+- **6A, puntos 1, 3, 4 y 5** (2026-09-26), con la paleta que aprobó el dueño:
+  - **Fondos (1)**: cada vista pone su color de acción en `data-vista` del armazón
+    (inicio cian, explorar y la ficha turquesa, comparar dorado, Nia violeta, perfil rosa,
+    panorama lima, historial y Cómo funciona gris azulado). El fondo es solo CSS: brillo
+    detrás del contenido, tres capas de estrellas, dos nebulosas del color de la vista,
+    rejilla fina y el degradado de `--fondo` a `--fondo-2`. Los alias (`--neon`,
+    `--cta-fondo`, `--acento-sistema`) se re-declaran en cada `[data-vista]`: declarados
+    solo en `:root`, se resolvían ahí y el menú de Panorama salía cian.
+  - **Logo y menú (3 y 5)**: el menú lleva icono en el color de su vista, nombre y una línea
+    (Qué es NexPlay, Los N juegos, Hasta 4 lado a lado, Tu asistente, Cómo juegas tú, Lo que
+    ya viste, Los datos en gráficas, Método y fuentes). Sin rótulos de grupo, como en el
+    mockup: los grupos se separan con un filete y su nombre queda en el `aria-label` de cada
+    lista. El logo ocupa el ancho de la barra (231 × 200) en pantallas altas y cede hasta
+    146 × 126 a 674 px de alto, que es lo único que se achica para que todo quepa; encogida,
+    queda solo la marca, recortada del mismo PNG. El punto de perfil activo pasó a píldora
+    con los géneros declarados («Perfil activo · Acción, Rol»), en el rosa de Tu perfil
+    porque el verde es del riesgo. El botón de encoger bajó al pie, junto al de tema.
+  - **Botones (4)**, en `base.css`: `.boton-cta` con el color de la vista y texto #0B0F1F en
+    los dos temas; `.boton-fantasma` en `--superficie-2` con `--borde-control`;
+    `.boton-texto` como enlace (cian y subrayado); `.compacto` (pastilla de 44 px) y
+    `.tarjeta-accion` (icono, título en mayúsculas, una línea, chevron) con el color de la
+    vista a la que llevan (`data-tono`). Hover levanta y enciende el filo, activo se hunde
+    con borde interior, deshabilitado pierde el color y el borde pasa a punteado. Los
+    cuatro accesos del inicio ya son tarjetas de acción; la acción principal del inicio
+    («Buscar un juego →» en tarjeta grande) se hace con el resto del inicio en la 6B.
+  - **Contraste**: el recorrido mide ahora 175 pares por tema —toda la paleta, y por vista
+    lo que depende del color de acción (botón principal, ítem activo del menú, insignias,
+    tarjetas de acción, compactos y el texto sobre la nebulosa en su punto más claro)—, con
+    las capas translúcidas compuestas. La primera medición dio 32 pares bajo el mínimo
+    (9 en oscuro, 23 en claro). Casi todos eran filetes translúcidos del color de la vista
+    (tarjeta de acción al 45 %, compacto y píldora de perfil al 55 %: 1.2 a 2.9:1) y el
+    filo de la tarjeta de riesgo en claro, hecho con el color vivo. Se resolvieron con
+    filetes opacos: el tono mezclado con la superficie al 60 % en oscuro y al 72 % en claro
+    (`--mezcla-filo`), y el filo de riesgo con su tinta (`--banda-*-filo`). El compacto se
+    pintaba translúcido y, sobre `--fondo-2` en claro, su texto bajaba a 4.30:1: ahora es
+    opaco sobre la superficie. Y el ámbar claro #AC500A, que la paleta anterior daba por
+    4.51:1 sobre `--fondo-2`, medido en el navegador da 4.49: pasa a #AA4F0A (4.57).
+    Resultado: 0 de 350 pares bajo el mínimo; lo más justo, el filo de riesgo alto en oscuro
+    al 60 % que pidió el dueño (3.00:1) y el enlace sobre `--fondo-2` en claro (4.53:1).
+  - **Chakra Petch no se estaba cargando en el servidor de desarrollo**: el `ng serve` que
+    corría era anterior al cambio de `angular.json`, que no se relee en caliente. Las
+    medidas de la 6A anteriores a esta nota se hicieron con la fuente de respaldo; con el
+    servidor reiniciado se repitieron todas en este recorrido.
+  - El recorrido pasa a las tres resoluciones de la fase (1440, 1024 y 390) en los dos
+    temas y guarda lo que se ve al entrar a cada vista en `docs/capturas/angular/vistas/`.
+    La prueba de 674 px de alto mide ahora sin perfil, con la píldora de perfil y encogida,
+    y que ningún subtítulo del menú se corte.
+- **Decisiones del dueño al cerrar la 6A** (2026-09-26): aprueba los ajustes a la paleta
+  de la tabla del reporte (tintas claras, ámbar #AA4F0A, estados claros, botón principal
+  con el color vivo en claro, `--borde-control` aparte, filetes opacos, nebulosa graduada).
+  El botón de tema **se queda al pie del menú como pastilla, sin flotante**. La acción
+  principal del inicio («Buscar un juego →» en tarjeta grande) se hace en la **6B**.

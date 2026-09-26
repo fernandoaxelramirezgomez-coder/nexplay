@@ -835,7 +835,7 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
         return ["no se pudo abrir un contexto con prefers-reduced-motion"]
 
     medir = """() => {
-        const img = document.querySelector('.marca img');
+        const img = document.querySelector('.marca .logo');
         return img ? getComputedStyle(img).animationDuration : null;
     }"""
 
@@ -852,7 +852,7 @@ def _angular_movimiento(pagina: Page, url: str) -> list[str]:
     try:
         quieta = contexto.new_page()
         _abrir(quieta, url)
-        quieta.wait_for_selector(".marca img", timeout=_TIMEOUT_MS)
+        quieta.wait_for_selector(".marca .logo", timeout=_TIMEOUT_MS)
         reducida = quieta.evaluate(medir)
         if segundos(reducida) > 0.05:
             problemas.append(f"con prefers-reduced-motion el logo sigue animándose ({reducida})")
@@ -1615,43 +1615,106 @@ def _una_sola_entrada_a_nia(pagina: Page) -> list[str]:
 
 # Qué pares de color tienen que pasar, y cuánto piden: 4.5:1 el texto, 3:1 los bordes y
 # los controles (WCAG 1.4.3 y 1.4.11). Se miden sobre los tokens ya resueltos por el
-# navegador, no sobre lo que dice la documentación. El vidrio no entra: es una mezcla de
-# dos superficies que ya están aquí, así que lo que quede debajo del texto está entre las
-# dos y ninguna de las dos reprueba.
-_CONTRASTES = [
-    ("--texto", "--superficie-lienzo", 4.5),
-    ("--texto", "--superficie-tarjeta", 4.5),
-    ("--texto-meta", "--superficie-lienzo", 4.5),
-    ("--texto-meta", "--superficie-tarjeta", 4.5),
-    ("--texto-meta", "--superficie-tarjeta-hover", 4.5),
-    ("--neon", "--superficie-lienzo", 4.5),
-    ("--neon", "--superficie-tarjeta", 4.5),
-    ("--neon-hover", "--superficie-tarjeta", 4.5),
-    ("--borde-control", "--superficie-lienzo", 3.0),
-    ("--borde-control", "--superficie-tarjeta-hover", 3.0),
-    ("--foco", "--superficie-lienzo", 3.0),
-    ("--banda-bajo-texto", "--superficie-lienzo", 4.5),
-    ("--banda-medio-texto", "--superficie-lienzo", 4.5),
-    ("--banda-alto-texto", "--superficie-lienzo", 4.5),
-    ("--banda-bajo-texto", "--superficie-tarjeta-hover", 4.5),
-    ("--banda-medio-texto", "--superficie-tarjeta-hover", 4.5),
-    ("--banda-alto-texto", "--superficie-tarjeta-hover", 4.5),
-    ("--texto-sobre-banda", "--banda-bajo", 4.5),
-    ("--texto-sobre-banda", "--banda-medio", 4.5),
-    ("--texto-sobre-banda", "--banda-alto", 4.5),
-    ("--cta-texto", "--cta-fondo", 4.5),
-    # El filo es lo que separa el relleno cromático del fondo de la página.
-    ("--cta-filo", "--superficie-lienzo", 3.0),
-]
+# navegador, no sobre lo que dice la documentación, y en cada una de las siete vistas: el
+# color de acción, la nebulosa y los rellenos que dependen de él cambian con data-vista.
+#
+# Un color es un token (--texto) o una pila de capas: la base y, encima, un color con su
+# alfa. En la pila, "canal:--x" es rgb(var(--x)) y el alfa puede ser un número o un token
+# numérico. Un token que ya trae alfa (--panel) se compone con el suyo.
+_FONDOS = ("--fondo", "--fondo-2", "--superficie", "--superficie-2")
 
+
+def _sobre(base: str, *capas: tuple[str, float | str | None]) -> tuple:
+    return (base, *capas)
+
+
+def _pares_de_contraste() -> list[tuple[str, object, object, float]]:
+    """(alcance, frente, fondo, mínimo). El alcance es 'global' o 'vista'."""
+    pares: list[tuple[str, object, object, float]] = []
+    for frente in ("--texto", "--texto-2", "--enlace"):
+        pares += [("global", frente, fondo, 4.5) for fondo in _FONDOS]
+    pares += [("global", "--borde-control", fondo, 3.0) for fondo in _FONDOS]
+    pares += [("global", "--foco", fondo, 3.0) for fondo in _FONDOS]
+    for nivel in ("bajo", "medio", "alto"):
+        pares += [("global", f"--banda-{nivel}-texto", fondo, 4.5) for fondo in _FONDOS]
+        pares.append(("global", "--texto-sobre-banda", f"--banda-{nivel}", 4.5))
+        pares.append(("global", f"--banda-{nivel}-filo", "--superficie", 3.0))
+    for estado in ("--exito", "--aviso", "--error", "--info"):
+        pares += [("global", estado, fondo, 4.5) for fondo in ("--fondo", "--superficie")]
+    # Píldora de perfil activo del menú: en el color de Tu perfil.
+    pildora = _sobre("--superficie", ("canal:--canal-perfil", 0.1))
+    pares += [
+        ("global", "--texto", pildora, 4.5),
+        ("global", "--t-perfil", pildora, 3.0),
+        ("global", _sobre("--superficie", ("--t-perfil", "--mezcla-filo")), "--superficie", 3.0),
+    ]
+
+    # Por vista: el botón principal, el color de acción como texto, el ítem activo del
+    # menú, las insignias, las tarjetas de acción y los compactos (data-tono igual a la
+    # vista), y el texto sobre la nebulosa en su punto más claro.
+    pares += [
+        ("vista", "--cta-texto", "--cta-fondo", 4.5),
+        ("vista", "--cta-filo", "--fondo", 3.0),
+        ("vista", "--cta-filo", "--superficie", 3.0),
+    ]
+    pares += [("vista", "--neon", fondo, 4.5) for fondo in _FONDOS]
+    pares += [
+        ("vista", "--neon", "--acento-sistema", 4.5),
+        ("vista", "--texto-2", "--acento-sistema", 4.5),
+        ("vista", "--neon", "--superficie", 3.0),
+        ("vista", "--tono", _sobre("--superficie", ("canal:--tono-canal", 0.14)), 3.0),
+    ]
+    # Tarjeta y compacto van opacos sobre la superficie, así que lo de abajo no cuenta.
+    tarjeta = _sobre("--superficie", ("canal:--tono-canal", 0.12))
+    compacto = _sobre("--superficie", ("canal:--tono-canal", 0.1))
+    pares += [
+        ("vista", "--tono", tarjeta, 4.5),
+        ("vista", "--texto-2", tarjeta, 4.5),
+        ("vista", "--tono", compacto, 4.5),
+        ("vista", _sobre("--superficie", ("--tono", "--mezcla-filo")), "--superficie", 3.0),
+    ]
+    nebulosa = _sobre("--fondo-2", ("canal:--accion-canal", "--nebulosa"), ("canal:--accion-canal", "--brillo"))
+    pares += [
+        ("vista", "--texto", nebulosa, 4.5),
+        ("vista", "--texto-2", nebulosa, 4.5),
+        ("vista", "--texto-2", nebulosa + (("--panel", None),), 4.5),
+    ]
+    return pares
+
+
+_CONTRASTES = _pares_de_contraste()
+
+# Un perfil guardado con tres géneros: la píldora de perfil activo es lo más alto que
+# puede aparecer en la barra, y tiene que caber con ella.
+_PERFIL_EN_LA_BARRA = {
+    "valores": {"compras": 4, "horas": 6, "friccion": 3, "plataforma": "pc", "generos": ["Acción", "Rol", "Estrategia"]},
+    "perfil": {
+        "compras_al_anio": 4, "horas_por_semana": 6, "tolerancia_friccion": 3,
+        "tags_preferidos": ["Action", "RPG", "Strategy"], "tags_rechazados": [], "plataforma": "pc",
+        "segmento": "veterano", "disponibilidad": "media",
+    },
+}
+_VISTAS_DE_COLOR = ("inicio", "explorar", "comparar", "nia", "perfil", "panorama", "neutro")
+
+# Cada token se lee en un elemento con data-vista y data-tono puestos, porque los alias
+# (--neon, --cta-fondo, --acento-sistema) se re-declaran ahí. Los colores pasan por un
+# canvas para salir en '#rrggbb' o 'rgba(...)'; los canales y los alfas se leen crudos.
 _JS_TOKENS = """
-nombres => {
-    const estilo = getComputedStyle(document.documentElement);
+({ vistas, colores, crudos }) => {
     const lienzo = document.createElement('canvas').getContext('2d');
-    return Object.fromEntries(nombres.map(nombre => {
-        lienzo.fillStyle = '#000';
-        lienzo.fillStyle = estilo.getPropertyValue(nombre).trim();
-        return [nombre, lienzo.fillStyle];
+    const aColor = (valor) => { lienzo.fillStyle = '#000'; lienzo.fillStyle = valor; return lienzo.fillStyle; };
+    const armazon = document.querySelector('.armazon') || document.body;
+    return Object.fromEntries(vistas.map(vista => {
+        const sonda = document.createElement('div');
+        sonda.dataset.vista = vista;
+        sonda.dataset.tono = vista;
+        armazon.appendChild(sonda);
+        const estilo = getComputedStyle(sonda);
+        const valores = {};
+        for (const nombre of colores) valores[nombre] = aColor(estilo.getPropertyValue(nombre).trim());
+        for (const nombre of crudos) valores[nombre] = estilo.getPropertyValue(nombre).trim();
+        sonda.remove();
+        return [vista, valores];
     }));
 }
 """
@@ -1692,36 +1755,109 @@ _JS_BAJO_LA_BURBUJA = """
 """
 
 
-def _luminancia(hexa: str) -> float:
-    crudo = hexa.lstrip("#")
-    canales = [int(crudo[i:i + 2], 16) / 255 for i in (0, 2, 4)]
-    lineal = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in canales]
+def _rgb(valor: str) -> tuple[tuple[float, float, float], float]:
+    """'#rrggbb', 'rgba(r, g, b, a)' o 'color(srgb r g b / a)' —lo que da el canvas con un
+    color-mix()— a canales 0–255 y alfa."""
+    if valor.startswith("#"):
+        crudo = valor.lstrip("#")
+        return tuple(int(crudo[i:i + 2], 16) for i in (0, 2, 4)), 1.0
+    numeros = [float(n) for n in re.findall(r"\d*\.?\d+(?:e-?\d+)?", valor)]
+    escala = 255 if valor.startswith("color(srgb") else 1
+    return tuple(n * escala for n in numeros[:3]), numeros[3] if len(numeros) > 3 else 1.0
+
+
+def _luminancia(canales: tuple[float, float, float]) -> float:
+    lineal = [(c / 255) / 12.92 if c / 255 <= 0.03928 else (((c / 255) + 0.055) / 1.055) ** 2.4 for c in canales]
     return 0.2126 * lineal[0] + 0.7152 * lineal[1] + 0.0722 * lineal[2]
 
 
-def _contraste(uno: str, otro: str) -> float:
+def _contraste(uno: tuple, otro: tuple) -> float:
     a, b = _luminancia(uno), _luminancia(otro)
     return (max(a, b) + 0.05) / (min(a, b) + 0.05)
 
 
+def _alfa(valor: str) -> float:
+    valor = valor.strip()
+    return float(valor[:-1]) / 100 if valor.endswith("%") else float(valor)
+
+
+def _nombres_de_pares() -> tuple[set[str], set[str]]:
+    colores, crudos = set(), set()
+
+    def recorrer(color: object) -> None:
+        if isinstance(color, str):
+            colores.add(color)
+            return
+        base, *capas = color
+        colores.add(base)
+        for token, alfa in capas:
+            (crudos if token.startswith("canal:") else colores).add(token.removeprefix("canal:"))
+            if isinstance(alfa, str):
+                crudos.add(alfa)
+
+    for _, frente, fondo, _ in _CONTRASTES:
+        recorrer(frente)
+        recorrer(fondo)
+    return colores, crudos
+
+
+def _resolver(color: object, tokens: dict[str, str]) -> tuple[float, float, float]:
+    """Compone la pila de capas sobre su base; un token suelto se toma tal cual."""
+    if isinstance(color, str):
+        return _rgb(tokens[color])[0]
+    base, *capas = color
+    actual = _rgb(tokens[base])[0]
+    for token, alfa in capas:
+        if token.startswith("canal:"):
+            canales = tuple(float(n) for n in tokens[token.removeprefix("canal:")].split()[:3])
+            propio = 1.0
+        else:
+            canales, propio = _rgb(tokens[token])
+        a = propio if alfa is None else (_alfa(tokens[alfa]) if isinstance(alfa, str) else alfa)
+        actual = tuple(c * a + b * (1 - a) for c, b in zip(canales, actual))
+    return actual
+
+
+def _describir(color: object) -> str:
+    if isinstance(color, str):
+        return color
+    base, *capas = color
+    partes = [base] + [f"{t.removeprefix('canal:')}@{a if a is not None else 'propio'}" for t, a in capas]
+    return " + ".join(partes)
+
+
 def _revisar_contrastes(pagina: Page, tema: str) -> list[str]:
-    nombres = sorted({nombre for par in _CONTRASTES for nombre in par[:2]})
-    tokens = pagina.evaluate(_JS_TOKENS, nombres)
-    faltan = [nombre for nombre, valor in tokens.items() if not valor.startswith("#")]
+    colores, crudos = _nombres_de_pares()
+    por_vista = pagina.evaluate(
+        _JS_TOKENS, {"vistas": list(_VISTAS_DE_COLOR), "colores": sorted(colores), "crudos": sorted(crudos)}
+    )
+    faltan = sorted({
+        nombre for tokens in por_vista.values() for nombre in colores
+        if not tokens[nombre].startswith(("#", "rgba", "color(srgb"))
+    } | {nombre for tokens in por_vista.values() for nombre in crudos if not tokens[nombre]})
     if faltan:
         return [f"en tema {tema} no se resolvieron los tokens {faltan}"]
     problemas = []
     peor = ("", 99.0)
-    for frente, fondo, minimo in _CONTRASTES:
-        razon = _contraste(tokens[frente], tokens[fondo])
-        if razon < minimo:
-            problemas.append(
-                f"en tema {tema}, {frente} sobre {fondo} da {razon:.2f}:1 y pide {minimo}:1"
-            )
-        elif razon < peor[1]:
-            peor = (f"{frente} sobre {fondo}", razon)
+    medidos = 0
+    for alcance, frente, fondo, minimo in _CONTRASTES:
+        vistas = _VISTAS_DE_COLOR if alcance == "vista" else ("inicio",)
+        for vista in vistas:
+            tokens = por_vista[vista]
+            razon = _contraste(_resolver(frente, tokens), _resolver(fondo, tokens))
+            medidos += 1
+            donde = f" en {vista}" if alcance == "vista" else ""
+            if razon < minimo:
+                problemas.append(
+                    f"en tema {tema}{donde}, {_describir(frente)} sobre {_describir(fondo)} "
+                    f"da {razon:.2f}:1 y pide {minimo}:1"
+                )
+            elif razon - minimo < peor[1]:
+                peor = (f"{_describir(frente)} sobre {_describir(fondo)}{donde} con {razon:.2f}:1 (pide {minimo})", razon - minimo)
     if not problemas:
-        print(f"contraste: tema {tema}, {len(_CONTRASTES)} pares pasan; el más justo es {peor[0]} con {peor[1]:.2f}:1")
+        print(f"contraste: tema {tema}, {medidos} pares pasan; el más justo es {peor[0]}")
+    else:
+        print(f"contraste: tema {tema}, {len(problemas)} de {medidos} pares no pasan")
     return problemas
 
 
@@ -1923,14 +2059,36 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
         _abrir(baja, f"{base}/explorar")
         baja.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
         baja.wait_for_timeout(600)
-        medidas = baja.evaluate(
+        # Tres estados: sin perfil, con la píldora de perfil activo (la más alta) y encogida.
+        # Además, ningún subtítulo del menú puede cortarse en puntos suspensivos.
+        medir_riel = (
             "() => { const r = document.querySelector('.riel');"
-            " return [Math.round(r.scrollHeight), Math.round(r.clientHeight)]; }"
+            " const cortados = [...document.querySelectorAll('nav a.item .sub')]"
+            "   .filter(s => s.getBoundingClientRect().width > 2 && s.scrollWidth > s.clientWidth + 1)"
+            "   .map(s => s.textContent.trim());"
+            " return [Math.round(r.scrollHeight), Math.round(r.clientHeight), cortados]; }"
         )
-        if medidas[0] > medidas[1] + 1:
-            problemas.append(f"a 674 px de alto la barra necesita scroll propio ({medidas[0]} en {medidas[1]})")
-        else:
-            print(f"barra:    cabe entera en 674 px de alto sin scroll propio ({medidas[0]} px)")
+        estados = []
+        for estado in ("sin perfil", "con perfil", "encogida"):
+            if estado == "con perfil":
+                baja.evaluate(
+                    "valor => localStorage.setItem('nexplay.perfil.v3', valor)", json.dumps(_PERFIL_EN_LA_BARRA)
+                )
+                baja.reload()
+                baja.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            elif estado == "encogida":
+                baja.get_by_test_id("colapsar-barra").click()
+            baja.wait_for_timeout(600)
+            alto, visible, cortados = baja.evaluate(medir_riel)
+            if alto > visible + 1:
+                problemas.append(f"a 674 px de alto, {estado}, la barra necesita scroll propio ({alto} en {visible})")
+            if cortados:
+                problemas.append(f"a 674 px, {estado}, el menú corta subtítulos: {cortados}")
+            estados.append(f"{estado} {alto}")
+        baja.get_by_test_id("colapsar-barra").click()
+        baja.evaluate("() => localStorage.removeItem('nexplay.perfil.v3')")
+        if not any("674 px" in p for p in problemas):
+            print(f"barra:    cabe entera en 674 px de alto sin scroll propio ({', '.join(estados)} px), sin subtítulos cortados")
         # Y el veredicto de la ficha entra sin desplazarse en esa misma pantalla.
         _abrir(baja, f"{base}/juego/{_APPID_FICHA}")
         baja.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -1966,7 +2124,11 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     finally:
         contexto.close()
 
-    # 3. Los dos temas, en escritorio y a 390 px: contrastes y desborde.
+    # 3. Los dos temas en las tres resoluciones de la fase 6 (1440, 1024 y 390): contrastes,
+    # desborde y una captura de lo que se ve al entrar a cada vista, para revisar fondos y
+    # color de acción sin abrir la app.
+    carpeta_vistas = destino / "vistas"
+    carpeta_vistas.mkdir(parents=True, exist_ok=True)
     rutas = [
         "/",
         "/explorar",
@@ -1979,7 +2141,11 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
         "/como-funciona",
     ]
     for tema in ("oscuro", "claro"):
-        for vista, nombre in ((_VIEWPORT, "escritorio"), ({"width": 390, "height": 844}, "movil")):
+        for vista, nombre in (
+            (_VIEWPORT, "escritorio"),
+            ({"width": 1024, "height": 1366}, "tableta"),
+            ({"width": 390, "height": 844}, "movil"),
+        ):
             contexto = navegador.new_context(viewport=vista, reduced_motion="reduce")
             _sin_consultas_a_nia(contexto)
             contexto.add_init_script(f"localStorage.setItem('nexplay.tema.v1', '{tema}')")
@@ -1999,6 +2165,9 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                     sobra = _desborde(otra)
                     if sobra:
                         problemas.append(f"tema {tema} en {nombre}: {ruta_app} desborda {sobra} px")
+                    _esperar_quietud(otra)
+                    slug = ruta_app.strip("/").split("/")[0] or "inicio"
+                    otra.screenshot(path=carpeta_vistas / f"{slug}-{tema}-{vista['width']}.png")
                     # Lo contrario del desborde y igual de roto: que el contenido se
                     # apriete en una franja porque algo se quedó con el ancho.
                     if nombre == "movil":
@@ -2047,6 +2216,7 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
             finally:
                 contexto.close()
 
+    print(f"vistas:   9 rutas × 2 temas × 3 anchos en {carpeta_vistas.relative_to(_RAIZ)}")
     _abrir(pagina, url)
     return problemas
 

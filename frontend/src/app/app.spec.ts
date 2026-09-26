@@ -23,7 +23,7 @@ describe('App (shell)', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
-    const enlaces = [...html.querySelectorAll('app-barra-lateral nav a.item')].map((a) => a.textContent?.trim());
+    const enlaces = [...html.querySelectorAll('app-barra-lateral nav a.item .nombre')].map((a) => a.textContent?.trim());
     expect(enlaces).toEqual([
       'Inicio',
       'Explorar',

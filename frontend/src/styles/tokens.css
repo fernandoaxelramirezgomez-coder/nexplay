@@ -1,48 +1,120 @@
-/* Tokens de NexPlay. Punto de partida: docs/diseno/referencia-estilo.md y el entorno
-   índigo profundo de la referencia de Discord, con la paleta neón del proyecto en vez
-   de un solo color de marca. Las decisiones de color están medidas contra WCAG
-   (4.5:1 texto, 3:1 bordes y controles); los números están en el README del frontend. */
+/* Tokens de NexPlay. La paleta es la que aprobó el dueño en la fase 6A (punto 3) y cada par
+   de color está medido contra WCAG —4.5:1 para texto, 3:1 para controles— en los dos
+   temas; herramientas/capturar_ui.py vuelve a medirlos sobre los valores que resuelve el
+   navegador en cada corrida.
+
+   Donde un valor de la paleta no pasaba contra alguna superficie, se movió lo mínimo hacia
+   la tinta hasta que pasara, y se anota junto al valor. Reglas que la paleta trae y que
+   este archivo no puede imponer solo, así que las recuerda:
+   - texto sobre un botón de color: siempre #0B0F1F, nunca blanco;
+   - --texto-2 solo sobre superficie o fondo; sobre la nebulosa, con panel (--panel);
+   - un color de acción por vista: fondo, menú y botón principal (ver [data-vista]);
+   - verde, ámbar y rosa quedan para el riesgo; los enlaces van en --enlace, subrayados. */
 :root {
   color-scheme: dark;
 
-  /* Superficies: un solo ambiente índigo de punta a punta. La elevación se marca por
-     paso de color, nunca con sombra. */
-  --superficie-lienzo: #0e0f2d;
-  --superficie-tarjeta: #181a3a;
-  --superficie-tarjeta-hover: #22254c;
-  --linea: #262a57;
+  /* Superficies y tinta */
+  --fondo: #0b0f1f;
+  --fondo-2: #131a33;
+  --superficie: #161d38;
+  --superficie-2: #1f2747;
+  /* El borde de la paleta (1.3 a 1.7:1 contra las superficies) es para filetes y el
+     contorno de las tarjetas, que no son lo único que identifica un control. El de los
+     controles —campos, botones secundarios, casillas— sí tiene que dar 3:1: #6b7290 es el
+     de la paleta llevado a la tinta hasta pasar contra las cuatro superficies (3.07:1). */
+  --borde: #2e3862;
+  --borde-control: #6b7290;
+  --texto: #f2f4ff;
+  --texto-2: #b8bfdd;
+  /* El panel que va debajo de --texto-2 cuando hay nebulosa detrás. */
+  --panel: rgb(22 29 56 / 0.85);
 
-  /* Texto: blanco con un punto de azul para no chocar con el fondo (16.9:1 en página,
-     15.3:1 en tarjeta). El meta es el Fog de la referencia, que se queda en 9:1. */
-  --texto: #f2f3ff;
-  --texto-meta: #babcd9;
+  /* Acción por vista. El vivo es relleno, fondo y halo; la tinta es para cuando el color
+     es texto o filo. En oscuro son el mismo; en claro la tinta es la variante oscura. */
+  --c-inicio: #22d3ee;
+  --c-explorar: #2dd4bf;
+  --c-comparar: #f5c542;
+  --c-nia: #a78bfa;
+  --c-perfil: #f472b6;
+  --c-panorama: #a3e635;
+  --c-neutro: #94a3d6;
+  --canal-inicio: 34 211 238;
+  --canal-explorar: 45 212 191;
+  --canal-comparar: 245 197 66;
+  --canal-nia: 167 139 250;
+  --canal-perfil: 244 114 182;
+  --canal-panorama: 163 230 53;
+  --canal-neutro: 148 163 214;
+  --t-inicio: var(--c-inicio);
+  --t-explorar: var(--c-explorar);
+  --t-comparar: var(--c-comparar);
+  --t-nia: var(--c-nia);
+  --t-perfil: var(--c-perfil);
+  --t-panorama: var(--c-panorama);
+  --t-neutro: var(--c-neutro);
 
-  /* Bordes de control: 4.1:1 en página y 3.2:1 en el hover de tarjeta. */
-  --borde-control: #6d72a8;
+  /* La acción de la vista abierta. Sin vista (o en Historial y Cómo funciona), el cian del
+     inicio; cada [data-vista] de más abajo la cambia. */
+  --accion: var(--c-inicio);
+  --accion-tinta: var(--t-inicio);
+  --accion-canal: var(--canal-inicio);
 
-  /* Neón: el cian es el color de la acción y del foco. Es el único acento cromático
-     de la interfaz fuera de las bandas, y nunca se usa como fondo de un área grande. */
-  --neon: #22e0ff;
-  --neon-hover: #7aeaff;
-  --neon-tenue: rgba(34, 224, 255, 0.12);
-  /* Resplandor: se usa solo en foco y en estado activo, no para simular elevación. */
-  --resplandor: 0 0 0 1px rgba(34, 224, 255, 0.45), 0 0 16px rgba(34, 224, 255, 0.25);
+  /* Enlaces y foco: siempre cian, en cualquier vista, para que se reconozcan. */
+  --enlace: #22d3ee;
+  --foco: #22d3ee;
 
-  /* Relleno del estado activo. Contra la tarjeta casi no contrasta (1.3:1), así que
-     nunca va solo: siempre acompañado del borde neón, que sí da 10.6:1. */
-  --acento-sistema: #242a63;
+  /* Resplandor de los botones con el color de su acción. En claro baja: sobre papel un
+     halo fuerte ensucia más de lo que destaca. */
+  --brillo-boton: 0.3;
 
-  /* Bandas: los otros tres colores del sistema. Siempre de relleno con texto oscuro
-     (12.9 / 11.8 / 6.0:1) y, como texto sobre tarjeta, 11.6 / 10.7 / 5.4:1. */
-  --banda-bajo: #3df2a7;
-  --banda-medio: #ffc53d;
-  --banda-alto: #ff4d97;
-  --texto-sobre-banda: #0e0f2d;
+  /* Riesgo: el relleno del chip y, como texto o filo, su tinta. Texto encima: #0B0F1F. */
+  --banda-bajo: #34d399;
+  --banda-medio: #fbbf24;
+  --banda-alto: #fb7185;
+  --banda-bajo-texto: var(--banda-bajo);
+  --banda-medio-texto: var(--banda-medio);
+  --banda-alto-texto: var(--banda-alto);
+  --texto-sobre-banda: #0b0f1f;
+  /* El borde de la tarjeta según su riesgo, al 60 % del color. Opaco, mezclado con la
+     superficie, para que se mida igual que se ve. */
+  --alfa-borde-riesgo: 60%;
+  --banda-bajo-filo: color-mix(in srgb, var(--banda-bajo-texto) var(--alfa-borde-riesgo), var(--superficie));
+  --banda-medio-filo: color-mix(in srgb, var(--banda-medio-texto) var(--alfa-borde-riesgo), var(--superficie));
+  --banda-alto-filo: color-mix(in srgb, var(--banda-alto-texto) var(--alfa-borde-riesgo), var(--superficie));
 
-  --cta-fondo: #22e0ff;
-  --cta-fondo-hover: #7aeaff;
-  --cta-texto: #0e0f2d;
-  --foco: #22e0ff;
+  /* Filo de lo que lleva el color de una vista (tarjeta de acción, compacto, píldora de
+     perfil): el tono mezclado con la superficie. Con 45–55 % de transparencia, morado,
+     rosa y gris no llegaban a 3:1; el más oscuro de los siete pide 59 %. */
+  --mezcla-filo: 60%;
+
+  /* Estados */
+  --exito: #34d399;
+  --aviso: #fbbf24;
+  --error: #fb7185;
+  --info: #60a5fa;
+
+  /* Título metálico de cada vista */
+  --titulo-degradado: linear-gradient(180deg, #ffffff 0%, #c7cce6 55%, #8f97bf 100%);
+  --titulo-brillo: drop-shadow(0 10px 30px rgb(0 0 0 / 0.35));
+
+  /* Fondo espacial: cuánto se ven las nebulosas y el brillo. El máximo de cada vista está
+     calculado para que --texto-2 pase 4.5:1 aun sin panel, en su peor punto; ver
+     [data-vista]. Estrellas y rejilla, tenues. */
+  --nebulosa: 0.18;
+  --brillo: 0.14;
+  --estrella-a: rgb(255 255 255 / 0.55);
+  --estrella-b: rgb(190 205 255 / 0.32);
+  --rejilla-a: rgb(148 163 214 / 0.05);
+  --rejilla-b: rgb(167 139 250 / 0.04);
+
+  /* Alias: los nombres que ya usaban los componentes, apuntando a la paleta nueva. */
+  --superficie-lienzo: var(--fondo);
+  --superficie-tarjeta: var(--superficie);
+  --superficie-tarjeta-hover: var(--superficie-2);
+  --superficie-barra: var(--superficie);
+  --linea: var(--borde);
+  --texto-meta: var(--texto-2);
+  --cta-texto: #0b0f1f;
 
   /* Tipografía. Chakra Petch para títulos y rótulos: tiene carácter de juego y se sigue
      leyendo en mayúsculas grandes. Inter para leer. Las tres se cargan como paquetes
@@ -73,8 +145,6 @@
      respirar a Á, É, Í, Ó, Ú y Ñ en un titular de dos líneas. */
   --interlineado-display: 1.05;
   --interlineado-largo: 1.5;
-  --titulo-degradado: linear-gradient(180deg, #ffffff 0%, #d6fbff 54%, #8eeeff 100%);
-  --titulo-brillo: drop-shadow(0 10px 30px rgb(34 211 238 / 0.18));
   --medida-lectura: 65ch;
 
   /* Espacio y ritmo (unidad de 4px) */
@@ -101,107 +171,133 @@
   --duracion: 200ms;
   --curva: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Barra lateral. El ancho y el alto de la barra de móvil salen de las variables del
-     estilo "Data-Dense Dashboard" de la guía de diseño (--sidebar-width: 240px,
-     --header-height: 56px). Colapsada deja 64 px: un ícono con su área de toque de 44. */
-  --superficie-barra: #181a3a;
-  --ancho-barra: 240px;
-  --ancho-barra-corta: 64px;
+  /* Barra lateral */
+  --ancho-barra: 256px;
+  --ancho-barra-corta: 72px;
   --alto-barra-movil: 56px;
-
-  /* Canales del neón: rgba() pide los tres por separado, y en el tema claro el acento es
-     otro color. Con esto ningún componente escribe el cian a mano. --halo-radio y
-     --halo-alfa escalan todos los halos a la vez: en claro el halo se encoge a la mitad,
-     porque sobre papel un halo cian baja el brillo en vez de subirlo. */
-  --neon-canal: 34 224 255;
   --halo-radio: 1;
   --halo-alfa: 1;
-
-  /* Elevación de la tarjeta al pasar el ratón, y el velo del cajón de la barra. */
-  --sombra-tarjeta: 0 2px 10px rgba(0, 0, 0, 0.55);
-  --velo: rgba(6, 7, 24, 0.62);
-
-  /* Vidrio: la superficie de tarjeta a medio camino de la transparencia. Se define con
-     color-mix sobre --superficie-tarjeta y solo se usa encima del lienzo, así que lo que
-     queda debajo del texto siempre está entre dos superficies ya medidas y el contraste
-     no se pierde. El desenfoque va dentro de @supports; sin él queda el color y se lee
-     igual. */
-  --vidrio: color-mix(in srgb, var(--superficie-tarjeta) 78%, transparent);
-  --vidrio-borde: color-mix(in srgb, var(--linea) 75%, transparent);
+  --sombra-tarjeta: 0 2px 10px rgb(0 0 0 / 0.55);
+  --velo: rgb(6 8 20 / 0.62);
+  /* Vidrio: la superficie a medio camino de la transparencia, con el desenfoque dentro de
+     @supports. Lo que queda debajo del texto está siempre entre dos superficies medidas. */
+  --vidrio: color-mix(in srgb, var(--superficie) 82%, transparent);
+  --vidrio-borde: color-mix(in srgb, var(--borde) 80%, transparent);
   --vidrio-desenfoque: blur(14px);
-
-  /* Sombra difusa y baja, para lo que flota. No sustituye al paso de color: lo acompaña. */
-  --sombra-suave: 0 10px 30px rgba(0, 0, 0, 0.38);
-
-  /* El radio de burbuja: más redondo que la tarjeta, para lo que flota o invita a tocar. */
+  --sombra-suave: 0 10px 30px rgb(0 0 0 / 0.38);
   --radio-burbuja: 24px;
-
-  /* Tinta de banda: la banda cuando es texto, filo o halo, no relleno. Aquí vale lo mismo
-     que el relleno; en claro se oscurece, porque un verde neón sobre papel da 1.5:1. */
-  --banda-bajo-texto: var(--banda-bajo);
-  --banda-medio-texto: var(--banda-medio);
-  --banda-alto-texto: var(--banda-alto);
-
-  /* Filo del relleno cromático: contra el lienzo oscuro el relleno ya da 11:1, así que
-     aquí el filo es del color del propio relleno y no se ve. */
-  --cta-filo: var(--cta-fondo);
 }
 
-/* Tema claro. Ninguno de estos valores es el oscuro invertido: cada uno se midió contra
-   los tres fondos claros (lienzo #f6f7fb, tarjeta #ffffff, hover #eceff8) y se eligió el
-   primer tono que pasa. Los contrastes, en ese orden:
-
-     --texto          16.08 / 17.22 / 14.98   (pide 4.5)
-     --texto-meta      7.10 /  7.60 /  6.61   (pide 4.5)
-     --borde-control   3.42 /  3.67 /  3.19   (pide 3.0; #8b8fb4 daba 2.93 y se descartó)
-     --neon            5.35 /  5.73 /  4.98   (pide 4.5; #0e7f9e daba 4.31 y se descartó)
-     --banda-*-texto   5.00 /  5.35 /  4.66   bajo
-                       5.54 /  5.93 /  5.16   medio y alto
-
-   Los rellenos cromáticos no cambian de color: el cian y las tres bandas son el mismo hex
-   en los dos temas, con texto tinta encima (11.71, 12.85, 11.83 y 6.01:1). Lo que cambia
-   es que en claro llevan filo, porque el borde del relleno contra el papel da 1.36, 1.47
-   y 2.90:1 y los controles piden 3:1. */
+/* Tema claro: los valores de la paleta para claro, con tres correcciones mínimas hacia la
+   tinta donde algún par no pasaba (se anota cada una). */
 :root[data-tema='claro'] {
   color-scheme: light;
+  --fondo: #f4f6ff;
+  --fondo-2: #e6eafb;
+  --superficie: #ffffff;
+  --superficie-2: #eef1ff;
+  --borde: #c9d0ee;
+  /* #c9d0ee da 1.3 a 1.5:1: sirve para filetes, no para controles. #7f859d, 3.06:1. */
+  --borde-control: #7f859d;
+  --texto: #0b0f1f;
+  --texto-2: #4a5279;
+  --panel: rgb(255 255 255 / 0.85);
 
-  --superficie-lienzo: #f6f7fb;
-  --superficie-tarjeta: #ffffff;
-  --superficie-tarjeta-hover: #eceff8;
-  --superficie-barra: #ffffff;
-  --linea: #d6d9ea;
+  /* En claro, la tinta de cada acción es su variante oscura. Tres se oscurecieron un pelo
+     porque sobre --superficie-2 no llegaban a 4.5:1: el cian #0E7490 (4.49) a #0E738F, el
+     dorado #A16207 (4.37) a #965C09 y el lima #4D7C0F (4.44) a #497510. */
+  --t-inicio: #0e738f;
+  --t-explorar: #0f766e;
+  --t-comparar: #965c09;
+  --t-nia: #6d28d9;
+  --t-perfil: #be185d;
+  --t-panorama: #497510;
+  --t-neutro: #475585;
 
-  --texto: #14173d;
-  --texto-meta: #4d5178;
-  --borde-control: #7f83aa;
+  --enlace: #0e738f;
+  --foco: #0e738f;
+  --brillo-boton: 0.18;
 
-  /* El acento deja de ser un cian que emite luz y pasa a ser uno que se lee sobre papel.
-     El hover va más oscuro, no más claro: aclararlo lo borraría. */
-  /* Un degradado claro sobre papel no se lee: en claro el título es tinta sólida. */
-  --titulo-degradado: linear-gradient(180deg, var(--texto), var(--texto));
+  /* Riesgo en claro: el chip conserva el relleno vivo con texto tinta, y su filo y su
+     texto sobre papel usan la variante oscura. El ámbar #B45309 daba 4.19:1 sobre
+     --fondo-2; #AC500A, medido en el navegador, 4.49; pasa a #AA4F0A (4.57). */
+  --banda-bajo-texto: #047857;
+  --banda-medio-texto: #aa4f0a;
+  --banda-alto-texto: #be123c;
+  /* Al 60 % el borde verde y el ámbar no llegaban a 3:1 sobre blanco (2.59 y 2.49): 75 %. */
+  --alfa-borde-riesgo: 75%;
+  /* Sobre blanco la tinta pide más: la de Tu perfil y la de Explorar, 70 %. */
+  --mezcla-filo: 72%;
+
+  /* Estados en claro: los de la paleta son para oscuro (sobre blanco dan 1.7 a 2.7:1). */
+  --exito: #047857;
+  --aviso: #aa4f0a;
+  --error: #be123c;
+  --info: #1d4ed8;
+
+  --titulo-degradado: linear-gradient(180deg, #1b2247 0%, #3a4478 60%, #5c68a8 100%);
   --titulo-brillo: none;
-  --neon: #0b6f8c;
-  --neon-hover: #07566e;
-  --neon-tenue: rgb(11 111 140 / 0.1);
-  --neon-canal: 11 111 140;
+
+  --nebulosa: 0.22;
+  --brillo: 0.1;
+  --estrella-a: rgb(40 48 110 / 0.2);
+  --estrella-b: rgb(90 70 160 / 0.14);
+  --rejilla-a: rgb(71 85 133 / 0.06);
+  --rejilla-b: rgb(109 40 217 / 0.04);
+
   --halo-radio: 0.5;
   --halo-alfa: 0.62;
-  /* El resplandor cambia de luz emitida a contorno con profundidad: en claro la elevación
-     viene de una sombra, no de un halo. */
-  --resplandor: 0 0 0 1px #0b6f8c, 0 2px 10px rgba(11, 111, 140, 0.22);
-  --sombra-tarjeta: 0 2px 10px rgba(20, 23, 61, 0.12);
-  --velo: rgba(20, 23, 61, 0.35);
-  /* Sobre papel la sombra se afina: una sombra fuerte ensucia en vez de elevar. */
-  --sombra-suave: 0 10px 30px rgba(20, 23, 61, 0.12);
-  --vidrio: color-mix(in srgb, var(--superficie-tarjeta) 72%, transparent);
-
-  /* Relleno del estado activo: el texto encima da 14.7:1 y el acento 4.9:1. */
-  --acento-sistema: #dff0f8;
-
-  --banda-bajo-texto: #0d7a52;
-  --banda-medio-texto: #8a5a00;
-  --banda-alto-texto: #c0136a;
-
-  --cta-filo: #0b6f8c;
-  --foco: #0b6f8c;
+  --sombra-tarjeta: 0 2px 10px rgb(11 15 31 / 0.12);
+  --velo: rgb(11 15 31 / 0.35);
+  --sombra-suave: 0 10px 30px rgb(11 15 31 / 0.12);
+  --vidrio: color-mix(in srgb, var(--superficie) 78%, transparent);
 }
+
+/* Lo que depende del color de la vista. Va aparte y se repite en cada [data-vista]
+   porque una variable que usa var() se resuelve donde se declara: declarada solo en
+   :root, --neon valía el cian del inicio en todas las vistas aunque --accion cambiara, y
+   el menú de Panorama salía cian en vez de lima. */
+:root,
+[data-vista] {
+  --neon: var(--accion-tinta);
+  --neon-hover: color-mix(in srgb, var(--accion-tinta) 80%, #ffffff);
+  --neon-tenue: rgb(var(--accion-canal) / 0.12);
+  --neon-canal: var(--accion-canal);
+  /* Relleno del estado activo: el color de la vista, apenas, sobre la superficie. Nunca
+     va solo: lo acompaña el filo del color. */
+  --acento-sistema: color-mix(in srgb, var(--accion) 16%, var(--superficie));
+  --resplandor: 0 0 0 1px rgb(var(--accion-canal) / 0.5), 0 0 16px rgb(var(--accion-canal) / 0.25);
+  /* El botón principal: relleno del color de la vista, texto tinta. */
+  --cta-fondo: var(--accion);
+  --cta-fondo-hover: color-mix(in srgb, var(--accion) 82%, #ffffff);
+  --cta-filo: var(--accion);
+}
+
+:root[data-tema='claro'],
+:root[data-tema='claro'] [data-vista] {
+  --neon-hover: color-mix(in srgb, var(--accion-tinta) 80%, #000000);
+  --acento-sistema: color-mix(in srgb, var(--accion) 14%, #ffffff);
+  --resplandor: 0 0 0 1px var(--accion-tinta), 0 2px 10px rgb(var(--accion-canal) / 0.22);
+  --cta-fondo-hover: color-mix(in srgb, var(--accion) 85%, #0b0f1f);
+  /* El relleno vivo contra el papel no llega a 3:1: el filo lo da la tinta de la vista. */
+  --cta-filo: var(--accion-tinta);
+}
+
+/* Un color de acción por vista: lo pone el armazón según la ruta (app.ts). Explorar,
+   Comparar, Nia, Perfil y Panorama traen el suyo; Historial y Cómo funciona, el gris-azul;
+   el inicio y cualquier otra, el cian. --nebulosa es el máximo con el que --texto-2 pasa
+   4.5:1 sin panel en el punto más claro del fondo (oscuro); en claro basta el valor base. */
+[data-vista='inicio'] { --accion: var(--c-inicio); --accion-tinta: var(--t-inicio); --accion-canal: var(--canal-inicio); }
+[data-vista='explorar'] { --accion: var(--c-explorar); --accion-tinta: var(--t-explorar); --accion-canal: var(--canal-explorar); }
+[data-vista='comparar'] { --accion: var(--c-comparar); --accion-tinta: var(--t-comparar); --accion-canal: var(--canal-comparar); }
+[data-vista='nia'] { --accion: var(--c-nia); --accion-tinta: var(--t-nia); --accion-canal: var(--canal-nia); }
+[data-vista='perfil'] { --accion: var(--c-perfil); --accion-tinta: var(--t-perfil); --accion-canal: var(--canal-perfil); }
+[data-vista='panorama'] { --accion: var(--c-panorama); --accion-tinta: var(--t-panorama); --accion-canal: var(--canal-panorama); }
+[data-vista='neutro'] { --accion: var(--c-neutro); --accion-tinta: var(--t-neutro); --accion-canal: var(--canal-neutro); }
+:root:not([data-tema='claro']) [data-vista='inicio'] { --nebulosa: 0.18; }
+:root:not([data-tema='claro']) [data-vista='explorar'] { --nebulosa: 0.18; }
+:root:not([data-tema='claro']) [data-vista='comparar'] { --nebulosa: 0.16; }
+:root:not([data-tema='claro']) [data-vista='nia'] { --nebulosa: 0.28; }
+:root:not([data-tema='claro']) [data-vista='perfil'] { --nebulosa: 0.28; }
+:root:not([data-tema='claro']) [data-vista='panorama'] { --nebulosa: 0.15; }
+:root:not([data-tema='claro']) [data-vista='neutro'] { --nebulosa: 0.24; }

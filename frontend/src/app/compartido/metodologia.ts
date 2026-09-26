@@ -13,12 +13,12 @@ import { RouterLink } from '@angular/router';
   `,
   styles: `
     .enlace {
-      color: var(--texto-meta);
-      text-decoration: none;
-      transition: color var(--duracion-rapida) var(--curva);
+      color: var(--enlace);
+      text-decoration: underline;
+      text-underline-offset: 4px;
     }
     .enlace:hover {
-      color: var(--texto);
+      text-decoration-thickness: 2px;
     }
   `,
 })

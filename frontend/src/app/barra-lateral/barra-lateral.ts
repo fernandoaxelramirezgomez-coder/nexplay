@@ -12,20 +12,21 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter, map, startWith } from 'rxjs';
 
 import { BarraStore } from '../estado/barra-store';
+import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { TemaStore } from '../estado/tema-store';
 
 /** La barra lateral: la navegación del sitio, el logo y el interruptor de tema.
  *
- * En escritorio es una columna de 240 px que se puede encoger a 64 px (solo íconos, con
+ * En escritorio es una columna de 256 px que se puede encoger a 72 px (solo íconos, con
  * el nombre en el `title` y como texto para lector de pantalla). En pantallas angostas
  * no cabe ninguna de las dos: ahí es un cajón que entra desde la izquierda, se cierra al
  * navegar, con Escape, con el velo o con su propia X, y mientras está abierto la página
  * queda `inert` para que el tabulador no se escape detrás del velo.
  *
- * Los íconos son SVG en línea al estilo de Lucide (`menu`, `sidebar`, `compass`,
- * `columns`, `circle-user`, `circle-help`, `sun`, `moon`): trazo de currentColor y nada
+ * Cada sección lleva el color de su vista en el ícono, un nombre y una línea que dice qué
+ * hay ahí. Los íconos son SVG en línea al estilo de Lucide: trazo de currentColor y nada
  * de emoji, que no se pueden colorear ni se leen igual en cada sistema. */
 @Component({
   selector: 'app-barra-lateral',
@@ -40,13 +41,16 @@ import { TemaStore } from '../estado/tema-store';
       <div class="cima">
         <a routerLink="/" class="marca" aria-label="NexPlay, ir al inicio" (click)="barra.cerrarCajon()">
           <!-- El logotipo tiene dos versiones: "Nex" es blanco en una y azul marino en
-               la otra, así que sobre papel hace falta la segunda o esa palabra desaparece. -->
-          <img
-            [src]="tema.esClaro() ? 'logo-header.png' : 'logo-oscuro.png'"
-            alt=""
-            width="81"
-            height="70"
-          />
+               la otra, así que sobre papel hace falta la segunda o esa palabra desaparece.
+               Encogida, la ventana de .logo recorta el mismo archivo y deja solo la marca. -->
+          <span class="logo">
+            <img
+              [src]="tema.esClaro() ? 'logo-header.png' : 'logo-oscuro.png'"
+              alt=""
+              width="1035"
+              height="894"
+            />
+          </span>
         </a>
         <button
           #cerrar
@@ -58,183 +62,195 @@ import { TemaStore } from '../estado/tema-store';
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
         </button>
-        <button
-          type="button"
-          class="icono colapsar"
-          data-testid="colapsar-barra"
-          [attr.aria-label]="barra.expandida() ? 'Encoger la barra lateral' : 'Ampliar la barra lateral'"
-          [attr.aria-expanded]="barra.expandida()"
-          aria-controls="riel"
-          (click)="barra.alternarExpandida()"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" />
-          </svg>
-        </button>
       </div>
 
       <div class="grupos" (click)="cerrarSiEsEnlace($event)">
-        <div class="grupo">
-          <p class="rotulo-seccion">Principal</p>
-          <ul>
-            <li>
-              <a
-                class="item"
-                routerLink="/"
-                routerLinkActive="activo"
-                [routerLinkActiveOptions]="{
-                  paths: 'exact',
-                  queryParams: 'ignored',
-                  fragment: 'ignored',
-                  matrixParams: 'ignored'
-                }"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-inicio"
-                [attr.title]="barra.expandida() ? null : 'Inicio'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+        <ul aria-label="Principal">
+          <li>
+            <a
+              class="item"
+              data-tono="inicio"
+              routerLink="/"
+              routerLinkActive="activo"
+              [routerLinkActiveOptions]="{
+                paths: 'exact',
+                queryParams: 'ignored',
+                fragment: 'ignored',
+                matrixParams: 'ignored'
+              }"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-inicio"
+              [attr.title]="barra.expandida() ? null : 'Inicio'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <path d="M3.5 10.5 12 4l8.5 6.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z" />
                   <path d="M9.5 20v-6h5v6" />
                 </svg>
-                <span class="etiqueta">Inicio</span>
-              </a>
-            </li>
-            <li>
-              <a
-                class="item"
-                routerLink="/explorar"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                [class.activo]="enUnaFicha()"
-                [attr.aria-current]="enUnaFicha() ? 'page' : null"
-                data-testid="nav-explorar"
-                [attr.title]="barra.expandida() ? null : 'Explorar'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+              </span>
+              <span class="etiqueta nombre">Inicio</span>
+              <span class="etiqueta sub">Qué es NexPlay</span>
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
+              data-tono="explorar"
+              routerLink="/explorar"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              [class.activo]="enUnaFicha()"
+              [attr.aria-current]="enUnaFicha() ? 'page' : null"
+              data-testid="nav-explorar"
+              [attr.title]="barra.expandida() ? null : 'Explorar'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z" />
                 </svg>
-                <span class="etiqueta">Explorar</span>
-              </a>
-            </li>
-            <li>
-              <a
-                class="item"
-                [routerLink]="'/comparar'"
-                [queryParams]="parametrosComparar()"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-comparar"
-                [attr.title]="barra.expandida() ? null : 'Comparar'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+              </span>
+              <span class="etiqueta nombre">Explorar</span>
+              <span class="etiqueta sub">{{ subtituloExplorar() }}</span>
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
+              data-tono="comparar"
+              [routerLink]="'/comparar'"
+              [queryParams]="parametrosComparar()"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-comparar"
+              [attr.title]="barra.expandida() ? null : 'Comparar'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 3v18" />
                 </svg>
-                <span class="etiqueta">Comparar</span>
-                @if (comparar.cantidad()) {
-                  <span class="cuenta mono" data-testid="nav-comparar-cantidad">({{ comparar.cantidad() }})</span>
-                }
-              </a>
-            </li>
-            <li>
-              <a
-                class="item"
-                routerLink="/nia"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-nia"
-                [attr.title]="barra.expandida() ? null : 'Nia'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+              </span>
+              <span class="etiqueta nombre">Comparar</span>
+              <span class="etiqueta sub">Hasta 4 lado a lado</span>
+              @if (comparar.cantidad()) {
+                <span class="cuenta mono" data-testid="nav-comparar-cantidad">({{ comparar.cantidad() }})</span>
+              }
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
+              data-tono="nia"
+              routerLink="/nia"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-nia"
+              [attr.title]="barra.expandida() ? null : 'Nia'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
                 </svg>
-                <span class="etiqueta">Nia</span>
-              </a>
-            </li>
-          </ul>
-        </div>
+              </span>
+              <span class="etiqueta nombre">Nia</span>
+              <span class="etiqueta sub">Tu asistente</span>
+            </a>
+          </li>
+        </ul>
 
-        <div class="grupo">
-          <p class="rotulo-seccion">Tu actividad</p>
-          <ul>
-            <li>
-              <a
-                class="item"
-                routerLink="/perfil"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-perfil"
-                [attr.title]="barra.expandida() ? null : 'Tu perfil'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+        <ul aria-label="Tu actividad">
+          <li>
+            <a
+              class="item"
+              data-tono="perfil"
+              routerLink="/perfil"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-perfil"
+              [attr.title]="barra.expandida() ? null : 'Tu perfil'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3.4" />
                   <path d="M6.2 19.2a6 6 0 0 1 11.6 0" />
                 </svg>
-                <span class="etiqueta">Tu perfil</span>
-                @if (perfil.hayPerfil()) {
-                  <span class="senal" data-testid="perfil-activo" title="Perfil activo">
-                    <span class="solo-lector">Perfil activo</span>
-                  </span>
-                }
-              </a>
-            </li>
-            <li>
-              <a
-                class="item"
-                routerLink="/historial"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-historial"
-                [attr.title]="barra.expandida() ? null : 'Historial'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+              </span>
+              <span class="etiqueta nombre">Tu perfil</span>
+              <span class="etiqueta sub">Cómo juegas tú</span>
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
+              data-tono="neutro"
+              routerLink="/historial"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-historial"
+              [attr.title]="barra.expandida() ? null : 'Historial'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 5v4h4" />
                   <path d="M12 8v4.3l3 1.8" />
                 </svg>
-                <span class="etiqueta">Historial</span>
-              </a>
-            </li>
-          </ul>
-        </div>
+              </span>
+              <span class="etiqueta nombre">Historial</span>
+              <span class="etiqueta sub">Lo que ya viste</span>
+            </a>
+          </li>
+        </ul>
 
-        <div class="grupo">
-          <p class="rotulo-seccion">Transparencia</p>
-          <ul>
-            <li>
-              <a
-                class="item"
-                routerLink="/panorama"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-panorama"
-                [attr.title]="barra.expandida() ? null : 'Panorama'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+        <ul aria-label="Transparencia">
+          <li>
+            <a
+              class="item"
+              data-tono="panorama"
+              routerLink="/panorama"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-panorama"
+              [attr.title]="barra.expandida() ? null : 'Panorama'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <path d="M4 19V5" /><path d="M4 19h16" />
                   <path d="M8 19v-6m4 6V8m4 11v-4" />
                 </svg>
-                <span class="etiqueta">Panorama</span>
-              </a>
-            </li>
-            <li>
-              <a
-                class="item"
-                routerLink="/como-funciona"
-                routerLinkActive="activo"
-                ariaCurrentWhenActive="page"
-                data-testid="nav-como-funciona"
-                [attr.title]="barra.expandida() ? null : 'Cómo funciona'"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+              </span>
+              <span class="etiqueta nombre">Panorama</span>
+              <span class="etiqueta sub">Los datos en gráficas</span>
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
+              data-tono="neutro"
+              routerLink="/como-funciona"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-como-funciona"
+              [attr.title]="barra.expandida() ? null : 'Cómo funciona'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.5-2.8 4" /><path d="M12 17.2h.01" />
                 </svg>
-                <span class="etiqueta">Cómo funciona</span>
-              </a>
-            </li>
-          </ul>
-        </div>
+              </span>
+              <span class="etiqueta nombre">Cómo funciona</span>
+              <span class="etiqueta sub">Método y fuentes</span>
+            </a>
+          </li>
+        </ul>
       </div>
+
+      @if (perfil.hayPerfil()) {
+        <p class="perfil-activo" data-testid="perfil-activo" [attr.title]="resumenPerfil()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+          <span class="etiqueta">{{ resumenPerfil() }}</span>
+        </p>
+      }
 
       <div class="pie-riel">
         <button
@@ -259,6 +275,20 @@ import { TemaStore } from '../estado/tema-store';
           </span>
           <span class="etiqueta">Modo claro</span>
         </button>
+        <button
+          type="button"
+          class="icono colapsar"
+          data-testid="colapsar-barra"
+          [attr.aria-label]="barra.expandida() ? 'Encoger la barra lateral' : 'Ampliar la barra lateral'"
+          [attr.title]="barra.expandida() ? 'Encoger la barra lateral' : 'Ampliar la barra lateral'"
+          [attr.aria-expanded]="barra.expandida()"
+          aria-controls="riel"
+          (click)="barra.alternarExpandida()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" />
+          </svg>
+        </button>
       </div>
     </nav>
   `,
@@ -272,13 +302,16 @@ import { TemaStore } from '../estado/tema-store';
       border-inline-end: 1px solid var(--linea);
     }
     /* Todo el riel tiene que caber sin scroll propio en una pantalla de portátil (674 px
-       de alto visible): con ocho ítems, tres rótulos y el interruptor, el aire va justo. */
+       de alto visible), con perfil activo incluido. El logo es lo único que cede: en una
+       pantalla alta ocupa el ancho de la barra y en la de portátil se achica a lo que
+       sobra. --resto-riel es lo que mide todo lo demás. */
     .riel {
+      --resto-riel: 548px;
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-16);
+      gap: var(--espacio-8);
       height: 100%;
-      padding: var(--espacio-16);
+      padding: var(--espacio-12);
       overflow-y: auto;
     }
     .cima {
@@ -290,17 +323,25 @@ import { TemaStore } from '../estado/tema-store';
       flex: 1;
       min-width: 0;
       display: flex;
-      flex-direction: column;
-      gap: var(--espacio-8);
+      justify-content: center;
+      border-radius: var(--radio-tarjeta);
       text-decoration: none;
     }
-    .marca img {
-      width: 81px;
-      height: 70px;
-      object-fit: contain;
-      /* El logo es un PNG, así que la animación va por fuera: flota tres píxeles y el
-         halo late con ella. La regla global de prefers-reduced-motion la deja quieta. */
+    .logo {
+      display: block;
+      max-width: 100%;
+      /* La animación va en la ventana y no en la imagen: encogida, la ventana recorta y
+         un brillo puesto en la imagen quedaría cortado contra sus bordes. Flota tres
+         píxeles y el halo late con ella; la regla global de prefers-reduced-motion la
+         deja quieta. */
       animation: respirar 6s var(--curva) infinite;
+    }
+    .logo img {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: clamp(112px, calc(100vh - var(--resto-riel)), 200px);
+      object-fit: contain;
     }
     @keyframes respirar {
       0%,
@@ -314,7 +355,7 @@ import { TemaStore } from '../estado/tema-store';
           brightness(1.12);
       }
     }
-    .marca:hover img {
+    .marca:hover .logo {
       filter: drop-shadow(0 0 calc(6px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.65 * var(--halo-alfa))))
         brightness(1.15);
     }
@@ -325,10 +366,10 @@ import { TemaStore } from '../estado/tema-store';
       height: 44px;
       flex: none;
       padding: 0;
-      border: 1px solid transparent;
-      border-radius: var(--radio-boton);
-      background: none;
-      color: var(--texto-meta);
+      border: 1px solid var(--borde-control);
+      border-radius: 50%;
+      background: var(--superficie-2);
+      color: var(--texto);
       cursor: pointer;
       transition:
         color var(--duracion-rapida) var(--curva),
@@ -347,87 +388,147 @@ import { TemaStore } from '../estado/tema-store';
     .cerrar {
       display: none;
     }
+    /* Sin rótulos de grupo: los tres grupos se separan con un filete y el nombre de cada
+       uno queda para el lector de pantalla, en el aria-label de su lista. */
     .grupos {
       display: flex;
       flex-direction: column;
-      /* 12 y no 16: con los rótulos a 16 px, la barra ya no cabía en 674 px de alto. */
-      gap: var(--espacio-12);
       flex: 1;
     }
-    /* El rótulo de sección general es un título; aquí agrupa ítems del menú y no puede
-       pesar más que ellos. */
-    .grupos .rotulo-seccion {
-      color: var(--texto-meta);
-      font-size: var(--texto-caption);
-      letter-spacing: 0.12em;
-    }
-    .grupo ul {
+    .grupos ul {
       list-style: none;
-      margin: var(--espacio-8) 0 0;
+      margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-4);
+      gap: 2px;
     }
-    .item,
-    .interruptor {
+    .grupos ul + ul {
+      margin-top: var(--espacio-4);
+      padding-top: var(--espacio-4);
+      border-top: 1px solid var(--linea);
+    }
+    .item {
       position: relative;
-      display: flex;
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
       align-items: center;
-      gap: var(--espacio-12);
+      column-gap: var(--espacio-12);
       min-height: 44px;
-      padding: var(--espacio-8) var(--espacio-12);
+      padding: 3px var(--espacio-8);
       border: 1px solid transparent;
-      border-radius: var(--radio-boton);
-      color: var(--texto-meta);
-      font-size: var(--texto-body-sm);
+      border-radius: var(--radio-tarjeta);
+      color: var(--texto);
       text-decoration: none;
       white-space: nowrap;
       transition:
         color var(--duracion-rapida) var(--curva),
         background var(--duracion-rapida) var(--curva);
     }
-    .item:hover {
-      color: var(--texto);
-      background: var(--superficie-tarjeta-hover);
+    .insignia {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      color: var(--tono);
+      background: rgb(var(--tono-canal) / 0.14);
     }
-    /* El activo es lo único con fondo propio: relleno del sistema más filo de neón, como
-       el resto de los estados elegidos del proyecto. */
+    .nombre {
+      grid-column: 2;
+      grid-row: 1;
+      font-family: var(--fuente-display);
+      font-weight: 600;
+      font-size: 17px;
+      line-height: 1.1;
+      letter-spacing: 0.04em;
+    }
+    .sub {
+      grid-column: 2;
+      grid-row: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--texto-meta);
+      font-size: var(--texto-caption);
+      line-height: 1.2;
+    }
+    .item:hover {
+      background: var(--superficie-2);
+    }
+    /* El activo es lo único con fondo propio: relleno y filo del color de la vista
+       abierta, que es el mismo del fondo y del botón principal. */
     .item.activo {
-      color: var(--texto);
       background: var(--acento-sistema);
       border-color: var(--neon);
     }
-    .item.activo svg {
+    .item.activo .nombre {
       color: var(--neon);
     }
+    /* La cuenta comparte fila con el nombre: una tercera columna le quitaría su hueco
+       a todos los subtítulos aunque esté vacía, y "Los datos en gráficas" ya no cabría. */
     .cuenta {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      line-height: 1.1;
       color: var(--texto-meta);
       font-size: var(--texto-caption);
     }
-    /* Perfil activo: un punto, no una píldora. El texto va para el lector de pantalla. */
-    .senal {
-      width: 8px;
-      height: 8px;
-      margin-inline-start: auto;
-      border-radius: 50%;
-      background: var(--neon);
+    /* Perfil activo: una píldora con lo declarado, no un punto que nadie sabe leer. Va
+       en el color de Tu perfil; el verde queda para el riesgo. */
+    .perfil-activo {
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-8);
+      min-width: 0;
+      margin: 0;
+      padding: 6px var(--espacio-12);
+      border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie));
+      border-radius: var(--radio-pildora);
+      background: rgb(var(--canal-perfil) / 0.1);
+      color: var(--texto);
+      font-size: var(--texto-caption);
+      line-height: 1.25;
+    }
+    .perfil-activo svg {
       flex: none;
+      color: var(--t-perfil);
+      stroke-width: 2.25;
+    }
+    .perfil-activo .etiqueta {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .pie-riel {
-      padding-top: var(--espacio-16);
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-8);
+      padding-top: var(--espacio-8);
       border-top: 1px solid var(--linea);
     }
     .interruptor {
-      width: 100%;
-      background: none;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-12);
+      min-height: 44px;
+      padding: var(--espacio-8) var(--espacio-12);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      background: var(--superficie-2);
+      color: var(--texto);
+      font-size: var(--texto-body-sm);
       text-align: start;
+      white-space: nowrap;
       cursor: pointer;
     }
     .icono:hover,
     .interruptor:hover {
-      color: var(--texto);
-      border-color: var(--borde-control);
+      border-color: var(--neon);
     }
     .astro {
       display: grid;
@@ -438,8 +539,7 @@ import { TemaStore } from '../estado/tema-store';
        con la técnica de .solo-lector— y reaparece como title al pasar el ratón. Todo esto
        vale solo en escritorio: en el cajón de móvil la barra siempre va con sus nombres. */
     @media (min-width: 901px) {
-      :host(.corta) .etiqueta,
-      :host(.corta) .rotulo-seccion {
+      :host(.corta) .etiqueta {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -449,37 +549,59 @@ import { TemaStore } from '../estado/tema-store';
         white-space: nowrap;
       }
       :host(.corta) .riel {
-        padding-inline: var(--espacio-8);
-        gap: var(--espacio-16);
-      }
-      :host(.corta) .cima {
-        flex-direction: column;
         align-items: center;
+        padding-inline: var(--espacio-8);
+      }
+      :host(.corta) .cima,
+      :host(.corta) .grupos,
+      :host(.corta) .pie-riel {
+        align-self: stretch;
       }
       :host(.corta) .marca {
         flex: none;
+        margin-inline: auto;
       }
-      :host(.corta) .marca img {
-        width: 40px;
-        height: 35px;
+      /* La marca sin el nombre: una ventana del tamaño del triángulo sobre el mismo PNG.
+         En el archivo, la marca ocupa x 214–884 e y 2–593 de 1035 × 894; a 80 px de ancho
+         eso deja 52 × 46 a partir de x = 16.5. */
+      :host(.corta) .logo {
+        width: 52px;
+        height: 46px;
+        overflow: hidden;
+      }
+      :host(.corta) .logo img {
+        width: 80px;
+        max-width: none;
+        height: auto;
+        margin-inline-start: -16.5px;
       }
       :host(.corta) .cuenta {
         display: none;
       }
-      :host(.corta) .item,
-      :host(.corta) .interruptor {
-        justify-content: center;
-        gap: 0;
+      :host(.corta) .item {
+        grid-template-columns: 1fr;
+        justify-items: center;
         padding-inline: 0;
       }
-      :host(.corta) .senal {
-        position: absolute;
-        inset-block-start: 6px;
-        inset-inline-end: 8px;
-        margin: 0;
+      :host(.corta) .insignia {
+        grid-row: auto;
       }
-      :host(.corta) .grupo ul {
-        margin-top: 0;
+      :host(.corta) .perfil-activo {
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border-radius: 50%;
+      }
+      :host(.corta) .pie-riel {
+        flex-direction: column;
+      }
+      :host(.corta) .interruptor {
+        flex: none;
+        justify-content: center;
+        width: 44px;
+        padding: 0;
+        border-radius: 50%;
       }
     }
     /* Cajón: a 900 px la barra ya no cabe al lado del contenido, así que sale del flujo y
@@ -516,6 +638,7 @@ export class BarraLateral {
   protected readonly tema = inject(TemaStore);
   protected readonly comparar = inject(CompararStore);
   protected readonly perfil = inject(PerfilStore);
+  private readonly catalogo = inject(CatalogoStore);
 
   private readonly botonCerrar = viewChild<ElementRef<HTMLButtonElement>>('cerrar');
   private readonly router = inject(Router);
@@ -543,6 +666,17 @@ export class BarraLateral {
   protected readonly parametrosComparar = computed(() =>
     this.comparar.cantidad() ? { appids: this.comparar.appids().join(',') } : {},
   );
+
+  /** Mientras el catálogo carga no hay cifra que dar, y "Los 0 juegos" sería mentira. */
+  protected readonly subtituloExplorar = computed(() => {
+    const cuantos = this.catalogo.juegos().length;
+    return cuantos ? `Los ${cuantos} juegos` : 'El catálogo';
+  });
+
+  protected readonly resumenPerfil = computed(() => {
+    const generos = this.perfil.valores()?.generos ?? [];
+    return generos.length ? `Perfil activo · ${generos.join(', ')}` : 'Perfil activo';
+  });
 
   /** Cualquier enlace del riel cierra el cajón, incluso el de la ruta abierta, que no
    * dispararía un cambio de ruta. */

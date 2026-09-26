@@ -149,17 +149,22 @@ b {
   }
 }
 
-/* Botones: tres variantes y nada más. Todas comparten forma de píldora, la misma
-   altura y el mismo movimiento; lo único que cambia es cuánto peso tienen.
-   Sin gradientes y sin sombra de elevación: el :active enciende el resplandor. */
+/* Botones. Una acción principal por pantalla (.boton-cta), rellena con el color de la
+   vista y texto casi negro en los dos temas: el blanco sobre esos colores no llega a
+   4.5:1. Las secundarias van en superficie con borde (.boton-fantasma) o, cuando llevan a
+   otra parte del sitio, como tarjeta ancha (.tarjeta-accion). Las chicas, en pastilla
+   (.compacto). Lo que es texto clicable se ve como enlace: cian y subrayado.
+   Los estados tienen que distinguirse sin color: el hover levanta y enciende el filo, el
+   activo se hunde con un borde interior y el deshabilitado pierde el color y el borde
+   pasa a punteado. */
 .boton-cta,
 .boton-fantasma,
-.boton-texto {
+.boton-texto,
+.compacto {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--espacio-8);
-  border-radius: var(--radio-pildora);
   font-size: var(--texto-body-sm);
   line-height: 1.25;
   text-decoration: none;
@@ -167,61 +172,230 @@ b {
   transition:
     background var(--duracion-rapida) var(--curva),
     border-color var(--duracion-rapida) var(--curva),
+    box-shadow var(--duracion-rapida) var(--curva),
     color var(--duracion-rapida) var(--curva),
     transform var(--duracion-rapida) var(--curva);
 }
 
-.boton-cta:active:not([disabled]),
-.boton-fantasma:active:not([disabled]) {
-  transform: translateY(1px);
-  box-shadow: var(--resplandor);
+.boton-cta,
+.boton-fantasma {
+  min-height: 48px;
+  padding: 12px var(--espacio-24);
+  border-radius: var(--radio-tarjeta);
 }
 
-/* Primario: el único relleno cromático de la página. */
 .boton-cta {
-  padding: 12px var(--espacio-24);
   border: 1px solid var(--cta-filo);
   background: var(--cta-fondo);
   color: var(--cta-texto);
+  font-weight: 600;
+  box-shadow: 0 0 24px rgb(var(--accion-canal) / var(--brillo-boton));
 }
 
 .boton-cta:hover:not([disabled]) {
   background: var(--cta-fondo-hover);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgb(var(--accion-canal) / 0.6),
+    0 0 32px rgb(var(--accion-canal) / calc(var(--brillo-boton) * 1.6));
 }
 
-/* Secundario: el mismo neón, en borde. */
 .boton-fantasma {
-  padding: 12px var(--espacio-24);
   border: 1px solid var(--borde-control);
-  background: transparent;
+  background: var(--superficie-2);
   color: var(--texto);
 }
 
 .boton-fantasma:hover:not([disabled]) {
   border-color: var(--neon);
-  color: var(--neon);
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgb(var(--accion-canal) / var(--brillo-boton));
 }
 
-/* Terciario: solo texto, para acciones que no compiten (volver, editar, quitar). */
+.boton-cta:active:not([disabled]),
+.boton-fantasma:active:not([disabled]),
+.compacto:active:not([disabled]) {
+  transform: translateY(1px);
+  box-shadow: inset 0 0 0 2px var(--neon);
+}
+
+.boton-cta:active:not([disabled]) {
+  box-shadow: inset 0 0 0 2px var(--cta-texto);
+}
+
+/* Terciario: texto clicable, para acciones que no compiten (volver, editar, quitar). */
 .boton-texto {
   padding: var(--espacio-4) 0;
   border: 0;
   background: none;
-  color: var(--texto-meta);
+  color: var(--enlace);
+  text-decoration: underline;
   text-underline-offset: 4px;
 }
 
 .boton-texto:hover:not([disabled]) {
-  color: var(--neon);
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
-/* Deshabilitado: con 0.55 el relleno del CTA seguía pareciendo pulsable. */
+/* Compacto: pastilla de 44 px para lo pequeño. Toma el color de la vista, o el de la
+   acción si lleva data-tono. */
+.compacto {
+  min-height: 44px;
+  padding: 0 var(--espacio-16);
+  border: 1px solid color-mix(in srgb, var(--tono, var(--accion-tinta)) var(--mezcla-filo), var(--superficie));
+  border-radius: var(--radio-pildora);
+  /* Opaco sobre la superficie: translúcido, sobre el fondo de la página el texto bajaba
+     de 4.5:1 en claro. */
+  background:
+    linear-gradient(rgb(var(--tono-canal, var(--accion-canal)) / 0.1), rgb(var(--tono-canal, var(--accion-canal)) / 0.1)),
+    var(--superficie);
+  color: var(--tono, var(--accion-tinta));
+}
+
+.compacto:hover:not([disabled]) {
+  border-color: var(--tono, var(--accion-tinta));
+  background:
+    linear-gradient(rgb(var(--tono-canal, var(--accion-canal)) / 0.22), rgb(var(--tono-canal, var(--accion-canal)) / 0.22)),
+    var(--superficie);
+  box-shadow: 0 0 18px rgb(var(--tono-canal, var(--accion-canal)) / var(--brillo-boton));
+}
+
+.compacto[aria-pressed='true'] {
+  background:
+    linear-gradient(rgb(var(--tono-canal, var(--accion-canal)) / 0.3), rgb(var(--tono-canal, var(--accion-canal)) / 0.3)),
+    var(--superficie);
+  box-shadow: inset 0 0 0 2px var(--tono, var(--accion-tinta));
+}
+
 .boton-cta[disabled],
 .boton-fantasma[disabled],
-.boton-texto[disabled] {
-  opacity: 0.4;
+.boton-texto[disabled],
+.compacto[disabled],
+.tarjeta-accion[aria-disabled='true'] {
+  opacity: 0.5;
+  filter: grayscale(1);
+  border-style: dashed;
+  box-shadow: none;
+  transform: none;
   cursor: not-allowed;
+}
+
+/* Tarjeta de acción: icono, título en mayúsculas espaciadas, una línea que dice adónde
+   lleva y el chevron. Cada una con el color de la vista a la que lleva (data-tono). */
+.tarjeta-accion {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: var(--espacio-4) var(--espacio-16);
+  min-height: 92px;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--tono, var(--accion-tinta)) var(--mezcla-filo), var(--superficie));
+  border-radius: var(--radio-tarjeta);
+  background:
+    linear-gradient(90deg, rgb(var(--tono-canal, var(--accion-canal)) / 0.12), transparent 60%),
+    var(--superficie);
+  color: var(--texto);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--duracion-rapida) var(--curva),
+    box-shadow var(--duracion-rapida) var(--curva),
+    border-color var(--duracion-rapida) var(--curva);
+}
+
+.tarjeta-accion .insignia {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  color: var(--tono, var(--accion-tinta));
+  background: rgb(var(--tono-canal, var(--accion-canal)) / 0.14);
+}
+
+.tarjeta-accion .insignia svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tarjeta-accion .titulo {
+  align-self: end;
+  color: var(--tono, var(--accion-tinta));
+  font-family: var(--fuente-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tarjeta-accion .sub {
+  grid-column: 2;
+  align-self: start;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: 1.35;
+}
+
+.tarjeta-accion .chevron {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--tono, var(--accion-tinta));
+  font-family: var(--fuente-display);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.tarjeta-accion:hover {
+  transform: translateY(-3px);
+  border-color: var(--tono, var(--accion-tinta));
+  box-shadow:
+    0 0 0 1px rgb(var(--tono-canal, var(--accion-canal)) / 0.5),
+    0 0 34px rgb(var(--tono-canal, var(--accion-canal)) / var(--brillo-boton));
+}
+
+.tarjeta-accion:active {
+  transform: translateY(1px) scale(0.99);
+  background:
+    linear-gradient(90deg, rgb(var(--tono-canal, var(--accion-canal)) / 0.3), rgb(var(--tono-canal, var(--accion-canal)) / 0.12)),
+    var(--superficie);
+  box-shadow: inset 0 0 0 2px var(--tono, var(--accion-tinta));
+}
+
+/* El color de cada vista, para lo que lleva a ella: ícono del menú, tarjeta, compacto. */
+[data-tono='inicio'] {
+  --tono: var(--t-inicio);
+  --tono-canal: var(--canal-inicio);
+}
+[data-tono='explorar'] {
+  --tono: var(--t-explorar);
+  --tono-canal: var(--canal-explorar);
+}
+[data-tono='comparar'] {
+  --tono: var(--t-comparar);
+  --tono-canal: var(--canal-comparar);
+}
+[data-tono='nia'] {
+  --tono: var(--t-nia);
+  --tono-canal: var(--canal-nia);
+}
+[data-tono='perfil'] {
+  --tono: var(--t-perfil);
+  --tono-canal: var(--canal-perfil);
+}
+[data-tono='panorama'] {
+  --tono: var(--t-panorama);
+  --tono-canal: var(--canal-panorama);
+}
+[data-tono='neutro'] {
+  --tono: var(--t-neutro);
+  --tono-canal: var(--canal-neutro);
 }
 
 /* Chips sin caja: son texto. El área clicable se conserva con padding y lo elegido se
@@ -289,6 +463,7 @@ b {
 .boton-fantasma[aria-pressed='true'] {
   background: var(--acento-sistema);
   border-color: var(--neon);
+  box-shadow: inset 0 0 0 1px var(--neon);
   color: var(--texto);
 }
 

@@ -15,6 +15,27 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* El fondo espacial de la vista, todo en CSS y sin imágenes de nadie: el brillo detrás
+     del contenido, tres capas de estrellas con periodos que no coinciden (para que no se
+     note la repetición), dos nebulosas del color de la vista, la rejilla fina de la
+     referencia y el degradado de fondo a fondo-2. Fijo a la ventana: al bajar, el espacio
+     se queda y el contenido pasa por encima. La intensidad de las nebulosas la pone
+     --nebulosa en tokens.css, calculada por vista para que --texto-2 pase sin panel. */
+  background:
+    radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+    radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+    radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+    radial-gradient(circle at 1px 1px, var(--estrella-b) 0.6px, transparent 1.2px) 17px 29px / 53px 61px,
+    radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+    radial-gradient(
+      ellipse 50% 56% at 4% 98%,
+      rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)),
+      transparent 70%
+    ),
+    linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  background-attachment: fixed;
 }
 
 .pagina {

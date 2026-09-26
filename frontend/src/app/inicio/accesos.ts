@@ -1,42 +1,20 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+
+import { CatalogoStore } from '../estado/catalogo-store';
+
+type Icono = 'explorar' | 'comparar' | 'nia' | 'panorama';
 
 interface Acceso {
   ruta: string;
-  /** Decorativo: va con aria-hidden y nunca carga el significado solo. */
-  emoji: string;
+  /** El color de la vista a la que lleva: el mismo del menú y de su fondo. */
+  tono: Icono;
   titulo: string;
   texto: string;
 }
 
-const ACCESOS: readonly Acceso[] = [
-  {
-    ruta: '/explorar',
-    emoji: '🎮',
-    titulo: 'Explorar',
-    texto: '123 juegos de Steam repartidos en tres estantes, de menor a mayor riesgo de arrepentimiento.',
-  },
-  {
-    ruta: '/comparar',
-    emoji: '⚖️',
-    titulo: 'Comparar',
-    texto: 'Hasta cuatro juegos lado a lado: riesgo, motivos, factores y ficha técnica.',
-  },
-  {
-    ruta: '/nia',
-    emoji: '💬',
-    titulo: 'Preguntar a Nia',
-    texto: 'Responde con los datos del juego que elijas. No recomienda comprar ni no comprar.',
-  },
-  {
-    ruta: '/panorama',
-    emoji: '📊',
-    titulo: 'Ver el panorama',
-    texto: 'Cómo se reparte el catálogo y qué hay en las reseñas que lo sostienen.',
-  },
-];
-
-/** Los cuatro accesos del inicio: para qué sirve cada parte del sitio, en una frase. */
+/** Los cuatro accesos del inicio: tarjetas anchas, cada una con el color de su vista y
+ * una línea que dice qué hay ahí. */
 @Component({
   selector: 'app-accesos',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,17 +23,36 @@ const ACCESOS: readonly Acceso[] = [
     <section class="accesos" aria-labelledby="titulo-accesos" data-testid="inicio-accesos">
       <h2 class="rotulo-seccion" id="titulo-accesos">Qué puedes hacer aquí</h2>
       <ul class="rejilla">
-        @for (acceso of accesos; track acceso.ruta) {
+        @for (acceso of accesos(); track acceso.ruta) {
           <li>
             <a
-              class="acceso panel-vidrio"
+              class="tarjeta-accion"
+              [attr.data-tono]="acceso.tono"
               [routerLink]="acceso.ruta"
               [attr.data-testid]="'acceso-' + acceso.ruta.slice(1)"
             >
-              <span class="emoji" aria-hidden="true">{{ acceso.emoji }}</span>
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  @switch (acceso.tono) {
+                    @case ('explorar') {
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z" />
+                    }
+                    @case ('comparar') {
+                      <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 3v18" />
+                    }
+                    @case ('nia') {
+                      <path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
+                    }
+                    @case ('panorama') {
+                      <path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 19v-6m4 6V8m4 11v-4" />
+                    }
+                  }
+                </svg>
+              </span>
               <span class="titulo">{{ acceso.titulo }}</span>
-              <span class="texto meta">{{ acceso.texto }}</span>
-              <span class="flecha" aria-hidden="true">→</span>
+              <span class="sub">{{ acceso.texto }}</span>
+              <span class="chevron" aria-hidden="true">›</span>
             </a>
           </li>
         }
@@ -72,53 +69,40 @@ const ACCESOS: readonly Acceso[] = [
       margin: var(--espacio-16) 0 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--espacio-12);
     }
-    /* El emoji en una columna de ancho fijo: con 'auto', cada uno mide lo suyo y el
-       título de cada tarjeta empezaba en un sitio distinto. La fila del medio se lleva el
-       hueco que sobra, así las cuatro flechas quedan a la misma altura. */
-    .acceso {
-      display: grid;
-      grid-template-columns: 28px minmax(0, 1fr);
-      grid-template-rows: auto 1fr auto;
-      align-items: start;
-      gap: var(--espacio-4) var(--espacio-12);
+    .rejilla li,
+    .tarjeta-accion {
       height: 100%;
-      padding: var(--espacio-16);
-      color: inherit;
-      text-decoration: none;
-      transition:
-        border-color var(--duracion-rapida) var(--curva),
-        transform var(--duracion-rapida) var(--curva);
     }
-    .acceso:hover {
-      border-color: var(--neon);
-      transform: translateY(-2px);
-    }
-    .emoji {
-      grid-area: 1 / 1;
-      align-self: center;
-      font-size: 22px;
-      line-height: 1;
-      text-align: center;
-    }
-    .titulo {
-      grid-area: 1 / 2;
-      align-self: center;
-      font-size: var(--texto-body-sm);
-    }
-    .texto {
-      grid-area: 2 / 2;
-      line-height: var(--interlineado-largo);
-    }
-    .flecha {
-      grid-area: 3 / 2;
-      align-self: end;
-      color: var(--neon);
+    /* En teléfono el espaciado de 0.08 em partía «Preguntar a Nia» en dos líneas. */
+    @media (max-width: 760px) {
+      .rejilla {
+        grid-template-columns: 1fr;
+      }
+      .tarjeta-accion .titulo {
+        font-size: 20px;
+        letter-spacing: 0.04em;
+      }
     }
   `,
 })
 export class Accesos {
-  protected readonly accesos = ACCESOS;
+  private readonly catalogo = inject(CatalogoStore);
+
+  protected readonly accesos = computed<readonly Acceso[]>(() => {
+    const cuantos = this.catalogo.juegos().length;
+    return [
+      {
+        ruta: '/explorar',
+        tono: 'explorar',
+        titulo: 'Explorar',
+        texto: `${cuantos ? `Los ${cuantos} juegos` : 'El catálogo'}, por nivel de riesgo`,
+      },
+      { ruta: '/comparar', tono: 'comparar', titulo: 'Comparar', texto: 'Hasta cuatro juegos lado a lado' },
+      { ruta: '/nia', tono: 'nia', titulo: 'Preguntar a Nia', texto: 'Tu asistente del catálogo' },
+      { ruta: '/panorama', tono: 'panorama', titulo: 'Panorama', texto: 'Los datos del catálogo en gráficas' },
+    ];
+  });
 }

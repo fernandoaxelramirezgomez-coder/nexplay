@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { BarraLateral } from './barra-lateral';
 import { BarraStore } from '../estado/barra-store';
+import { CatalogoStore } from '../estado/catalogo-store';
 import { TemaStore } from '../estado/tema-store';
 
 /** Las rutas reales del sitio, vacías: routerLinkActive necesita que existan. */
@@ -21,6 +22,9 @@ const RUTAS = [
   { path: 'como-funciona', component: Pagina },
 ];
 
+/** El catálogo real saldría a la red; aquí basta con cuántos juegos hay. */
+const juegos = signal<unknown[]>([]);
+
 function crear() {
   const fixture = TestBed.createComponent(BarraLateral);
   return { fixture, html: fixture.nativeElement as HTMLElement };
@@ -29,11 +33,12 @@ function crear() {
 describe('BarraLateral', () => {
   beforeEach(async () => {
     localStorage.clear();
+    juegos.set([]);
     document.documentElement.removeAttribute('data-tema');
     vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
     await TestBed.configureTestingModule({
       imports: [BarraLateral],
-      providers: [provideRouter(RUTAS)],
+      providers: [provideRouter(RUTAS), { provide: CatalogoStore, useValue: { juegos } }],
     }).compileComponents();
   });
 
@@ -41,12 +46,12 @@ describe('BarraLateral', () => {
     vi.unstubAllGlobals();
   });
 
-  it('agrupa las ocho secciones bajo sus rótulos', async () => {
+  it('agrupa las ocho secciones en tres listas con nombre para el lector de pantalla', async () => {
     const { fixture, html } = crear();
     await fixture.whenStable();
 
-    const rotulos = [...html.querySelectorAll('.grupo .rotulo-seccion')].map((p) => p.textContent?.trim());
-    expect(rotulos).toEqual(['Principal', 'Tu actividad', 'Transparencia']);
+    const grupos = [...html.querySelectorAll('.grupos ul')].map((ul) => ul.getAttribute('aria-label'));
+    expect(grupos).toEqual(['Principal', 'Tu actividad', 'Transparencia']);
 
     const enlaces = [...html.querySelectorAll('nav a.item')].map((a) => a.getAttribute('data-testid'));
     expect(enlaces).toEqual([
@@ -59,6 +64,43 @@ describe('BarraLateral', () => {
       'nav-panorama',
       'nav-como-funciona',
     ]);
+  });
+
+  it('cada sección dice qué hay ahí, en una línea bajo su nombre', async () => {
+    const { fixture, html } = crear();
+    await fixture.whenStable();
+
+    const subtitulos = [...html.querySelectorAll('nav a.item .sub')].map((s) => s.textContent?.trim());
+    expect(subtitulos).toEqual([
+      'Qué es NexPlay',
+      'El catálogo',
+      'Hasta 4 lado a lado',
+      'Tu asistente',
+      'Cómo juegas tú',
+      'Lo que ya viste',
+      'Los datos en gráficas',
+      'Método y fuentes',
+    ]);
+
+    juegos.set([{}, {}, {}]);
+    await fixture.whenStable();
+    expect(html.querySelector('[data-testid="nav-explorar"] .sub')?.textContent?.trim()).toBe('Los 3 juegos');
+  });
+
+  it('con perfil guardado, la píldora dice que está activo y con qué géneros', async () => {
+    localStorage.setItem(
+      'nexplay.perfil.v3',
+      JSON.stringify({
+        valores: { compras: 4, horas: 6, friccion: 3, plataforma: 'pc', generos: ['Acción', 'Rol'] },
+        perfil: { compras_al_anio: 4 },
+      }),
+    );
+    const { fixture, html } = crear();
+    await fixture.whenStable();
+
+    expect(html.querySelector('[data-testid="perfil-activo"]')?.textContent?.trim()).toBe(
+      'Perfil activo · Acción, Rol',
+    );
   });
 
   it('marca con aria-current la sección abierta', async () => {

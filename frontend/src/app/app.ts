@@ -58,4 +58,26 @@ export class App {
     return !ruta.startsWith('/juego/') && ruta !== '/nia';
   });
 
+  /** La vista abierta, para que el color de acción (fondo, menú y botón principal) sea uno
+   * por vista, como pide la paleta. La ficha es de Explorar: el menú ya la marca ahí y los
+   * tres tienen que coincidir. Historial y Cómo funciona comparten el gris-azul. */
+  protected readonly vista = computed(() => vistaDe(this.ruta()));
+
+}
+
+const VISTAS: Record<string, string> = {
+  explorar: 'explorar',
+  juego: 'explorar',
+  comparar: 'comparar',
+  nia: 'nia',
+  perfil: 'perfil',
+  panorama: 'panorama',
+  historial: 'neutro',
+  'como-funciona': 'neutro',
+};
+
+/** La primera parte de la ruta decide la vista; la raíz y cualquier otra, el inicio. */
+export function vistaDe(url: string): string {
+  const primera = url.split(/[?#]/)[0].split('/').filter(Boolean)[0] ?? '';
+  return VISTAS[primera] ?? 'inicio';
 }
