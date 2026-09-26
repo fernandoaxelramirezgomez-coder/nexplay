@@ -373,6 +373,13 @@ class JuegoPanorama(BaseModel):
     resenas_en_steam: Optional[int] = Field(None, description="Las que Steam reporta en total para el juego")
     consenso: Optional[str] = Field(None, description="Resumen de Steam, p. ej. 'Very Positive'")
     motivo_principal: Optional[str] = Field(None, description="None si el juego no llega al mínimo de casos")
+    horas_al_recomendar: Optional[float] = Field(
+        None,
+        description=(
+            "Mediana de horas jugadas al escribir las reseñas positivas: cuánto llevaba quien lo recomendó. "
+            "Descriptivo, no entra al modelo. None con menos de 10 reseñas positivas"
+        ),
+    )
 
 
 class PanoramaCatalogo(BaseModel):

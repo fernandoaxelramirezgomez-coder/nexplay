@@ -170,6 +170,10 @@
     order: 4;
   }
 
+  app-invitacion-perfil {
+    order: 5;
+  }
+
   app-accesos {
     order: 5;
   }

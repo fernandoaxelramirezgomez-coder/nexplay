@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo, MotivoInsatisfaccion } from '../api/contrato';
 import { AVISO_HISTORIA, historiaPerfil } from '../dominio/historia-perfil';
-import { respuestasPerfil } from '../dominio/opciones-perfil';
+import { lineaPlataforma, respuestasPerfil } from '../dominio/opciones-perfil';
 import { PerfilStore } from '../estado/perfil-store';
 
 /** Por qué este juego le tocaría a quien declaró el perfil, con reglas sobre los datos
@@ -65,6 +65,15 @@ import { PerfilStore } from '../estado/perfil-store';
                 }
               </span>
               <span>@for (segmento of linea.segmentos; track $index) {@if (segmento.clave) {<strong class="clave">{{ segmento.texto }}</strong>} @else {<ng-container>{{ segmento.texto }}</ng-container>}}</span>
+            </li>
+          }
+          <!-- La plataforma se arma aquí con todas las marcadas: la API recibe una sola. -->
+          @if (plataforma(); as linea) {
+            <li class="linea" data-tipo="plataforma" data-testid="historia-plataforma">
+              <span class="icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
+              </span>
+              <span>{{ linea }}</span>
             </li>
           }
         </ul>
@@ -194,6 +203,8 @@ export class HistoriaPerfil {
   protected readonly historia = computed(() =>
     historiaPerfil(this.perfil.perfil(), this.juego(), this.motivos()),
   );
+
+  protected readonly plataforma = computed(() => lineaPlataforma(this.perfil.valores()?.plataformas ?? []));
 
   protected readonly respuestas = computed(() => {
     const valores = this.perfil.valores();

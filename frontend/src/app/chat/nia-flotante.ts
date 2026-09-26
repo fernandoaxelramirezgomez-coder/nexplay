@@ -103,10 +103,12 @@ const MAXIMO_SUGERENCIAS = 6;
   styles: `
     /* El único elemento fijo de la app. Se ancla al área segura para no quedar debajo
        de la barra del navegador en móvil. */
+    /* --elevacion-burbuja la sube encima de lo que una vista fija abajo (la barra de
+       guardar de /perfil, en base.css). */
     .flotante {
       position: fixed;
       right: max(var(--espacio-16), env(safe-area-inset-right));
-      bottom: max(var(--espacio-16), env(safe-area-inset-bottom));
+      bottom: calc(max(var(--espacio-16), env(safe-area-inset-bottom)) + var(--elevacion-burbuja, 0px));
       z-index: 20;
       display: flex;
       flex-direction: column;
@@ -190,7 +192,7 @@ const MAXIMO_SUGERENCIAS = 6;
     @media (max-width: 640px) {
       .flotante {
         right: calc(var(--espacio-16) + env(safe-area-inset-right));
-        bottom: calc(var(--espacio-16) + env(safe-area-inset-bottom));
+        bottom: calc(var(--espacio-16) + env(safe-area-inset-bottom) + var(--elevacion-burbuja, 0px));
       }
       .flotante.abierto {
         left: calc(var(--espacio-16) + env(safe-area-inset-left));

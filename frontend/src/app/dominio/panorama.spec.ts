@@ -28,6 +28,7 @@ function fila(appid: number, cambios: Partial<JuegoPanorama> = {}): JuegoPanoram
     resenas_en_steam: 1000,
     consenso: 'Very Positive',
     motivo_principal: 'rendimiento',
+    horas_al_recomendar: 20,
     ...cambios,
   };
 }

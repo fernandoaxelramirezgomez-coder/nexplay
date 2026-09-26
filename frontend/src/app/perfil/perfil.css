@@ -1,12 +1,11 @@
 .perfil {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-24);
+  gap: var(--espacio-40);
 }
 
-/* Alineado a la izquierda, como las secciones que vienen debajo: centrado, el título
-   quedaba a un eje y las preguntas a otro. */
-.hero {
+/* Alineado a la izquierda, como las preguntas que vienen debajo. */
+.cabecera {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -14,57 +13,204 @@
   padding: var(--espacio-24) 0 0;
 }
 
-.hero .entrada {
-  max-width: var(--medida-lectura);
-}
-
+/* La entrada en texto pleno y con el filo del color de la vista: sobre la nebulosa,
+   el texto de voz baja no se distinguía. */
 .entrada {
-  margin: 0;
-}
-
-.activo {
-  margin: 0;
-  max-width: var(--medida-lectura);
+  margin: 0 0 var(--espacio-8);
+  max-width: 60ch;
+  padding-inline-start: var(--espacio-16);
+  border-inline-start: 3px solid var(--accion);
+  color: var(--texto);
+  font-size: var(--texto-body);
   line-height: var(--interlineado-largo);
 }
 
-.tarjetas {
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
+}
+
+.preguntas {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--espacio-40) var(--espacio-64);
-  align-items: start;
+  gap: 20px;
+  align-items: stretch;
 }
 
-/* Rejilla, no pila: aquí cada grupo lleva su propia línea arriba. */
-.tarjetas > .seccion {
-  padding-top: var(--espacio-16);
-  border-top: var(--filete);
-}
-
-@media (max-width: 760px) {
-  .tarjetas {
-    grid-template-columns: 1fr;
-  }
+/* Cada pregunta, en su bloque con el filo del color de la vista arriba. */
+.pregunta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px var(--espacio-24) var(--espacio-24);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: inset 0 3px 0 var(--accion);
 }
 
 .ancha {
   grid-column: 1 / -1;
 }
 
+.pregunta-cabecera {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 14px;
+}
+
+.numero {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--accion-tinta);
+  background: rgb(var(--accion-canal) / 0.14);
+  font-family: var(--fuente-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pregunta-cabecera h2 {
+  margin: 0;
+  font-family: var(--fuente-display);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.explica {
+  grid-column: 2;
+  margin: 0;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: 1.4;
+}
+
+.estado {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: start;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  white-space: nowrap;
+}
+
+.estado.hecha {
+  color: var(--accion-tinta);
+}
+
 .error {
   margin: 0;
-  color: var(--banda-alto-texto);
+  padding: var(--espacio-12) var(--espacio-16);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  color: var(--error);
 }
 
-.acciones {
+/* La barra de guardar: se queda pegada abajo mientras se ve el formulario. */
+.barra-guardar {
+  position: sticky;
+  bottom: var(--espacio-16);
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--espacio-12);
   align-items: center;
-  justify-content: center;
+  gap: var(--espacio-12) var(--espacio-16);
+  padding: var(--espacio-12) var(--espacio-12) var(--espacio-12) 18px;
+  border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+  border-radius: 18px;
+  background: var(--superficie);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.35);
 }
 
-.boton-cta[disabled] {
-  opacity: 0.6;
-  cursor: progress;
+:root[data-tema='claro'] .barra-guardar {
+  box-shadow: 0 14px 36px rgb(11 15 31 / 0.14);
+}
+
+.progreso {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--espacio-12);
+  min-width: 220px;
+}
+
+.pista {
+  flex: 0 1 180px;
+  height: 8px;
+  border-radius: var(--radio-pildora);
+  background: var(--superficie-2);
+  overflow: hidden;
+}
+
+.pista span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radio-pildora);
+  background: var(--accion-tinta);
+  transition: width var(--duracion) var(--curva);
+}
+
+.texto-estado {
+  margin: 0;
+  color: var(--texto);
+  line-height: 1.35;
+}
+
+.texto-estado.hecho {
+  color: var(--accion-tinta);
+  font-weight: var(--peso-clave);
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-8);
+}
+
+.botones svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+@container contenido (max-width: 900px) {
+  .preguntas {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pregunta {
+    padding: 18px var(--espacio-16) 20px;
+  }
+
+  .pregunta-cabecera {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .estado {
+    grid-column: 2;
+    grid-row: auto;
+  }
+
+  .pregunta-cabecera h2 {
+    font-size: 19px;
+  }
+
+  .botones,
+  .botones .boton-cta {
+    flex: 1;
+  }
 }

@@ -468,33 +468,57 @@ def _nivel_api(api: str, formulario: dict, appid: int) -> str:
         return json.load(r)["nivel"]
 
 
+def _appids_sugeridos(pagina: Page) -> list[int]:
+    return [int(a) for a in pagina.get_by_test_id("sugerencia").evaluate_all("ts => ts.map(t => t.dataset.appid)")]
+
+
+def _esperar_sugerencias(pagina: Page, antes: list[int]) -> list[int]:
+    """Las sugerencias se recalculan en vivo: espera a que la lista cambie (o a que aparezca
+    el aviso de tope relajado) y la devuelve."""
+    try:
+        pagina.wait_for_function(
+            "antes => { const ahora = [...document.querySelectorAll('[data-testid=sugerencia]')].map(t => Number(t.dataset.appid));"
+            " return JSON.stringify(ahora) !== JSON.stringify(antes); }",
+            arg=antes, timeout=10_000,
+        )
+    except TiempoAgotado:
+        pass
+    return _appids_sugeridos(pagina)
+
+
 def _angular_sugerencias(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    """Las sugerencias por afinidad de /perfil: solo con perfil declarado, cada una con el
-    género que coincidió y su banda al lado, y sin mezclar afinidad con riesgo."""
+    """Las sugerencias de /perfil (6C): con todo el perfil —géneros, gasto, horas y
+    fricción—, en vivo mientras se responde, cada tarjeta con sus razones y su riesgo
+    aparte, y sin quedar en blanco por el gasto."""
     problemas = []
     _abrir(pagina, f"{url.rstrip('/')}/perfil")
     seccion = pagina.get_by_test_id("sugerencias")
     try:
         seccion.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.get_by_test_id("sugerencia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
     except TiempoAgotado:
-        return ["con perfil declarado no aparece la sección de sugerencias en /perfil"]
+        return ["con perfil declarado no aparecen sugerencias en /perfil"]
 
-    declarados = {"acción", "rol"}  # los mismos que eligió el paso anterior
+    declarados = {"acción", "rol"}  # los mismos que eligió el paso anterior, con gasto de $200 a $500
     catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+    precio = lambda appid: 0 if catalogo[appid]["es_gratis"] else catalogo[appid]["precio_final"]
     tarjetas = pagina.get_by_test_id("sugerencia")
-    if not tarjetas.count():
-        return problemas + ["la sección de sugerencias no muestra ningún juego"]
     for i in range(tarjetas.count()):
         tarjeta = tarjetas.nth(i)
         appid = int(tarjeta.get_attribute("data-appid"))
         generos = {g.lower() for g in catalogo[appid]["generos"]}
         if not generos & declarados:
             problemas.append(f"sugiere {catalogo[appid]['nombre']}, que no comparte ningún género declarado")
+        if precio(appid) is None or precio(appid) > 500:
+            problemas.append(f"sugiere {catalogo[appid]['nombre']}, que pasa del tope de $500 por juego")
         porque = tarjeta.get_by_test_id("sugerencia-porque").inner_text()
         if "coincide en" not in porque.lower():
             problemas.append(f"la sugerencia {appid} no explica qué coincidió ('{porque[:60]}')")
-        if not tarjeta.get_by_test_id("pildora-banda").count():
-            problemas.append(f"la sugerencia {appid} no muestra la banda de riesgo")
+        tipos = tarjeta.get_by_test_id("sugerencia-razones").locator("li").evaluate_all("ls => ls.map(l => l.dataset.tipo)")
+        if tipos[:2] != ["generos", "precio"]:
+            problemas.append(f"la sugerencia {appid} no dice sus razones de géneros y precio ({tipos})")
+        if not tarjeta.get_by_test_id("pildora-banda").count() or "Aparte" not in tarjeta.inner_text():
+            problemas.append(f"la sugerencia {appid} no muestra su riesgo aparte")
         # La nota que lleva a la segunda opinión es solo de la banda alta.
         nota = tarjeta.get_by_test_id("sugerencia-nota-alto")
         es_alto = catalogo[appid]["banda_riesgo"] == "alto"
@@ -502,13 +526,11 @@ def _angular_sugerencias(pagina: Page, url: str, destino: Path, api: str) -> lis
             problemas.append(f"la sugerencia {appid} es de banda alta y no dice dónde están los motivos")
         if not es_alto and nota.count():
             problemas.append(f"la sugerencia {appid} no es de banda alta y aun así lleva la nota")
-        if es_alto and "segunda opinión" not in nota.inner_text().lower():
-            problemas.append(f"la nota de {appid} no menciona la segunda opinión")
 
     texto = " ".join(seccion.inner_text().split()).lower()
-    for frase in ("recomendación de compra",):  # la entrada aclara justo lo que no es
+    for frase in ("recomendación de compra", "no cambian el riesgo del juego", "se recalculan mientras respondes"):
         if frase not in texto:
-            problemas.append(f"la sección de sugerencias no aclara que no es una {frase}")
+            problemas.append(f"la sección de sugerencias no dice «{frase}»")
     for frase in _PROMESA_DE_AJUSTE + ("te recomiendo", "deberías", "conviene", "vale la pena", "buena compra"):
         if frase in texto:
             problemas.append(f"las sugerencias usan una fórmula prohibida ('{frase}')")
@@ -517,15 +539,45 @@ def _angular_sugerencias(pagina: Page, url: str, destino: Path, api: str) -> lis
     _esperar_quietud(pagina)
     ruta = destino / "sugerencias-perfil.png"
     seccion.screenshot(path=ruta)
-    altos = [t for t in (tarjetas.nth(i) for i in range(tarjetas.count()))
-             if t.get_by_test_id("sugerencia-nota-alto").count()]
-    if altos:
-        ruta_alto = destino / "sugerencia-banda-alta.png"
-        altos[0].screenshot(path=ruta_alto)
-        print(f"afinidad: {len(altos)} de {tarjetas.count()} son de banda alta y dicen dónde están los motivos "
-              f"({ruta_alto.relative_to(_RAIZ)})")
-    print(f"afinidad: {tarjetas.count()} sugerencias, todas con género coincidente y banda "
-          f"({ruta.relative_to(_RAIZ)})")
+    print(f"sugerencias: {tarjetas.count()} con géneros en común, dentro de $500 por juego, con sus razones "
+          f"y el riesgo aparte ({ruta.relative_to(_RAIZ)})")
+
+    # En vivo: bajar el tope a $200 cambia la lista sin guardar.
+    antes = _appids_sugeridos(pagina)
+    pagina.get_by_test_id("grupo-gasto").get_by_text("Hasta $200", exact=True).click()
+    ahora = _esperar_sugerencias(pagina, antes)
+    relajado = pagina.get_by_test_id("sugerencias-tope-relajado").count()
+    fuera = [catalogo[a]["nombre"] for a in ahora if precio(a) is None or precio(a) > 200]
+    if ahora == antes or (fuera and not relajado):
+        problemas.append(f"al bajar el tope a $200 las sugerencias no se recalcularon ({fuera[:3]})")
+    else:
+        print(f"sugerencias: en vivo, con tope de $200 cambian sin guardar ({len(ahora)} juegos)")
+
+    # Nunca en blanco: con un género que no tiene nada de $200 o menos, se avisa y se relaja.
+    por_genero: dict[str, list[dict]] = {}
+    for juego in catalogo.values():
+        for genero in juego["generos"]:
+            por_genero.setdefault(genero, []).append(juego)
+    sin_baratos = sorted(
+        g for g, js in por_genero.items()
+        if not any(j["es_gratis"] or (j["precio_final"] is not None and j["precio_final"] <= 200) for j in js)
+    )
+    if sin_baratos:
+        genero = sin_baratos[0]
+        for elegido in ("Acción", "Rol"):
+            pagina.locator(f"[data-testid='chip-genero'][data-genero='{elegido}']").click()
+        pagina.locator(f"[data-testid='chip-genero'][data-genero='{genero}']").click()
+        try:
+            pagina.get_by_test_id("sugerencias-tope-relajado").wait_for(state="visible", timeout=10_000)
+            aviso = " ".join(pagina.get_by_test_id("sugerencias-tope-relajado").inner_text().split())
+            if not pagina.get_by_test_id("sugerencia").count():
+                problemas.append(f"con «{genero}» y tope de $200, las sugerencias quedaron en blanco")
+            else:
+                print(f"sugerencias: con «{genero}» y tope de $200 no hay nada; avisa y relaja: «{aviso}»")
+        except TiempoAgotado:
+            problemas.append(f"con «{genero}» y tope de $200 no aparece el aviso de tope relajado")
+    else:
+        print("sugerencias: todos los géneros tienen algo de $200 o menos; el relajo se prueba en sugerencias.spec")
     return problemas
 
 
@@ -538,18 +590,34 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "perfil.png", full_page=True)
 
-    # El formulario arranca vacío: hay que responder las cuatro preguntas antes de que
-    # "Crear perfil" se habilite. Que empiece deshabilitado es parte de lo que se revisa.
+    # El formulario arranca vacío: hay que responder las cinco preguntas antes de que
+    # "Guardar perfil" se habilite. Que empiece deshabilitado es parte de lo que se revisa.
+    # La barra de guardar se ve desde el principio, pegada abajo, y dice qué falta.
+    pagina.evaluate("() => scrollTo(0, 0)")
+    pagina.wait_for_timeout(300)
+    barra = pagina.get_by_test_id("barra-guardar").bounding_box()
+    alto_ventana = pagina.viewport_size["height"]
+    if not barra or barra["y"] + barra["height"] > alto_ventana:
+        problemas.append(f"la barra de guardar no se ve al abrir el formulario ({barra})")
     if pagina.get_by_test_id("crear-perfil").is_enabled():
-        problemas.append("el formulario vacío ya deja crear el perfil")
-    pagina.get_by_test_id("grupo-compras").get_by_text("Muchos (más de 15 al año)").click()
-    pagina.get_by_test_id("grupo-horas").get_by_text("Media (4 a 9 h)").click()
-    pagina.get_by_test_id("grupo-friccion").get_by_text("Media", exact=True).click()
+        problemas.append("el formulario vacío ya deja guardar el perfil")
+    estados = [pagina.get_by_test_id("perfil-estado").inner_text()]
+    pagina.get_by_test_id("grupo-compras").get_by_text("Muchos", exact=True).click()
+    pagina.get_by_test_id("grupo-gasto").get_by_text("$200 a $500", exact=True).click()
+    pagina.get_by_test_id("grupo-horas").get_by_text("Media", exact=True).click()
     pagina.get_by_test_id("grupo-plataforma").get_by_text("PC", exact=True).click()
+    pagina.get_by_test_id("grupo-plataforma").get_by_text("Xbox", exact=True).click()
+    estados.append(pagina.get_by_test_id("perfil-estado").inner_text())
+    pagina.get_by_test_id("grupo-friccion").get_by_text("Media", exact=True).click()
     for genero in ("Acción", "Rol"):
         pagina.locator(f"[data-testid='chip-genero'][data-genero='{genero}']").click()
+    estados.append(pagina.get_by_test_id("perfil-estado").inner_text())
+    esperados = ("0 de 5 respondidas · faltan 5", "4 de 5 respondidas · falta: tolerancia a la fricción",
+                 "5 de 5 · listo para guardar")
+    if tuple(" ".join(e.split()) for e in estados) != esperados:
+        problemas.append(f"la barra de guardar no dice qué falta ({estados})")
     if not pagina.get_by_test_id("crear-perfil").is_enabled():
-        problemas.append("con las cuatro respuestas puestas, 'Crear perfil' sigue deshabilitado")
+        problemas.append("con las cinco respuestas puestas, 'Guardar perfil' sigue deshabilitado")
     pagina.get_by_test_id("crear-perfil").click()
 
     pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -557,10 +625,11 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     # juegos parecidos, que aparecen justo debajo. Irse al catálogo los dejaba sin ver.
     if not pagina.url.rstrip("/").endswith("/perfil"):
         problemas.append(f"tras crear el perfil se fue de la página ({pagina.url})")
-    elif not pagina.get_by_test_id("perfil-guardado").count():
-        problemas.append("tras crear el perfil no dice que quedó guardado")
+    elif "Perfil guardado y activo" not in (pagina.get_by_test_id("perfil-guardado").inner_text() if pagina.get_by_test_id("perfil-guardado").count() else ""):
+        problemas.append("tras guardar el perfil la barra no dice «Perfil guardado y activo»")
     else:
-        print("perfil:   al crearlo se queda en su página, lo dice y baja a los juegos parecidos")
+        print("perfil:   la barra de guardar se ve desde el principio y dice qué falta; al guardar, "
+              "«✓ Perfil guardado y activo», se queda en su página y baja a las sugerencias")
     pagina.reload()
     try:
         pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -580,13 +649,22 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     veredicto = " ".join(pagina.get_by_test_id("ficha-veredicto").inner_text().lower().split())
     if "arrepentimiento temprano" not in veredicto:
         problemas.append(f"el veredicto no usa el vocabulario del proyecto ('{veredicto[:80]}')")
-    # La historia son tres líneas; la primera reconoce el género en común.
+    # La historia son tres líneas —la primera reconoce el género en común— y, con Xbox
+    # marcado, la de plataforma con las dos; la nota de plataforma ya no va en el veredicto.
     historia = pagina.get_by_test_id("historia-texto").inner_text()
     plano = " ".join(historia.split())
     if "dentro" not in plano.lower() or "Acción" not in plano:
         problemas.append(f"la historia no reconoce el género en común ('{plano[:120]}')")
-    if len(pagina.get_by_test_id("historia-texto").locator("li").all()) != 3:
-        problemas.append(f"la historia no son tres líneas ('{plano[:120]}')")
+    tipos = pagina.get_by_test_id("historia-texto").locator("li").evaluate_all("ls => ls.map(l => l.dataset.tipo)")
+    if tipos != ["generos", "tiempo", "compra", "plataforma"]:
+        problemas.append(f"la historia no son tres líneas más la de plataforma ({tipos})")
+    linea = " ".join(pagina.get_by_test_id("historia-plataforma").inner_text().split()) if "plataforma" in tipos else ""
+    if linea != "Juegas en PC y Xbox; el riesgo se calcula con reseñas de Steam.":
+        problemas.append(f"la línea de plataforma no nombra las dos marcadas ('{linea}')")
+    elif "transfiere" in pagina.get_by_test_id("ficha-resumen").inner_text():
+        problemas.append("la nota de plataforma sigue en el panel del veredicto")
+    else:
+        print(f"ficha:    la historia dice «{linea}» y el veredicto ya no trae la nota")
     if pagina.get_by_test_id("historia-sin-perfil").count():
         problemas.append("con perfil declarado, la historia sigue pidiendo crear uno")
     _esperar_portadas(pagina, "[data-testid='ficha'] img")
@@ -613,6 +691,114 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     print(f"géneros:  el nivel no cambia por declararlos ({sin} en ambos casos)")
 
     return problemas + _revisar_vocabulario(pagina, "ficha con perfil")
+
+
+_PERFIL_V3 = {
+    "valores": {"compras": 4, "horas": 6, "friccion": 3, "plataforma": "pc", "generos": ["Acción"]},
+    "perfil": {
+        "compras_al_anio": 4, "horas_por_semana": 6.0, "tolerancia_friccion": "media",
+        "tags_preferidos": ["acción"], "tags_rechazados": [], "plataforma": "pc",
+        "segmento": "novato", "disponibilidad": "media",
+    },
+}
+
+
+def _angular_6c(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Fase 6C, lo que no cabe en el recorrido del perfil: la invitación del inicio, la
+    píldora del menú sin perfil, la migración de los perfiles v3, la burbuja encima de la
+    barra de guardar y las horas típicas de la ficha técnica."""
+    problemas = []
+    base = url.rstrip("/")
+    navegador = pagina.context.browser
+
+    # Sin perfil: invitación en el inicio, que «Ahora no» quita para siempre; y la píldora
+    # del menú invita a crearlo.
+    contexto = navegador.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, base)
+        invitacion = otra.get_by_test_id("invitacion-perfil")
+        pildora = otra.get_by_test_id("perfil-inactivo")
+        try:
+            invitacion.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            invitacion.screenshot(path=destino / "invitacion-perfil.png")
+            otra.get_by_test_id("invitacion-ahora-no").click()
+            otra.wait_for_timeout(300)
+            quitada = not invitacion.count()
+            otra.reload()
+            otra.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            otra.wait_for_timeout(500)
+            if not quitada or invitacion.count():
+                problemas.append("«Ahora no» no quita la invitación del inicio, o vuelve al recargar")
+            else:
+                print(f"invitación: sin perfil sale en el inicio; «Ahora no» la quita y no vuelve "
+                      f"({(destino / 'invitacion-perfil.png').relative_to(_RAIZ)})")
+        except TiempoAgotado:
+            problemas.append("sin perfil, el inicio no muestra la invitación a crearlo")
+        texto = " ".join(pildora.inner_text().split()) if pildora.count() else ""
+        if "Sin perfil" not in texto or not (pildora.get_attribute("href") or "").endswith("/perfil"):
+            problemas.append(f"sin perfil, la píldora del menú no invita a crearlo ('{texto}')")
+        else:
+            print(f"menú:     sin perfil, la píldora dice «{texto}» y lleva a /perfil")
+    finally:
+        contexto.close()
+
+    # Un perfil v3: sigue activo, la píldora avisa de la pregunta nueva y el gasto falta.
+    contexto = navegador.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    contexto.add_init_script(f"localStorage.setItem('nexplay.perfil.v3', {json.dumps(json.dumps(_PERFIL_V3))})")
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/perfil")
+        otra.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pildora = " ".join(otra.get_by_test_id("perfil-activo").inner_text().split())
+        gasto = otra.get_by_test_id("estado-gasto").inner_text().strip()
+        estado = " ".join(otra.get_by_test_id("perfil-estado").inner_text().split())
+        guardado = otra.evaluate("() => [!!localStorage.getItem('nexplay.perfil.v4'), !!localStorage.getItem('nexplay.perfil.v3')]")
+        if pildora != "Perfil activo · 1 pregunta nueva" or gasto != "Falta responder" or guardado != [True, False]:
+            problemas.append(f"el perfil v3 no migra como se acordó (píldora '{pildora}', gasto '{gasto}', v4/v3 {guardado})")
+        else:
+            print(f"migración: un perfil v3 sigue activo, la píldora dice «{pildora}», el gasto «{gasto}» "
+                  f"y la barra «{estado}»")
+    finally:
+        contexto.close()
+
+    # En /perfil la burbuja de Nia va encima de la barra de guardar, en escritorio y en teléfono.
+    for vista in (_VIEWPORT, {"width": 390, "height": 844}):
+        contexto = navegador.new_context(viewport=vista)
+        _sin_consultas_a_nia(contexto)
+        try:
+            otra = contexto.new_page()
+            _abrir(otra, f"{base}/perfil")
+            otra.get_by_test_id("barra-guardar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            otra.wait_for_timeout(500)
+            barra = otra.get_by_test_id("barra-guardar").bounding_box()
+            burbuja = otra.locator("app-nia-flotante .burbuja").bounding_box()
+            if not barra or not burbuja or burbuja["y"] + burbuja["height"] > barra["y"] + 1:
+                problemas.append(f"a {vista['width']} px la burbuja de Nia tapa la barra de guardar ({burbuja}, {barra})")
+        finally:
+            contexto.close()
+    if not any("burbuja de Nia tapa" in p for p in problemas):
+        print("perfil:   la burbuja de Nia va encima de la barra de guardar, a 1440 y a 390 px")
+
+    # Horas típicas en la ficha técnica, de /panorama.
+    with urllib.request.urlopen(f"{api}/panorama", timeout=10) as respuesta:
+        horas = {f["appid"]: f.get("horas_al_recomendar") for f in json.load(respuesta)["por_juego"]}
+    if sum(1 for h in horas.values() if h is not None) < len(horas) * 0.9:
+        problemas.append("/panorama no trae horas_al_recomendar en casi todos los juegos")
+    _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
+    try:
+        pagina.get_by_test_id("horas-tipicas").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        mostrado = pagina.get_by_test_id("horas-tipicas").inner_text().strip()
+        esperado = f"{round(horas[_APPID_FICHA])} h"
+        if mostrado != esperado:
+            problemas.append(f"la ficha técnica dice «{mostrado}» de horas típicas y /panorama da {horas[_APPID_FICHA]}")
+        else:
+            print(f"ficha:    «Horas típicas: {mostrado}» en la ficha técnica, de /panorama ({horas[_APPID_FICHA]} h)")
+    except TiempoAgotado:
+        problemas.append("la ficha técnica no muestra las horas típicas")
+    return problemas
 
 
 def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
@@ -1904,8 +2090,9 @@ def _pares_de_contraste() -> list[tuple[str, object, object, float]]:
 
 _CONTRASTES = _pares_de_contraste()
 
-# Un perfil guardado con tres géneros: la píldora de perfil activo es lo más alto que
-# puede aparecer en la barra, y tiene que caber con ella.
+# Un perfil guardado en v3, con tres géneros: al migrar, la píldora dice «Perfil activo · 1
+# pregunta nueva» en dos renglones, que es lo más alto que puede aparecer en la barra, y
+# tiene que caber con ella.
 _PERFIL_EN_LA_BARRA = {
     "valores": {"compras": 4, "horas": 6, "friccion": 3, "plataforma": "pc", "generos": ["Acción", "Rol", "Estrategia"]},
     # Lo que devuelve POST /perfil para esos valores: la fricción viaja como nivel.
@@ -2547,6 +2734,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_carrusel(pagina, url, destino)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
+        + _angular_6c(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)

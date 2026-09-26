@@ -11,6 +11,7 @@ toma medio segundo. Pedirlo en cada request sería repetir ese trabajo para siem
 
 import logging
 import sqlite3
+import statistics
 from pathlib import Path
 
 from . import scoring
@@ -34,6 +35,9 @@ _TRAMOS = (
     ("10 a 50 h", 600, 3000),
     ("Más de 50 h", 3000, None),
 )
+
+# Con menos reseñas positivas que esto, la mediana de horas dice poco y se deja en None.
+_MIN_POSITIVAS_PARA_HORAS = 10
 
 _VACIO = PanoramaCatalogo(
     juegos=0,
@@ -106,8 +110,21 @@ def _calcular() -> PanoramaCatalogo:
             FROM resenas GROUP BY appid ORDER BY appid
             """
         ).fetchall()
+        # Cuántas horas llevaba jugadas quien lo recomendó: separa los juegos que rinden
+        # en pocas horas de los que piden cientos. SQLite no tiene mediana; va en Python.
+        minutos_positivas: dict[int, list[int]] = {}
+        for appid, minutos in con.execute(
+            "SELECT appid, playtime_at_review FROM resenas WHERE voted_up = 1 AND playtime_at_review IS NOT NULL"
+        ):
+            minutos_positivas.setdefault(appid, []).append(minutos)
     finally:
         con.close()
+
+    horas_al_recomendar = {
+        appid: round(statistics.median(minutos) / 60, 1)
+        for appid, minutos in minutos_positivas.items()
+        if len(minutos) >= _MIN_POSITIVAS_PARA_HORAS
+    }
 
     conteos_catalogo: dict[str, int] = {}
     clasificadas = 0
@@ -133,6 +150,7 @@ def _calcular() -> PanoramaCatalogo:
                 resenas_en_steam=en_steam.get(appid),
                 consenso=consenso.get(appid),
                 motivo_principal=principal,
+                horas_al_recomendar=horas_al_recomendar.get(appid),
             )
         )
 

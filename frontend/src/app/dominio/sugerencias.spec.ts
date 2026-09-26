@@ -1,19 +1,16 @@
-import { JuegoCatalogo, PerfilJugador } from '../api/contrato';
+import { JuegoCatalogo } from '../api/contrato';
 import { juegoDePrueba } from './juego-prueba';
-import { NOTA_DESEMPATE, hayEmpates, porQueCoincide, sugerenciasPara } from './sugerencias';
+import {
+  CriteriosSugerencia,
+  DatosDeJuego,
+  NOTA_DESEMPATE,
+  hayEmpates,
+  porQueCoincide,
+  sugerenciasPara,
+} from './sugerencias';
 
-function perfil(preferidos: string[], rechazados: string[] = []): PerfilJugador {
-  return {
-    compras_al_anio: 5,
-    horas_por_semana: 6,
-    tolerancia_friccion: 'media',
-    // La API normaliza los tags a minúsculas (_normalizar_tags), igual que aquí.
-    tags_preferidos: preferidos.map((g) => g.toLowerCase()),
-    tags_rechazados: rechazados.map((g) => g.toLowerCase()),
-    plataforma: 'pc',
-    segmento: 'novato',
-    disponibilidad: 'media',
-  };
+function perfil(generos: string[], cambios: Partial<CriteriosSugerencia> = {}): CriteriosSugerencia {
+  return { generos, gasto: null, juegaPoco: false, friccionBaja: false, ...cambios };
 }
 
 function juego(nombre: string, generos: string[], cambios: Partial<JuegoCatalogo> = {}): JuegoCatalogo {
@@ -34,14 +31,14 @@ const CATALOGO: JuegoCatalogo[] = [
 ];
 
 describe('sugerenciasPara', () => {
-  it('sin géneros declarados no hay con qué comparar', () => {
+  it('sin nada declarado no hay con qué sugerir', () => {
     const resultado = sugerenciasPara(CATALOGO, perfil([]));
-    expect(resultado.motivo).toBe('sin-generos');
+    expect(resultado.motivo).toBe('sin-respuestas');
     expect(resultado.sugerencias).toEqual([]);
   });
 
   it('sin perfil tampoco sugiere nada', () => {
-    expect(sugerenciasPara(CATALOGO, null).motivo).toBe('sin-generos');
+    expect(sugerenciasPara(CATALOGO, null).motivo).toBe('sin-respuestas');
   });
 
   it('solo sugiere juegos que comparten un género declarado', () => {
@@ -82,14 +79,6 @@ describe('sugerenciasPara', () => {
     const nombres = sugerencias.map((s) => s.juego.nombre);
     expect(nombres.indexOf('Justo')).toBeGreaterThanOrEqual(0);
     expect(nombres.indexOf('Justo')).toBeLessThan(nombres.indexOf('Acapara'));
-  });
-
-  it('un género rechazado saca al juego aunque coincida en otro', () => {
-    const conAccion = sugerenciasPara(CATALOGO, perfil(['Rol'])).sugerencias.map((s) => s.juego.nombre);
-    expect(conAccion).toContain('Kitchen Sink');
-
-    const sinAccion = sugerenciasPara(CATALOGO, perfil(['Rol'], ['Acción'])).sugerencias.map((s) => s.juego.nombre);
-    expect(sinAccion).toEqual(['Disco Elysium']);
   });
 
   it('con un género raro devuelve los pocos que hay, sin rellenar', () => {
@@ -232,3 +221,76 @@ describe('el orden que reportó la revisión', () => {
     ]);
   });
 });
+
+describe('el resto del perfil', () => {
+  const corto = juego('Corto', ['Acción'], { appid: 91, metacritic: 70, precio_final: 150 });
+  const largo = juego('Largo', ['Acción'], { appid: 92, metacritic: 95, precio_final: 150 });
+  const conBugs = juego('Con bugs', ['Acción'], { appid: 93, metacritic: 95, precio_final: 150 });
+  const caro = juego('Caro', ['Acción'], { appid: 94, metacritic: 99, precio_final: 900 });
+  const gratis = juego('Gratis', ['Acción'], { appid: 95, metacritic: 60, precio_final: null, es_gratis: true });
+  const catalogo = [corto, largo, conBugs, caro, gratis];
+  const datos = new Map<number, DatosDeJuego>([
+    [corto.appid, { horas_al_recomendar: 6, motivo_principal: 'contenido' }],
+    [largo.appid, { horas_al_recomendar: 120, motivo_principal: 'contenido' }],
+    [conBugs.appid, { horas_al_recomendar: 8, motivo_principal: 'bugs' }],
+    [caro.appid, { horas_al_recomendar: 10, motivo_principal: null }],
+    [gratis.appid, { horas_al_recomendar: 3, motivo_principal: null }],
+  ]);
+  const nombres = (criterios: CriteriosSugerencia) =>
+    sugerenciasPara(catalogo, criterios, datos).sugerencias.map((s) => s.juego.nombre);
+
+  it('el gasto deja fuera lo que pasa del tope; los gratuitos siempre entran', () => {
+    const lista = nombres(perfil(['Acción'], { gasto: 1 }));
+    expect(lista).not.toContain('Caro');
+    expect(lista).toContain('Gratis');
+  });
+
+  it('si el tope deja la lista vacía, sube de tramo y lo avisa: nunca en blanco', () => {
+    const soloCaros = [caro, juego('Otro caro', ['Acción'], { appid: 96, precio_final: 650 })];
+    const resultado = sugerenciasPara(soloCaros, perfil(['Acción'], { gasto: 1 }), datos);
+    expect(resultado.sugerencias.length).toBeGreaterThan(0);
+    expect(resultado.topeRelajado).toEqual({ pedido: 200, usado: 1000 });
+    expect(sugerenciasPara(catalogo, perfil(['Acción'], { gasto: 1 }), datos).topeRelajado).toBeNull();
+  });
+
+  it('sin géneros, el gasto basta para sugerir', () => {
+    const resultado = sugerenciasPara(catalogo, perfil([], { gasto: 1 }), datos);
+    expect(resultado.motivo).toBe('ok');
+    expect(resultado.sugerencias.map((s) => s.juego.nombre)).not.toContain('Caro');
+  });
+
+  it('si juega poco, van antes los que se recomiendan con pocas horas encima', () => {
+    const lista = nombres(perfil(['Acción'], { juegaPoco: true }));
+    expect(lista.indexOf('Corto')).toBeLessThan(lista.indexOf('Largo'));
+    // Sin ese criterio, la crítica pone a Largo antes.
+    const sin = nombres(perfil(['Acción']));
+    expect(sin.indexOf('Largo')).toBeLessThan(sin.indexOf('Corto'));
+  });
+
+  it('si la fricción le pesa, van después los que se quejan de bugs o dificultad', () => {
+    const lista = nombres(perfil(['Acción'], { friccionBaja: true }));
+    expect(lista.indexOf('Largo')).toBeLessThan(lista.indexOf('Con bugs'));
+  });
+
+  it('cada tarjeta dice sus razones, solo de lo declarado, y lo que no cumple', () => {
+    const { sugerencias } = sugerenciasPara(catalogo, perfil(['Acción'], { gasto: 2, juegaPoco: true, friccionBaja: true }), datos);
+    const deBugs = sugerencias.find((s) => s.juego.nombre === 'Con bugs')!;
+    expect(deBugs.razones.map((r) => r.tipo)).toEqual(['generos', 'precio', 'horas', 'friccion']);
+    expect(deBugs.razones.find((r) => r.tipo === 'friccion')).toEqual({
+      tipo: 'friccion',
+      cumple: false,
+      texto: 'Su queja principal es bugs',
+    });
+    const deLargo = sugerencias.find((s) => s.juego.nombre === 'Largo')!;
+    expect(deLargo.razones.find((r) => r.tipo === 'horas')).toEqual({
+      tipo: 'horas',
+      cumple: false,
+      texto: 'Pide más: ~120 h al recomendarlo',
+    });
+    expect(deLargo.razones.find((r) => r.tipo === 'precio')?.texto).toBe('$150 · dentro de tu tope');
+
+    const soloGeneros = sugerenciasPara(catalogo, perfil(['Acción']), datos).sugerencias[0];
+    expect(soloGeneros.razones.map((r) => r.tipo)).toEqual(['generos']);
+  });
+});
+

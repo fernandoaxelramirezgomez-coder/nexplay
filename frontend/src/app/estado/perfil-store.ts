@@ -6,11 +6,13 @@ import { NexplayApi } from '../api/nexplay-api';
 import { HistorialStore } from './historial-store';
 import { ValoresPerfil } from '../dominio/opciones-perfil';
 
-// v3: hasta v2 el formulario venía con respuestas puestas (compras 4, horas 6, fricción
-// media), así que un perfil guardado podía tener valores que nadie declaró. No se migran:
-// el formulario arranca vacío y lo declarado tiene que ser de quien lo declara.
-// v2 fue el cambio de "tamaño de la biblioteca" a "compras al año", que tampoco se migró.
-const CLAVE = 'nexplay.perfil.v3';
+// v4 (6C): varias plataformas y la pregunta del gasto. Los v3 sí se migran —son
+// respuestas de verdad—: su plataforma pasa a la lista y el gasto queda sin responder, con
+// el perfil activo. v3 fue el formulario que arranca vacío: hasta v2 venía con respuestas
+// puestas, así que esos no se migraron, como tampoco el cambio de "tamaño de la
+// biblioteca" a "compras al año" de v2.
+const CLAVE = 'nexplay.perfil.v4';
+const CLAVE_V3 = 'nexplay.perfil.v3';
 
 /** El perfil neutro lo deriva la API: se manda a /perfil para no duplicar aquí
  * las heurísticas de segmento y disponibilidad. */
@@ -30,14 +32,43 @@ interface Guardado {
   perfil: PerfilJugador;
 }
 
+function valido(guardado: Guardado | null): guardado is Guardado {
+  return typeof guardado?.perfil?.compras_al_anio === 'number' && Array.isArray(guardado?.valores?.plataformas);
+}
+
+/** Un perfil v3: sus valores tenían una sola plataforma y no tenían gasto. */
+interface GuardadoV3 {
+  valores: Omit<ValoresPerfil, 'plataformas' | 'gasto'> & { plataforma: ValoresPerfil['plataformas'][number] | null };
+  perfil: PerfilJugador;
+}
+
+export function migrarV3(viejo: GuardadoV3): Guardado {
+  const { plataforma, ...resto } = viejo.valores;
+  return {
+    valores: { ...resto, gasto: null, plataformas: plataforma ? [plataforma] : [viejo.perfil.plataforma] },
+    perfil: viejo.perfil,
+  };
+}
+
 function leerGuardado(): Guardado | null {
   try {
     const crudo = localStorage.getItem(CLAVE);
-    if (!crudo) {
+    if (crudo) {
+      const guardado = JSON.parse(crudo) as Guardado;
+      return valido(guardado) ? guardado : null;
+    }
+    const viejo = localStorage.getItem(CLAVE_V3);
+    if (!viejo) {
       return null;
     }
-    const guardado = JSON.parse(crudo) as Guardado;
-    return typeof guardado?.perfil?.compras_al_anio === 'number' && guardado?.valores ? guardado : null;
+    const v3 = JSON.parse(viejo) as GuardadoV3;
+    if (typeof v3?.perfil?.compras_al_anio !== 'number' || !v3?.valores) {
+      return null;
+    }
+    const migrado = migrarV3(v3);
+    localStorage.setItem(CLAVE, JSON.stringify(migrado));
+    localStorage.removeItem(CLAVE_V3);
+    return migrado;
   } catch {
     // Modo privado, almacenamiento bloqueado o dato corrupto: se sigue sin perfil.
     return null;
@@ -53,6 +84,8 @@ export class PerfilStore {
   readonly perfil = computed(() => this.guardado()?.perfil ?? null);
   readonly valores = computed(() => this.guardado()?.valores ?? null);
   readonly hayPerfil = computed(() => this.guardado() !== null);
+  /** Un perfil de antes de la 6C: activo, pero sin la pregunta del gasto. */
+  readonly faltaGasto = computed(() => this.guardado() !== null && this.guardado()!.valores.gasto === null);
 
   private readonly neutro = rxResource({
     // Solo se pide si hace falta: con perfil declarado no se usa.

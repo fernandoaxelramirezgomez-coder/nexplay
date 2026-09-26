@@ -249,6 +249,8 @@ export interface JuegoPanorama {
   consenso: string | null;
   /** null si el juego no llega al mínimo de casos para nombrar uno. */
   motivo_principal: string | null;
+  /** Mediana de horas jugadas de quienes lo recomiendan; null con menos de 10 positivas. */
+  horas_al_recomendar: number | null;
 }
 
 export interface PanoramaCatalogo {

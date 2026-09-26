@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup 6C · Perfil</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1152px; margin: 0 auto; padding: 72px 24px 24px; container: contenido / inline-size; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .escena {
+    padding: 40px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .contenido { max-width: 1152px; margin: 0 auto; container: contenido / inline-size; display: flex; flex-direction: column; gap: 24px; }
+  .muestra { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .pildora { display: inline-block; padding: 1px 11px; border: 1px solid var(--filo-banda); border-radius: var(--radio-pildora); color: var(--texto-sobre-banda); font-size: 16px; white-space: nowrap; }
+  .pildora[data-banda='bajo'] { background: var(--banda-bajo); --filo-banda: var(--banda-bajo-texto); }
+  .pildora[data-banda='medio'] { background: var(--banda-medio); --filo-banda: var(--banda-medio-texto); }
+  .pildora[data-banda='alto'] { background: var(--banda-alto); --filo-banda: var(--banda-alto-texto); }
+
+  /* ── 17. Descubrimiento ─────────────────────────────────────────────────── */
+  .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .invitacion {
+    display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 16px; align-items: center; padding: 18px 20px;
+    border-radius: 16px; border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie));
+    background: linear-gradient(90deg, rgb(var(--canal-perfil) / 0.14), transparent 65%), var(--superficie);
+    box-shadow: 0 0 30px rgb(var(--canal-perfil) / 0.16);
+  }
+  .invitacion .insignia { grid-row: 1 / span 2; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; color: var(--t-perfil); background: rgb(var(--canal-perfil) / 0.14); }
+  .invitacion .titulo { font-family: var(--fuente-display); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-perfil); }
+  .invitacion .sub { color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .invitacion .acciones-inv { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .menu-estados { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .pildora-perfil {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 16px; color: var(--texto);
+    border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie)); background: rgb(var(--canal-perfil) / 0.1);
+  }
+  .pildora-perfil.vacia { border-style: dashed; border-color: var(--borde-control); background: var(--superficie-2); }
+  .pildora-perfil svg.i { color: var(--t-perfil); width: 18px; height: 18px; }
+  .pildora-perfil .ir { margin-inline-start: auto; color: var(--enlace); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── 18–22. Formulario ──────────────────────────────────────────────────── */
+  .perfil-cabecera { display: flex; flex-direction: column; gap: 12px; }
+  .sobrelinea { display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie); color: var(--neon); font-size: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .entrada { max-width: 60ch; color: var(--texto); font-size: 20px; line-height: 1.5; padding-inline-start: 16px; border-inline-start: 3px solid var(--accion); }
+  .preguntas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .pregunta { display: flex; flex-direction: column; gap: 14px; padding: 22px 24px 24px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--accion); }
+  .pregunta.ancha { grid-column: 1 / -1; }
+  .pregunta-cabecera { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; }
+  .pregunta-cabecera .numero { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-family: var(--fuente-display); font-weight: 700; font-size: 20px; color: var(--accion-tinta); background: rgb(var(--accion-canal) / 0.14); }
+  .pregunta-cabecera h2 { margin: 0; font-family: var(--fuente-display); font-size: 21px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--texto); line-height: 1.15; }
+  .pregunta-cabecera .explica { grid-column: 2; color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .pregunta-cabecera .estado { grid-column: 3; grid-row: 1 / span 2; align-self: start; font-size: 16px; white-space: nowrap; color: var(--texto-2); }
+  .pregunta-cabecera .estado.hecha { color: var(--accion-tinta); }
+  .opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+  .opciones.cinco { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* Cuatro opciones van en 2 × 2: en fila de tres, la cuarta quedaba sola abajo. */
+  .opciones.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opcion {
+    position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 104px; padding: 14px;
+    border-radius: 14px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); cursor: pointer; text-align: start; font: inherit;
+  }
+  .opcion .icono-op { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--texto-2); background: rgb(var(--canal-neutro) / 0.14); }
+  .opcion .nombre { font-weight: 700; font-size: 18px; line-height: 1.2; }
+  .opcion .detalle { color: var(--texto-2); font-size: 16px; line-height: 1.3; }
+  .opcion:hover { border-color: var(--neon); }
+  .opcion[aria-checked='true'], .opcion[aria-pressed='true'] {
+    border-color: var(--neon); background: linear-gradient(135deg, rgb(var(--accion-canal) / 0.18), transparent 70%), var(--superficie-2);
+    box-shadow: inset 0 0 0 1px var(--neon), 0 0 22px rgb(var(--accion-canal) / var(--brillo-boton));
+  }
+  .opcion[aria-checked='true'] .icono-op, .opcion[aria-pressed='true'] .icono-op { color: var(--accion-tinta); background: rgb(var(--accion-canal) / 0.16); }
+  .opcion .marca-elegida { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; display: none; place-items: center; background: var(--accion); color: #0b0f1f; }
+  .opcion .marca-elegida svg.i { width: 16px; height: 16px; stroke-width: 3; }
+  .opcion[aria-checked='true'] .marca-elegida, .opcion[aria-pressed='true'] .marca-elegida { display: grid; }
+  /* Medidor de fricción: cinco barras que se llenan. */
+  .medidor { display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+  .medidor i { width: 6px; border-radius: 2px; background: var(--borde-control); }
+  .medidor i:nth-child(1) { height: 30%; } .medidor i:nth-child(2) { height: 45%; } .medidor i:nth-child(3) { height: 60%; } .medidor i:nth-child(4) { height: 80%; } .medidor i:nth-child(5) { height: 100%; }
+  .medidor i.lleno { background: var(--accion-tinta); }
+  /* Plataformas: icono propio con el color de la marca (solo el icono). */
+  .plataforma .icono-op { background: var(--superficie); border: 1px solid var(--borde); }
+  .plataforma[data-marca='pc'] .icono-op { color: var(--t-inicio); }
+  .plataforma[data-marca='ps'] .icono-op { color: #4d9bff; }
+  .plataforma[data-marca='xbox'] .icono-op { color: #52b043; }
+  .plataforma[data-marca='nintendo'] .icono-op { color: #ff4a57; }
+  :root[data-tema='claro'] .plataforma[data-marca='ps'] .icono-op { color: #0062b8; }
+  :root[data-tema='claro'] .plataforma[data-marca='xbox'] .icono-op { color: #107c10; }
+  :root[data-tema='claro'] .plataforma[data-marca='nintendo'] .icono-op { color: #c8000f; }
+  .generos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .genero { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); font-size: 16px; }
+  .genero[aria-pressed='true'] { border-color: var(--neon); background: rgb(var(--accion-canal) / 0.16); box-shadow: inset 0 0 0 1px var(--neon); }
+  .genero[aria-pressed='true']::before { content: '✓'; color: var(--accion-tinta); font-weight: 700; }
+
+  /* 22: la barra de guardar, fija abajo; la burbuja de Nia sube encima de ella. */
+  .zona-barra { position: relative; padding-top: 72px; }
+  .barra-guardar {
+    position: sticky; bottom: 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 12px 12px 18px;
+    border-radius: 18px; border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie)); background: var(--superficie);
+    box-shadow: 0 18px 44px rgb(0 0 0 / 0.35);
+  }
+  :root[data-tema='claro'] .barra-guardar { box-shadow: 0 14px 36px rgb(11 15 31 / 0.14); }
+  .barra-guardar .progreso { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 220px; }
+  .barra-guardar .pista { flex: 1; max-width: 180px; height: 8px; border-radius: 999px; background: var(--superficie-2); overflow: hidden; }
+  .barra-guardar .pista span { display: block; height: 100%; background: var(--accion-tinta); border-radius: 999px; }
+  .barra-guardar .texto-estado { font-size: 16px; color: var(--texto); }
+  .barra-guardar .texto-estado.ok { font-weight: 700; color: var(--accion-tinta); }
+  .barra-guardar .boton-cta { min-height: 48px; }
+  .burbuja-mock { position: absolute; right: 0; top: 0; width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--c-nia); background: var(--superficie) url('../../../frontend/public/nia/chat.png') center 20% / 130% no-repeat; box-shadow: 0 0 22px rgb(var(--canal-nia) / 0.35); }
+  .estados-barra { display: grid; gap: 10px; }
+
+  /* ── 23. Sugerencias ────────────────────────────────────────────────────── */
+  .sug-cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .sug-cabecera h2 { margin: 0; font-family: var(--fuente-display); font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .etiqueta-sug { padding: 4px 12px; border-radius: 999px; font-size: 16px; color: var(--texto); background: var(--superficie); border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie)); }
+  .en-vivo { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; font-size: 16px; color: var(--texto-2); background: var(--superficie); border: 1px solid var(--borde); }
+  .en-vivo::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accion-tinta); }
+  .sugerencias { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .sug { display: flex; flex-direction: column; overflow: hidden; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .sug img { width: 100%; aspect-ratio: 460 / 215; object-fit: cover; }
+  .sug .cuerpo { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; }
+  .sug .nombre { font-size: 19px; font-weight: 700; }
+  .razones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
+  .razones li { display: flex; align-items: center; gap: 8px; color: var(--texto); }
+  .razones svg.i { width: 18px; height: 18px; color: var(--t-perfil); }
+  .razones .no { color: var(--texto-2); }
+  .razones .no svg.i { color: var(--texto-2); }
+  .riesgo-aparte { display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--borde); font-size: 16px; color: var(--texto-2); }
+
+  .tabla-puntos { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla-puntos th, .tabla-puntos td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla-puntos th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla-puntos td:first-child { font-family: var(--fuente-mono); white-space: nowrap; }
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 900px) {
+    .tres { grid-template-columns: 1fr; }
+    .preguntas { grid-template-columns: 1fr; }
+    .sugerencias { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @container contenido (max-width: 600px) {
+    .opciones.cinco { grid-template-columns: 1fr; }
+    .opciones.cinco .opcion { min-height: 0; flex-direction: row; align-items: center; }
+    .pregunta { padding: 18px 16px 20px; }
+    .pregunta-cabecera { grid-template-columns: 40px minmax(0, 1fr); }
+    .pregunta-cabecera .estado { grid-column: 2; grid-row: auto; }
+    .pregunta-cabecera h2 { font-size: 19px; }
+    .sugerencias { grid-template-columns: 1fr; }
+    .barra-guardar .boton-cta { width: 100%; }
+    .invitacion { grid-template-columns: 44px minmax(0, 1fr); padding: 16px; }
+    .invitacion .insignia { width: 44px; height: 44px; }
+    .invitacion .titulo { font-size: 20px; letter-spacing: 0.03em; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4"/><path d="M6.2 19.2a6 6 0 0 1 11.6 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-bolsa-1" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
+  <symbol id="i-bolsa-2" viewBox="0 0 24 24"><path d="M3 9h10l-1 11H4z"/><path d="M5.5 9a2.5 2.5 0 0 1 5 0"/><path d="M13 6h8l-1 9h-6"/><path d="M15 6a2 2 0 0 1 4 0"/></symbol>
+  <symbol id="i-bolsa-3" viewBox="0 0 24 24"><path d="M2 11h8l-1 9H3z"/><path d="M8 7h8l-1 9"/><path d="M14 3h8l-1 9h-4"/></symbol>
+  <symbol id="i-bolsa-4" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5M16 4v5M7 14h2M11 14h2M15 14h2"/></symbol>
+  <symbol id="i-moneda-1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 9v6"/></symbol>
+  <symbol id="i-moneda-2" viewBox="0 0 24 24"><circle cx="9" cy="13" r="6"/><circle cx="15" cy="11" r="6"/></symbol>
+  <symbol id="i-moneda-3" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v4c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 10v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4"/></symbol>
+  <symbol id="i-moneda-4" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="2.5"/><path d="M5 5v14c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5M5 10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5M5 15c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
+  <symbol id="i-reloj-1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V7"/></symbol>
+  <symbol id="i-reloj-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V7M12 12l4 2"/></symbol>
+  <symbol id="i-reloj-3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V7M12 12l4 2M12 12l-4 2"/></symbol>
+  <symbol id="i-pc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-ps" viewBox="0 0 24 24"><path d="M7 9h10a4 4 0 0 1 4 4l.6 3.4a2 2 0 0 1-3.5 1.6L16 16H8l-2.1 2a2 2 0 0 1-3.5-1.6L3 13a4 4 0 0 1 4-4z"/><path d="M15.5 11.5h.01M17.5 13.5h.01M7 12v3M5.5 13.5h3"/></symbol>
+  <symbol id="i-xbox" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-nintendo" viewBox="0 0 24 24"><rect x="3" y="5" width="7" height="14" rx="3.5"/><rect x="14" y="5" width="7" height="14" rx="3.5"/><circle cx="6.5" cy="9" r="1.2"/><circle cx="17.5" cy="14.5" r="1.2"/></symbol>
+  <symbol id="i-juegos" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="i-precio" viewBox="0 0 24 24"><path d="M20 12 12 20l-8-8V4h8z"/><circle cx="8" cy="8" r="1.5"/></symbol>
+  <symbol id="i-rato" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></symbol>
+  <symbol id="i-guardar" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup 6C</h1>
+  <p>Tu perfil: descubrirlo, llenarlo sin dudas, guardarlo a la vista y ver sugerencias con todo lo que declaraste. Los estilos y tokens son los reales de la app. Lo que va en recuadro punteado es nota del mockup.</p>
+</header>
+
+<!-- ═══ 17. Descubrimiento ═══ -->
+<section class="escena" data-vista="inicio" id="descubrimiento">
+  <div class="contenido">
+    <p class="rotulo-mockup">17 · Descubrimiento: la primera vez, en el inicio, la ficha y el menú</p>
+    <div class="muestra tres">
+      <div class="variante" style="display:flex;flex-direction:column;gap:10px">
+        <p class="rotulo-mockup">Inicio, debajo de «Buscar un juego»</p>
+        <div class="invitacion">
+          <span class="insignia"><svg class="i" style="width:26px;height:26px"><use href="#i-perfil"/></svg></span>
+          <span class="titulo">Cuéntanos cómo juegas</span>
+          <span class="sub">1 minuto · Verás si cada juego encaja contigo y sugerencias a tu medida.</span>
+          <div class="acciones-inv"><a class="compacto" data-tono="perfil" href="#">Crear mi perfil →</a><button class="boton-texto" type="button">Ahora no</button></div>
+        </div>
+      </div>
+      <div class="variante" style="display:flex;flex-direction:column;gap:10px">
+        <p class="rotulo-mockup">Ficha, sin perfil (ya hecho en la 6B)</p>
+        <a class="tarjeta-accion" data-tono="perfil" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-perfil"/></svg></span><span class="titulo">Crear tu perfil</span><span class="sub">Cuéntanos cómo juegas · 1 minuto</span><span class="chevron">›</span></a>
+      </div>
+      <div class="variante" style="display:flex;flex-direction:column;gap:10px">
+        <p class="rotulo-mockup">Menú: los dos estados</p>
+        <div class="menu-estados">
+          <span class="pildora-perfil vacia"><svg class="i"><use href="#i-perfil"/></svg>Sin perfil<span class="ir">Crear · 1 min</span></span>
+          <span class="pildora-perfil"><svg class="i"><use href="#i-check"/></svg>Perfil activo · Acción, Rol</span>
+        </div>
+      </div>
+    </div>
+    <div class="nota-mockup">La invitación del inicio aparece mientras no haya perfil y hasta que se pulse «Ahora no» (se recuerda en este navegador). Es una acción secundaria, en compacto: la principal del inicio sigue siendo buscar. En el menú, la píldora está siempre: vacía y punteada sin perfil, rosa con tus géneros con perfil; encogida, es el icono con su nombre en el <code>title</code>.</div>
+  </div>
+</section>
+
+<!-- ═══ 18–22. Formulario ═══ -->
+<section class="escena" data-vista="perfil" id="formulario">
+  <div class="contenido">
+    <p class="rotulo-mockup">18 a 22 · El formulario</p>
+    <div class="muestra">
+      <header class="perfil-cabecera">
+        <p class="sobrelinea mono">Tu perfil · 1 minuto</p>
+        <h1>Cuéntanos cómo juegas</h1>
+        <p class="entrada">Es opcional. El riesgo de cada juego es el mismo para todos; tu perfil sirve para ver qué tanto encaja contigo y para sugerirte juegos.</p>
+      </header>
+
+      <div class="preguntas">
+        <section class="pregunta">
+          <header class="pregunta-cabecera"><span class="numero">1</span><h2>Juegos que compras al año</h2><p class="explica">Más o menos, contando cualquier tienda.</p><span class="estado hecha">✓ Respondida</span></header>
+          <div class="opciones cuatro" role="radiogroup" aria-label="Juegos que compras al año">
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-bolsa-1"/></svg></span><span class="nombre">Casi ninguno</span><span class="detalle">0 a 2 al año</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="true" type="button"><span class="icono-op"><svg class="i"><use href="#i-bolsa-2"/></svg></span><span class="nombre">Pocos</span><span class="detalle">3 a 6 al año</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-bolsa-3"/></svg></span><span class="nombre">Varios</span><span class="detalle">7 a 15 al año</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-bolsa-4"/></svg></span><span class="nombre">Muchos</span><span class="detalle">más de 15</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+          </div>
+        </section>
+
+        <section class="pregunta">
+          <header class="pregunta-cabecera"><span class="numero">2</span><h2>Cuánto pagas por un juego</h2><p class="explica">Lo que sueles gastar, en pesos. Las sugerencias no pasan de ahí; los gratuitos siempre entran.</p><span class="estado hecha">✓ Respondida</span></header>
+          <div class="opciones cuatro" role="radiogroup" aria-label="Cuánto pagas por un juego">
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-moneda-1"/></svg></span><span class="nombre">Hasta $200</span><span class="detalle">38 juegos</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="true" type="button"><span class="icono-op"><svg class="i"><use href="#i-moneda-2"/></svg></span><span class="nombre">$200 a $500</span><span class="detalle">80 juegos</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-moneda-3"/></svg></span><span class="nombre">$500 a $1,000</span><span class="detalle">112 juegos</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-moneda-4"/></svg></span><span class="nombre">Más de $1,000</span><span class="detalle">Todos</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+          </div>
+        </section>
+
+        <section class="pregunta">
+          <header class="pregunta-cabecera"><span class="numero">3</span><h2>Horas por semana para jugar</h2><p class="explica">Las que de verdad tienes, no las que te gustaría.</p><span class="estado hecha">✓ Respondida</span></header>
+          <div class="opciones" role="radiogroup" aria-label="Horas por semana">
+            <button class="opcion" role="radio" aria-checked="true" type="button"><span class="icono-op"><svg class="i"><use href="#i-reloj-1"/></svg></span><span class="nombre">Poca</span><span class="detalle">menos de 4 h</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-reloj-2"/></svg></span><span class="nombre">Media</span><span class="detalle">4 a 9 h</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-reloj-3"/></svg></span><span class="nombre">Alta</span><span class="detalle">10 h o más</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+          </div>
+        </section>
+
+        <section class="pregunta">
+          <header class="pregunta-cabecera"><span class="numero">4</span><h2>En qué juegas</h2><p class="explica">Puedes marcar varias. El riesgo se calcula con reseñas de Steam: en otra plataforma el juego es el mismo, las reseñas no.</p><span class="estado hecha">✓ 2 elegidas</span></header>
+          <div class="opciones cuatro" role="group" aria-label="Plataformas">
+            <button class="opcion plataforma" data-marca="pc" aria-pressed="true" type="button"><span class="icono-op"><svg class="i"><use href="#i-pc"/></svg></span><span class="nombre">PC</span><span class="detalle">Steam</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion plataforma" data-marca="ps" aria-pressed="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-ps"/></svg></span><span class="nombre">PlayStation</span><span class="detalle">PS4 · PS5</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion plataforma" data-marca="xbox" aria-pressed="true" type="button"><span class="icono-op"><svg class="i"><use href="#i-xbox"/></svg></span><span class="nombre">Xbox</span><span class="detalle">One · Series</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion plataforma" data-marca="nintendo" aria-pressed="false" type="button"><span class="icono-op"><svg class="i"><use href="#i-nintendo"/></svg></span><span class="nombre">Nintendo</span><span class="detalle">Switch</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+          </div>
+        </section>
+
+        <section class="pregunta ancha">
+          <header class="pregunta-cabecera"><span class="numero">5</span><h2>Tolerancia a la fricción</h2><p class="explica">¿Cuánto aguantas bugs, curva de aprendizaje y dificultad antes de dejar un juego?</p><span class="estado">Falta responder</span></header>
+          <div class="opciones cinco" role="radiogroup" aria-label="Tolerancia a la fricción">
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="medidor" aria-hidden="true"><i class="lleno"></i><i></i><i></i><i></i><i></i></span><span class="nombre">Nula</span><span class="detalle">Lo dejo al primer tropiezo</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="medidor" aria-hidden="true"><i class="lleno"></i><i class="lleno"></i><i></i><i></i><i></i></span><span class="nombre">Baja</span><span class="detalle">Poca paciencia</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="medidor" aria-hidden="true"><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i><i></i><i></i></span><span class="nombre">Media</span><span class="detalle">Aguanto un rato</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="medidor" aria-hidden="true"><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i><i></i></span><span class="nombre">Alta</span><span class="detalle">Le doy tiempo</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+            <button class="opcion" role="radio" aria-checked="false" type="button"><span class="medidor" aria-hidden="true"><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i><i class="lleno"></i></span><span class="nombre">Muy alta</span><span class="detalle">Aguanto casi todo</span><span class="marca-elegida"><svg class="i"><use href="#i-check"/></svg></span></button>
+          </div>
+        </section>
+
+        <section class="pregunta ancha">
+          <header class="pregunta-cabecera"><span class="numero">6</span><h2>Géneros que sueles jugar</h2><p class="explica">Opcional, los que quieras. Sirven para ver si un juego entra en lo tuyo.</p><span class="estado hecha">✓ 2 elegidos</span></header>
+          <div class="generos">
+            <span class="genero" aria-pressed="false">Acceso anticipado</span><span class="genero" aria-pressed="true">Acción</span><span class="genero" aria-pressed="false">Aventura</span><span class="genero" aria-pressed="false">Carreras</span><span class="genero" aria-pressed="false">Casual</span><span class="genero" aria-pressed="false">Deportes</span><span class="genero" aria-pressed="false">Estrategia</span><span class="genero" aria-pressed="false">Free to Play</span><span class="genero" aria-pressed="false">Indie</span><span class="genero" aria-pressed="false">Multijugador masivo</span><span class="genero" aria-pressed="true">Rol</span><span class="genero" aria-pressed="false">Simuladores</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="zona-barra">
+        <span class="burbuja-mock" aria-hidden="true"></span>
+        <div class="barra-guardar" role="region" aria-label="Guardar tu perfil">
+          <div class="progreso"><span class="pista"><span style="width:80%"></span></span><span class="texto-estado">4 de 5 respondidas · falta: tolerancia a la fricción</span></div>
+          <button class="boton-cta" type="button" disabled><svg class="i"><use href="#i-guardar"/></svg>Guardar perfil</button>
+        </div>
+      </div>
+      <div class="estados-barra">
+        <p class="rotulo-mockup">La misma barra, lista y ya guardada</p>
+        <div class="barra-guardar" style="position:static"><div class="progreso"><span class="pista"><span style="width:100%"></span></span><span class="texto-estado">5 de 5 · listo para guardar</span></div><button class="boton-cta" type="button"><svg class="i"><use href="#i-guardar"/></svg>Guardar perfil</button></div>
+        <div class="barra-guardar" style="position:static"><div class="progreso"><span class="texto-estado ok">✓ Perfil guardado y activo</span></div><button class="boton-fantasma" type="button">Borrar perfil</button></div>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Opciones (18):</strong> tarjetas grandes con icono, nombre y detalle; la elegida con el color de Tu perfil y una marca ✓. En el gasto, el detalle dice cuántos juegos del catálogo caben en ese tope (los gratuitos siempre). La fricción, con un medidor que se llena.</li>
+        <li><strong>Explicación (19):</strong> una línea bajo cada título y el estado de la pregunta a la derecha («✓ Respondida», «Falta responder»).</li>
+        <li><strong>Plataforma (20):</strong> varias a la vez. Iconos propios con el color de cada marca, solo en el icono: los logotipos son marcas registradas, y simple-icons retiró el de Xbox. El color de la marca no llega al relleno para no competir con los colores de riesgo.</li>
+        <li><strong>Gasto (21):</strong> cuatro tramos en MXN, hechos con el catálogo: 31 juegos cuestan menos de $200 (más 7 gratuitos), 42 entre $200 y $500, 32 entre $500 y $1,000, y 9 más.</li>
+        <li><strong>Guardar (22):</strong> la barra va fija abajo mientras se llena el formulario, dice qué falta y, al guardar, «✓ Perfil guardado y activo». En /perfil la burbuja de Nia sube encima de la barra para no taparla.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23. Sugerencias ═══ -->
+<section class="escena" data-vista="perfil" id="sugerencias">
+  <div class="contenido">
+    <p class="rotulo-mockup">23 · Sugerencias con todo el perfil</p>
+    <div class="muestra">
+      <div class="sug-cabecera">
+        <h2>Sugerencias según tu perfil</h2>
+        <span class="etiqueta-sug">No cambian el riesgo del juego</span>
+        <span class="en-vivo">Se recalculan mientras respondes</span>
+      </div>
+      <ul class="sugerencias">
+        <li><article class="sug"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1272080/header.jpg" alt=""/><div class="cuerpo"><p class="nombre">PAYDAY 3</p>
+          <ul class="razones"><li><svg class="i"><use href="#i-juegos"/></svg>Acción y Rol, tus dos géneros</li><li><svg class="i"><use href="#i-precio"/></svg>$344 · dentro de tu tope</li><li><svg class="i"><use href="#i-rato"/></svg>Quien lo recomienda llevaba ~17 h</li><li><svg class="i"><use href="#i-escudo"/></svg>Sus quejas no son de bugs ni dificultad</li></ul>
+          <p class="riesgo-aparte">Aparte: <span class="pildora" data-banda="alto">Riesgo de arrepentimiento: alto</span></p></div></article></li>
+        <li><article class="sug"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg" alt=""/><div class="cuerpo"><p class="nombre">Hades</p>
+          <ul class="razones"><li><svg class="i"><use href="#i-juegos"/></svg>Acción y Rol, tus dos géneros</li><li><svg class="i"><use href="#i-precio"/></svg>$283 · dentro de tu tope</li><li class="no"><svg class="i"><use href="#i-rato"/></svg>Pide más: ~31 h al recomendarlo</li><li><svg class="i"><use href="#i-escudo"/></svg>Sus quejas no son de bugs ni dificultad</li></ul>
+          <p class="riesgo-aparte">Aparte: <span class="pildora" data-banda="bajo">Riesgo de arrepentimiento: bajo</span></p></div></article></li>
+        <li><article class="sug"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/892970/header.jpg" alt=""/><div class="cuerpo"><p class="nombre">Valheim</p>
+          <ul class="razones"><li><svg class="i"><use href="#i-juegos"/></svg>Acción y Rol, tus dos géneros</li><li><svg class="i"><use href="#i-precio"/></svg>$350 · dentro de tu tope</li><li class="no"><svg class="i"><use href="#i-rato"/></svg>Pide más: ~124 h al recomendarlo</li><li class="no"><svg class="i"><use href="#i-escudo"/></svg>Su queja principal es la dificultad</li></ul>
+          <p class="riesgo-aparte">Aparte: <span class="pildora" data-banda="bajo">Riesgo de arrepentimiento: bajo</span></p></div></article></li>
+      </ul>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Qué usa cada respuesta:</strong> los <strong>géneros</strong> filtran y ordenan, como hoy; el <strong>gasto</strong> deja fuera lo que pasa de tu tope (los gratuitos siempre entran); las <strong>horas</strong>: si juegas poco, van antes los juegos que la gente recomienda con pocas horas encima (dato nuevo: la mediana de horas jugadas de las reseñas positivas de cada juego, de nuestras propias reseñas); la <strong>fricción</strong>: si es nula o baja, van después los juegos cuya queja principal es bugs, rendimiento, dificultad o controles.</li>
+        <li><strong>La plataforma no puede filtrar:</strong> los 123 juegos del catálogo son de Steam (PC), y no hay dato de en qué consolas salió cada uno. Si marcas solo consolas, la sección lo dice arriba en una línea. Donde sí se usa es en la ficha: «Juegas en PC y Xbox; el riesgo se calcula con reseñas de Steam» (esto cubre el pulido P3).</li>
+        <li><strong>En vivo:</strong> se recalculan con cada respuesta, antes de guardar. Cada tarjeta dice sus razones y lo que no cumple (en gris). El riesgo va aparte, rotulado, y no se usa para ordenar.</li>
+        <li><strong>Lo que cambia por dentro:</strong> <code>/panorama</code> suma un campo por juego (la mediana de horas de las reseñas positivas); se lee de la base, no se toca <code>datos/</code> ni el modelo. A la API se le sigue mandando una plataforma, así que el contrato no cambia: si marcaste PC va PC y, si no, la primera consola. El perfil guardado pasa a v4: los de v3 se conservan activos, y la página pide la pregunta nueva del gasto.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Resumen ═══ -->
+<section class="escena" data-vista="neutro" id="resumen">
+  <div class="contenido">
+    <p class="rotulo-mockup">Qué cambia por punto</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla-puntos">
+        <thead><tr><th>Punto</th><th>Qué se hace</th></tr></thead>
+        <tbody>
+          <tr><td>17</td><td>Invitación en el inicio (hasta crear el perfil o pulsar «Ahora no»), la de la ficha que ya existe, y la píldora del menú en sus dos estados.</td></tr>
+          <tr><td>18</td><td>Opciones como tarjetas grandes con icono; la fricción, con medidor.</td></tr>
+          <tr><td>19</td><td>Una línea de explicación bajo cada pregunta y su estado a la derecha.</td></tr>
+          <tr><td>20</td><td>Plataforma de selección múltiple, con icono y color de cada marca.</td></tr>
+          <tr><td>21</td><td>Pregunta nueva: cuánto pagas por un juego, en cuatro tramos.</td></tr>
+          <tr><td>22</td><td>Barra de guardar fija, con lo que falta y «Perfil guardado y activo».</td></tr>
+          <tr><td>23</td><td>Sugerencias con géneros, gasto, horas y fricción, en vivo y etiquetadas; la plataforma no filtra porque no hay dato.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    // Filo de las opciones y de la barra: son controles, piden 3:1 contra su fondo.
+    document.querySelectorAll('.muestra .opcion, .muestra .genero').forEach((o) => {
+      const fondo = fondoDe(o.parentElement);
+      filas.push({ texto: `filo · ${describir(o).slice(0, 24)}`, fondo: aHex(fondo), pide: 3, da: contraste(rgba(getComputedStyle(o).borderTopColor)[0], fondo) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>

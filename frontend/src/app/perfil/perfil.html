@@ -1,95 +1,154 @@
 <div class="perfil" data-testid="perfil">
-  <header class="hero">
+  <header class="cabecera">
+    <p class="sobrelinea mono">Tu perfil · 1 minuto</p>
     <h1>Cuéntanos cómo juegas</h1>
-    <p class="lectura entrada">
-      Es opcional. El riesgo de cada juego es el mismo para todos; tu perfil sirve para ver qué tanto encaja contigo.
+    <p class="entrada">
+      Es opcional. El riesgo de cada juego es el mismo para todos; tu perfil sirve para ver qué tanto encaja contigo y
+      para sugerirte juegos.
     </p>
-    @if (resumen(); as texto) {
-      <p class="meta activo" data-testid="perfil-resumen">{{ texto }}</p>
-    }
+    <a class="compacto" data-tono="neutro" routerLink="/explorar">Saltar y explorar juegos →</a>
   </header>
 
-  <div class="tarjetas">
-    <section class="seccion">
-      <app-tarjetas-opcion
-        nombre="compras"
-        etiqueta="Juegos que compras al año"
-        [opciones]="compras"
-        [valor]="valores().compras"
-        (valorCambio)="cambiar('compras', $event)"
-      />
-    </section>
+  <div class="formulario">
+    <div class="preguntas">
+      <section class="pregunta" aria-labelledby="pregunta-compras">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">1</span>
+          <h2 id="pregunta-compras">Juegos que compras al año</h2>
+          <p class="explica">Más o menos, contando cualquier tienda.</p>
+          <span class="estado" [class.hecha]="valores().compras !== null" data-testid="estado-compras">{{ estado(valores().compras !== null) }}</span>
+        </header>
+        <app-tarjetas-opcion
+          nombre="compras"
+          etiquetadoPor="pregunta-compras"
+          [opciones]="compras"
+          [valor]="valores().compras"
+          (valorCambio)="cambiar('compras', $event)"
+        />
+      </section>
 
-    <section class="seccion">
-      <app-tarjetas-opcion
-        nombre="horas"
-        etiqueta="Horas por semana para jugar"
-        [opciones]="horas"
-        [valor]="valores().horas"
-        (valorCambio)="cambiar('horas', $event)"
-      />
-    </section>
+      <section class="pregunta" aria-labelledby="pregunta-gasto">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">2</span>
+          <h2 id="pregunta-gasto">Cuánto pagas por juego</h2>
+          <p class="explica">Lo que sueles gastar por juego, en pesos. Las sugerencias no pasan de ahí; los gratuitos siempre entran.</p>
+          <span class="estado" [class.hecha]="valores().gasto !== null" data-testid="estado-gasto">{{ estado(valores().gasto !== null) }}</span>
+        </header>
+        <app-tarjetas-opcion
+          nombre="gasto"
+          etiquetadoPor="pregunta-gasto"
+          [opciones]="opcionesGasto()"
+          [valor]="valores().gasto"
+          (valorCambio)="cambiar('gasto', $event)"
+        />
+      </section>
 
-    <section class="seccion">
-      <app-tarjetas-opcion
-        nombre="friccion"
-        etiqueta="Tolerancia a la fricción"
-        ayuda="Bugs, curva de aprendizaje, dificultad."
-        [opciones]="friccion"
-        [valor]="valores().friccion"
-        (valorCambio)="cambiar('friccion', $event)"
-      />
-    </section>
+      <section class="pregunta" aria-labelledby="pregunta-horas">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">3</span>
+          <h2 id="pregunta-horas">Horas por semana para jugar</h2>
+          <p class="explica">Las que de verdad tienes, no las que te gustaría.</p>
+          <span class="estado" [class.hecha]="valores().horas !== null" data-testid="estado-horas">{{ estado(valores().horas !== null) }}</span>
+        </header>
+        <app-tarjetas-opcion
+          nombre="horas"
+          etiquetadoPor="pregunta-horas"
+          [opciones]="horas"
+          [valor]="valores().horas"
+          (valorCambio)="cambiar('horas', $event)"
+        />
+      </section>
 
-    <section class="seccion">
-      <app-tarjetas-opcion
-        nombre="plataforma"
-        etiqueta="Plataforma"
-        ayuda="El catálogo es solo de juegos de Steam. En otra plataforma, el lado del juego transfiere, pero no hay una fuente de entrenamiento propia: la ficha lo aclara."
-        [opciones]="plataformas"
-        [valor]="valores().plataforma"
-        (valorCambio)="cambiarPlataforma($event)"
-      />
-    </section>
+      <section class="pregunta" aria-labelledby="pregunta-plataforma">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">4</span>
+          <h2 id="pregunta-plataforma">En qué juegas</h2>
+          <p class="explica">
+            Puedes marcar varias. El riesgo se calcula con reseñas de Steam: en otra plataforma el juego es el mismo, las
+            reseñas no.
+          </p>
+          <span class="estado" [class.hecha]="valores().plataformas.length > 0" data-testid="estado-plataforma">{{
+            elegidas(valores().plataformas.length, 'elegida', 'elegidas')
+          }}</span>
+        </header>
+        <app-tarjetas-opcion
+          nombre="plataforma"
+          etiquetadoPor="pregunta-plataforma"
+          [multiple]="true"
+          [opciones]="plataformas"
+          [valores]="valores().plataformas"
+          (valorCambio)="alternarPlataforma($event)"
+        />
+      </section>
 
-    <section class="seccion ancha">
-      <app-selector-generos
-        [generos]="catalogo.generos()"
-        [elegidos]="valores().generos"
-        (alternar)="alternarGenero($event)"
-      />
-    </section>
+      <section class="pregunta ancha" aria-labelledby="pregunta-friccion">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">5</span>
+          <h2 id="pregunta-friccion">Tolerancia a la fricción</h2>
+          <p class="explica">¿Cuánto aguantas bugs, curva de aprendizaje y dificultad antes de dejar un juego?</p>
+          <span class="estado" [class.hecha]="valores().friccion !== null" data-testid="estado-friccion">{{ estado(valores().friccion !== null) }}</span>
+        </header>
+        <app-tarjetas-opcion
+          nombre="friccion"
+          etiquetadoPor="pregunta-friccion"
+          [opciones]="friccion"
+          [valor]="valores().friccion"
+          (valorCambio)="cambiar('friccion', $event)"
+        />
+      </section>
+
+      <section class="pregunta ancha" aria-labelledby="pregunta-generos">
+        <header class="pregunta-cabecera">
+          <span class="numero" aria-hidden="true">6</span>
+          <h2 id="pregunta-generos">Géneros que sueles jugar</h2>
+          <p class="explica">Opcional, los que quieras. Sirven para ver si un juego entra en lo tuyo.</p>
+          <span class="estado" [class.hecha]="valores().generos.length > 0">{{
+            valores().generos.length ? elegidas(valores().generos.length, 'elegido', 'elegidos') : 'Opcional'
+          }}</span>
+        </header>
+        <app-selector-generos
+          etiquetadoPor="pregunta-generos"
+          [generos]="catalogo.generos()"
+          [elegidos]="valores().generos"
+          (alternar)="alternarGenero($event)"
+        />
+      </section>
+    </div>
+
+    @if (error()) {
+      <p class="error" role="alert" data-testid="perfil-error">{{ error() }}</p>
+    }
+
+    <!-- Fija abajo mientras se llena el formulario: dice qué falta y guarda. En /perfil la
+         burbuja de Nia sube encima de ella (base.css, --elevacion-burbuja). -->
+    <div class="barra-guardar" role="region" aria-label="Guardar tu perfil" data-testid="barra-guardar">
+      <div class="progreso">
+        @if (guardado()) {
+          <p class="texto-estado hecho" role="status" data-testid="perfil-guardado">✓ Perfil guardado y activo</p>
+        } @else {
+          <span class="pista" aria-hidden="true"><span [style.width.%]="(respondidas() / total) * 100"></span></span>
+          <p class="texto-estado" data-testid="perfil-estado" aria-live="polite">{{ textoEstado() }}</p>
+        }
+      </div>
+      <div class="botones">
+        @if (!guardado()) {
+          <button
+            type="button"
+            class="boton-cta"
+            data-testid="crear-perfil"
+            [disabled]="guardando() || !completo()"
+            (click)="crear()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z" /><path d="M8 3v5h7V3M8 21v-7h8v7" /></svg>
+            {{ guardando() ? 'Guardando…' : 'Guardar perfil' }}
+          </button>
+        }
+        @if (perfil.hayPerfil()) {
+          <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
+        }
+      </div>
+    </div>
   </div>
 
-  @if (error()) {
-    <p class="error" role="alert" data-testid="perfil-error">{{ error() }}</p>
-  }
-
-  <div class="acciones">
-    <button
-      type="button"
-      class="boton-cta"
-      data-testid="crear-perfil"
-      [disabled]="guardando() || !completo()"
-      (click)="crear()"
-    >
-      {{ guardando() ? 'Creando…' : perfil.hayPerfil() ? 'Actualizar perfil' : 'Crear perfil' }}
-    </button>
-    @if (!completo()) {
-      <p class="meta falta" data-testid="perfil-incompleto">
-        Responde las cuatro preguntas de arriba para crear tu perfil. Los géneros son opcionales.
-      </p>
-    } @else if (guardado()) {
-      <p class="meta guardado" role="status" data-testid="perfil-guardado">Perfil guardado.</p>
-    }
-    <a class="boton-fantasma" routerLink="/explorar">Saltar y explorar juegos</a>
-    @if (perfil.hayPerfil()) {
-      <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
-    }
-  </div>
-
-  <!-- Solo con perfil declarado: sin géneros elegidos no hay con qué comparar. -->
-  @if (perfil.hayPerfil()) {
-    <app-sugerencias-perfil />
-  }
+  <app-sugerencias-perfil [valores]="valores()" />
 </div>

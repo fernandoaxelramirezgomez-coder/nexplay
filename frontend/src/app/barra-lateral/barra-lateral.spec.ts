@@ -89,9 +89,9 @@ describe('BarraLateral', () => {
 
   it('con perfil guardado, la píldora dice que está activo y con qué géneros', async () => {
     localStorage.setItem(
-      'nexplay.perfil.v3',
+      'nexplay.perfil.v4',
       JSON.stringify({
-        valores: { compras: 4, horas: 6, friccion: 3, plataforma: 'pc', generos: ['Acción', 'Rol'] },
+        valores: { compras: 4, horas: 6, friccion: 3, gasto: 2, plataformas: ['pc'], generos: ['Acción', 'Rol'] },
         perfil: { compras_al_anio: 4 },
       }),
     );
@@ -101,6 +101,32 @@ describe('BarraLateral', () => {
     expect(html.querySelector('[data-testid="perfil-activo"]')?.textContent?.trim()).toBe(
       'Perfil activo · Acción, Rol',
     );
+    expect(html.querySelector('[data-testid="perfil-inactivo"]')).toBeNull();
+  });
+
+  it('un perfil de antes de la pregunta del gasto sigue activo y lo dice', async () => {
+    localStorage.setItem(
+      'nexplay.perfil.v3',
+      JSON.stringify({
+        valores: { compras: 4, horas: 6, friccion: 3, plataforma: 'pc', generos: ['Acción'] },
+        perfil: { compras_al_anio: 4, plataforma: 'pc' },
+      }),
+    );
+    const { fixture, html } = crear();
+    await fixture.whenStable();
+
+    expect(html.querySelector('[data-testid="perfil-activo"]')?.textContent?.trim()).toBe(
+      'Perfil activo · 1 pregunta nueva',
+    );
+  });
+
+  it('sin perfil, la píldora invita a crearlo y lleva a /perfil', async () => {
+    const { fixture, html } = crear();
+    await fixture.whenStable();
+
+    const enlace = html.querySelector<HTMLAnchorElement>('[data-testid="perfil-inactivo"]');
+    expect(enlace?.textContent).toContain('Sin perfil');
+    expect(enlace?.getAttribute('href')).toBe('/perfil');
   });
 
   it('marca con aria-current la sección abierta', async () => {

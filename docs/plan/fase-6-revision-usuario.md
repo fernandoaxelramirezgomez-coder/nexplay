@@ -16,8 +16,9 @@
 > - **Tareas largas** (descarga de datos, capturas de las tres resoluciones) en segundo
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
-> Estado: plan guardado el 2026-09-25. **6A hecha** (puntos 1 a 6) y **6B hecha** (puntos
-> 7 a 16) el 2026-09-26; lo siguiente es el mockup de la **6C** (Perfil). Las capturas no se versionan: las de la app salen
+> Estado: plan guardado el 2026-09-25. **6A** (puntos 1 a 6), **6B** (7 a 16) y **6C** (17 a
+> 23) hechas el 2026-09-26; lo siguiente es el mockup de la **6D** (Comparar). Pulido
+> anotado: P1, P2, P4 y P5 pendientes (P3 se hizo en la 6C), al final de estas notas. Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
@@ -116,20 +117,20 @@ FASE 6C — Perfil
 El usuario no supo que podía definir su perfil, no vio el botón de guardar, no se dio
 cuenta de que estaba activo, no entendió "tolerancia a la fricción" y le pareció feo.
 
-- [ ] 17. Descubrimiento: la primera vez, invitación visible en Inicio y en la ficha
+- [x] 17. Descubrimiento: la primera vez, invitación visible en Inicio y en la ficha
     ("Cuéntanos cómo juegas · 1 minuto") e indicador claro en el menú de si el perfil
     está activo (no solo un punto).
-- [ ] 18. Rediseño futurista de los filtros: opciones como tarjetas/segmentos grandes con
+- [x] 18. Rediseño futurista de los filtros: opciones como tarjetas/segmentos grandes con
     icono, no texto plano. Sin letras chicas.
-- [ ] 19. Cada pregunta explicada en una línea justo bajo su título, no en un párrafo al
+- [x] 19. Cada pregunta explicada en una línea justo bajo su título, no en un párrafo al
     final. "Tolerancia a la fricción: ¿cuánto aguantas bugs, curva de aprendizaje y
     dificultad antes de dejar un juego?". Igual para Plataforma.
-- [ ] 20. Plataforma: selección múltiple con logo/color de cada una (PC, PlayStation, Xbox,
+- [x] 20. Plataforma: selección múltiple con logo/color de cada una (PC, PlayStation, Xbox,
     Nintendo).
-- [ ] 21. Nueva pregunta: rango de gasto por juego, con 4 rangos en MXN. Se guarda y se usa en
+- [x] 21. Nueva pregunta: rango de gasto por juego, con 4 rangos en MXN. Se guarda y se usa en
     las sugerencias.
-- [ ] 22. Botón de guardar siempre visible (fijo) y confirmación "Perfil guardado y activo".
-- [ ] 23. Las sugerencias usan TODO el perfil, no solo los géneros: gasto (precio dentro del
+- [x] 22. Botón de guardar siempre visible (fijo) y confirmación "Perfil guardado y activo".
+- [x] 23. Las sugerencias usan TODO el perfil, no solo los géneros: gasto (precio dentro del
     rango), horas (juegos que rinden en sesiones cortas si juega poco), tolerancia
     (menos peso a juegos con motivos de bugs/dificultad si es baja) y plataforma. Se
     recalculan en vivo al cambiar cualquier filtro. Etiqueta: "Sugerencias según tu
@@ -398,3 +399,65 @@ detente en su ALTO con el mockup de la identidad visual.
     con «Preguntar» quedaba 49 px por debajo de la ventana (lo detectó el recorrido). Todo
     lo que va entre la cabecera de Nia y el campo se desplaza ahora como un solo bloque
     dentro de la columna, y el campo se queda abajo, a la vista.
+- **6B aprobada y subida** (2026-09-26, `77e00d2`). **Pulido anotado por el dueño**, para
+  hacerlo sin detener las fases:
+  - [ ] P1. Título del inicio: máximo 3 líneas por debajo de 1440 px (bajar un escalón el
+    tamaño o acortar a «Descubre qué podría frustrarte en las primeras 2 horas»).
+  - [ ] P2. Explorar: el buscador y los chips de género van arriba del escenario de
+    tráileres.
+  - [x] P3. Ficha: la nota de plataforma («El lado del juego transfiere…») sale del panel
+    del veredicto y va a «Por qué te tocaría a ti», en una línea: «Tu plataforma es Xbox;
+    el riesgo se calcula con reseñas de Steam.»
+  - [ ] P4. El recorrido no debe pisar el perfil guardado del navegador: que use uno propio.
+  - [ ] P5. El indicador «Tráiler · sin sonido» solo se muestra con el cursor sobre el video.
+- **Mockup 6C** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
+  oscuro: 0 contrastes que no pasan (154 textos y filos por tema), sin desborde, letra
+  mínima 16 px. Lo que salió de revisar los datos antes de dibujar:
+  - Los 123 juegos del catálogo son solo de PC (`plataformas: ['pc']`): la plataforma no
+    puede filtrar sugerencias. Se usa en la ficha, en la línea del pulido P3.
+  - Las horas sí tienen dato: la mediana de horas jugadas de las reseñas positivas de cada
+    juego separa bien a los cortos (A Short Hike 3.8 h, Portal 5.1 h, Unpacking 5.4 h; la
+    mediana del catálogo es 33 h). Hay que sumarla a `/panorama`, leyendo la base sin
+    tocarla.
+  - Tramos de gasto hechos con el catálogo: hasta $200 hay 31 juegos (más 7 gratuitos),
+    entre $200 y $500 hay 42, entre $500 y $1,000 hay 32, y más de $1,000 hay 9.
+  - simple-icons (CC0) retiró el logotipo de Xbox en su versión 13: las plataformas van
+    con iconos propios y el color de cada marca, sin logotipos oficiales.
+- **Decisiones del dueño sobre el mockup 6C** (2026-09-26): sí al campo nuevo de
+  `/panorama` (mediana de horas en reseñas positivas), también en la ficha técnica como
+  «Horas típicas: N h»; el contrato sigue con una plataforma y la nota de la ficha la arma
+  el frontend con todas las marcadas; v3 → v4 con los perfiles anteriores activos, la
+  píldora «Perfil activo · 1 pregunta nueva» y el gasto «Falta responder». Si el gasto deja
+  vacías las sugerencias, se avisa y se relaja el tope; «Ahora no» se recuerda; el gasto va
+  «por juego»; P5 se queda en el pulido.
+- **6C hecha** (2026-09-26):
+  - **API**: `/panorama` suma `horas_al_recomendar` por juego: la mediana de
+    `playtime_at_review` de las reseñas positivas, en horas, leída de la base en modo solo
+    lectura (None con menos de 10 positivas; hoy los 123 la tienen). Es descriptiva y no
+    entra al modelo. La ficha técnica la muestra como «Horas típicas».
+  - **Descubrimiento (17)**: invitación en el inicio mientras no haya perfil, con «Ahora
+    no» recordado (`nexplay.invitacion-perfil.v1`); la píldora del menú está siempre: sin
+    perfil es un enlace punteado «Sin perfil · Crear · 1 min», con perfil dice sus géneros o
+    «1 pregunta nueva». En ese caso va en dos renglones y el logo cede 20 px para que la
+    barra siga cabiendo en 674.
+  - **Formulario (18 a 22)**: seis preguntas en bloques con número, una línea de
+    explicación y su estado; las respuestas son tarjetas grandes con icono, nombre, detalle
+    y ✓ (la fricción con un medidor). Plataforma de selección múltiple, con iconos propios y
+    el color de la marca solo en el icono. Pregunta nueva «Cuánto pagas por juego», en cuatro
+    tramos cuyo detalle dice cuántos juegos del catálogo caben. La barra de guardar va fija
+    abajo, dice cuántas faltan (las nombra si son una o dos) y, al guardar, «✓ Perfil
+    guardado y activo»; en /perfil la burbuja de Nia sube encima de ella.
+  - **Sugerencias (23)**: «Sugerencias según tu perfil», etiquetadas «No cambian el riesgo
+    del juego», en vivo con lo que se está respondiendo. Géneros (cobertura), gasto (tope,
+    gratuitos siempre; si deja la lista vacía, se relaja y se avisa), horas (si juega poco,
+    antes los que se recomiendan con menos de 20 h) y fricción (si le pesa, después los que
+    se quejan de bugs, rendimiento, dificultad o controles). Cada tarjeta dice sus razones
+    —lo que no cumple, en gris— y el riesgo aparte; el riesgo no ordena. La plataforma no
+    filtra porque el catálogo es solo de PC; si solo hay consolas marcadas, lo dice. Con el
+    catálogo actual el relajo del tope no llega a darse (todos los géneros tienen algo de
+    $200 o menos); lo cubren las pruebas de `sugerencias.spec.ts`.
+  - **P3**: la nota de plataforma salió del panel del veredicto; «Por qué te tocaría a ti»
+    lleva la línea «Juegas en PC y Xbox; el riesgo se calcula con reseñas de Steam.» con
+    todas las marcadas (solo si hay alguna consola). A la API sigue viajando una plataforma:
+    PC si está marcada y, si no, la primera.
+  - El perfil guardado pasa a `nexplay.perfil.v4`; los v3 se migran al leerlos.

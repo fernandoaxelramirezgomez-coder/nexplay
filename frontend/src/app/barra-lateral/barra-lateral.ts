@@ -37,7 +37,13 @@ import { TemaStore } from '../estado/tema-store';
     '[class.abierta]': 'barra.cajonAbierto()',
   },
   template: `
-    <nav class="riel" id="riel" aria-label="Secciones" (keydown.escape)="barra.cerrarCajon()">
+    <nav
+      class="riel"
+      id="riel"
+      aria-label="Secciones"
+      [class.pildora-larga]="perfil.faltaGasto()"
+      (keydown.escape)="barra.cerrarCajon()"
+    >
       <div class="cima">
         <a routerLink="/" class="marca" aria-label="NexPlay, ir al inicio" (click)="barra.cerrarCajon()">
           <!-- El logotipo tiene dos versiones: "Nex" es blanco en una y azul marino en
@@ -245,11 +251,26 @@ import { TemaStore } from '../estado/tema-store';
         </ul>
       </div>
 
+      <!-- La píldora está siempre: con perfil dice que está activo (y si le falta la
+           pregunta nueva); sin perfil, invita a crearlo. Encogida queda el icono. -->
       @if (perfil.hayPerfil()) {
         <p class="perfil-activo" data-testid="perfil-activo" [attr.title]="resumenPerfil()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
           <span class="etiqueta">{{ resumenPerfil() }}</span>
         </p>
+      } @else {
+        <a
+          class="perfil-activo vacio"
+          routerLink="/perfil"
+          data-testid="perfil-inactivo"
+          title="Sin perfil · Crear en 1 minuto"
+          (click)="barra.cerrarCajon()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3.4" /><path d="M6.2 19.2a6 6 0 0 1 11.6 0" />
+          </svg>
+          <span class="etiqueta">Sin perfil · <span class="ir">Crear · 1 min</span></span>
+        </a>
       }
 
       <div class="pie-riel">
@@ -336,11 +357,16 @@ import { TemaStore } from '../estado/tema-store';
          deja quieta. */
       animation: respirar 6s var(--curva) infinite;
     }
+    /* «Perfil activo · 1 pregunta nueva» no cabe en un renglón: va en dos, y el logo cede
+       esos 20 px para que todo siga cabiendo en 674. */
+    .riel.pildora-larga {
+      --resto-riel: 568px;
+    }
     .logo img {
       display: block;
       width: auto;
       max-width: 100%;
-      height: clamp(112px, calc(100vh - var(--resto-riel)), 200px);
+      height: clamp(100px, calc(100vh - var(--resto-riel)), 200px);
       object-fit: contain;
     }
     @keyframes respirar {
@@ -502,6 +528,26 @@ import { TemaStore } from '../estado/tema-store';
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .pildora-larga .perfil-activo {
+      border-radius: var(--radio-tarjeta);
+    }
+    .pildora-larga .perfil-activo .etiqueta {
+      white-space: normal;
+    }
+    /* Sin perfil: punteada y en gris, con el enlace a crearlo. */
+    .perfil-activo.vacio {
+      border: 1px dashed var(--borde-control);
+      background: var(--superficie-2);
+      text-decoration: none;
+    }
+    .perfil-activo.vacio:hover {
+      border-color: var(--t-perfil);
+    }
+    .ir {
+      color: var(--enlace);
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
     .pie-riel {
       display: flex;
@@ -674,6 +720,9 @@ export class BarraLateral {
   });
 
   protected readonly resumenPerfil = computed(() => {
+    if (this.perfil.faltaGasto()) {
+      return 'Perfil activo · 1 pregunta nueva';
+    }
     const generos = this.perfil.valores()?.generos ?? [];
     return generos.length ? `Perfil activo · ${generos.join(', ')}` : 'Perfil activo';
   });

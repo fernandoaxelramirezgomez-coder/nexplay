@@ -404,6 +404,18 @@ b {
   }
 }
 
+/* En /perfil la barra de guardar va fija abajo: la burbuja de Nia sube encima de ella. En
+   teléfono la barra es más alta (el estado y el botón van en dos renglones). */
+[data-vista='perfil'] {
+  --elevacion-burbuja: 96px;
+}
+
+@media (max-width: 640px) {
+  [data-vista='perfil'] {
+    --elevacion-burbuja: 150px;
+  }
+}
+
 /* Bloque: cada sección de la ficha en su tarjeta, con un icono, un título en mayúsculas,
    una línea que dice qué hay ahí y un color propio que no es de riesgo (data-seccion).
    El filo de arriba lleva ese color. */

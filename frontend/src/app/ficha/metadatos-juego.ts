@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
 import { JuegoCatalogo } from '../api/contrato';
+import { NotaInfo } from '../compartido/nota-info';
 import { textoMetacritic, textoPrecio } from '../dominio/formato';
+import { PanoramaStore } from '../estado/panorama-store';
 
 @Component({
   selector: 'app-metadatos-juego',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NotaInfo],
   template: `
     <section class="bloque" data-testid="metadatos">
       <header class="bloque-cabecera">
@@ -29,6 +32,16 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
         <dd class="mono">{{ precio() }}</dd>
         <dt class="meta">Lanzamiento</dt>
         <dd class="mono">{{ juego().fecha_lanzamiento ?? 'Sin fecha registrada' }}</dd>
+        @if (horasTipicas(); as horas) {
+          <dt class="meta">
+            Horas típicas
+            <app-nota-info etiqueta="Qué son las horas típicas" idPrueba="horas-tipicas-info">
+              La mediana de horas que llevaba jugadas quien lo recomendó en su reseña de Steam, de las reseñas que
+              descargamos. Dice cuánto suele pedir antes de gustar; no entra al cálculo del riesgo.
+            </app-nota-info>
+          </dt>
+          <dd class="mono" data-testid="horas-tipicas">{{ horas }}</dd>
+        }
       </dl>
     </section>
   `,
@@ -64,6 +77,16 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
 export class MetadatosJuego {
   readonly juego = input.required<JuegoCatalogo>();
 
+  private readonly panorama = inject(PanoramaStore);
+
   protected readonly metacritic = computed(() => textoMetacritic(this.juego().metacritic));
+
+  protected readonly horasTipicas = computed(() => {
+    const horas = this.panorama.porAppid().get(this.juego().appid)?.horas_al_recomendar;
+    if (horas == null) {
+      return null;
+    }
+    return horas < 1 ? 'menos de 1 h' : `${Math.round(horas)} h`;
+  });
   protected readonly precio = computed(() => textoPrecio(this.juego()));
 }
