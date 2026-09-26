@@ -5,14 +5,14 @@ import { filter, map, startWith } from 'rxjs';
 
 import { BarraLateral } from './barra-lateral/barra-lateral';
 import { NiaFlotante } from './chat/nia-flotante';
-import { Metodologia } from './compartido/metodologia';
+import { Pie } from './compartido/pie';
 import { BarraStore } from './estado/barra-store';
 import { CompararStore } from './estado/comparar-store';
 import { TemaStore } from './estado/tema-store';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, BarraLateral, Metodologia, NiaFlotante],
+  imports: [RouterOutlet, RouterLink, BarraLateral, Pie, NiaFlotante],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

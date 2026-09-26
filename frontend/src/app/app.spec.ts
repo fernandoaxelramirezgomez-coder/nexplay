@@ -1,8 +1,14 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { PanoramaCatalogo } from './api/contrato';
 import { App } from './app';
 import { BarraStore } from './estado/barra-store';
+import { PanoramaStore } from './estado/panorama-store';
+
+/** Solo lo que lee el pie: las fechas de descarga. */
+const panorama = signal<Pick<PanoramaCatalogo, 'descargas'> | undefined>(undefined);
 
 describe('App (shell)', () => {
   beforeEach(async () => {
@@ -11,8 +17,9 @@ describe('App (shell)', () => {
     vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: PanoramaStore, useValue: { datos: panorama } }],
     }).compileComponents();
+    panorama.set(undefined);
   });
 
   afterEach(() => {
@@ -43,6 +50,26 @@ describe('App (shell)', () => {
     const enlace = html.querySelector('footer [data-testid="enlace-metodologia"]');
     expect(enlace?.getAttribute('href')).toContain('/como-funciona');
     expect(html.querySelector('footer [data-testid="metodologia"]')).toBeNull();
+  });
+
+  it('el pie dice de dónde salen los datos y cuándo se bajaron, y enlaza a Fuentes', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    const linea = () => html.querySelector('footer [data-testid="pie-linea"]')?.textContent?.trim();
+    expect(linea()).toBe('Fuentes: Steam (appreviews y appdetails) y Metacritic.');
+
+    panorama.set({
+      descargas: {
+        appdetails: { desde: '2026-09-14', hasta: '2026-09-21' },
+        appreviews: { desde: '2026-09-13', hasta: '2026-09-20' },
+      },
+    });
+    await fixture.whenStable();
+    expect(linea()).toBe('Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas del 13 al 21 sep 2026.');
+    expect(html.querySelector('footer [data-testid="enlace-fuentes"]')?.getAttribute('href')).toBe(
+      '/como-funciona#titulo-fuentes',
+    );
   });
 
   it('con el cajón abierto la página queda inerte y el velo la cierra', async () => {

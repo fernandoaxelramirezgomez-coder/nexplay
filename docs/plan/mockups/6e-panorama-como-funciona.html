@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup 6E · Panorama, Cómo funciona y Fuentes</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1152px; margin: 0 auto; padding: 72px 24px 24px; container: contenido / inline-size; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .escena {
+    padding: 40px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .contenido { max-width: 1152px; margin: 0 auto; container: contenido / inline-size; display: flex; flex-direction: column; gap: 24px; }
+  .muestra { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .sobrelinea { display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie); color: var(--neon); font-size: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .entrada { max-width: 60ch; padding-inline-start: 16px; border-inline-start: 3px solid var(--accion); color: var(--texto); font-size: 20px; line-height: 1.5; }
+  .cabecera { display: flex; flex-direction: column; gap: 12px; }
+
+  /* 27: tablero. Cifras clave arriba, filtros en panel y una tarjeta por gráfica. */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--accion); }
+  .kpi strong { font-family: var(--fuente-mono); font-size: 30px; line-height: 1.1; }
+  .kpi span { color: var(--texto-2); font-size: 16px; line-height: 1.35; }
+  .filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 16px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .filtros select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); font: inherit; }
+  .filtros .etiqueta { color: var(--texto-2); font-size: 16px; }
+  .chips { display: flex; gap: 6px; }
+  .chip-f { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); font-size: 16px; }
+  .chip-f[aria-pressed='true'] { border-color: var(--neon); box-shadow: inset 0 0 0 1px var(--neon); }
+  .filtros .conteo { margin-inline-start: auto; font-family: var(--fuente-mono); font-size: 16px; }
+  .subtitulo-tablero { margin: 8px 0 0; font-family: var(--fuente-display); font-size: 24px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .tablero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .tarjeta-grafica { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 16px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .tarjeta-grafica header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; }
+  .tarjeta-grafica h3 { margin: 0; font-family: var(--fuente-display); font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accion-tinta); }
+  .conclusion { grid-column: 1; margin: 0; font-size: 18px; font-weight: 600; line-height: 1.35; }
+  .info { grid-column: 2; grid-row: 1 / span 2; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); }
+  .ayuda { margin: 0; padding: 12px 14px; border-radius: 12px; border-inline-start: 3px solid var(--accion-tinta); background: var(--superficie-2); font-size: 16px; line-height: 1.45; }
+  .info[aria-expanded='true'] { border-color: var(--accion-tinta); box-shadow: inset 0 0 0 1px var(--accion-tinta); }
+  svg.i-texto { width: 18px; height: 18px; vertical-align: -3px; }
+  .barras { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 6.5rem; gap: 8px 12px; align-items: center; font-size: 16px; }
+  .barras .pista { height: 12px; border-radius: 999px; background: var(--superficie-2); overflow: hidden; }
+  .barras .pista span { display: block; height: 100%; border-radius: 999px; }
+  .barras .valor { font-family: var(--fuente-mono); text-align: end; color: var(--texto-2); }
+  .b-bajo { background: var(--banda-bajo); } .b-medio { background: var(--banda-medio); } .b-alto { background: var(--banda-alto); }
+  .b-accion { background: var(--accion-tinta); }
+  .columnas-g { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
+  .columnas-g span { flex: 1; border-radius: 4px 4px 0 0; background: var(--accion-tinta); }
+  .ejes { display: flex; justify-content: space-between; font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); }
+  .fuente { margin-top: auto !important; display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 0; padding-top: 10px; border-top: 1px solid var(--borde); color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .fuente a { color: var(--enlace); text-underline-offset: 3px; }
+
+  /* 28: pasos visuales, una línea cada uno. */
+  .pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; position: relative; }
+  .paso { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--tono); }
+  .paso .cabeza { display: flex; align-items: center; gap: 12px; }
+  .paso .numero { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--tono); background: rgb(var(--tono-canal) / 0.14); }
+  .paso .n { font-family: var(--fuente-mono); color: var(--texto-2); font-size: 16px; }
+  .paso h2 { margin: 0; font-family: var(--fuente-display); font-size: 19px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .paso p { margin: 0; font-size: 17px; line-height: 1.4; }
+  .paso a { color: var(--enlace); text-underline-offset: 3px; font-size: 16px; }
+  details { border-radius: 12px; }
+  details summary { cursor: pointer; color: var(--enlace); text-decoration: underline; text-underline-offset: 3px; font-size: 16px; list-style: none; min-height: 44px; display: flex; align-items: center; }
+  details summary::-webkit-details-marker { display: none; }
+  details p { color: var(--texto); font-size: 16px; line-height: 1.5; }
+  .metodologia { display: flex; flex-direction: column; gap: 14px; padding: 22px 24px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .metodologia h2, .fuentes-sec h2 { margin: 0; font-family: var(--fuente-display); font-size: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .hechos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .hechos li { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 12px; background: var(--superficie-2); }
+  .hechos strong { font-size: 17px; }
+  .hechos span { color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+
+  /* 29: Fuentes. */
+  .fuentes-sec { display: flex; flex-direction: column; gap: 14px; }
+  .lista-fuentes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .fuente-c { display: flex; flex-direction: column; gap: 8px; height: 100%; padding: 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .fuente-c .quien { font-family: var(--fuente-display); font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .fuente-c .api { font-family: var(--fuente-mono); color: var(--neon); font-size: 16px; }
+  .fuente-c dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 16px; line-height: 1.4; }
+  .fuente-c dt { color: var(--texto-2); }
+  .fuente-c dd { margin: 0; }
+  .fuente-c a { color: var(--enlace); text-underline-offset: 3px; font-size: 16px; }
+  .fuente-c.pendiente { border-style: dashed; }
+  .entrenamiento { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie); font-size: 16px; line-height: 1.45; }
+  .pie-mock { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); font-size: 16px; line-height: 1.4; }
+  .pie-mock a { color: var(--enlace); text-underline-offset: 3px; }
+  .tabla-puntos { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla-puntos th, .tabla-puntos td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla-puntos th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla-puntos td:first-child { font-family: var(--fuente-mono); white-space: nowrap; }
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 900px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tablero { grid-template-columns: 1fr; }
+    .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hechos, .lista-fuentes { grid-template-columns: 1fr; }
+  }
+  @container contenido (max-width: 560px) {
+    .pasos { grid-template-columns: 1fr; }
+    .barras { grid-template-columns: 6.5rem minmax(0, 1fr) 5.5rem; }
+    .filtros .conteo { margin-inline-start: 0; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></symbol>
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-riesgo" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 19v-6m4 6V8m4 11v-4"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4"/><path d="M6.2 19.2a6 6 0 0 1 11.6 0"/></symbol>
+  <symbol id="i-nia" viewBox="0 0 24 24"><path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup 6E</h1>
+  <p>Panorama como tablero (cada gráfica con qué se ve, su conclusión, el texto largo detrás de <svg class="i i-texto" aria-hidden="true"><use href="#i-info"/></svg> y su fuente), Cómo funciona en pasos visuales con el texto largo colapsado, y la sección Fuentes, también en el pie. Las cifras son las de hoy, calculadas con la API.</p>
+</header>
+
+<!-- ═══ 27. Panorama ═══ -->
+<section class="escena" data-vista="panorama" id="panorama">
+  <div class="contenido">
+    <p class="rotulo-mockup">27 · Panorama como tablero</p>
+    <div class="muestra">
+      <header class="cabecera">
+        <p class="sobrelinea mono">Panorama</p>
+        <h1>Panorama del catálogo</h1>
+        <p class="entrada">Cómo se reparten los 123 juegos y qué hay en las reseñas que sostienen cada nivel.</p>
+      </header>
+      <div class="kpis">
+        <p class="kpi"><strong>123</strong><span>juegos de Steam en el catálogo</span></p>
+        <p class="kpi"><strong>184,367</strong><span>reseñas descargadas, el 1&nbsp;% de las que Steam reporta</span></p>
+        <p class="kpi"><strong>4,126</strong><span>con señal de arrepentimiento temprano (2.24&nbsp;%)</span></p>
+        <p class="kpi"><strong>33</strong><span>juegos sin nota de Metacritic</span></p>
+      </div>
+      <div class="filtros">
+        <span class="etiqueta">Género</span><select aria-label="Género"><option>Todos los géneros</option></select>
+        <span class="etiqueta">Riesgo de arrepentimiento</span>
+        <span class="chips"><span class="chip-f" aria-pressed="true">Todas</span><span class="chip-f">bajo</span><span class="chip-f">medio</span><span class="chip-f">alto</span></span>
+        <span class="conteo">123 de 123 juegos</span>
+      </div>
+
+      <h2 class="subtitulo-tablero">Lo que se ve del catálogo</h2>
+      <div class="tablero">
+        <article class="tarjeta-grafica">
+          <header><h3>Cómo se reparte el riesgo</h3><button class="info" type="button" aria-label="Cómo se lee"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">Tres tercios: 43 en bajo, 37 en medio y 43 en alto.</p></header>
+          <div class="barras">
+            <span>Riesgo bajo</span><span class="pista"><span class="b-bajo" style="width:100%"></span></span><span class="valor">43 · 35%</span>
+            <span>Riesgo medio</span><span class="pista"><span class="b-medio" style="width:86%"></span></span><span class="valor">37 · 30%</span>
+            <span>Riesgo alto</span><span class="pista"><span class="b-alto" style="width:100%"></span></span><span class="valor">43 · 35%</span>
+          </div>
+          <p class="fuente">Fuente: el modelo de NexPlay sobre datos de Steam (appdetails).</p>
+        </article>
+        <article class="tarjeta-grafica">
+          <header><h3>Riesgo alto por género</h3><button class="info" type="button" aria-label="Cómo se lee" aria-expanded="true"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">Casual y Multijugador masivo tienen más juegos en riesgo alto (60 %); Estrategia, menos (15 %).</p></header>
+          <p class="ayuda">Solo los géneros con al menos 5 juegos: con menos, el porcentaje dice más del tamaño de la muestra que del género. Cada barra lleva su cuenta.</p>
+          <div class="barras">
+            <span>Casual</span><span class="pista"><span class="b-alto" style="width:60%"></span></span><span class="valor">60% de 10</span>
+            <span>Multijugador masivo</span><span class="pista"><span class="b-alto" style="width:60%"></span></span><span class="valor">60% de 5</span>
+            <span>Rol</span><span class="pista"><span class="b-alto" style="width:46%"></span></span><span class="valor">46% de 39</span>
+            <span>Indie</span><span class="pista"><span class="b-alto" style="width:27%"></span></span><span class="valor">27% de 44</span>
+            <span>Estrategia</span><span class="pista"><span class="b-alto" style="width:15%"></span></span><span class="valor">15% de 26</span>
+          </div>
+          <p class="fuente">Fuente: géneros de Steam (appdetails) y el modelo de NexPlay.</p>
+        </article>
+        <article class="tarjeta-grafica">
+          <header><h3>Precio mediano por nivel</h3><button class="info" type="button" aria-label="Cómo se lee"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">En riesgo alto la mediana es $579.99, el triple que en bajo ($179.49).</p></header>
+          <div class="barras">
+            <span>Riesgo bajo</span><span class="pista"><span class="b-bajo" style="width:31%"></span></span><span class="valor">$179.49</span>
+            <span>Riesgo medio</span><span class="pista"><span class="b-medio" style="width:62%"></span></span><span class="valor">$359.00</span>
+            <span>Riesgo alto</span><span class="pista"><span class="b-alto" style="width:100%"></span></span><span class="valor">$579.99</span>
+          </div>
+          <p class="fuente">Fuente: precios de Steam México (appdetails), descargados del 14 al 21 sep 2026.</p>
+        </article>
+        <article class="tarjeta-grafica">
+          <header><h3>Cuándo salieron</h3><button class="info" type="button" aria-label="Cómo se lee"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">100 de los 123 salieron de 2016 en adelante; 2023 es el año con más (18).</p></header>
+          <div class="columnas-g" aria-hidden="true"><span style="height:6%" title="2004: 1"></span><span style="height:0%" title="2005: 0"></span><span style="height:0%" title="2006: 0"></span><span style="height:11%" title="2007: 2"></span><span style="height:0%" title="2008: 0"></span><span style="height:6%" title="2009: 1"></span><span style="height:6%" title="2010: 1"></span><span style="height:11%" title="2011: 2"></span><span style="height:6%" title="2012: 1"></span><span style="height:33%" title="2013: 6"></span><span style="height:17%" title="2014: 3"></span><span style="height:33%" title="2015: 6"></span><span style="height:72%" title="2016: 13"></span><span style="height:11%" title="2017: 2"></span><span style="height:50%" title="2018: 9"></span><span style="height:72%" title="2019: 13"></span><span style="height:83%" title="2020: 15"></span><span style="height:50%" title="2021: 9"></span><span style="height:78%" title="2022: 14"></span><span style="height:100%" title="2023: 18"></span><span style="height:28%" title="2024: 5"></span><span style="height:0%" title="2025: 0"></span><span style="height:11%" title="2026: 2"></span></div>
+          <p class="ejes"><span>2004</span><span>2015</span><span>2026</span></p>
+          <p class="fuente">Fuente: fecha de lanzamiento en Steam (appdetails).</p>
+        </article>
+      </div>
+
+      <h2 class="subtitulo-tablero">Lo que hay en las reseñas</h2>
+      <div class="tablero">
+        <article class="tarjeta-grafica">
+          <header><h3>Cuánto habían jugado al reseñar</h3><button class="info" type="button" aria-label="Cómo se lee"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">Solo el 4 % se escribió antes de las 2 horas; el 38 % pasó de 50.</p></header>
+          <div class="barras">
+            <span>Menos de 2 h</span><span class="pista"><span class="b-accion" style="width:11%"></span></span><span class="valor">4%</span>
+            <span>2 a 10 h</span><span class="pista"><span class="b-accion" style="width:58%"></span></span><span class="valor">22%</span>
+            <span>10 a 50 h</span><span class="pista"><span class="b-accion" style="width:96%"></span></span><span class="valor">36%</span>
+            <span>Más de 50 h</span><span class="pista"><span class="b-accion" style="width:100%"></span></span><span class="valor">38%</span>
+          </div>
+          <p class="fuente">Fuente: 184,367 reseñas de Steam (appreviews), escritas entre abr 2023 y sep 2026.</p>
+        </article>
+        <article class="tarjeta-grafica">
+          <header><h3>Reseñas con señal por nivel</h3><button class="info" type="button" aria-label="Cómo se lee"><svg class="i"><use href="#i-info"/></svg></button><p class="conclusion">En riesgo alto, el 4.29 % de las reseñas trae señal; en bajo, el 1.02 %.</p></header>
+          <div class="barras">
+            <span>Riesgo bajo</span><span class="pista"><span class="b-bajo" style="width:24%"></span></span><span class="valor">1.02%</span>
+            <span>Riesgo medio</span><span class="pista"><span class="b-medio" style="width:31%"></span></span><span class="valor">1.31%</span>
+            <span>Riesgo alto</span><span class="pista"><span class="b-alto" style="width:100%"></span></span><span class="valor">4.29%</span>
+          </div>
+          <p class="fuente">Fuente: reseñas de Steam (appreviews): menos de 2 h jugadas y voto negativo.</p>
+        </article>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Cada gráfica</strong> es una tarjeta con un título de una línea (qué se ve), la conclusión en una línea, calculada con el corte que se esté mirando (cambia con los filtros), el texto largo detrás de <svg class="i i-texto" aria-hidden="true"><use href="#i-info"/></svg>, que se despliega dentro de la tarjeta sin tapar la gráfica (abierto en «Riesgo alto por género») y su fuente al pie. Las once gráficas de hoy siguen este formato; aquí van seis.</li>
+        <li><strong>Arriba</strong>, cuatro cifras clave de toda la muestra y los filtros en un panel. En escritorio las tarjetas van de dos en dos.</li>
+        <li><strong>Colores:</strong> las barras que son del riesgo siguen en sus colores; las demás, en el lima de Panorama.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 y 29. Cómo funciona y Fuentes ═══ -->
+<section class="escena" data-vista="neutro" id="como">
+  <div class="contenido">
+    <p class="rotulo-mockup">28 y 29 · Cómo funciona, con Fuentes</p>
+    <div class="muestra">
+      <header class="cabecera">
+        <p class="sobrelinea mono">Cómo funciona</p>
+        <h1>Cómo funciona NexPlay</h1>
+        <p class="entrada">Una segunda opinión antes de comprar, hecha con reseñas de Steam.</p>
+      </header>
+      <ol class="pasos">
+        <li class="paso" data-tono="explorar"><div class="cabeza"><span class="numero"><svg class="i"><use href="#i-buscar"/></svg></span><span class="n">Paso 1</span></div><h2>Busca un juego</h2><p>Entre 123 juegos de Steam, por nivel de riesgo.</p><a href="#">Ir al catálogo →</a><details><summary>Ver más</summary><p>El catálogo reúne juegos de Steam ordenados en tres estantes, de menor a mayor riesgo de arrepentimiento.</p></details></li>
+        <li class="paso" data-tono="panorama"><div class="cabeza"><span class="numero"><svg class="i"><use href="#i-riesgo"/></svg></span><span class="n">Paso 2</span></div><h2>Mira su riesgo</h2><p>Si tiende a más o menos arrepentimiento temprano, y por qué.</p><a href="#">Ver el panorama →</a><details><summary>Ver más</summary><p>La ficha muestra si el juego tiende a generar más o menos arrepentimiento temprano que el resto del catálogo, y los motivos que más aparecen en esas reseñas.</p></details></li>
+        <li class="paso" data-tono="perfil"><div class="cabeza"><span class="numero"><svg class="i"><use href="#i-perfil"/></svg></span><span class="n">Paso 3</span></div><h2>Cuéntanos cómo juegas</h2><p>Opcional: dice qué tanto encaja contigo; el riesgo no cambia.</p><a href="#">Crear tu perfil →</a><details><summary>Ver más</summary><p>Con tus géneros, tu gasto, tus horas y tu tolerancia a la fricción, la ficha cuenta qué tanto encaja el juego contigo y el perfil te sugiere juegos. El riesgo es del juego.</p></details></li>
+        <li class="paso" data-tono="nia"><div class="cabeza"><span class="numero"><svg class="i"><use href="#i-nia"/></svg></span><span class="n">Paso 4</span></div><h2>Pregúntale a Nia</h2><p>Responde con los datos del juego que tenga a la vista.</p><a href="#">Hablar con Nia →</a><details><summary>Ver más</summary><p>Nia tiene su propia página, está en cada ficha y asoma como burbuja en el catálogo. No te dice si comprar.</p></details></li>
+      </ol>
+
+      <section class="metodologia" aria-labelledby="t-metodologia">
+        <h2 id="t-metodologia">Metodología</h2>
+        <ul class="hechos">
+          <li><strong>Una señal, no un sentimiento</strong><span>Reseña negativa con menos de 2 h jugadas: la ventana de reembolso de Steam.</span></li>
+          <li><strong>Probado con juegos que no vio</strong><span>GroupKFold por juego; la métrica es PR-AUC, no la exactitud.</span></li>
+          <li><strong>Ordena, no predice</strong><span>Es un nivel relativo al catálogo, no una probabilidad. Es del juego, no tuyo.</span></li>
+        </ul>
+        <details><summary>Leer la metodología completa</summary><p>NexPlay estima el riesgo de arrepentimiento temprano al comprar un videojuego, antes de la compra. Es una señal proxy: se construye con reseñas donde el autor jugó poco (menos de 120 minutos, la ventana de reembolso de Steam) y calificó negativo. Steam no pregunta directamente si alguien se arrepintió. (…el resto de los párrafos de hoy.)</p></details>
+      </section>
+
+      <section class="fuentes-sec" aria-labelledby="t-fuentes">
+        <h2 id="t-fuentes">Fuentes</h2>
+        <ul class="lista-fuentes">
+          <li><div class="fuente-c"><span class="quien">Steam</span><span class="api">appreviews</span><dl><dt>Qué se toma</dt><dd>184,367 reseñas en inglés, las más recientes de cada juego: voto, horas jugadas al escribir y el texto (para los motivos).</dd><dt>Descarga</dt><dd>14 al 21 sep 2026</dd></dl><a href="https://partner.steamgames.com/doc/store/getreviews">Documentación de Steam ↗</a></div></li>
+          <li><div class="fuente-c"><span class="quien">Steam</span><span class="api">appdetails</span><dl><dt>Qué se toma</dt><dd>Precio en México, géneros, gratuidad, fecha de lanzamiento, descripción, tráileres y la nota de Metacritic.</dd><dt>Descarga</dt><dd>14 al 21 sep 2026</dd></dl><a href="https://store.steampowered.com/api/appdetails?appids=2358720&amp;cc=mx&amp;l=spanish">Ver una respuesta de ejemplo ↗</a></div></li>
+          <li><div class="fuente-c"><span class="quien">Metacritic</span><span class="api">nota de la crítica</span><dl><dt>Qué se toma</dt><dd>La nota que Steam publica en appdetails: la tienen 90 de los 123 juegos.</dd><dt>Descarga</dt><dd>Con appdetails, 14 al 21 sep 2026</dd></dl><a href="https://www.metacritic.com/">metacritic.com ↗</a></div></li>
+        </ul>
+        <p class="entrenamiento">El modelo se entrenó con el corte <span class="mono">data-v1</span>: 83 juegos y 123,972 reseñas. Los otros 40 del catálogo nunca entraron al entrenamiento. Si IGDB pasa su cobertura, se suma aquí como cuarta fuente, secundaria.</p>
+      </section>
+
+      <p class="rotulo-mockup">29 · El pie de todas las vistas</p>
+      <div class="pie-mock"><span>Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas del 14 al 21 sep 2026.</span><a href="#">Ver fuentes →</a><a class="compacto" data-tono="neutro" href="#">Metodología: cómo se calcula el riesgo →</a></div>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Pasos (28):</strong> cuatro tarjetas con icono del color de la vista a la que llevan, un título y una línea; el texto de hoy queda en «Ver más», colapsado. La metodología pasa a tres hechos de una línea y el texto completo, colapsado; el ancla <code>#titulo-metodologia</code> sigue funcionando.</li>
+        <li><strong>Fuentes (29):</strong> una tarjeta por fuente con qué se toma, la fecha de descarga y su enlace. Las fechas salen de la base (el <code>descargado_en</code> más viejo y el más nuevo de juegos y de reseñas), por un campo nuevo de <code>/panorama</code>, solo lectura. En el pie, una línea con las fuentes, la fecha y «Ver fuentes →».</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="resumen">
+  <div class="contenido">
+    <p class="rotulo-mockup">Qué cambia por punto</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla-puntos">
+        <thead><tr><th>Punto</th><th>Qué se hace</th></tr></thead>
+        <tbody>
+          <tr><td>27</td><td>Panorama como tablero: cifras clave, filtros en panel y cada gráfica en tarjeta con título, conclusión calculada, <svg class="i i-texto" aria-hidden="true"><use href="#i-info"/></svg> y fuente.</td></tr>
+          <tr><td>28</td><td>Cómo funciona en cuatro pasos visuales de una línea, con el texto largo colapsado; la metodología en tres hechos y el resto colapsado.</td></tr>
+          <tr><td>29</td><td>Sección Fuentes en Cómo funciona y una línea de fuentes en el pie, con enlaces, fecha de descarga y qué se toma de cada una.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>

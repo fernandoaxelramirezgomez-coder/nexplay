@@ -261,6 +261,8 @@ export interface PanoramaCatalogo {
   resenas_en_steam: number;
   cobertura: number;
   ventana: { desde: string; hasta: string };
+  /** Cuándo se descargó cada fuente (UTC, YYYY-MM-DD). La ventana es cuándo se escribieron. */
+  descargas: { appdetails: { desde: string; hasta: string }; appreviews: { desde: string; hasta: string } };
   casos_senal: number;
   prevalencia: number;
   playtime_al_resenar: TramoPlaytime[];

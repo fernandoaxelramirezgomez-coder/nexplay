@@ -10,13 +10,51 @@
   gap: var(--espacio-12);
 }
 
+.cabecera .sobrelinea {
+  margin: 0;
+}
+
+/* Las cifras clave de toda la muestra: cuatro de un vistazo, antes de filtrar nada. */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--espacio-12);
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  margin: 0;
+  padding: var(--espacio-16) 18px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: inset 0 3px 0 var(--accion-tinta);
+}
+
+.kpi strong {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.kpi span {
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: 1.35;
+}
+
+/* En panel: la etiqueta de los filtros es texto de color tenue y no va directo sobre la
+   nebulosa. */
 .filtros {
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: var(--espacio-24);
-  padding: var(--espacio-16) 0;
-  border-block: var(--filete);
+  gap: var(--espacio-12) var(--espacio-24);
+  padding: var(--espacio-12) var(--espacio-16);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
 }
 
 .filtro {
@@ -35,52 +73,56 @@
   padding: var(--espacio-8) var(--espacio-12);
   border: 1px solid var(--borde-control);
   border-radius: var(--radio-boton);
-  background: var(--superficie-tarjeta);
+  background: var(--superficie-2);
   color: var(--texto);
   font: inherit;
 }
 
 .bandas {
   display: flex;
-  gap: var(--espacio-12);
+  flex-wrap: wrap;
+  gap: var(--espacio-8);
 }
 
 .conteo {
   margin: 0 0 var(--espacio-12);
   margin-inline-start: auto;
+  color: var(--texto);
+  font-size: var(--texto-caption);
 }
 
-.bloque {
+.vacio {
+  padding: var(--espacio-12) var(--espacio-16);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+}
+
+.seccion {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-40);
-  padding-top: var(--espacio-24);
-  border-top: var(--filete);
+  gap: var(--espacio-16);
+  margin-top: var(--espacio-8);
 }
 
-.bloque h2 {
+.seccion h2 {
   margin: 0;
   font-size: clamp(var(--texto-subheading), 2.4vw, var(--texto-heading-sm));
 }
 
-.grafica {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espacio-12);
-}
-
-.explica {
-  margin: 0;
-  max-width: var(--medida-lectura);
-  line-height: var(--interlineado-largo);
+/* Dos tarjetas por fila; cada fila toma el alto de la más alta y la fuente de las dos
+   queda al pie, a la misma altura. */
+.tablero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-16);
 }
 
 .ficha {
   margin: 0;
   display: grid;
-  /* 330 px: la ventana de fechas es el par más largo y con menos se encima con el de al lado. */
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  gap: var(--espacio-12) var(--espacio-40);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: var(--espacio-8) var(--espacio-40);
 }
 
 .ficha > div {
@@ -92,10 +134,6 @@
   border-bottom: var(--filete);
 }
 
-.ficha dd {
-  text-align: right;
-}
-
 .ficha dt {
   color: var(--texto-meta);
   font-size: var(--texto-body-sm);
@@ -104,7 +142,18 @@
 .ficha dd {
   margin: 0;
   font-size: var(--texto-body-sm);
+  text-align: right;
   white-space: nowrap;
+}
+
+@container contenido (max-width: 900px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tablero {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {

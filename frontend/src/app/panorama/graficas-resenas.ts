@@ -5,78 +5,70 @@ import { GraficaApilada } from '../compartido/graficas/grafica-apilada';
 import { GraficaBarras } from '../compartido/graficas/grafica-barras';
 import { GraficaColumnas } from '../compartido/graficas/grafica-columnas';
 import { Segmento } from '../compartido/graficas/segmento';
-import { numero, porcentaje, porcentajeFino } from '../dominio/formato';
+import { conclusionConsenso, conclusionPlaytime, conclusionSenal } from '../dominio/conclusiones-panorama';
+import { mesAnio, numero, porcentaje, porcentajeFino } from '../dominio/formato';
 import { CONSENSO_STEAM, consensoPorBanda, positivosEnBandaAlta, senalPorBanda } from '../dominio/panorama';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
+import { TarjetaGrafica } from './tarjeta-grafica';
 
 /** Las tres lecturas que explican de qué está hecha la señal: cuánto había jugado quien
- * escribió cada reseña, cuántas de esas reseñas tiene cada banda, y qué dice Steam de los
- * mismos juegos. Las usa el inicio y las reusa Panorama, para que los números salgan de
- * un solo sitio. */
+ * escribió cada reseña, cuántas de esas reseñas tiene cada nivel, y qué dice Steam de los
+ * mismos juegos. El host no ocupa caja: sus tres tarjetas entran a la rejilla de Panorama. */
 @Component({
-  selector: 'app-graficas-muestra',
+  selector: 'app-graficas-resenas',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GraficaBarras, GraficaColumnas, GraficaApilada],
+  imports: [GraficaBarras, GraficaColumnas, GraficaApilada, TarjetaGrafica],
+  host: { style: 'display: contents' },
   template: `
     @if (datos(); as p) {
-      <div class="graficas" [class.compacto]="compacto()">
-        <section class="grafica" aria-labelledby="titulo-playtime" data-testid="grafica-playtime">
-          <h3 class="rotulo-seccion" id="titulo-playtime">Cuánto habían jugado al escribir la reseña</h3>
-          <p class="meta explica">
+      <app-tarjeta-grafica
+        idPrueba="grafica-playtime"
+        titulo="Cuánto habían jugado al reseñar"
+        [conclusion]="conclusionPlaytime()"
+        [fuente]="fuentePlaytime()"
+      >
+        <div ayuda>
+          <p>
             La etiqueta del modelo sale del primer tramo: menos de dos horas es la ventana en la que Steam
             devuelve el dinero. Son {{ num(tramoCorto().cuantas) }} reseñas de {{ num(p.resenas_descargadas) }}.
           </p>
-          <app-grafica-columnas [segmentos]="playtime()" idPrueba="columnas-playtime" />
-        </section>
+          <p>Es de toda la muestra: no cambia con los filtros.</p>
+        </div>
+        <app-grafica-columnas [segmentos]="playtime()" idPrueba="columnas-playtime" />
+      </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="titulo-senal" data-testid="grafica-senal">
-          <h3 class="rotulo-seccion" id="titulo-senal">Cuántas reseñas con esa señal tiene cada nivel de riesgo</h3>
-          <p class="meta explica">
-            El riesgo lo pone el modelo con datos del juego (precio, gratuidad, descuento y cobertura de
-            crítica) y sin mirar estas reseñas. Aun así, el riesgo alto tiene {{ vecesMas() }} veces más
-            reseñas con señal que la baja.
-          </p>
-          <app-grafica-barras [segmentos]="senal()" [maximo]="topeSenal()" idPrueba="barras-senal" />
-        </section>
+      <app-tarjeta-grafica
+        idPrueba="grafica-senal"
+        titulo="Reseñas con señal por nivel"
+        [conclusion]="conclusionSenal()"
+        fuente="reseñas de Steam (appreviews) con menos de 2 h jugadas y voto negativo"
+      >
+        <p ayuda>
+          El riesgo lo pone el modelo con datos del juego (precio, gratuidad, descuento y cobertura de crítica) y sin
+          mirar estas reseñas. Aun así, el riesgo alto tiene {{ vecesMas() }} veces más reseñas con señal que el bajo.
+        </p>
+        <app-grafica-barras [segmentos]="senal()" [maximo]="topeSenal()" idPrueba="barras-senal" />
+      </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="titulo-consenso" data-testid="grafica-consenso">
-          <h3 class="rotulo-seccion" id="titulo-consenso">Qué dice Steam de esos mismos juegos</h3>
-          <p class="meta explica">
-            El resumen de Steam no entra al modelo, así que coincidir con él no es hacer trampa. Coincide a
-            grandes rasgos, pero {{ positivos().length }} de los {{ juegosAltos() }} juegos de riesgo alto
-            tienen reseñas muy positivas o extremadamente positivas en Steam: la nota general mide toda la
-            partida, no las primeras dos horas.
-          </p>
-          <app-grafica-apilada [filas]="consenso()" [leyenda]="leyenda()" idPrueba="apilada-consenso" />
-        </section>
-      </div>
-    }
-  `,
-  styles: `
-    .graficas {
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-40);
-    }
-    .grafica {
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-12);
-    }
-    .explica {
-      margin: 0;
-      max-width: var(--medida-lectura);
-      line-height: var(--interlineado-largo);
-    }
-    .compacto {
-      gap: var(--espacio-24);
+      <app-tarjeta-grafica
+        idPrueba="grafica-consenso"
+        titulo="Qué dice Steam de esos mismos juegos"
+        [conclusion]="conclusionConsenso()"
+        fuente="el resumen de reseñas de Steam (appreviews)"
+      >
+        <p ayuda>
+          El resumen de Steam no entra al modelo, así que coincidir con él no es hacer trampa. Coincide a grandes
+          rasgos, pero {{ positivos().length }} de los {{ juegosAltos() }} juegos de riesgo alto tienen reseñas muy
+          positivas o extremadamente positivas en Steam: la nota general mide toda la partida, no las primeras dos
+          horas.
+        </p>
+        <app-grafica-apilada [filas]="consenso()" [leyenda]="leyenda()" idPrueba="apilada-consenso" />
+      </app-tarjeta-grafica>
     }
   `,
 })
-export class GraficasMuestra {
-  /** En Panorama van más juntas: ahí la página entera es de gráficas. */
-  readonly compacto = input(false);
+export class GraficasResenas {
   /** El corte que se está mirando. Sin él, el catálogo entero. */
   readonly juegos = input<JuegoCatalogo[]>();
 
@@ -110,9 +102,16 @@ export class GraficasMuestra {
     })),
   );
 
-  private readonly porBanda = computed(() =>
-    senalPorBanda(this.corte(), this.panorama.porAppid()),
-  );
+  protected readonly conclusionPlaytime = computed(() => conclusionPlaytime(this.datos()?.playtime_al_resenar ?? []));
+
+  protected readonly fuentePlaytime = computed(() => {
+    const p = this.datos();
+    return p
+      ? `${numero(p.resenas_descargadas)} reseñas de Steam (appreviews), escritas entre ${mesAnio(p.ventana.desde)} y ${mesAnio(p.ventana.hasta)}`
+      : 'reseñas de Steam (appreviews)';
+  });
+
+  private readonly porBanda = computed(() => senalPorBanda(this.corte(), this.panorama.porAppid()));
 
   protected readonly senal = computed<Segmento[]>(() =>
     this.porBanda().map((fila) => ({
@@ -124,9 +123,11 @@ export class GraficasMuestra {
     })),
   );
 
+  protected readonly conclusionSenal = computed(() => conclusionSenal(this.corte(), this.panorama.porAppid()));
+
   protected readonly topeSenal = computed(() => Math.max(...this.porBanda().map((f) => f.prevalencia), 0.0001));
 
-  /** Cuántas veces más frecuente es la señal en la banda alta que en la baja. */
+  /** Cuántas veces más frecuente es la señal en el riesgo alto que en el bajo. */
   protected readonly vecesMas = computed(() => {
     const filas = this.porBanda();
     const baja = filas.find((f) => f.banda === 'bajo')?.prevalencia ?? 0;
@@ -143,9 +144,9 @@ export class GraficasMuestra {
     })),
   );
 
-  protected readonly positivos = computed(() =>
-    positivosEnBandaAlta(this.corte(), this.panorama.porAppid()),
-  );
+  protected readonly conclusionConsenso = computed(() => conclusionConsenso(this.corte(), this.panorama.porAppid()));
+
+  protected readonly positivos = computed(() => positivosEnBandaAlta(this.corte(), this.panorama.porAppid()));
 
   protected readonly juegosAltos = computed(
     () => this.corte().filter((juego) => juego.banda_riesgo === 'alto').length,

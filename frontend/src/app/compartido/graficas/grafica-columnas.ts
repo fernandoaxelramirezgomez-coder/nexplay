@@ -8,9 +8,15 @@ import { Segmento } from './segmento';
   selector: 'app-grafica-columnas',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="columnas" [attr.data-testid]="idPrueba()">
-      @for (segmento of segmentos(); track segmento.etiqueta) {
-        <li class="columna" [attr.data-banda]="segmento.banda" [class.destacado]="segmento.destacado">
+    <ul class="columnas" [class.densa]="densa()" [attr.data-testid]="idPrueba()">
+      @for (segmento of segmentos(); track segmento.etiqueta; let i = $index) {
+        <li
+          class="columna"
+          [attr.data-banda]="segmento.banda"
+          [class.destacado]="segmento.destacado"
+          [class.hito]="hitos().has(i)"
+          [attr.title]="segmento.detalle ?? segmento.cifra"
+        >
           <span class="valor mono">{{ segmento.cifra }}</span>
           <span class="pista">
             <span class="barra" [style.block-size]="alto(segmento.valor)">
@@ -24,6 +30,7 @@ import { Segmento } from './segmento';
   `,
   styles: `
     .columnas {
+      container-type: inline-size;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -84,6 +91,32 @@ import { Segmento } from './segmento';
         height: 96px;
       }
     }
+    /* Muchas columnas en poco ancho (los años en media tarjeta o en teléfono): "2004" no
+       cabe en su columna y se partía en "20 / 04". Quedan el primero, el de en medio y el
+       último como eje; cada columna sigue diciendo su cifra al pasar el cursor y al lector
+       de pantalla. */
+    @container (max-width: 900px) {
+      .densa .valor {
+        display: none;
+      }
+      .densa .nombre {
+        white-space: nowrap;
+        overflow-wrap: normal;
+      }
+      .densa .columna:not(.hito) .nombre {
+        visibility: hidden;
+      }
+      .densa .columna:first-child {
+        align-items: flex-start;
+      }
+      .densa .columna:last-child {
+        align-items: flex-end;
+      }
+      .densa .columna:first-child .pista,
+      .densa .columna:last-child .pista {
+        align-self: stretch;
+      }
+    }
   `,
 })
 export class GraficaColumnas {
@@ -91,6 +124,13 @@ export class GraficaColumnas {
   readonly idPrueba = input('grafica-columnas');
 
   private readonly tope = computed(() => Math.max(1, ...this.segmentos().map((s) => s.valor)));
+
+  /** Con más de ocho columnas, en poco ancho se rotulan solo los hitos del eje. */
+  protected readonly densa = computed(() => this.segmentos().length > 8);
+  protected readonly hitos = computed(() => {
+    const n = this.segmentos().length;
+    return new Set([0, Math.floor((n - 1) / 2), n - 1]);
+  });
 
   protected alto(valor: number): string {
     return `max(4px, ${((valor / this.tope()) * 100).toFixed(1)}%)`;

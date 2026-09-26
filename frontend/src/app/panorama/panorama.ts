@@ -6,9 +6,19 @@ import { GraficaApilada } from '../compartido/graficas/grafica-apilada';
 import { GraficaBarras } from '../compartido/graficas/grafica-barras';
 import { GraficaColumnas } from '../compartido/graficas/grafica-columnas';
 import { Segmento } from '../compartido/graficas/segmento';
+import {
+  conclusionAnios,
+  conclusionGeneros,
+  conclusionGratuitos,
+  conclusionMotivoPorJuego,
+  conclusionMotivos,
+  conclusionPrecio,
+  conclusionReparto,
+  conclusionSinCritica,
+} from '../dominio/conclusiones-panorama';
 import { ORDEN_BANDAS } from '../dominio/estantes';
 import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
-import { numero, porcentaje, porcentajeFino, textoPrecio } from '../dominio/formato';
+import { numero, porcentaje, porcentajeFino, rangoDeFechas, textoPrecio } from '../dominio/formato';
 import {
   gratuitosPorBanda,
   lanzamientosPorAnio,
@@ -20,7 +30,8 @@ import {
 } from '../dominio/panorama';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
-import { GraficasMuestra } from '../inicio/graficas-muestra';
+import { GraficasResenas } from './graficas-resenas';
+import { TarjetaGrafica } from './tarjeta-grafica';
 
 /** Cuántos juegos tiene que tener un género para que su porcentaje signifique algo. */
 const MINIMO_POR_GENERO = 5;
@@ -30,7 +41,7 @@ const MINIMO_POR_GENERO = 5;
 @Component({
   selector: 'app-panorama',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, GraficaBarras, GraficaColumnas, GraficaApilada, GraficasMuestra],
+  imports: [RouterLink, GraficaBarras, GraficaColumnas, GraficaApilada, GraficasResenas, TarjetaGrafica],
   templateUrl: './panorama.html',
   styleUrl: './panorama.css',
 })
@@ -155,6 +166,40 @@ export class Panorama {
         tono: tonos.get(motivo.motivo) ?? 5,
       })),
     }));
+  });
+
+  /** Una frase por gráfica, con el corte de ahora (dominio/conclusiones-panorama.ts). */
+  protected readonly conclusiones = computed(() => {
+    const corte = this.corte();
+    const porAppid = this.panorama.porAppid();
+    return {
+      reparto: conclusionReparto(corte),
+      generos: conclusionGeneros(corte, MINIMO_POR_GENERO),
+      precio: conclusionPrecio(corte),
+      sinCritica: conclusionSinCritica(corte, porAppid),
+      gratuitos: conclusionGratuitos(corte),
+      anios: conclusionAnios(corte),
+      motivos: conclusionMotivos(this.panorama.datos()?.motivos ?? []),
+      motivoPorBanda: conclusionMotivoPorJuego(this.porBandaMotivo()),
+    };
+  });
+
+  /** Con nota y en riesgo alto son pocos juegos: la ⓘ lo dice con el número del corte. */
+  protected readonly altosConNota = computed(
+    () => this.corte().filter((juego) => juego.banda_riesgo === 'alto' && juego.metacritic !== null).length,
+  );
+
+  /** Las cifras clave son de toda la muestra, como dice su rótulo: no cambian con los filtros. */
+  protected readonly sinNota = computed(() => this.catalogo.juegos().filter((juego) => juego.metacritic === null).length);
+
+  protected readonly descargaJuegos = computed(() => {
+    const ventana = this.panorama.datos()?.descargas.appdetails;
+    return ventana ? rangoDeFechas(ventana.desde, ventana.hasta) : '';
+  });
+
+  protected readonly descargaResenas = computed(() => {
+    const ventana = this.panorama.datos()?.descargas.appreviews;
+    return ventana ? rangoDeFechas(ventana.desde, ventana.hasta) : '';
   });
 
   protected readonly num = numero;

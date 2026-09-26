@@ -1,9 +1,9 @@
 <div class="panorama" data-testid="panorama">
   <header class="cabecera">
+    <p class="sobrelinea mono">Panorama</p>
     <h1>Panorama del catálogo</h1>
     <p class="lectura entrada">
-      Cómo se reparten los {{ catalogo.juegos().length }} juegos de Steam que sirve NexPlay y qué hay en las
-      reseñas que sostienen cada nivel de riesgo. Filtra por género o por riesgo y todas las gráficas se recalculan.
+      Cómo se reparten los {{ catalogo.juegos().length }} juegos y qué hay en las reseñas que sostienen cada nivel.
     </p>
   </header>
 
@@ -12,6 +12,28 @@
   } @else if (catalogo.cargando()) {
     <p class="meta" role="status">Cargando el catálogo…</p>
   } @else {
+    @if (panorama.datos(); as p) {
+      <!-- De toda la muestra: no cambian con los filtros, que van debajo. -->
+      <div class="kpis" data-testid="panorama-kpis">
+        <p class="kpi" data-testid="kpi-juegos">
+          <strong class="mono">{{ num(catalogo.juegos().length) }}</strong>
+          <span>juegos de Steam en el catálogo</span>
+        </p>
+        <p class="kpi" data-testid="kpi-resenas">
+          <strong class="mono">{{ num(p.resenas_descargadas) }}</strong>
+          <span>reseñas descargadas, el {{ pct(p.cobertura) }} de las que Steam reporta</span>
+        </p>
+        <p class="kpi" data-testid="kpi-senal">
+          <strong class="mono">{{ num(p.casos_senal) }}</strong>
+          <span>con señal de arrepentimiento temprano ({{ pctFino(p.prevalencia) }})</span>
+        </p>
+        <p class="kpi" data-testid="kpi-sin-nota">
+          <strong class="mono">{{ num(sinNota()) }}</strong>
+          <span>juegos sin nota de Metacritic</span>
+        </p>
+      </div>
+    }
+
     <form class="filtros" data-testid="panorama-filtros" (submit)="$event.preventDefault()">
       <label class="filtro">
         <span class="etiqueta">Género</span>
@@ -39,119 +61,173 @@
           }
         </div>
       </div>
-      <p class="conteo meta mono" aria-live="polite" data-testid="panorama-conteo">
+      <p class="conteo mono" aria-live="polite" data-testid="panorama-conteo">
         {{ corte().length }} de {{ catalogo.juegos().length }} juegos
       </p>
     </form>
 
     @if (!corte().length) {
-      <p class="meta" role="status" data-testid="panorama-vacio">
+      <p class="meta vacio" role="status" data-testid="panorama-vacio">
         Ningún juego del catálogo cumple ese corte. Quita un filtro para volver a ver algo.
       </p>
     } @else {
-      <section class="bloque" aria-labelledby="titulo-catalogo">
+      <section class="seccion" aria-labelledby="titulo-catalogo">
         <h2 id="titulo-catalogo">Lo que se ve del catálogo</h2>
+        <div class="tablero">
+          <app-tarjeta-grafica
+            idPrueba="panorama-bandas"
+            titulo="Cómo se reparte el riesgo"
+            [conclusion]="conclusiones().reparto"
+            fuente="el modelo de NexPlay, con datos de Steam (appdetails)"
+          >
+            <p ayuda>
+              Los tres niveles de {{ rotulo.toLowerCase() }} son tercios del catálogo: siempre hay juegos en los tres. El
+              nivel es relativo al catálogo, no una probabilidad.
+            </p>
+            <app-grafica-barras [segmentos]="reparto()" idPrueba="barras-bandas" />
+          </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="t-bandas" data-testid="panorama-bandas">
-          <h3 class="rotulo-seccion" id="t-bandas">{{ rotulo }}</h3>
-          <p class="meta explica">
-            Los tres niveles son tercios del catálogo: siempre hay juegos en los tres.
-          </p>
-          <app-grafica-barras [segmentos]="reparto()" idPrueba="barras-bandas" />
-        </section>
+          <app-tarjeta-grafica
+            idPrueba="panorama-generos"
+            titulo="Riesgo alto por género"
+            [conclusion]="conclusiones().generos"
+            fuente="géneros de Steam (appdetails) y el modelo de NexPlay"
+          >
+            <p ayuda>
+              Qué parte de cada género cae en riesgo alto. Solo los géneros con al menos {{ minimoGenero }} juegos: con
+              menos, el porcentaje dice más del tamaño de la muestra que del género. Cada barra lleva su cuenta.
+            </p>
+            <app-grafica-barras [segmentos]="generos()" [maximo]="1" idPrueba="barras-generos" />
+          </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="t-generos" data-testid="panorama-generos">
-          <h3 class="rotulo-seccion" id="t-generos">Qué parte de cada género cae en riesgo alto</h3>
-          <p class="meta explica">
-            Solo los géneros con al menos {{ minimoGenero }} juegos: con menos, el porcentaje dice más del
-            tamaño de la muestra que del género. Cada barra lleva su cuenta.
-          </p>
-          <app-grafica-barras [segmentos]="generos()" [maximo]="1" idPrueba="barras-generos" />
-        </section>
+          <app-tarjeta-grafica
+            idPrueba="panorama-precio"
+            titulo="Precio mediano por nivel"
+            [conclusion]="conclusiones().precio"
+            [fuente]="'precios de Steam México (appdetails)' + (descargaJuegos() ? ', descargados ' + descargaJuegos() : '')"
+          >
+            <p ayuda>
+              El precio es una de las variables del modelo. Solo cuenta los juegos de pago con precio conocido: meter
+              los gratuitos como cero movería la mediana del nivel donde más hay.
+            </p>
+            <app-grafica-barras [segmentos]="precios()" idPrueba="barras-precio" />
+          </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="t-precio" data-testid="panorama-precio">
-          <h3 class="rotulo-seccion" id="t-precio">Precio mediano por nivel de riesgo</h3>
-          <p class="meta explica">
-            El precio es una de las variables del modelo. Solo cuenta los juegos de pago con precio conocido:
-            meter los gratuitos como cero movería la mediana del nivel donde más hay.
-          </p>
-          <app-grafica-barras [segmentos]="precios()" idPrueba="barras-precio" />
-        </section>
+          <app-tarjeta-grafica
+            idPrueba="panorama-critica"
+            titulo="Juegos sin nota de Metacritic"
+            [conclusion]="conclusiones().sinCritica"
+            fuente="Metacritic (vía Steam appdetails) y reseñas de Steam (appreviews)"
+          >
+            <div ayuda>
+              <p>
+                Que un juego tenga nota de Metacritic o no es otra de las variables del modelo, y la cobertura de
+                crítica no llega igual a todo el catálogo. La señal de los que sí tienen nota se cuenta aparte para ver
+                si el riesgo alto es solo «no tiene crítica».
+              </p>
+              <p>
+                Con nota y en riesgo alto hay {{ altosConNota() }}
+                {{ altosConNota() === 1 ? 'juego' : 'juegos' }}{{
+                  altosConNota() < 20 ? ': con tan pocos, esa cifra es una pista, no una conclusión.' : '.'
+                }}
+              </p>
+            </div>
+            <app-grafica-barras [segmentos]="sinCritica()" [maximo]="1" idPrueba="barras-critica" />
+          </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="t-critica" data-testid="panorama-critica">
-          <h3 class="rotulo-seccion" id="t-critica">Juegos sin nota de Metacritic</h3>
-          <p class="meta explica">
-            Que un juego tenga nota de Metacritic o no es otra de las variables. La cobertura de crítica no
-            llega igual a todo el catálogo.
-          </p>
-          <app-grafica-barras [segmentos]="sinCritica()" [maximo]="1" idPrueba="barras-critica" />
-        </section>
+          <app-tarjeta-grafica
+            idPrueba="panorama-gratis"
+            titulo="Juegos gratuitos por nivel"
+            [conclusion]="conclusiones().gratuitos"
+            fuente="Steam (appdetails) y el modelo de NexPlay"
+          >
+            <p ayuda>
+              Si un juego es gratis o no también entra al modelo, y en este catálogo los gratuitos no se reparten parejo
+              entre los tres niveles.
+            </p>
+            <app-grafica-barras [segmentos]="gratuitos()" [maximo]="1" idPrueba="barras-gratis" />
+          </app-tarjeta-grafica>
 
-        <section class="grafica" aria-labelledby="t-gratis" data-testid="panorama-gratis">
-          <h3 class="rotulo-seccion" id="t-gratis">Juegos gratuitos por nivel de riesgo</h3>
-          <p class="meta explica">
-            Si un juego es gratis o no también entra al modelo, y en este catálogo los gratuitos no se reparten
-            parejo entre los tres niveles.
-          </p>
-          <app-grafica-barras [segmentos]="gratuitos()" [maximo]="1" idPrueba="barras-gratis" />
-        </section>
-
-        <section class="grafica" aria-labelledby="t-anios" data-testid="panorama-anios">
-          <h3 class="rotulo-seccion" id="t-anios">Cuándo salieron</h3>
-          <p class="meta explica">
-            El año de lanzamiento no entra al modelo; está para ver de qué época es el catálogo.
-          </p>
-          <app-grafica-columnas [segmentos]="anios()" idPrueba="columnas-anios" />
-        </section>
+          <app-tarjeta-grafica
+            idPrueba="panorama-anios"
+            titulo="Cuándo salieron"
+            [conclusion]="conclusiones().anios"
+            fuente="fecha de lanzamiento en Steam (appdetails)"
+          >
+            <p ayuda>El año de lanzamiento no entra al modelo; está para ver de qué época es el catálogo.</p>
+            <app-grafica-columnas [segmentos]="anios()" idPrueba="columnas-anios" />
+          </app-tarjeta-grafica>
+        </div>
       </section>
 
-      <section class="bloque" aria-labelledby="titulo-muestra">
+      <section class="seccion" aria-labelledby="titulo-muestra">
         <h2 id="titulo-muestra">Lo que hay en las reseñas</h2>
-        <app-graficas-muestra [compacto]="true" [juegos]="corte()" />
+        <div class="tablero">
+          <app-graficas-resenas [juegos]="corte()" />
 
-        <section class="grafica" aria-labelledby="t-motivos" data-testid="panorama-motivos">
-          <h3 class="rotulo-seccion" id="t-motivos">Qué se menciona en las reseñas con señal</h3>
           @if (panorama.datos(); as p) {
-            <p class="meta explica">
-              Conteo por palabras clave sobre las {{ num(p.resenas_clasificadas) }} reseñas con señal que
-              mencionan al menos una de las seis categorías, de {{ num(p.casos_senal) }} en total. Una reseña
-              puede caer en varias, así que la suma pasa del 100%.
-            </p>
-            <app-grafica-barras [segmentos]="motivos()" [maximo]="1" idPrueba="barras-motivos" />
+            <app-tarjeta-grafica
+              idPrueba="panorama-motivos"
+              titulo="Qué se menciona en las reseñas con señal"
+              [conclusion]="conclusiones().motivos"
+              fuente="palabras clave de NexPlay sobre las reseñas de Steam (appreviews)"
+            >
+              <div ayuda>
+                <p>
+                  Conteo por palabras clave sobre las {{ num(p.resenas_clasificadas) }} reseñas con señal que mencionan
+                  al menos una de las seis categorías, de {{ num(p.casos_senal) }} en total. Una reseña puede caer en
+                  varias, así que la suma pasa del 100%.
+                </p>
+                <p>Es de toda la muestra: no cambia con los filtros.</p>
+              </div>
+              <app-grafica-barras [segmentos]="motivos()" [maximo]="1" idPrueba="barras-motivos" />
+            </app-tarjeta-grafica>
           }
-        </section>
 
-        <section class="grafica" aria-labelledby="t-motivo-banda" data-testid="panorama-motivo-banda">
-          <h3 class="rotulo-seccion" id="t-motivo-banda">El motivo más mencionado, juego por juego</h3>
-          <p class="meta explica">
-            Cuenta juegos, no reseñas: así un juego con miles de reseñas no decide por los demás. Los juegos
-            con menos de cinco reseñas con señal no nombran motivo.
-          </p>
-          <app-grafica-apilada [filas]="motivoPorBanda()" [leyenda]="leyendaMotivos()" idPrueba="apilada-motivos" />
-        </section>
-
-        @if (panorama.datos(); as p) {
-          <section class="grafica" aria-labelledby="t-ficha" data-testid="panorama-ficha">
-            <h3 class="rotulo-seccion" id="t-ficha">La muestra, en corto</h3>
-            <dl class="ficha">
-              <div><dt>Reseñas descargadas</dt><dd class="mono">{{ num(p.resenas_descargadas) }}</dd></div>
-              <div><dt>De las que Steam reporta</dt><dd class="mono">{{ pct(p.cobertura) }}</dd></div>
-              <div><dt>Ventana</dt><dd class="mono">{{ p.ventana.desde }} → {{ p.ventana.hasta }}</dd></div>
-              <div><dt>Con señal de arrepentimiento temprano</dt><dd class="mono">{{ pctFino(p.prevalencia) }}</dd></div>
-              <div><dt>Compradas en Steam</dt><dd class="mono">{{ pct(p.muestra.compradas_en_steam) }}</dd></div>
-              <div><dt>Con al menos un voto de «útil»</dt><dd class="mono">{{ pct(p.muestra.con_voto_util) }}</dd></div>
-              <div><dt>Escritas en acceso anticipado</dt><dd class="mono">{{ pct(p.muestra.acceso_anticipado) }}</dd></div>
-              <div><dt>De perfiles privados</dt><dd class="mono">{{ pct(p.muestra.perfiles_privados) }}</dd></div>
-            </dl>
-            <p class="meta explica">
-              Las cifras de este bloque son de toda la muestra y no cambian con los filtros: describen de dónde
-              salen los datos, no el corte que estás mirando.
-              <a class="boton-texto" routerLink="/como-funciona" fragment="titulo-metodologia">
-                Cómo se calcula el riesgo →
-              </a>
+          <app-tarjeta-grafica
+            idPrueba="panorama-motivo-banda"
+            titulo="El motivo más mencionado, juego por juego"
+            [conclusion]="conclusiones().motivoPorBanda"
+            fuente="reseñas de Steam (appreviews), contadas por juego"
+          >
+            <p ayuda>
+              Cuenta juegos, no reseñas: así un juego con miles de reseñas no decide por los demás. Los juegos con menos
+              de cinco reseñas con señal no nombran motivo.
             </p>
-          </section>
-        }
+            <app-grafica-apilada [filas]="motivoPorBanda()" [leyenda]="leyendaMotivos()" idPrueba="apilada-motivos" />
+          </app-tarjeta-grafica>
+
+          @if (panorama.datos(); as p) {
+            <app-tarjeta-grafica
+              idPrueba="panorama-ficha"
+              titulo="La muestra, en corto"
+              [conclusion]="
+                'Es el ' + pct(p.cobertura) + ' de las reseñas que Steam reporta: las más recientes de cada juego.'
+              "
+              [fuente]="'Steam (appreviews)' + (descargaResenas() ? ', descargadas ' + descargaResenas() : '')"
+            >
+              <p ayuda>
+                Las cifras de esta tarjeta son de toda la muestra y no cambian con los filtros: describen de dónde salen
+                los datos, no el corte que estás mirando.
+                <a class="boton-texto" routerLink="/como-funciona" fragment="titulo-metodologia">
+                  Cómo se calcula el riesgo →
+                </a>
+              </p>
+              <dl class="ficha">
+                <div><dt>Reseñas descargadas</dt><dd class="mono">{{ num(p.resenas_descargadas) }}</dd></div>
+                <div><dt>De las que Steam reporta</dt><dd class="mono">{{ pct(p.cobertura) }}</dd></div>
+                <div><dt>Ventana</dt><dd class="mono">{{ p.ventana.desde }} → {{ p.ventana.hasta }}</dd></div>
+                <div>
+                  <dt>Con señal de arrepentimiento temprano</dt><dd class="mono">{{ pctFino(p.prevalencia) }}</dd>
+                </div>
+                <div><dt>Compradas en Steam</dt><dd class="mono">{{ pct(p.muestra.compradas_en_steam) }}</dd></div>
+                <div><dt>Con al menos un voto de «útil»</dt><dd class="mono">{{ pct(p.muestra.con_voto_util) }}</dd></div>
+                <div><dt>Escritas en acceso anticipado</dt><dd class="mono">{{ pct(p.muestra.acceso_anticipado) }}</dd></div>
+                <div><dt>De perfiles privados</dt><dd class="mono">{{ pct(p.muestra.perfiles_privados) }}</dd></div>
+              </dl>
+            </app-tarjeta-grafica>
+          }
+        </div>
       </section>
     }
   }

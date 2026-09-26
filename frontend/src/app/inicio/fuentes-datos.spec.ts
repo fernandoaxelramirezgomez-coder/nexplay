@@ -12,6 +12,10 @@ const PANORAMA: PanoramaCatalogo = {
   resenas_en_steam: 18313851,
   cobertura: 0.0101,
   ventana: { desde: '2023-04-08', hasta: '2026-09-21' },
+  descargas: {
+    appdetails: { desde: '2026-09-14', hasta: '2026-09-21' },
+    appreviews: { desde: '2026-09-14', hasta: '2026-09-21' },
+  },
   casos_senal: 4126,
   prevalencia: 0.0224,
   playtime_al_resenar: [{ tramo: 'Menos de 2 h', cuantas: 7874, fraccion: 0.0427 }],

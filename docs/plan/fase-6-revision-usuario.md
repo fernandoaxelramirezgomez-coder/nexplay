@@ -17,9 +17,10 @@
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
 > Estado: plan guardado el 2026-09-25. **6A** (puntos 1 a 6), **6B** (7 a 16) y **6C** (17 a
-> 23) hechas el 2026-09-26 y subidas (`abed851`). **6D** hecha (24 y 25); el 26 está
-> evaluado y decidido (IGDB), con la corrida de cobertura esperando `TWITCH_CLIENT_ID` y
-> `TWITCH_CLIENT_SECRET` en `.env`. Pulido: P1, P2 y P4 a P8 pendientes. Las capturas no se versionan: las de la app salen
+> 23) hechas el 2026-09-26 y subidas (`abed851`). **6D** hecha (24 y 25) y subida
+> (`4dd4ec1`); el 26 está evaluado y decidido (IGDB), con la corrida de cobertura esperando
+> `TWITCH_CLIENT_ID` y `TWITCH_CLIENT_SECRET` en `.env`. **6E** hecha (27 a 29). Pulido: P1,
+> P2 y P4 a P11 pendientes. Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
@@ -151,10 +152,10 @@ FASE 6D — Comparar
 ═══════════════════════════════════════════════════════════════
 FASE 6E — Panorama, Cómo funciona y Fuentes
 ═══════════════════════════════════════════════════════════════
-- [ ] 27. Panorama como tablero: cada gráfica con título de una línea (qué se ve) y
+- [x] 27. Panorama como tablero: cada gráfica con título de una línea (qué se ve) y
     conclusión de una línea; el texto largo detrás de ⓘ; cada gráfica con su fuente.
-- [ ] 28. Cómo funciona: pasos visuales, una línea por paso, texto largo colapsado.
-- [ ] 29. Sección "Fuentes" (en Cómo funciona y en el pie): Steam, Metacritic y las que se
+- [x] 28. Cómo funciona: pasos visuales, una línea por paso, texto largo colapsado.
+- [x] 29. Sección "Fuentes" (en Cómo funciona y en el pie): Steam, Metacritic y las que se
     agreguen, con enlace, fecha de descarga y qué se toma de cada una.
 
 ═══════════════════════════════════════════════════════════════
@@ -416,6 +417,12 @@ detente en su ALTO con el mockup de la identidad visual.
     de lo guardado.
   - [ ] P8. El precio en las razones de las sugerencias, con el mismo formato que el resto
     («$283.00 MXN»).
+  - [ ] P9. Las barras de motivos en Comparar no usan dorado (se confunde con el ámbar del
+    riesgo medio): el cian de la ficha o un tono que no se parezca al riesgo.
+  - [ ] P10. En Comparar, «Segunda opinión» se reduce a la primera oración: motivos y crítica
+    ya están en la tabla y en sus bloques.
+  - [ ] P11. Las tarjetas de título de cada columna de Comparar no dejan espacio vacío:
+    llevan portada o el nombre pasa a encabezado de la primera tarjeta.
 - **Mockup 6C** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
   oscuro: 0 contrastes que no pasan (154 textos y filos por tema), sin desborde, letra
   mínima 16 px. Lo que salió de revisar los datos antes de dibujar:
@@ -510,3 +517,57 @@ detente en su ALTO con el mockup de la identidad visual.
     33. Con `--guardar` y si pasa, escribe `datos/critica_igdb.json` (archivo nuevo; la base
     no se toca). Primera corrida: faltan las dos variables, así que no se consultó IGDB. La
     integración en la API y en el bloque se hace solo si pasa.
+    Segunda corrida (2026-09-26, después del aviso de que ya estaban): tampoco las encuentra;
+    `.env` no se ha modificado desde el 2026-09-20 20:45. No se consultó IGDB ni se guardó
+    nada.
+- **Mockup 6E** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
+  oscuro: 0 contrastes que no pasan, sin desborde, letra mínima 16 px. Cifras de hoy, de
+  `/panorama` y de la base en solo lectura: riesgo 43 / 37 / 43; riesgo alto por género
+  (con 5 juegos o más) de Casual 60 % a Estrategia 15 %; precio mediano $179.49 / $359.00
+  / $579.99; 100 de 123 lanzados de 2016 en adelante (2023, el año con más: 18); reseñas
+  escritas antes de 2 h, 4 %; señal por nivel 1.02 % / 1.31 % / 4.29 %. Descargas: juegos
+  (appdetails, `cc=mx`) y reseñas (appreviews, en inglés, las más recientes) del 14 al 21
+  sep 2026. Propone un campo nuevo en `/panorama` con esas fechas, de solo lectura, para
+  las tarjetas de Fuentes y el pie.
+- **Decisiones del dueño sobre el mockup 6E** (2026-09-26): aprobado. Panorama conserva «Qué
+  dice Steam de esos mismos juegos», con la conclusión de los 23 de 43 en riesgo alto con
+  reseñas muy positivas. La gráfica sin Metacritic concluye con la evidencia de
+  `docs/evidencia/metacritic-por-banda.md`: entre los 90 con nota, la señal sigue subiendo
+  por nivel (1.02 → 1.31 → 2.52 %). Fuentes suma una tarjeta «Servicios» para OpenAI (Nia) y
+  las tipografías (OFL); IGDB entra como cuarta fuente, «secundaria», solo si pasa la
+  cobertura.
+- **¿Barras o pastel?** (pregunta del dueño, 2026-09-26): las gráficas se quedan como están.
+  Un pastel solo cabe en una parte de un todo con pocas categorías, y aquí:
+  - «Cómo se reparte el riesgo» es la única candidata, pero sus tres tajadas (35 / 30 / 35 %,
+    126° / 108° / 126°) no se distinguen a ojo, y con el filtro de nivel queda un círculo
+    entero. Las barras se comparan por largo y conservan el orden bajo → alto.
+  - Géneros, precio, sin Metacritic, gratuitos y señal por nivel son tasas o medianas por
+    nivel: no suman 100 %, así que un pastel sería incorrecto.
+  - «Qué se menciona» suma más de 100 % (una reseña cae en varias categorías).
+  - Años y horas al reseñar son tramos ordenados: un pastel pierde el orden.
+  - Steam por nivel y motivo por juego comparan la composición de tres niveles: la barra
+    apilada al 100 % ya es la alternativa correcta al pastel.
+- **6E hecha** (2026-09-26):
+  - **API**: `/panorama` suma `descargas` (`appdetails` y `appreviews`, cada una con `desde` y
+    `hasta`), de `descargado_en` de `juegos` y `resenas` en solo lectura: hoy, del 14 al 21
+    sep 2026 (UTC).
+  - **Panorama (27)**: cuatro cifras clave de toda la muestra (123 juegos, 184,367 reseñas,
+    4,126 con señal, 33 sin Metacritic), filtros en panel y doce tarjetas en dos columnas
+    (una bajo 900 px). Cada tarjeta trae título, conclusión, ⓘ y fuente. La ⓘ abre el
+    texto largo dentro de la tarjeta, sin taparla. Las conclusiones son funciones de
+    `dominio/conclusiones-panorama.ts`, con pruebas, y se recalculan con el corte: con
+    Estrategia, el reparto dice «Pesa más el riesgo medio: 10 en bajo, 12 en medio y 4 en
+    alto». La ⓘ de la gráfica sin Metacritic dice que con nota y en riesgo alto hay 10
+    juegos y que esa cifra es una pista, no una conclusión. Los años, en media tarjeta,
+    rotulan solo 2004, 2016 y 2026; cada columna dice su cifra al pasar el cursor.
+  - **Cómo funciona (28)**: cuatro pasos con el icono y el color del menú, una frase cada
+    uno y su texto de antes en «Ver más», cerrado. La metodología queda en tres frases y
+    «Leer la metodología completa», cerrado; `#titulo-metodologia` sigue igual.
+  - **Fuentes (29)**: `dominio/fuentes.ts` es la lista única que leen el inicio y Cómo
+    funciona. Hay tres tarjetas de datos con qué se toma, cuánto y cuándo se descargó, y
+    una de Servicios: OpenAI, que recibe la pregunta, la conversación y los datos del juego
+    pero no el perfil, y Chakra Petch, Inter y JetBrains Mono, con OFL 1.1 según su
+    `package.json`. El pie de todas las vistas dice «Fuentes: Steam (appreviews y
+    appdetails) y Metacritic, descargadas del 14 al 21 sep 2026.», con «Ver fuentes →».
+  - **De paso**: `PanoramaStore.datos` ya no lanza si `/panorama` falla; el pie lo lee en
+    todas las vistas.

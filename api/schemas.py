@@ -346,6 +346,15 @@ class VentanaMuestra(BaseModel):
     hasta: str
 
 
+class DescargasMuestra(BaseModel):
+    """Cuándo se descargó cada fuente, del primer al último registro guardado (UTC). Es la
+    fecha de la sección Fuentes y del pie; no dice nada de cuándo se escribieron las reseñas,
+    eso es `ventana`."""
+
+    appdetails: VentanaMuestra = Field(..., description="Los juegos: precio, géneros, Metacritic, tráileres")
+    appreviews: VentanaMuestra = Field(..., description="Las reseñas")
+
+
 class CalidadMuestra(BaseModel):
     """Qué tan buena es la muestra de reseñas, en proporciones sobre el total descargado."""
 
@@ -394,6 +403,7 @@ class PanoramaCatalogo(BaseModel):
     resenas_en_steam: int
     cobertura: float = Field(..., ge=0, le=1, description="descargadas / las que Steam reporta")
     ventana: VentanaMuestra
+    descargas: DescargasMuestra
     casos_senal: int
     prevalencia: float = Field(..., ge=0, le=1)
     playtime_al_resenar: list[TramoPlaytime]

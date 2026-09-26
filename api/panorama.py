@@ -17,6 +17,7 @@ from pathlib import Path
 from . import scoring
 from .schemas import (
     CalidadMuestra,
+    DescargasMuestra,
     JuegoPanorama,
     MotivoInsatisfaccion,
     PanoramaCatalogo,
@@ -45,6 +46,10 @@ _VACIO = PanoramaCatalogo(
     resenas_en_steam=0,
     cobertura=0.0,
     ventana=VentanaMuestra(desde="", hasta=""),
+    descargas=DescargasMuestra(
+        appdetails=VentanaMuestra(desde="", hasta=""),
+        appreviews=VentanaMuestra(desde="", hasta=""),
+    ),
     casos_senal=0,
     prevalencia=0.0,
     playtime_al_resenar=[],
@@ -95,6 +100,14 @@ def _calcular() -> PanoramaCatalogo:
         desde, hasta = con.execute(
             "SELECT date(min(timestamp_created), 'unixepoch'), date(max(timestamp_created), 'unixepoch') FROM resenas"
         ).fetchone()
+
+        # Se guardaron en UTC con hora; la fecha es lo que se muestra.
+        descargas = {
+            tabla: con.execute(
+                f"SELECT min(substr(descargado_en, 1, 10)), max(substr(descargado_en, 1, 10)) FROM {tabla}"
+            ).fetchone()
+            for tabla in ("juegos", "resenas")
+        }
 
         tramos = []
         for etiqueta, minimo, maximo in _TRAMOS:
@@ -169,6 +182,10 @@ def _calcular() -> PanoramaCatalogo:
         resenas_en_steam=total_en_steam,
         cobertura=_proporcion(total, total_en_steam),
         ventana=VentanaMuestra(desde=desde or "", hasta=hasta or ""),
+        descargas=DescargasMuestra(
+            appdetails=VentanaMuestra(desde=descargas["juegos"][0] or "", hasta=descargas["juegos"][1] or ""),
+            appreviews=VentanaMuestra(desde=descargas["resenas"][0] or "", hasta=descargas["resenas"][1] or ""),
+        ),
         casos_senal=casos or 0,
         prevalencia=_proporcion(casos, total),
         playtime_al_resenar=tramos,

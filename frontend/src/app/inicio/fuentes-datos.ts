@@ -1,46 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { numero, porcentaje, porcentajeFino } from '../dominio/formato';
+import { ENTRENAMIENTO, ORIGENES } from '../dominio/fuentes';
 import { PanoramaStore } from '../estado/panorama-store';
-
-/** Lo que el catálogo servido no sabe de sí mismo: con qué corte se entrenó el modelo.
- * Sale de docs/evidencia/README.md, que es la salida de esa validación; si algún día se
- * reentrena, estos cuatro números se actualizan ahí y aquí. */
-const ENTRENAMIENTO = {
-  release: 'data-v1',
-  juegos: 83,
-  resenas: 123972,
-  juegosPrueba: 40,
-  prAuc: 0.0356,
-  prAucTrivial: 0.0234,
-};
-
-/** Las tres fuentes, con un enlace a cada una. appdetails no tiene documentación oficial
- * de Steam: se enlaza una respuesta real, que es lo más honesto que hay. La nota de
- * Metacritic llega dentro de appdetails. */
-const ORIGENES = [
-  {
-    quien: 'Steam',
-    api: 'appreviews',
-    que: 'Las reseñas, su voto y las horas que llevaba jugadas quien escribió cada una.',
-    enlace: 'https://partner.steamgames.com/doc/store/getreviews',
-    textoEnlace: 'Documentación de Steam',
-  },
-  {
-    quien: 'Steam',
-    api: 'appdetails',
-    que: 'Precio, géneros, fecha de lanzamiento, descripción y tráileres de cada juego.',
-    enlace: 'https://store.steampowered.com/api/appdetails?appids=1938010',
-    textoEnlace: 'Ver una respuesta de ejemplo',
-  },
-  {
-    quien: 'Metacritic',
-    api: 'nota de la crítica',
-    que: 'La calificación de la crítica; llega a través de appdetails de Steam.',
-    enlace: 'https://www.metacritic.com/',
-    textoEnlace: 'metacritic.com',
-  },
-] as const;
 
 /** De dónde salen los datos, con las cifras de la base y no escritas a mano, y qué no es
  * NexPlay. Va junto: el tamaño de la muestra y sus límites se leen mejor de corrido. */
@@ -52,7 +14,7 @@ const ORIGENES = [
       <h2 class="rotulo-seccion" id="titulo-fuentes">De dónde salen los datos</h2>
 
       <ul class="origenes" data-testid="inicio-origenes">
-        @for (origen of origenes; track origen.api) {
+        @for (origen of origenes; track origen.clave) {
           <li class="origen">
             <span class="quien">{{ origen.quien }}</span>
             <span class="api mono">{{ origen.api }}</span>
