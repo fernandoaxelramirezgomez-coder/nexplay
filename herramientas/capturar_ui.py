@@ -1153,15 +1153,39 @@ def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
     return problemas
 
 
+def _caja(localizador) -> tuple[float, float]:
+    caja = localizador.bounding_box() or {"x": -1, "y": -1}
+    return round(caja["x"], 1), round(caja["y"], 1)
+
+
 def _sonido_del_video(pagina: Page, silenciar) -> list[str]:
     problemas = []
+    pausa = pagina.get_by_test_id("portada-pausa")
     if not _mudo(pagina):
         problemas.append("el tráiler no arranca mudo")
+
+    # Los botones no se mueven al activar el sonido: cuando la corredera se desplegaba,
+    # la barra empujaba los dos botones 88 px y el segundo clic caía en la corredera.
+    antes_pausa, antes_sonido = _caja(pausa), _caja(silenciar)
+    punto = silenciar.bounding_box()
     silenciar.click()
-    pagina.wait_for_timeout(200)
+    pagina.wait_for_timeout(300)
     etiqueta = silenciar.get_attribute("aria-label")
     if _mudo(pagina) or etiqueta != "Silenciar el tráiler":
         problemas.append(f"el botón no activa el sonido (mudo={_mudo(pagina)}, etiqueta={etiqueta!r})")
+    if _caja(pausa) != antes_pausa or _caja(silenciar) != antes_sonido:
+        problemas.append(
+            f"los controles se mueven al activar el sonido (pausa {antes_pausa}→{_caja(pausa)},"
+            f" sonido {antes_sonido}→{_caja(silenciar)})"
+        )
+
+    # Y el mismo punto de la pantalla vuelve a silenciar: es el gesto natural.
+    pagina.mouse.click(punto["x"] + punto["width"] / 2, punto["y"] + punto["height"] / 2)
+    pagina.wait_for_timeout(300)
+    if not _mudo(pagina):
+        problemas.append("volver a pulsar en el mismo punto no silencia el tráiler")
+    silenciar.click()
+    pagina.wait_for_timeout(200)
 
     antes = _volumen_del_video(pagina)
     _mover_volumen(pagina, "ArrowDown", 4)
@@ -1184,7 +1208,7 @@ def _sonido_del_video(pagina: Page, silenciar) -> list[str]:
     silenciar.click()
     pagina.wait_for_timeout(200)
     if not problemas:
-        print(f"video:    arranca mudo; el botón activa el sonido y la corredera lo mueve ({restaurado:.2f}) y silencia en cero")
+        print(f"video:    arranca mudo; el botón activa el sonido sin mover los controles, el mismo punto vuelve a\n          silenciar y la corredera mueve el volumen ({restaurado:.2f}) y silencia en cero")
     return problemas
 
 

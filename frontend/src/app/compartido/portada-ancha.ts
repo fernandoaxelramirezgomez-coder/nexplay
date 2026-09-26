@@ -92,39 +92,37 @@ function guardarVolumen(valor: number): void {
               }
             </button>
 
-            <div class="sonido">
-              <button
-                type="button"
-                class="control"
-                data-testid="portada-silenciar"
-                [attr.aria-pressed]="silenciado()"
-                [attr.aria-label]="silenciado() ? 'Activar el sonido del tráiler' : 'Silenciar el tráiler'"
-                (click)="alternarSonido()"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 9h3l5-4v14l-5-4H4z" />
-                  @if (silenciado()) {
-                    <path d="m15 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="2" />
-                  } @else {
-                    <path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" />
-                    @if (volumen() > 0.5) {
-                      <path d="M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" />
-                    }
+            <button
+              type="button"
+              class="control"
+              data-testid="portada-silenciar"
+              [attr.aria-pressed]="silenciado()"
+              [attr.aria-label]="silenciado() ? 'Activar el sonido del tráiler' : 'Silenciar el tráiler'"
+              (click)="alternarSonido()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9h3l5-4v14l-5-4H4z" />
+                @if (silenciado()) {
+                  <path d="m15 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="2" />
+                } @else {
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" />
+                  @if (volumen() > 0.5) {
+                    <path d="M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" />
                   }
-                </svg>
-              </button>
-              <input
-                class="volumen"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                aria-label="Volumen del tráiler"
-                data-testid="portada-volumen"
-                [value]="volumen()"
-                (input)="cambiarVolumen($any($event.target).valueAsNumber)"
-              />
-            </div>
+                }
+              </svg>
+            </button>
+            <input
+              class="volumen"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              aria-label="Volumen del tráiler"
+              data-testid="portada-volumen"
+              [value]="volumen()"
+              (input)="cambiarVolumen($any($event.target).valueAsNumber)"
+            />
           </div>
         }
       }
@@ -211,38 +209,21 @@ function guardarVolumen(valor: number): void {
       outline: 2px solid var(--neon);
       outline-offset: 2px;
     }
-    /* La corredera sale del botón de sonido, no vive fuera: así los 44 px de destino
-       táctil siguen siendo los del botón y el volumen no ocupa ancho mientras no se usa. */
-    .sonido {
-      display: flex;
-      align-items: center;
-      gap: var(--espacio-8);
-    }
+    /* La corredera no se despliega: ocupa su ancho desde el principio y aparece con la
+       barra entera. Cuando crecía al pasar el ratón por el botón de sonido, la barra —que
+       está anclada por su borde derecho— empujaba los dos botones 88 px a la izquierda, y
+       el segundo clic en el mismo sitio caía en la corredera en vez de silenciar. */
     .volumen {
-      width: 0;
+      width: 88px;
       height: 44px;
       margin: 0;
       padding: 0;
       accent-color: var(--neon);
       cursor: pointer;
-      opacity: 0;
-      transition:
-        width var(--duracion-rapida) var(--curva),
-        opacity var(--duracion-rapida) var(--curva);
-    }
-    .sonido:hover .volumen,
-    .volumen:focus-visible,
-    .volumen:active {
-      width: 88px;
-      opacity: 1;
     }
     /* Sin ratón no hay hover que lo descubra: en pantallas táctiles queda a la vista. */
     @media (hover: none) {
       .controles {
-        opacity: 1;
-      }
-      .volumen {
-        width: 72px;
         opacity: 1;
       }
     }
