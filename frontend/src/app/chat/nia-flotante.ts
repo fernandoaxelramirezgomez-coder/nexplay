@@ -1,29 +1,57 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 
-import { JuegoCatalogo } from '../api/contrato';
-import { Portada } from '../compartido/portada';
-import { filtrarJuegos } from '../dominio/filtros';
+import { CLAVE_GLOBITOS, GlobitosVistos, debeMostrarGlobito, hoyLocal, marcarGlobito, vistaConGlobito } from '../dominio/globito-nia';
+import { FICHAS_BURBUJA, SALUDO_BURBUJA, VistaConGlobito, textoGlobito } from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
+import { CompararStore } from '../estado/comparar-store';
 import { Nia } from './nia';
 
-const MAXIMO_SUGERENCIAS = 6;
+/** Cuánto espera el globito para salir y cuánto se queda si nadie lo toca. */
+const ESPERA_GLOBITO_MS = 2000;
+const DURA_GLOBITO_MS = 10000;
 
-/** Nia en la esquina, para las pantallas donde no hay un juego abierto. La API responde
- * siempre sobre un juego concreto, así que lo primero que hace el panel es preguntar de
- * cuál hablar; elegido, monta el mismo chat de la ficha. */
+function leerVistos(): GlobitosVistos {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_GLOBITOS) ?? '{}') as GlobitosVistos;
+  } catch {
+    return {};
+  }
+}
+
+function guardarVistos(vistos: GlobitosVistos): void {
+  try {
+    localStorage.setItem(CLAVE_GLOBITOS, JSON.stringify(vistos));
+  } catch {
+    // Sin almacenamiento el globito puede volver a salir; no es motivo para fallar.
+  }
+}
+
+/** Nia en la esquina, en todas las vistas menos la ficha y la suya. Al abrirse saluda y
+ * conversa sobre el catálogo; si hace falta un juego, lo pide dentro del chat.
+ *
+ * En Explorar, Tu perfil y Comparar ofrece una cosa de esa vista en un globito: sale una
+ * vez, se va solo o con la ×, y no vuelve hasta el día siguiente. */
 @Component({
   selector: 'app-nia-flotante',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Nia, Portada],
+  imports: [Nia],
+  // La burbuja es de Nia en cualquier vista: su anillo, su globito y sus botones van en
+  // su violeta, no en el color de la vista donde está.
+  host: { 'data-vista': 'nia' },
   template: `
     <div class="flotante" [class.abierto]="abierto()" (document:keydown.escape)="cerrar()">
       @if (abierto()) {
@@ -46,44 +74,23 @@ const MAXIMO_SUGERENCIAS = 6;
               Cerrar
             </button>
           </header>
-
-          @if (elegido(); as juego) {
-            <div class="elegido">
-              <p class="meta mono" data-testid="nia-flotante-juego">{{ juego.nombre }}</p>
-              <button type="button" class="boton-texto" data-testid="nia-flotante-cambiar" (click)="soltarJuego()">
-                Cambiar de juego
-              </button>
-            </div>
-            <app-nia [appid]="juego.appid" [muestraTitulo]="false" />
-          } @else {
-            <p class="meta intro">
-              Nia responde con los datos de un juego. Dime de cuál quieres hablar.
-            </p>
-            <label class="buscar">
-              <span class="solo-lector">Busca el juego del que quieres hablar</span>
-              <input
-                type="search"
-                autocomplete="off"
-                placeholder="Busca por nombre…"
-                data-testid="nia-flotante-buscar"
-                #buscador
-                [value]="texto()"
-                (input)="texto.set($any($event.target).value)"
-              />
-            </label>
-            <ul class="sugerencias" data-testid="nia-flotante-sugerencias">
-              @for (juego of sugerencias(); track juego.appid) {
-                <li>
-                  <button type="button" class="sugerencia" data-testid="nia-flotante-sugerencia" (click)="elegir(juego)">
-                    <app-portada class="miniatura" [src]="juego.portada_url" />
-                    <span class="nombre">{{ juego.nombre }}</span>
-                  </button>
-                </li>
-              } @empty {
-                <li class="meta vacio" data-testid="nia-flotante-vacio">Ningún juego del catálogo se llama así.</li>
-              }
-            </ul>
-          }
+          <app-nia [appid]="null" [muestraTitulo]="false" [muestraIntro]="false" [saludo]="saludo" [fichas]="fichas" />
+        </div>
+      } @else if (globito(); as mensaje) {
+        <div class="globito" role="status" data-testid="nia-globito">
+          <p>{{ mensaje.texto }}</p>
+          <button type="button" class="compacto" data-testid="nia-globito-accion" (click)="aceptarGlobito()">
+            {{ mensaje.accion }}
+          </button>
+          <button
+            type="button"
+            class="cerrar-globito"
+            aria-label="Cerrar el mensaje de Nia"
+            data-testid="nia-globito-cerrar"
+            (click)="cerrarGlobito()"
+          >
+            ×
+          </button>
         </div>
       }
 
@@ -115,15 +122,21 @@ const MAXIMO_SUGERENCIAS = 6;
       align-items: flex-end;
       gap: var(--espacio-12);
     }
-    /* La burbuja es la cara de Nia dentro de un anillo neón que respira despacio: se
-       nota que está ahí sin reclamar atención. Al abrirse, el anillo se queda encendido. */
+    /* 84 px con Nia asomándose por encima del anillo: se ve de lejos, que era la queja.
+       El anillo respira despacio; abierta, se queda encendido. */
     .burbuja {
-      width: 64px;
-      height: 64px;
-      padding: 3px;
-      border: 2px solid var(--neon);
+      position: relative;
+      width: 84px;
+      height: 84px;
+      padding: 0;
+      border: 3px solid var(--neon);
       border-radius: 50%;
-      background: var(--superficie-lienzo);
+      background: radial-gradient(
+        circle at 50% 35%,
+        color-mix(in srgb, var(--neon) 30%, var(--superficie-lienzo)),
+        var(--superficie-lienzo)
+      );
+      box-shadow: 0 12px 30px rgb(0 0 0 / 0.35);
       cursor: pointer;
       animation: respirar-anillo 4.5s ease-in-out infinite;
       transition: transform var(--duracion-rapida) var(--curva);
@@ -132,13 +145,14 @@ const MAXIMO_SUGERENCIAS = 6;
       0%,
       100% {
         box-shadow:
-          0 0 0 0 rgb(var(--neon-canal) / 0),
-          0 0 6px rgb(var(--neon-canal) / calc(0.25 * var(--halo-alfa)));
+          0 0 0 4px rgb(var(--neon-canal) / calc(0.12 * var(--halo-alfa))),
+          0 12px 30px rgb(0 0 0 / 0.35);
       }
       50% {
         box-shadow:
-          0 0 0 3px rgb(var(--neon-canal) / calc(0.12 * var(--halo-alfa))),
-          0 0 calc(14px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.45 * var(--halo-alfa)));
+          0 0 0 8px rgb(var(--neon-canal) / calc(0.2 * var(--halo-alfa))),
+          0 0 calc(18px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.45 * var(--halo-alfa))),
+          0 12px 30px rgb(0 0 0 / 0.35);
       }
     }
     .burbuja:hover {
@@ -148,15 +162,16 @@ const MAXIMO_SUGERENCIAS = 6;
       animation: none;
       box-shadow: var(--resplandor);
     }
-    /* Nia saludando (Wave, de la hoja v2): el sprite entero cabe en el círculo. */
+    /* Nia saludando, más ancha que el círculo y apoyada en su borde de abajo: las orejas
+       salen del anillo. */
     .avatar {
-      display: block;
-      width: 100%;
-      height: 100%;
-      padding: 5px 5px 0;
-      object-fit: contain;
-      object-position: center bottom;
-      border-radius: 50%;
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 96px;
+      height: auto;
+      transform: translateX(-50%);
+      pointer-events: none;
     }
     .quien {
       display: flex;
@@ -182,8 +197,51 @@ const MAXIMO_SUGERENCIAS = 6;
     .subtitulo {
       margin: 0;
     }
+    /* El globito: un mensaje de la vista, en panel (nunca texto de color sobre la
+       nebulosa), con su botón y la × a la mano. */
+    .globito {
+      position: relative;
+      max-width: 300px;
+      padding: var(--espacio-12) 44px var(--espacio-12) 14px;
+      border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie));
+      border-radius: var(--radio-tarjeta) var(--radio-tarjeta) 4px var(--radio-tarjeta);
+      background: var(--superficie);
+      box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+      animation: asomar var(--duracion) var(--curva);
+    }
+    .globito p {
+      margin: 0 0 var(--espacio-8);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+    .cerrar-globito {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--texto-meta);
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .cerrar-globito:hover {
+      color: var(--texto);
+    }
+    @keyframes asomar {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+    }
     @media (prefers-reduced-motion: reduce) {
-      .burbuja {
+      .burbuja,
+      .globito {
         animation: none;
       }
     }
@@ -200,116 +258,137 @@ const MAXIMO_SUGERENCIAS = 6;
       .abierto .panel {
         width: 100%;
       }
+      .burbuja {
+        width: 72px;
+        height: 72px;
+      }
+      .avatar {
+        width: 82px;
+      }
     }
     .panel {
-      width: min(380px, calc(100vw - var(--espacio-48)));
-      max-height: min(70vh, 560px);
+      width: min(400px, calc(100vw - var(--espacio-48)));
+      max-height: min(72vh, 600px);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: var(--espacio-12);
     }
-    .cabecera,
-    .elegido {
+    .cabecera {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--espacio-12);
     }
-    .elegido p {
-      margin: 0;
-      color: var(--texto);
-    }
-    .intro {
-      margin: 0;
-      line-height: var(--interlineado-largo);
-    }
-    .buscar {
-      display: flex;
-      flex-direction: column;
-    }
-    input {
-      min-height: 44px;
-      font: inherit;
-      letter-spacing: inherit;
-      color: var(--texto);
-      background: var(--superficie-lienzo);
-      border: 1px solid var(--borde-control);
-      border-radius: var(--radio-pildora);
-      padding: var(--espacio-8) var(--espacio-16);
-      transition: border-color var(--duracion-rapida) var(--curva);
-    }
-    input:hover,
-    input:focus {
-      border-color: var(--neon);
-    }
-    .sugerencias {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-4);
-    }
-    .sugerencia {
-      width: 100%;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      gap: var(--espacio-12);
-      padding: var(--espacio-4);
-      border: 0;
-      border-radius: var(--radio-tarjeta);
-      background: none;
-      color: var(--texto);
-      text-align: start;
-      cursor: pointer;
-      transition: background var(--duracion-rapida) var(--curva);
-    }
-    .sugerencia:hover {
-      background: var(--superficie-tarjeta-hover);
-    }
-    .miniatura {
-      flex: 0 0 72px;
-    }
-    .nombre {
-      font-size: var(--texto-caption);
-    }
-    .vacio {
-      padding: var(--espacio-8) 0;
-    }
-    /* En móvil solo queda la burbuja hasta que se abre; el panel ocupa el ancho útil. */
-    @media (max-width: 640px) {
-      .panel {
-        width: calc(100vw - var(--espacio-24));
-      }
-    }
   `,
 })
 export class NiaFlotante {
+  private readonly router = inject(Router);
   private readonly catalogo = inject(CatalogoStore);
+  private readonly comparar = inject(CompararStore);
   private readonly burbuja = viewChild<ElementRef<HTMLButtonElement>>('burbuja');
-  private readonly buscador = viewChild<ElementRef<HTMLInputElement>>('buscador');
+  private readonly chat = viewChild(Nia);
+
+  protected readonly saludo = SALUDO_BURBUJA;
+  protected readonly fichas = FICHAS_BURBUJA;
 
   protected readonly abierto = signal(false);
-  protected readonly texto = signal('');
-  protected readonly elegido = signal<JuegoCatalogo | null>(null);
+  /** La vista cuyo globito está a la vista, o null. */
+  private readonly vistaDelGlobito = signal<VistaConGlobito | null>(null);
+  /** Lo que el botón del globito dejó pedido, para cuando el chat ya esté montado. */
+  private readonly pendiente = signal<VistaConGlobito | null>(null);
+  private relojes: ReturnType<typeof setTimeout>[] = [];
 
-  protected readonly sugerencias = computed(() =>
-    filtrarJuegos(this.catalogo.juegos(), { texto: this.texto(), genero: '' }).slice(0, MAXIMO_SUGERENCIAS),
+  private readonly ruta = toSignal(
+    this.router.events.pipe(
+      filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
+      map((evento) => evento.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
   );
 
+  /** Los nombres de lo que hay en Comparar, para resumirlo. */
+  private readonly enComparacion = computed(() => {
+    const porAppid = this.catalogo.porAppid();
+    return this.comparar
+      .appids()
+      .map((appid) => porAppid.get(appid)?.nombre)
+      .filter((nombre): nombre is string => !!nombre);
+  });
+
+  protected readonly globito = computed(() => {
+    const vista = this.vistaDelGlobito();
+    return vista ? textoGlobito(vista, this.enComparacion().length) : null;
+  });
+
   constructor() {
-    // Al abrir, el foco entra al buscador: quien navega con teclado no tiene que
-    // recorrer la página entera para llegar.
+    // Cada vez que se entra a una vista con globito, si hoy no ha salido, sale a los 2 s.
     effect(() => {
-      if (this.abierto()) {
-        this.buscador()?.nativeElement.focus();
-      }
+      const vista = vistaConGlobito(this.ruta());
+      untracked(() => this.programarGlobito(vista));
     });
+
+    // El botón del globito abre el chat; lo que pidió se hace cuando el chat ya existe.
+    effect(() => {
+      const chat = this.chat();
+      const pedido = this.pendiente();
+      if (!chat || !pedido) {
+        return;
+      }
+      untracked(() => {
+        this.pendiente.set(null);
+        if (pedido === 'explorar') {
+          chat.ofrecerFiltros();
+        } else if (pedido === 'perfil') {
+          chat.preguntar('¿Qué me recomiendas?');
+        } else {
+          chat.preguntar(`Compara ${this.enComparacion().slice(0, 4).join(' y ')}`);
+        }
+      });
+    });
+
+    inject(DestroyRef).onDestroy(() => this.limpiarRelojes());
+  }
+
+  private programarGlobito(vista: VistaConGlobito | null): void {
+    this.limpiarRelojes();
+    this.vistaDelGlobito.set(null);
+    if (!vista || !debeMostrarGlobito(vista, hoyLocal(), leerVistos())) {
+      return;
+    }
+    this.relojes.push(
+      setTimeout(() => {
+        // En Comparar solo hay algo que resumir con dos juegos o más.
+        if (this.abierto() || (vista === 'comparar' && this.enComparacion().length < 2)) {
+          return;
+        }
+        guardarVistos(marcarGlobito(vista, hoyLocal(), leerVistos()));
+        this.vistaDelGlobito.set(vista);
+        this.relojes.push(setTimeout(() => this.vistaDelGlobito.set(null), DURA_GLOBITO_MS));
+      }, ESPERA_GLOBITO_MS),
+    );
+  }
+
+  private limpiarRelojes(): void {
+    this.relojes.forEach(clearTimeout);
+    this.relojes = [];
+  }
+
+  protected aceptarGlobito(): void {
+    const vista = this.vistaDelGlobito();
+    this.cerrarGlobito();
+    this.pendiente.set(vista);
+    this.abierto.set(true);
+  }
+
+  protected cerrarGlobito(): void {
+    this.limpiarRelojes();
+    this.vistaDelGlobito.set(null);
   }
 
   protected alternar(): void {
+    this.cerrarGlobito();
     this.abierto.update((valor) => !valor);
   }
 
@@ -319,14 +398,5 @@ export class NiaFlotante {
     }
     this.abierto.set(false);
     this.burbuja()?.nativeElement.focus();
-  }
-
-  protected elegir(juego: JuegoCatalogo): void {
-    this.elegido.set(juego);
-    this.texto.set('');
-  }
-
-  protected soltarJuego(): void {
-    this.elegido.set(null);
   }
 }

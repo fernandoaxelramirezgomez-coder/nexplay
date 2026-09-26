@@ -1167,48 +1167,217 @@ def _angular_6e(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return problemas
 
 
+def _preguntar_en_chat(pagina: Page, pregunta: str) -> None:
+    pagina.get_by_test_id("nia-pregunta").fill(pregunta)
+    pagina.get_by_test_id("nia-enviar").click()
+    pagina.wait_for_function(
+        "() => !document.querySelector(\"[data-testid='nia-escribiendo']\")", timeout=_TIMEOUT_MS
+    )
+    pagina.wait_for_timeout(300)
+
+
+def _angular_6f(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Fase 6F: Nia con letra de lectura, saludo de la ficha, buscador dentro del chat que
+    responde la pregunta pendiente, el hilo sin el perfil, sugerencias rotuladas con su
+    riesgo y el globito de la burbuja una vez por vista y por día."""
+    problemas = []
+    base = url.rstrip("/")
+    catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+    hades = catalogo[1145360]
+
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        # Ficha: el primer mensaje del chat es el de ese juego, con su riesgo.
+        _abrir(otra, f"{base}/juego/{hades['appid']}")
+        otra.get_by_test_id("nia-bienvenida").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_function(
+            "() => document.querySelector(\"[data-testid='nia-bienvenida']\")?.innerText.includes('Hades')",
+            timeout=_TIMEOUT_MS,
+        )
+        saludo = " ".join(otra.get_by_test_id("nia-bienvenida").locator(".texto").inner_text().split())
+        esperado = f"¿Te explico por qué {hades['nombre']} tiene riesgo {hades['banda_riesgo']}? 🙂"
+        fichas = [f.strip() for f in otra.get_by_test_id("sugerencia-nia").all_inner_texts()]
+        letra = otra.get_by_test_id("nia-bienvenida").locator(".texto").evaluate("e => getComputedStyle(e).fontSize")
+        if saludo != esperado or "Sí, explícamelo" not in fichas:
+            problemas.append(f"la ficha no abre el chat con su mensaje contextual ('{saludo}', {fichas})")
+        if letra != "17px":
+            problemas.append(f"la letra del chat mide {letra} y no 17px")
+
+        # /nia sin juego: «¿Por qué tiene ese riesgo?» pide el juego con el buscador; al
+        # elegir, la pregunta se responde con ese appid sin repetirla ni borrar el hilo.
+        n_antes = len(problemas)
+        _abrir(otra, f"{base}/nia")
+        otra.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        antes = len(_NIA_CUERPOS)
+        _preguntar_en_chat(otra, "¿Qué juegos de acción tienen riesgo bajo?")
+        _preguntar_en_chat(otra, "¿Por qué tiene ese riesgo?")
+        pide = otra.locator(".mensaje.pide-juego")
+        try:
+            pide.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            borde = pide.evaluate("e => getComputedStyle(e).borderTopStyle")
+            otra.get_by_test_id("nia-elegir-buscar").fill("hades")
+            otra.get_by_test_id("nia-elegir-resultado").first.click()
+            otra.wait_for_function(
+                "() => !document.querySelector(\"[data-testid='nia-escribiendo']\")", timeout=_TIMEOUT_MS
+            )
+            otra.wait_for_timeout(400)
+            pide.screenshot(path=destino / "nia-pide-juego.png")
+        except TiempoAgotado:
+            borde = ""
+            problemas.append("sin juego, «¿Por qué tiene ese riesgo?» no pintó el buscador en el chat")
+        enviados = _NIA_CUERPOS[antes:]
+        if borde != "dashed":
+            problemas.append(f"el mensaje que pide el juego no lleva contorno punteado ({borde})")
+        if len(enviados) < 3 or enviados[-1].get("appid") != hades["appid"]:
+            problemas.append("al elegir el juego, la pregunta pendiente no se reenvió con su appid")
+        else:
+            ultimo = enviados[-1]["mensajes"]
+            preguntas = [m["contenido"] for m in ultimo if m["rol"] == "usuario"]
+            if preguntas.count("¿Por qué tiene ese riesgo?") != 1 or ultimo[-1]["contenido"] != "¿Por qué tiene ese riesgo?":
+                problemas.append(f"la pregunta reenviada no es la pendiente o va repetida ({preguntas})")
+            if len(enviados[1]["mensajes"]) != 3:
+                problemas.append(f"la segunda pregunta no llevó el hilo ({len(enviados[1]['mensajes'])} mensajes)")
+        if any("perfil" in cuerpo for cuerpo in enviados):
+            problemas.append("/nia todavía recibe el perfil")
+        if "appid=1145360" not in otra.url or not otra.get_by_test_id("nia-juego").count():
+            problemas.append(f"la página no reflejó el juego elegido en el chat ({otra.url})")
+        if otra.locator("[data-testid='mensaje-usuario']").count() != 2:
+            problemas.append("elegir el juego borró o duplicó la conversación")
+        if len(problemas) == n_antes:
+            print(f"nia:      sin juego pide uno con contorno punteado; al elegir Hades la pregunta viaja con su appid, "
+                  f"una sola vez, con el hilo y sin perfil ({(destino / 'nia-pide-juego.png').relative_to(_RAIZ)})")
+    except TiempoAgotado as error:
+        problemas.append(f"la 6F no terminó de cargar: {str(error).splitlines()[0]}")
+    finally:
+        contexto.close()
+
+    # Con perfil: «¿Qué me recomiendas?» manda solo la lista calculada y pinta sus tarjetas.
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    contexto.add_init_script(
+        f"localStorage.setItem('nexplay.perfil.v3', {json.dumps(json.dumps(_PERFIL_EN_LA_BARRA))})"
+    )
+    try:
+        otra = contexto.new_page()
+        n_antes = len(problemas)
+        _abrir(otra, f"{base}/nia")
+        otra.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(800)
+        antes = len(_NIA_CUERPOS)
+        _preguntar_en_chat(otra, "¿Qué me recomiendas?")
+        cuerpo = _NIA_CUERPOS[antes] if len(_NIA_CUERPOS) > antes else {}
+        lista = cuerpo.get("sugerencias", [])
+        if not lista or any(set(s) != {"appid", "razones"} for s in lista) or "perfil" in cuerpo:
+            problemas.append(f"con perfil, /nia no recibe solo la lista de sugerencias ({list(cuerpo)})")
+        tarjetas = otra.get_by_test_id("nia-sugerencia")
+        try:
+            tarjetas.first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            rotulos = tarjetas.all_inner_texts()
+            con_pildora = tarjetas.locator("app-pildora-banda").count()
+            if not all("Sugerencia según tu perfil" in r for r in rotulos) or con_pildora != len(rotulos):
+                problemas.append("las tarjetas de sugerencia no llevan su rótulo y su riesgo")
+            tarjetas.first.locator("xpath=ancestor::li[@data-testid='mensaje-nia']").screenshot(
+                path=destino / "nia-sugerencias.png"
+            )
+        except TiempoAgotado:
+            problemas.append("«¿Qué me recomiendas?» con perfil no pintó tarjetas de sugerencia")
+        if len(problemas) == n_antes:
+            print(f"nia:      con perfil viaja la lista ({len(lista)} juegos con su porqué, sin el perfil) y se pintan "
+                  f"{len(rotulos)} tarjetas «Sugerencia según tu perfil» con su riesgo "
+                  f"({(destino / 'nia-sugerencias.png').relative_to(_RAIZ)})")
+    except TiempoAgotado as error:
+        problemas.append(f"la 6F (sugerencias) no terminó de cargar: {str(error).splitlines()[0]}")
+    finally:
+        contexto.close()
+
+    # El globito de Explorar: sale una vez, la × lo cierra y al volver no sale hasta mañana.
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto, con_globito=True)
+    try:
+        otra = contexto.new_page()
+        n_antes = len(problemas)
+        _abrir(otra, f"{base}/explorar")
+        globito = otra.get_by_test_id("nia-globito")
+        try:
+            globito.wait_for(state="visible", timeout=6000)
+            texto = " ".join(globito.inner_text().split())
+            otra.locator(".flotante").screenshot(path=destino / "nia-globito.png")
+            otra.get_by_test_id("nia-globito-cerrar").click()
+            globito.wait_for(state="detached", timeout=_TIMEOUT_MS)
+            otra.reload()
+            otra.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            otra.wait_for_timeout(3500)
+            if globito.count():
+                problemas.append("el globito volvió a salir el mismo día")
+            if "filtrar" not in texto.lower():
+                problemas.append(f"el globito de Explorar no ofrece filtrar ('{texto}')")
+        except TiempoAgotado:
+            problemas.append("el globito de Explorar no salió, o la × no lo cerró")
+        if len(problemas) == n_antes:
+            print(f"burbuja:  en Explorar el globito dice «{texto}», la × lo cierra y al recargar no vuelve "
+                  f"({(destino / 'nia-globito.png').relative_to(_RAIZ)})")
+    finally:
+        contexto.close()
+    return problemas
+
+
 def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
-    """La burbuja de la esquina: solo en el catálogo, pide un juego antes de conversar."""
+    """La burbuja de la esquina: grande, saluda al abrirse y conversa sin pedir antes el
+    juego; si hace falta uno, lo pide dentro del chat."""
     problemas = []
 
     _abrir(pagina, _explorar(url))
-    pagina.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    pagina.get_by_test_id("nia-flotante-burbuja").click()
+    burbuja = pagina.get_by_test_id("nia-flotante-burbuja")
+    burbuja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    caja = burbuja.bounding_box()
+    if not caja or round(caja["width"]) != 84:
+        problemas.append(f"la burbuja mide {caja and round(caja['width'])} px y no 84")
+    burbuja.click()
     pagina.get_by_test_id("nia-flotante-panel").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("nia").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    saludo = " ".join(pagina.get_by_test_id("nia-bienvenida").inner_text().split())
+    if "¿Qué juego estás viendo?" not in saludo:
+        problemas.append(f"al abrirla, la burbuja no saluda como se acordó ('{saludo}')")
+    _esperar_quietud(pagina)
+    ruta = destino / "nia-flotante-saludo.png"
+    pagina.get_by_test_id("nia-flotante-panel").screenshot(path=ruta)
+    print(f"burbuja:  mide {caja and round(caja['width'])} px y saluda «{saludo}» ({ruta.relative_to(_RAIZ)})")
 
-    # Sin juego elegido no hay chat todavía: primero hay que decir de cuál hablar.
-    if pagina.get_by_test_id("nia").count():
-        problemas.append("la burbuja abre el chat sin preguntar antes de qué juego")
-
-    pagina.get_by_test_id("nia-flotante-buscar").fill("wild hearts")
+    # «Hablar de un juego» abre el buscador dentro del chat; al elegir, se fija el juego.
+    pagina.get_by_test_id("sugerencia-nia").filter(has_text="Hablar de un juego").click()
+    pagina.get_by_test_id("nia-elegir-buscar").fill("wild hearts")
     pagina.wait_for_function(
-        "() => document.querySelectorAll(\"[data-testid='nia-flotante-sugerencia']\").length === 1",
+        "() => document.querySelectorAll(\"[data-testid='nia-elegir-resultado']\").length === 1",
         timeout=_TIMEOUT_MS,
     )
-    _esperar_portadas(pagina, "[data-testid='nia-flotante-panel'] img")
-    _esperar_quietud(pagina)
-    ruta = destino / "nia-flotante-elegir.png"
-    pagina.get_by_test_id("nia-flotante-panel").screenshot(path=ruta)
-    print(f"burbuja:  {ruta.relative_to(_RAIZ)} (pide de qué juego hablar)")
-
-    pagina.get_by_test_id("nia-flotante-sugerencia").first.click()
-    pagina.get_by_test_id("nia").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    elegido = pagina.get_by_test_id("nia-flotante-juego").inner_text()
+    pagina.get_by_test_id("nia-elegir-resultado").first.click()
+    try:
+        pagina.get_by_test_id("nia-hablando").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        elegido = pagina.get_by_test_id("nia-hablando").inner_text()
+    except TiempoAgotado:
+        elegido = ""
     if "WILD HEARTS" not in elegido.upper():
-        problemas.append(f"la burbuja no abrió el chat del juego elegido ('{elegido}')")
+        problemas.append(f"el buscador del chat no fijó el juego elegido ('{elegido}')")
 
+    antes = len(_NIA_CUERPOS)
     pagina.get_by_test_id("sugerencia-nia").first.click()
     try:
-        pagina.get_by_test_id("mensaje-nia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.get_by_test_id("mensaje-nia").last.wait_for(state="visible", timeout=_TIMEOUT_MS)
         pagina.wait_for_function(
             "() => !document.querySelector(\"[data-testid='nia-escribiendo']\")", timeout=_TIMEOUT_MS
         )
     except TiempoAgotado:
         problemas.append("la burbuja no obtuvo respuesta de Nia")
+    enviados = _NIA_CUERPOS[antes:]
+    if not enviados or enviados[-1].get("appid") != _APPID_FICHA:
+        problemas.append("después de elegir el juego, la pregunta no viajó con su appid")
     _esperar_quietud(pagina)
     ruta = destino / "nia-flotante-chat.png"
     pagina.get_by_test_id("nia-flotante-panel").screenshot(path=ruta)
-    print(f"burbuja:  {ruta.relative_to(_RAIZ)} ({elegido})")
+    elegido = " ".join(elegido.replace("Cambiar", "").split())
+    print(f"burbuja:  «Hablar de un juego» abre el buscador en el chat y queda «{elegido}» ({ruta.relative_to(_RAIZ)})")
     problemas += _revisar_vocabulario(pagina, "burbuja de Nia")
 
     # Escape la cierra y devuelve el foco a la burbuja.
@@ -3004,6 +3173,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_comparar(pagina, url, destino)
         + _angular_6d(pagina, url, destino, api)
         + _angular_6e(pagina, url, destino, api)
+        + _angular_6f(pagina, url, destino, api)
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)
         + _angular_barra_y_tema(pagina, url, destino)
@@ -3028,7 +3198,29 @@ _NIA_FALSA = json.dumps({
     "version_prompt": "reglas",
     "pasos": [],
     "juegos": [],
+    "sugerencias": [],
+    "pide_juego": False,
+    "pide_perfil": False,
 })
+# Lo que la interfaz mandó a /nia, para revisar que el perfil no viaje y que vaya el hilo.
+_NIA_CUERPOS: list[dict] = []
+
+
+def _respuesta_falsa(cuerpo: dict) -> str:
+    """La respuesta fija, salvo en los dos casos que la interfaz pinta distinto: una pregunta
+    de un juego sin juego fijado (pide el juego) y «¿Qué me recomiendas?» con sugerencias."""
+    respuesta = json.loads(_NIA_FALSA)
+    pregunta = next((m["contenido"] for m in reversed(cuerpo.get("mensajes", [])) if m.get("rol") == "usuario"), "")
+    if "appid" not in cuerpo and "ese riesgo" in pregunta.lower():
+        respuesta.update(respuesta="¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.", pide_juego=True)
+    elif "recomiendas" in pregunta.lower():
+        sugeridas = [s["appid"] for s in cuerpo.get("sugerencias", [])][:3]
+        respuesta.update(
+            respuesta="Sugerencias de prueba del script de capturas ✨ ¿Te explico alguna?",
+            sugerencias=sugeridas,
+            pide_perfil=not sugeridas,
+        )
+    return json.dumps(respuesta)
 
 
 # Cuántas veces la interfaz pidió /nia y cuántas respondió la intercepción. Si las dos
@@ -3037,8 +3229,19 @@ _NIA_PEDIDAS: list[str] = []
 _NIA_INTERCEPTADAS: list[str] = []
 
 
-def _sin_consultas_a_nia(contexto) -> None:
+# El globito de Nia sale una vez por vista y por día: en el recorrido se da por visto, para
+# que no tape nada en las capturas. Solo la comprobación del globito lo deja salir.
+_GLOBITO_YA_VISTO = """(() => { try {
+  const d = new Date(); const dos = (n) => String(n).padStart(2, '0');
+  const hoy = `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+  localStorage.setItem('nexplay.globito-nia.v1', JSON.stringify({ explorar: hoy, perfil: hoy, comparar: hoy }));
+} catch (e) {} })();"""
+
+
+def _sin_consultas_a_nia(contexto, con_globito: bool = False) -> None:
     """Intercepta /nia en todo el contexto del navegador, antes de cualquier paso."""
+    if not con_globito:
+        contexto.add_init_script(_GLOBITO_YA_VISTO)
 
     def anotar(peticion) -> None:
         # Solo el POST de la API: /nia también es una ruta del sitio, y su documento
@@ -3051,7 +3254,9 @@ def _sin_consultas_a_nia(contexto) -> None:
             ruta.fallback()
             return
         _NIA_INTERCEPTADAS.append(ruta.request.url)
-        ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA)
+        cuerpo = ruta.request.post_data_json or {}
+        _NIA_CUERPOS.append(cuerpo)
+        ruta.fulfill(status=200, content_type="application/json", body=_respuesta_falsa(cuerpo))
 
     def responder_voto(ruta) -> None:
         """El voto de una respuesta que solo existió en el navegador: se contesta con lo

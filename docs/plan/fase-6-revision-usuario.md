@@ -19,8 +19,9 @@
 > Estado: plan guardado el 2026-09-25. **6A** (puntos 1 a 6), **6B** (7 a 16) y **6C** (17 a
 > 23) hechas el 2026-09-26 y subidas (`abed851`). **6D** hecha (24 y 25) y subida
 > (`4dd4ec1`); el 26 está evaluado y decidido (IGDB), con la corrida de cobertura esperando
-> `TWITCH_CLIENT_ID` y `TWITCH_CLIENT_SECRET` en `.env`. **6E** hecha (27 a 29). Pulido: P1,
-> P2 y P4 a P11 pendientes. Las capturas no se versionan: las de la app salen
+> credenciales válidas de Twitch en `.env`. **6E** hecha (27 a 29) y subida (`e475b32`).
+> **6F** hecha salvo la búsqueda web (37), que va al final; el 33 y el 38 esperan la corrida
+> con IA de las 25 preguntas (y su latencia). Pulido: P1, P2 y P4 a P12 pendientes. Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
@@ -167,23 +168,23 @@ misma dijo, no entiende las preguntas, su texto no es legible y la burbuja no la
 - [x] 30. Bug prioritario: el textarea no se vacía al enviar (el contador vuelve a 0 pero el
     texto viejo se queda y se concatena con lo siguiente). Arreglar y cubrir en el
     recorrido: dos preguntas seguidas, la segunda llega sola.
-- [ ] 31. Personalidad: cercana y cálida, con emojis moderados (1–3 por respuesta), saluda,
+- [x] 31. Personalidad: cercana y cálida, con emojis moderados (1–3 por respuesta), saluda,
     tono de amiga gamer. Respuestas ≤60 palabras con un remate que invite a seguir.
     Fuente de lectura clara en el chat, 16–17 px.
-- [ ] 32. Memoria: mandar el historial completo (con tope de tokens) para que resuma, retome y
+- [x] 32. Memoria: mandar el historial completo (con tope de tokens) para que resuma, retome y
     responda "resume lo que me dijiste". Casos de prueba: "resume", "¿y cuál de esos…?",
     "lo que dijiste antes".
 - [ ] 33. Entendimiento: ampliar el modo demostración con sinónimos y variantes (baratos,
     caros, gratis, para jugar poco, difícil, fácil, nuevo, reciente, nombres con y sin
     acento, "compara X y Y", "¿cuál me compro?") y en modo IA probar un set de 25
     preguntas reales; registrar cuáles falla.
-- [ ] 34. Elegir juego: cuando Nia necesita un juego, lo pide con un mensaje de color/contorno
+- [x] 34. Elegir juego: cuando Nia necesita un juego, lo pide con un mensaje de color/contorno
     distinto y muestra un buscador dentro del chat.
-- [ ] 35. Burbuja: Nia más grande y visible; al abrirla saluda ("¡Hola! ¿Qué juego estás
+- [x] 35. Burbuja: Nia más grande y visible; al abrirla saluda ("¡Hola! ¿Qué juego estás
     viendo? 👀"). En cada vista manda un mensaje contextual: en Explorar ofrece filtrar,
     en la ficha explicar ese juego, en Perfil sugerencias, en Comparar resumir la
     comparación. Un mensaje por vista, no insistente.
-- [ ] 36. Recomendaciones según perfil: Nia puede sugerir juegos usando el perfil (géneros,
+- [x] 36. Recomendaciones según perfil: Nia puede sugerir juegos usando el perfil (géneros,
     gasto, horas, tolerancia), etiquetado "sugerencia según tu perfil", con el riesgo de
     cada juego al lado, nunca como "cómprate este".
 - [ ] 37. Internet: herramienta de búsqueda web (la de OpenAI o una API de búsqueda) para
@@ -423,6 +424,8 @@ detente en su ALTO con el mockup de la identidad visual.
     ya están en la tabla y en sus bloques.
   - [ ] P11. Las tarjetas de título de cada columna de Comparar no dejan espacio vacío:
     llevan portada o el nombre pasa a encabezado de la primera tarjeta.
+  - [ ] P12. En Panorama, con un solo nivel filtrado, «Cómo se reparte el riesgo» dice «Viendo
+    solo riesgo alto: 43 juegos» en vez de mostrar una barra sola.
 - **Mockup 6C** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
   oscuro: 0 contrastes que no pasan (154 textos y filos por tema), sin desborde, letra
   mínima 16 px. Lo que salió de revisar los datos antes de dibujar:
@@ -571,3 +574,81 @@ detente en su ALTO con el mockup de la identidad visual.
     appdetails) y Metacritic, descargadas del 14 al 21 sep 2026.», con «Ver fuentes →».
   - **De paso**: `PanoramaStore.datos` ya no lanza si `/panorama` falla; el pie lo lee en
     todas las vistas.
+- **6E subida** (2026-09-26, `e475b32`).
+- **IGDB, tercera corrida** (2026-09-26, con `.env` modificado a las 02:33): Twitch responde
+  400 «invalid client» al pedir el token, así que no se consultó IGDB ni se guardó nada.
+  Sin imprimir los valores: `TWITCH_CLIENT_ID` tiene 12 caracteres y `TWITCH_CLIENT_SECRET`
+  9; las de Twitch son de 30 (minúsculas y dígitos). Parecen marcadores y no las
+  credenciales de la aplicación.
+- **Mockup 6F** (2026-09-26): `docs/plan/mockups/6f-nia.html`, medido por la propia página
+  en 1440, 1024 y 390, claro y oscuro: 0 contrastes que no pasan, sin desborde, letra
+  mínima 16 px. Lo que salió de `datos/valoraciones.db` (solo lectura) antes de dibujar:
+  - **30 sigue resuelto:** las preguntas pegadas son de las 21:05 del 25 sep y el arreglo
+    `3fa0fd1` es de las 23:26; desde entonces ninguna llegó pegada, y el recorrido lo
+    comprueba («en /nia y en la ficha, el campo se vacía al enviar y la segunda pregunta
+    llega sola»).
+  - **La grabadora:** 23 de 26 respuestas fueron del modo demostración, y a «es bueno el
+    juego?», «me lo puedes resumir» y «resume el cuadro de texto anterior» contestó 7 veces
+    lo mismo: la explicación del riesgo, que es su respuesta por omisión.
+  - **Con IA** (3 respuestas, `gpt-5.6-sol`): una dice «banda» y otra mete el aviso de la
+    señal en una pregunta de precio.
+  - **Búsqueda web (37), precios de developers.openai.com al 26 sep 2026:** $10 por 1,000
+    búsquedas; en modelos de razonamiento el contenido de la búsqueda se cobra como
+    entrada (gpt-5.6-sol: $4 por millón de entrada y $20 de salida). Unos $0.06 por
+    respuesta con búsqueda. Tope propuesto: 20 al día y 3 por navegador (~$1.20 al día).
+  - Decisiones pendientes: dónde se calculan las sugerencias (36), si se activa la
+    búsqueda y con qué tope (37), `max_completion_tokens` 1,200 y `reasoning_effort` low
+    (38), y si el globito de la burbuja sale solo una vez por vista y sesión (35).
+- **Decisiones del dueño sobre el mockup 6F** (2026-09-26):
+  - **36:** las sugerencias se calculan en el navegador y a Nia (y a OpenAI) solo viaja la
+    lista resultante. Servicios lo dice así: «recibe la lista de sugerencias ya calculada,
+    no tus respuestas del perfil».
+  - **37:** búsqueda web activada, pero como último punto de la 6F, después de que pasen
+    las 25 preguntas. Topes: 20 al día y 3 por navegador. Solo para tendencias,
+    streamers y novedades, nunca para el catálogo. Cada dato va con fuente, enlace y la
+    frase «esto viene de internet, no de nuestro catálogo». Apagada en demostración.
+    **El dueño fija un límite mensual de $40 USD en el panel de OpenAI.**
+  - **38:** un modelo de chat sin razonamiento, el más rápido y barato,
+    `max_completion_tokens` 400 y temperatura baja. Con uno de razonamiento: 1,200 y
+    `reasoning_effort` «low». Latencia antes y después con las 25 preguntas.
+  - **35:** el globito sale una vez por vista y por sesión, con ×, y no vuelve hasta el día
+    siguiente. En la ficha, el mensaje contextual es el primer mensaje del chat.
+- **6F hecha, sin la búsqueda web** (2026-09-26):
+  - **API:**
+    - `/nia` acepta el hilo entero (hasta 40 mensajes) y al modelo le llegan los más
+      recientes hasta 8,000 caracteres.
+    - Recibe `sugerencias` (appid y porqué) y ya no usa el perfil.
+    - Responde `sugerencias`, `pide_juego` y `pide_perfil`.
+    - La salida del modelo pasa por `pulir()`: «banda» → «riesgo» y como máximo 3 emojis.
+  - **Voz (31):** prompt nuevo, de amiga gamer: saluda solo al empezar, de 1 a 3 emojis,
+    60 palabras o menos y una pregunta de remate. En el chat, letra de 17 px con
+    interlineado 1.5; sus globos a la izquierda y los tuyos a la derecha.
+  - **Modo demostración (33):** en `api/nia_reglas.py`, con 13 intenciones en orden y
+    sin repetir la misma respuesta. Entiende:
+    - «resume», «más corto», «de esos» y «¿cuál me compro?», sin elegir por nadie;
+    - «vale la pena», «compara X y Y», nombres sin acento ni apóstrofo, y juegos fuera
+      del catálogo;
+    - baratos, caros, gratis, jugar poco, difícil, fácil y nuevo.
+  - **Juego (34):** sin juego, la pregunta de un juego trae el buscador dentro del chat,
+    con contorno punteado azul. Al elegir, la pregunta pendiente se responde con ese appid
+    y la página de Nia refleja el juego sin borrar el hilo.
+  - **Burbuja (35):**
+    - 84 px (72 en teléfono), en el violeta de Nia en cualquier vista.
+    - Saluda «¡Hola! ¿Qué juego estás viendo? 👀» y ya no pide elegir juego antes.
+    - Globito en Explorar, Tu perfil y Comparar, una vez por vista y por día; la ×
+      lo cierra.
+  - **Sugerencias (36):** tarjetas «Sugerencia según tu perfil» con filo rosa, el riesgo de
+    cada una y su porqué. Sin perfil, «Crear mi perfil →».
+  - **Parámetros (38):**
+    - `NEXPLAY_NIA_RAZONAMIENTO` (por omisión false): esfuerzo «none», 400 tokens y
+      temperatura 0.2.
+    - En true: «low» y 1,200 tokens.
+    - Modelo propuesto: `gpt-6-luna`. En developers.openai.com es «our most efficient
+      model», a $0.10 / $0.50 por millón, y Chat Completions solo le admite funciones con
+      esfuerzo «none». Lo fija el dueño en `.env` con `NEXPLAY_MODELO_NIA`.
+  - **Las 25 preguntas en demostración:** `herramientas/preguntas_nia.py` contra una API
+    aparte en :8010, sin clave de OpenAI y con una base de valoraciones temporal.
+    Resultado: **25 de 25 pasan**, latencia p50 6 ms. El detalle está en
+    `registros/preguntas_nia-demostracion.json`.
+  - **Falta, del lado del dueño:** correr las 25 con IA, antes y después del cambio de
+    modelo, para cerrar el 33 y el 38 con su latencia.

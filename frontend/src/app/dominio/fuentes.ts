@@ -67,14 +67,14 @@ export interface Servicio {
   textoEnlace: string;
 }
 
-/** Lo que usa la app sin ser fuente de datos. El perfil no viaja a OpenAI: api/nia.py lo
- * recibe por compatibilidad y no lo pone en el contexto. */
+/** Lo que usa la app sin ser fuente de datos. Del perfil, a Nia (y con IA, a OpenAI) solo
+ * viaja la lista de sugerencias que el navegador ya calculó, no las respuestas. */
 export const SERVICIOS: readonly Servicio[] = [
   {
     quien: 'OpenAI',
     para: 'Nia',
     que:
-      'Redacta las respuestas de Nia. Recibe tu pregunta, la conversación y los datos del juego o del catálogo; tu perfil no. No entra al riesgo, y sin clave configurada Nia responde con reglas sobre los mismos datos.',
+      'Redacta las respuestas de Nia. Recibe tu pregunta, la conversación y los datos del juego o del catálogo; recibe la lista de sugerencias ya calculada, no tus respuestas del perfil. No entra al riesgo, y sin clave configurada Nia responde con reglas sobre los mismos datos.',
     enlace: 'https://openai.com/api/',
     textoEnlace: 'openai.com/api',
   },

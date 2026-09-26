@@ -1,4 +1,19 @@
-import { SALUDO_CATALOGO, sinMarkdown } from './textos-nia';
+import {
+  COMO_FILTRAR,
+  FICHAS_BURBUJA,
+  FICHAS_JUEGO,
+  PIDE_JUEGO,
+  SALUDO_BURBUJA,
+  SALUDO_CATALOGO,
+  SALUDO_CHAT_CATALOGO,
+  cuantosEmojis,
+  saludoDeJuego,
+  sinMarkdown,
+  textoGlobito,
+} from './textos-nia';
+
+/** Las mismas fórmulas que vigila como-funciona.spec.ts: Nia describe, no aconseja. */
+const PROHIBIDO = ['cómprate', 'compra este', 'te recomiendo comprar', 'abandono', 'banda', 'confiable'];
 
 describe('sinMarkdown', () => {
   it('quita las negritas y las cursivas sin comerse el texto', () => {
@@ -25,5 +40,48 @@ describe('sinMarkdown', () => {
 
   it('aguanta varias negritas en la misma frase y en varias líneas', () => {
     expect(sinMarkdown('**Uno** y **dos**.\nY **tres**.')).toBe('Uno y dos.\nY tres.');
+  });
+});
+
+describe('textos de Nia', () => {
+  const todos = [
+    SALUDO_CHAT_CATALOGO,
+    SALUDO_BURBUJA,
+    saludoDeJuego('Hades', 'bajo'),
+    COMO_FILTRAR,
+    PIDE_JUEGO,
+    ...FICHAS_JUEGO,
+    ...FICHAS_BURBUJA,
+    ...(['explorar', 'perfil', 'comparar'] as const).flatMap((vista) => Object.values(textoGlobito(vista, 2))),
+  ];
+
+  it('ninguno usa fórmulas prohibidas', () => {
+    for (const texto of todos) {
+      for (const frase of PROHIBIDO) {
+        expect(texto.toLowerCase(), texto).not.toContain(frase);
+      }
+    }
+  });
+
+  it('los que habla Nia llevan de 1 a 3 emojis', () => {
+    const habla = [SALUDO_CHAT_CATALOGO, SALUDO_BURBUJA, saludoDeJuego('Hades', 'bajo'), COMO_FILTRAR, PIDE_JUEGO];
+    for (const texto of [...habla, ...(['explorar', 'perfil', 'comparar'] as const).map((v) => textoGlobito(v, 2).texto)]) {
+      expect(cuantosEmojis(texto), texto).toBeGreaterThanOrEqual(1);
+      expect(cuantosEmojis(texto), texto).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('el saludo de la ficha nombra el juego y su riesgo', () => {
+    expect(saludoDeJuego('Hades', 'bajo')).toBe('¿Te explico por qué Hades tiene riesgo bajo? 🙂');
+  });
+
+  it('el globito de Comparar dice cuántos juegos resume', () => {
+    expect(textoGlobito('comparar', 3).texto).toBe('¿Te resumo en qué se diferencian estos 3? 📊');
+  });
+
+  it('el filtro de markdown no toca los emojis, ni los de dos caracteres', () => {
+    const texto = '¡Hola! 👋 Hay 25 🎮 y dos son gratis 🎁. Va, en corto ✍️';
+    expect(sinMarkdown(texto)).toBe(texto);
+    expect(cuantosEmojis(texto)).toBe(4);
   });
 });

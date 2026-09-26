@@ -266,7 +266,7 @@ def preguntar_a_nia(solicitud: SolicitudNia, peticion: Request) -> RespuestaNia:
             headers={"Retry-After": str(max(1, int(espera) + 1))},
         )
 
-    respuesta = nia.responder(solicitud.appid, solicitud.mensajes, solicitud.usuario, solicitud.perfil)
+    respuesta = nia.responder(solicitud.appid, solicitud.mensajes, solicitud.usuario, solicitud.sugerencias)
     logger.info("respuesta de Nia appid=%s modo=%s", solicitud.appid, respuesta["modo"])
     return RespuestaNia(**respuesta)
 

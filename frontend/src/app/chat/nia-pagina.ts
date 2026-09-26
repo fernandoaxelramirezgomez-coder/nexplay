@@ -10,9 +10,9 @@ import { Nia } from './nia';
 
 const MAXIMO_SUGERENCIAS = 12;
 
-/** La página de Nia: la conversación con espacio propio. La API siempre responde sobre
- * un juego concreto, así que lo primero es elegirlo; el appid viaja en la URL para poder
- * llegar aquí desde una ficha. */
+/** La página de Nia: la conversación con espacio propio. Se habla del catálogo entero o
+ * de un juego; el appid viaja en la URL para poder llegar aquí desde una ficha, y si se
+ * elige desde el buscador del chat, la página lo refleja sin borrar la conversación. */
 @Component({
   selector: 'app-nia-pagina',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,6 +91,7 @@ const MAXIMO_SUGERENCIAS = 12;
             [muestraTitulo]="false"
             [muestraIntro]="false"
             [llenaAlto]="true"
+            (juegoFijado)="elegir($event)"
           />
         </div>
       </div>

@@ -252,6 +252,24 @@ class MensajeChat(BaseModel):
         return self
 
 
+#: Mensajes del hilo que acepta /nia: la conversación entera, para que Nia pueda resumir y
+#: retomar. Lo que llega al modelo se recorta además por caracteres (api/nia.py).
+MAXIMO_MENSAJES_NIA = 40
+
+
+class SugerenciaNia(BaseModel):
+    """Un juego que el navegador sugirió con el perfil declarado, con su porqué ya escrito.
+    El perfil no viaja: solo esta lista, que es lo que Nia puede enseñar."""
+
+    appid: int
+    razones: list[str] = Field(default_factory=list, max_length=3)
+
+    @field_validator("razones")
+    @classmethod
+    def _razones_cortas(cls, razones: list[str]) -> list[str]:
+        return [r.strip()[:120] for r in razones if r.strip()]
+
+
 class SolicitudNia(BaseModel):
     usuario: str = Field(
         ...,
@@ -263,9 +281,14 @@ class SolicitudNia(BaseModel):
     appid: Optional[int] = Field(
         None, description="El juego del que se habla; sin él, Nia habla del catálogo entero"
     )
-    mensajes: list[MensajeChat] = Field(..., min_length=1, max_length=10)
+    mensajes: list[MensajeChat] = Field(..., min_length=1, max_length=MAXIMO_MENSAJES_NIA)
     perfil: Optional[PerfilJugador] = Field(
-        None, description="Se acepta por compatibilidad; la banda del contexto es la del juego, igual para cualquier perfil"
+        None, description="Se acepta por compatibilidad y no se usa: el riesgo es del juego y el perfil no viaja a Nia"
+    )
+    sugerencias: list[SugerenciaNia] = Field(
+        default_factory=list,
+        max_length=6,
+        description="Las sugerencias que el navegador calculó con el perfil; vacía si no hay perfil",
     )
 
 
@@ -282,6 +305,12 @@ class RespuestaNia(BaseModel):
         default_factory=list,
         description="Appids que la respuesta menciona y que una herramienta devolvió en este turno",
     )
+    sugerencias: list[int] = Field(
+        default_factory=list,
+        description="Appids que se pintan como «Sugerencia según tu perfil»: salen de la lista que mandó el navegador",
+    )
+    pide_juego: bool = Field(False, description="La pregunta es de un juego y no hay ninguno fijado: el chat abre el buscador")
+    pide_perfil: bool = Field(False, description="Pidieron sugerencias sin perfil: el chat invita a crearlo")
     version_prompt: str = Field(
         ..., description="Qué prompt la produjo: hash del texto del sistema, o 'reglas' en modo demostración"
     )

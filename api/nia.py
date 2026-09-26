@@ -21,8 +21,9 @@ import uuid
 
 from . import catalogo, scoring, valoraciones
 from . import nia_herramientas as herramientas
+from . import nia_reglas as reglas
 from .config import configuracion
-from .schemas import MensajeChat, PerfilJugador
+from .schemas import MensajeChat, PerfilJugador, SugerenciaNia
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +81,21 @@ def _factores_visibles(factores, juego) -> list[dict]:
     return visibles
 
 
-_SISTEMA = """Eres Nia, la asistente de NexPlay y experta en crítica de videojuegos:
-lees los datos del catálogo como los leería alguien que reseña juegos, y explicas qué
-dicen. Respondes en español, en tono cercano y en **60 palabras o menos**, sobre UN juego
-concreto. La primera oración responde lo que se preguntó, directo; lo demás es el porqué.
+_SISTEMA = """Eres Nia, la asistente de NexPlay: una amiga gamer, cercana y cálida, que lee los
+datos del catálogo como los leería alguien que reseña juegos y te cuenta qué dicen.
+
+Cómo hablas:
+- En español, en tono cercano y alegre, como una amiga que sabe de juegos. Saluda solo si
+  es el primer mensaje de la conversación; después ve directo.
+- Usa de 1 a 3 emojis por respuesta, nunca más, y que acompañen lo que dices.
+- **60 palabras o menos.** La primera oración responde lo que se preguntó, directo; lo demás
+  es el porqué. Cierra siempre con una pregunta corta que invite a seguir ("¿Los ordeno por
+  precio?", "¿Te cuento qué dicen sus reseñas?").
+- Recuerdas la conversación: si te piden "resume", "en corto" o "lo que dijiste antes",
+  resume tus propias respuestas anteriores del hilo, sin repetirlas completas. Si dicen "de
+  esos" o "¿y cuál de esos…?", se refieren a la última lista de juegos que diste.
+- Nunca repitas la misma respuesta dos veces seguidas: si ya lo dijiste, ofrece resumirlo o
+  seguir con otra cosa.
 
 Puedes hablar de UN juego —el que esté abierto— o del catálogo entero. Para lo segundo
 tienes herramientas: úsalas siempre en vez de recordar, porque de este catálogo no sabes
@@ -122,6 +134,13 @@ Reglas que no puedes romper:
 - El catálogo son 123 juegos de Steam y nada más. Para filtrar, comparar o contar usa
   buscar_juegos, resolver_juego, ficha_juego, panorama_del_catalogo o metodologia. Nunca
   nombres un juego, un precio o una nota que no te haya devuelto una herramienta.
+- Si la pregunta es de un juego ("¿por qué tiene ese riesgo?", "¿cuánto cuesta?") y no hay
+  ningún juego abierto ni nombrado en la conversación, llama a pedir_juego en vez de
+  adivinar cuál.
+- Si piden recomendaciones o sugerencias para ellos, llama a sugerencias_del_perfil: es la
+  lista que ya calculó NexPlay con lo que declararon. Preséntalas como "sugerencias según tu
+  perfil", con el riesgo de cada una, y nunca digas cuál comprar. Si responde sin_perfil,
+  invita a crear el perfil.
 - buscar_juegos devuelve hasta 8 en orden alfabético. Si trae "hay_mas", dilo con ese
   número y di que el resto está en Explorar con esos filtros; no inventes los que faltan
   ni escribas la URL, que en una respuesta de chat es ruido.
@@ -140,6 +159,43 @@ Reglas que no puedes romper:
   para comparar." Después sigue con lo que sí sabes del juego del contexto. No inventes
   nada de ese otro juego.
 """
+
+
+# Los emojis que cuentan para el tope de 3: pictogramas, símbolos misceláneos y los de
+# ⌛ o ⭐. Las flechas de texto (→), ™ y ® no son emojis y no cuentan.
+EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF]\ufe0f?")
+MAXIMO_EMOJIS = 3
+
+# "banda" es jerga del proyecto: la gente ve "riesgo". El prompt lo pide y aun así se
+# escapa ("su banda de arrepentimiento temprano es baja"), así que se corrige a la salida.
+_MASCULINO = {"alta": "alto", "baja": "bajo", "media": "medio"}
+_BANDA = (
+    (re.compile(r"\b([Ll]a|[Ee]sa|[Ee]sta) banda\b"),
+     lambda m: {"la": "el", "La": "El", "esa": "ese", "Esa": "Ese", "esta": "este", "Esta": "Este"}[m.group(1)] + " riesgo"),
+    (re.compile(r"\b[Bb]andas?\b"), lambda m: "riesgo" if m.group(0)[0] == "b" else "Riesgo"),
+    (re.compile(r"\b([Rr]iesgo) (alta|baja|media)\b"), lambda m: f"{m.group(1)} {_MASCULINO[m.group(2)]}"),
+    (re.compile(r"\b([Rr]iesgo[^.]{0,40}?) es (alta|baja|media)\b"), lambda m: f"{m.group(1)} es {_MASCULINO[m.group(2)]}"),
+)
+
+
+def palabras(texto: str) -> int:
+    """Palabras de una respuesta, sin contar los emojis."""
+    return len([p for p in EMOJI.sub(" ", texto).split() if p.strip("¡!¿?.,;:")])
+
+
+def pulir(texto: str) -> str:
+    """Lo que el prompt pide y a veces no se cumple: sin "banda" y con 3 emojis como máximo."""
+    for patron, reemplazo in _BANDA:
+        texto = patron.sub(reemplazo, texto)
+    vistos = 0
+
+    def uno(m: re.Match) -> str:
+        nonlocal vistos
+        vistos += 1
+        return m.group(0) if vistos <= MAXIMO_EMOJIS else ""
+
+    texto = EMOJI.sub(uno, texto)
+    return re.sub(r"[ \t]{2,}", " ", texto).strip()
 
 
 # Qué prompt produjo una respuesta, para poder comparar los votos de antes y después de
@@ -260,36 +316,6 @@ def _explicacion_de_la_banda(datos: dict) -> str:
     )
 
 
-def _demostracion(datos: dict, pregunta: str) -> str:
-    """Respuesta por reglas sobre los mismos datos, para que la demo funcione sin clave."""
-    pregunta = pregunta.lower()
-    nombre, banda = datos["nombre"], datos["banda"]
-    # La banda es del juego (modelo de título): no hay una versión "para tu perfil".
-    rotulo = "Para cualquier perfil"
-
-    # Cada rama responde lo que se preguntó y nada más: meter la banda en la respuesta del
-    # precio obliga a explicar la señal proxy donde nadie la pidió.
-    if any(palabra in pregunta for palabra in ("precio", "cuesta", "caro", "barato", "oferta")):
-        factor = _factor_de_precio(datos)
-        return f"{nombre} {_texto_precio(datos)}." + (f" {factor}" if factor else "")
-    if any(palabra in pregunta for palabra in ("crítica", "critica", "metacritic", "nota", "reseñas de prensa")):
-        return f"En {nombre}, {_texto_critica(datos)}."
-    if any(palabra in pregunta for palabra in ("banda", "por qué", "porque", "riesgo", "estimación", "estimacion")):
-        return f"{rotulo}, {nombre} {_FRASES_BANDA.get(banda, '')}. {_explicacion_de_la_banda(datos)}"
-    if any(palabra in pregunta for palabra in ("motivo", "queja", "problema", "bug", "rendimiento")):
-        return f"En {nombre}, {_texto_motivos(datos)}. {rotulo}, su riesgo es {banda}."
-    if any(palabra in pregunta for palabra in ("género", "genero", "tipo de juego", "de qué trata")):
-        generos = ", ".join(datos["generos"]) or "sin géneros registrados"
-        return f"{nombre} está clasificado en Steam como: {generos}."
-
-    motivos = _texto_motivos(datos, senal_ya_nombrada=True)
-    motivos = f"En las reseñas con esa señal, {motivos}" if datos["motivos"] else motivos[0].upper() + motivos[1:]
-    return (
-        f"{rotulo}, {nombre} {_FRASES_BANDA.get(banda, '')}. {_explicacion_de_la_banda(datos)} "
-        f"{motivos}."
-    )
-
-
 def _referencias_del_catalogo() -> dict:
     """Cifras del catálogo para que la comparación tenga con qué compararse. Se calculan
     una vez: el catálogo se carga al importar y no cambia mientras corre la API."""
@@ -346,6 +372,8 @@ def _variantes_del_nombre(nombre: str) -> list[str]:
     """El nombre completo y su primera parte, normalizados; descarta lo muy corto."""
     limpio = _sin_acentos(nombre.replace("™", "").replace("®", "")).strip()
     variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
+    # "baldurs gate 3" también es Baldur's Gate 3: casi nadie escribe el apóstrofo.
+    variantes |= {v.replace("'", "").replace("’", "") for v in variantes}
     return [v for v in variantes if len(v) >= 4]
 
 
@@ -448,6 +476,16 @@ def _parametro_rechazado(error: str) -> tuple[str, str] | None:
     return (parametro.group(1), codigo.group(1)) if codigo and parametro else None
 
 
+def _parametros_iniciales() -> dict:
+    """Un modelo de chat (sin razonamiento): esfuerzo "none", 400 tokens y temperatura baja.
+    Uno de razonamiento: sus tokens de pensar cuentan en el tope, así que 1,200 y esfuerzo
+    "low"; esos modelos no aceptan temperatura. Lo que el modelo rechace igual se corrige
+    solo en _crear_con_reintentos."""
+    if configuracion.nexplay_nia_razonamiento:
+        return {"max_completion_tokens": max(configuracion.nexplay_nia_max_tokens, 1200), "reasoning_effort": "low"}
+    return {"max_completion_tokens": configuracion.nexplay_nia_max_tokens, "reasoning_effort": "none", "temperature": 0.2}
+
+
 def _crear_con_reintentos(cliente, conversacion: list[dict], herramientas_disponibles: list[dict] | None = None):
     """Llama al modelo y, si rechaza un parámetro, lo traduce a su equivalente o lo quita.
 
@@ -455,9 +493,7 @@ def _crear_con_reintentos(cliente, conversacion: list[dict], herramientas_dispon
     max_completion_tokens'; uno viejo hace lo contrario. Así funcionan los dos sin tener
     que adivinar cuál está configurado."""
     modelo = configuracion.nexplay_modelo_nia
-    opcionales = _PARAMETROS_APRENDIDOS.get(
-        modelo, {"max_completion_tokens": configuracion.nexplay_nia_max_tokens, "temperature": 0.3}
-    )
+    opcionales = _PARAMETROS_APRENDIDOS.get(modelo, _parametros_iniciales())
     parametros = {"model": modelo, "messages": conversacion, **opcionales}
     if herramientas_disponibles:
         parametros["tools"] = herramientas_disponibles
@@ -489,15 +525,71 @@ def _crear_con_reintentos(cliente, conversacion: list[dict], herramientas_dispon
 # ronda van en paralelo, así que comparar cuatro juegos gasta una ronda, no cuatro.
 _MAXIMO_RONDAS = 3
 
-# Las últimas vueltas de la conversación: con más, el hilo empieza a pesar más que la
-# pregunta; con menos, "¿y el más barato de esos?" se queda sin referencia.
-_VUELTAS_DE_HISTORIAL = 4
+# Cuánto del hilo llega al modelo, contando desde lo más reciente. Con las últimas cuatro
+# vueltas, "resume lo que me dijiste" no alcanzaba lo del principio; con todo, una charla
+# larga pesa más que la pregunta. 8,000 caracteres son unos 2,000 tokens.
+MAXIMO_CARACTERES_DE_HISTORIAL = 8000
+
+
+def historial_para_el_modelo(mensajes: list[MensajeChat]) -> list[MensajeChat]:
+    """Los mensajes más recientes que caben en el tope; la pregunta nueva siempre entra."""
+    elegidos: list[MensajeChat] = []
+    usados = 0
+    for mensaje in reversed(mensajes):
+        if elegidos and usados + len(mensaje.contenido) > MAXIMO_CARACTERES_DE_HISTORIAL:
+            break
+        elegidos.insert(0, mensaje)
+        usados += len(mensaje.contenido)
+    return elegidos
+
+
+# Las dos herramientas que dependen de la solicitud y no del catálogo: se resuelven aquí,
+# no en nia_herramientas.
+_ESQUEMAS_DE_LA_SOLICITUD = [
+    {
+        "type": "function",
+        "function": {
+            "name": "pedir_juego",
+            "description": (
+                "Pide a quien pregunta que elija un juego. Úsala cuando la pregunta es de un juego y no hay"
+                " ninguno abierto ni nombrado en la conversación: el chat le muestra un buscador."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "sugerencias_del_perfil",
+            "description": (
+                "Las sugerencias que NexPlay ya calculó con el perfil declarado, con su riesgo y su porqué."
+                " Úsala solo si piden recomendaciones para ellos. Si responde sin_perfil, invita a crearlo."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+]
+
+
+def _sugerencias_del_perfil(sugerencias: list[SugerenciaNia]) -> dict:
+    juegos = []
+    for sugerencia in sugerencias:
+        juego = catalogo.obtener(sugerencia.appid)
+        if juego is not None:
+            juegos.append({
+                **herramientas._resumen_de_juego(juego),
+                "porque": sugerencia.razones,
+            })
+    if not juegos:
+        return {"sin_perfil": True}
+    return {"sugerencias_segun_tu_perfil": juegos}
 
 
 def _preguntar_a_openai(
-    datos: dict | None, mensajes: list[MensajeChat], mencionados: list[str]
-) -> tuple[str, list[str], set[int]]:
-    """Devuelve la respuesta, los pasos que dio y los appids que le dieron las herramientas.
+    datos: dict | None, mensajes: list[MensajeChat], mencionados: list[str], sugerencias: list[SugerenciaNia]
+) -> dict:
+    """Devuelve la respuesta, los pasos que dio, los appids que le dieron las herramientas,
+    las sugerencias que enseñó y si pidió un juego o el perfil.
 
     Esos appids son los únicos que pueden acabar en una tarjeta: lo que el modelo nombre
     sin haberlo consultado no se pinta."""
@@ -511,20 +603,21 @@ def _preguntar_a_openai(
         conversacion.append({"role": "system", "content": _contexto_del_catalogo()})
     conversacion += [
         {"role": "user" if mensaje.rol == "usuario" else "assistant", "content": mensaje.contenido}
-        for mensaje in mensajes[-_VUELTAS_DE_HISTORIAL * 2 :]
+        for mensaje in historial_para_el_modelo(mensajes)
     ]
 
-    pasos: list[str] = []
-    appids: set[int] = set()
+    salida_final = {"texto": "", "pasos": [], "appids": set(), "sugerencias": [], "pide_juego": False, "pide_perfil": False}
+    esquemas = herramientas.ESQUEMAS + _ESQUEMAS_DE_LA_SOLICITUD
     for ronda in range(_MAXIMO_RONDAS):
         # En la última vuelta se le quitan las herramientas: así cierra con lo que tiene
         # en vez de quedarse pidiendo datos hasta agotar el tope.
         ultima = ronda == _MAXIMO_RONDAS - 1
-        respuesta = _crear_con_reintentos(cliente, conversacion, None if ultima else herramientas.ESQUEMAS)
+        respuesta = _crear_con_reintentos(cliente, conversacion, None if ultima else esquemas)
         mensaje = respuesta.choices[0].message
         llamadas = getattr(mensaje, "tool_calls", None) or []
         if not llamadas:
-            return (mensaje.content or "").strip(), pasos, appids
+            salida_final["texto"] = (mensaje.content or "").strip()
+            return salida_final
 
         conversacion.append({
             "role": "assistant",
@@ -539,18 +632,29 @@ def _preguntar_a_openai(
                 argumentos = json.loads(llamada.function.arguments or "{}")
             except json.JSONDecodeError:
                 argumentos = {}
-            salida = herramientas.ejecutar(llamada.function.name, argumentos)
-            paso = herramientas.paso_de(llamada.function.name, argumentos, salida)
-            if paso not in pasos:
-                pasos.append(paso)
-            appids |= herramientas.appids_de(salida)
+            nombre = llamada.function.name
+            if nombre == "pedir_juego":
+                salida_final["pide_juego"] = True
+                salida = {"ok": True, "nota": "El chat ya le muestra un buscador: pídele que elija el juego."}
+            elif nombre == "sugerencias_del_perfil":
+                salida = _sugerencias_del_perfil(sugerencias)
+                if salida.get("sin_perfil"):
+                    salida_final["pide_perfil"] = True
+                else:
+                    salida_final["sugerencias"] = [j["appid"] for j in salida["sugerencias_segun_tu_perfil"]]
+            else:
+                salida = herramientas.ejecutar(nombre, argumentos)
+                paso = herramientas.paso_de(nombre, argumentos, salida)
+                if paso not in salida_final["pasos"]:
+                    salida_final["pasos"].append(paso)
+                salida_final["appids"] |= herramientas.appids_de(salida)
             conversacion.append({
                 "role": "tool",
                 "tool_call_id": llamada.id,
                 "content": json.dumps(salida, ensure_ascii=False)[:4000],
             })
 
-    return "", pasos, appids
+    return salida_final
 
 
 def _contexto_del_catalogo() -> str:
@@ -566,29 +670,6 @@ def _contexto_del_catalogo() -> str:
     )
 
 
-def _con_constancia(salida: dict, appid: int, usuario: str, pregunta: str) -> dict:
-    """Le pone id a la respuesta y la deja anotada, para que su voto tenga a qué apuntar.
-
-    Si la base de valoraciones falla, la respuesta se entrega igual y solo se pierde la
-    posibilidad de votarla: no contestar por no poder anotar sería el peor intercambio."""
-    salida["id"] = str(uuid.uuid4())
-    salida["version_prompt"] = VERSION_PROMPT if salida["modo"] == "openai" else VERSION_REGLAS
-    try:
-        valoraciones.registrar_respuesta_nia(
-            id_respuesta=salida["id"],
-            usuario=usuario,
-            appid=appid,
-            pregunta=pregunta,
-            respuesta=salida["respuesta"],
-            modo=salida["modo"],
-            modelo=salida["modelo"],
-            version_prompt=salida["version_prompt"],
-        )
-    except Exception as exc:
-        logger.warning("no se pudo anotar la respuesta de Nia (%s): no se podrá votar", type(exc).__name__)
-    return salida
-
-
 def _juegos_para_tarjeta(texto: str, permitidos: set[int], appid: int | None) -> list[int]:
     """Los appids que la respuesta puede pintar como tarjeta.
 
@@ -599,45 +680,6 @@ def _juegos_para_tarjeta(texto: str, permitidos: set[int], appid: int | None) ->
     por_nombre = {j.nombre: j.appid for j in catalogo.buscar()}
     appids = [por_nombre[nombre] for nombre in nombrados if nombre in por_nombre]
     return [a for a in appids if a in permitidos]
-
-
-def _demostracion_de_catalogo(pregunta: str) -> tuple[str, list[int]]:
-    """Sin clave, las preguntas de catálogo se resuelven con las mismas herramientas.
-
-    Es por palabras, no por comprensión: reconoce un género, una banda y un techo de
-    precio, y con eso filtra. Lo que no encaje se responde diciendo qué sí sabe hacer."""
-    texto = _sin_acentos(pregunta)
-    generos = {g for juego in catalogo.buscar() for g in juego.generos}
-    genero = next((g for g in sorted(generos, key=len, reverse=True) if _sin_acentos(g) in texto), "")
-    banda = next((b for b in ("bajo", "medio", "alto") if b in texto), "")
-    gratis = any(palabra in texto for palabra in ("gratis", "gratuito", "free"))
-    precio = re.search(r"(\d{2,5})\s*(?:mxn|pesos|\$)?", texto)
-    precio_max = float(precio.group(1)) if precio and ("menos de" in texto or "hasta" in texto or "barato" in texto) else None
-
-    if not (genero or banda or gratis or precio_max):
-        return (
-            "Puedo filtrar el catálogo por género, por riesgo de arrepentimiento y por precio, contarte de dónde salen"
-            " los datos o leer la ficha de un juego concreto. Dime por cuál de esas empiezo.",
-            [],
-        )
-
-    encontrados = herramientas.buscar_juegos(
-        genero=genero, riesgo=banda, solo_gratis=gratis, precio_max=precio_max
-    )
-    if not encontrados["juegos"]:
-        return ("En el catálogo no hay ningún juego que cumpla eso.", [])
-
-    filtros = ", ".join(
-        parte for parte in (genero, f"riesgo {banda}" if banda else "", "gratuitos" if gratis else "",
-                            f"de {precio_max:.0f} MXN o menos" if precio_max else "") if parte
-    )
-    nombres = ", ".join(j["nombre"] for j in encontrados["juegos"])
-    cola = (
-        f" Hay {encontrados['hay_mas']} más: están en Explorar con esos mismos filtros."
-        if encontrados["hay_mas"]
-        else ""
-    )
-    return (f"Del catálogo, con {filtros}: {nombres}.{cola}", [j["appid"] for j in encontrados["juegos"]])
 
 
 def _con_constancia(salida: dict, appid: int | None, usuario: str, pregunta: str) -> dict:
@@ -666,49 +708,67 @@ def _con_constancia(salida: dict, appid: int | None, usuario: str, pregunta: str
 
 
 def responder(
-    appid: int | None, mensajes: list[MensajeChat], usuario: str, _perfil: PerfilJugador | None = None
+    appid: int | None,
+    mensajes: list[MensajeChat],
+    usuario: str,
+    sugerencias: list[SugerenciaNia] | None = None,
+    _perfil: PerfilJugador | None = None,
 ) -> dict:
     """Con appid, Nia habla de ese juego; sin él, del catálogo entero con sus herramientas.
 
     El perfil llega porque /nia lo recibe desde siempre, pero no entra al contexto: el
-    riesgo es del título. Lo que la persona cuente de sus horas lo lee Nia en el hilo."""
+    riesgo es del título. Lo que sí puede llegar son las sugerencias que el navegador ya
+    calculó con el perfil, y Nia solo las enseña si se las piden."""
+    sugerencias = sugerencias or []
     datos = contexto(appid) if appid is not None else None
     ultima = next((m.contenido for m in reversed(mensajes) if m.rol == "usuario"), "")
 
-    if not configuracion.hay_openai:
-        logger.info("sin clave de OpenAI configurada; appid=%s responde en modo demostración", appid)
-        if datos is None:
-            texto, juegos = _demostracion_de_catalogo(ultima)
-        else:
-            texto, juegos = _demostracion(datos, ultima), []
+    # "¿Por qué tiene ese riesgo?" sin juego: en los dos modos se pide antes de contestar,
+    # para que el modelo no adivine de cuál se habla.
+    if reglas.necesita_juego(ultima, mensajes, appid):
+        pedido = reglas.responder(datos, appid, mensajes, sugerencias)
+        modo = "openai" if configuracion.hay_openai else "demostracion"
         return _con_constancia(
             {
-                "respuesta": texto,
-                "modo": "demostracion",
-                "modelo": None,
-                "aviso": "Modo demostración: respuesta armada con reglas sobre los datos del catálogo, sin modelo de lenguaje.",
-                "juegos": juegos,
+                "respuesta": pedido["texto"],
+                "modo": modo,
+                "modelo": configuracion.nexplay_modelo_nia if modo == "openai" else None,
+                "aviso": None if modo == "openai" else _AVISO_DEMOSTRACION,
+                "pide_juego": True,
             },
             appid, usuario, ultima,
         )
 
+    if not configuracion.hay_openai:
+        logger.info("sin clave de OpenAI configurada; appid=%s responde en modo demostración", appid)
+        return _de_reglas(datos, appid, mensajes, sugerencias, usuario, ultima, _AVISO_DEMOSTRACION)
+
     try:
-        texto, pasos, permitidos = _preguntar_a_openai(
-            datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid or 0)
-        )
-        if texto:
+        salida = _preguntar_a_openai(datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid or 0), sugerencias)
+        if salida["texto"] or salida["pide_juego"] or salida["pide_perfil"]:
+            texto = pulir(salida["texto"]) or (
+                "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
+                else "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?"
+            )
             return _con_constancia(
                 {
                     "respuesta": texto,
                     "modo": "openai",
                     "modelo": configuracion.nexplay_modelo_nia,
                     "aviso": None,
-                    "pasos": pasos,
-                    "juegos": _juegos_para_tarjeta(texto, permitidos, appid),
+                    "pasos": salida["pasos"],
+                    "juegos": _juegos_para_tarjeta(texto, salida["appids"], appid),
+                    "sugerencias": salida["sugerencias"],
+                    "pide_juego": salida["pide_juego"],
+                    "pide_perfil": salida["pide_perfil"],
                 },
                 appid, usuario, ultima,
             )
-        logger.warning("OpenAI devolvió una respuesta vacía para appid=%s; se usa el modo demostración", appid)
+        logger.warning(
+            "OpenAI devolvió una respuesta vacía para appid=%s (con un modelo de razonamiento, el tope de tokens"
+            " se pudo ir en pensar: ver NEXPLAY_NIA_RAZONAMIENTO); se usa el modo demostración",
+            appid,
+        )
     except Exception as exc:  # falla de red, clave inválida, modelo inexistente, sin paquete
         # El mensaje real, no solo el tipo: sin él no se puede saber por qué cayó. Se le
         # quita cualquier cosa con forma de clave antes de escribirlo.
@@ -717,17 +777,37 @@ def responder(
             appid, type(exc).__name__, _sin_claves(str(exc)),
         )
 
-    if datos is None:
-        texto, juegos = _demostracion_de_catalogo(ultima)
-    else:
-        texto, juegos = _demostracion(datos, ultima), []
+    return _de_reglas(
+        datos, appid, mensajes, sugerencias, usuario, ultima,
+        "No se pudo usar el modelo configurado; esta respuesta se armó con reglas sobre los datos.",
+    )
+
+
+_AVISO_DEMOSTRACION = (
+    "Modo demostración: respuesta armada con reglas sobre los datos del catálogo, sin modelo de lenguaje."
+)
+
+
+def _de_reglas(
+    datos: dict | None,
+    appid: int | None,
+    mensajes: list[MensajeChat],
+    sugerencias: list[SugerenciaNia],
+    usuario: str,
+    ultima: str,
+    aviso: str,
+) -> dict:
+    resultado = reglas.responder(datos, appid, mensajes, sugerencias)
     return _con_constancia(
         {
-            "respuesta": texto,
+            "respuesta": pulir(resultado["texto"]),
             "modo": "demostracion",
             "modelo": None,
-            "aviso": "No se pudo usar el modelo configurado; esta respuesta se armó con reglas sobre los datos.",
-            "juegos": juegos,
+            "aviso": aviso,
+            "juegos": resultado["juegos"],
+            "sugerencias": resultado["sugerencias"],
+            "pide_juego": resultado["pide_juego"],
+            "pide_perfil": resultado["pide_perfil"],
         },
         appid, usuario, ultima,
     )

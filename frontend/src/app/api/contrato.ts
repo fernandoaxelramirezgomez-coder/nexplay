@@ -168,15 +168,22 @@ export interface MensajeChat {
   contenido: string;
 }
 
+/** Un juego sugerido con el perfil, con su porqué ya escrito: es lo único del perfil que
+ * viaja a Nia. */
+export interface SugerenciaNia {
+  appid: number;
+  razones: string[];
+}
+
 export interface SolicitudNia {
   /** Id anónimo del navegador; solo se usa para el límite de frecuencia. */
   usuario: string;
   /** El juego del que se habla; sin él, Nia habla del catálogo entero. */
   appid?: number;
-  /** Hasta 10 mensajes, incluida la pregunta nueva. */
+  /** El hilo, hasta 40 mensajes, incluida la pregunta nueva. */
   mensajes: MensajeChat[];
-  /** Si va, la banda del contexto es la del perfil declarado. */
-  perfil?: PerfilJugador;
+  /** Las sugerencias que el navegador calculó con el perfil. El perfil no se manda. */
+  sugerencias?: SugerenciaNia[];
 }
 
 export interface RespuestaNia {
@@ -191,6 +198,12 @@ export interface RespuestaNia {
   pasos: string[];
   /** Appids que la respuesta menciona y que una herramienta le devolvió en ese turno. */
   juegos: number[];
+  /** Appids para las tarjetas «Sugerencia según tu perfil». */
+  sugerencias?: number[];
+  /** La pregunta es de un juego y no hay ninguno fijado: el chat abre el buscador. */
+  pide_juego?: boolean;
+  /** Pidieron sugerencias sin perfil: el chat invita a crearlo. */
+  pide_perfil?: boolean;
   /** Qué prompt la produjo; 'reglas' en modo demostración. No se muestra. */
   version_prompt: string;
 }

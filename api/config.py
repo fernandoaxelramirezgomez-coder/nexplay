@@ -14,6 +14,10 @@ class ConfiguracionNia(BaseSettings):
     openai_api_key: str = ""
     nexplay_modelo_nia: str = ""
     nexplay_nia_max_tokens: int = 400
+    # Con un modelo de razonamiento los tokens de pensar cuentan en el tope de salida: con
+    # 400 la respuesta podía salir vacía. Con esto en true se piden 1,200 y esfuerzo "low";
+    # en false (un modelo de chat) se pide esfuerzo "none" y temperatura baja.
+    nexplay_nia_razonamiento: bool = False
     nexplay_nia_timeout: float = 20.0
     nexplay_nia_por_minuto: int = 10
 

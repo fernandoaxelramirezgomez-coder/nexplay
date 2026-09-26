@@ -7,59 +7,73 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
-
-import { JuegoCatalogo, MensajeChat } from '../api/contrato';
-import { NexplayApi } from '../api/nexplay-api';
 import { RouterLink } from '@angular/router';
 
+import { JuegoCatalogo, MensajeChat, RespuestaNia } from '../api/contrato';
+import { NexplayApi } from '../api/nexplay-api';
 import { PildoraBanda } from '../compartido/pildora-banda';
 import { Portada } from '../compartido/portada';
-import { VotoNia } from './voto-nia';
-import { sinMarkdown } from '../dominio/textos-nia';
+import { recortarHistorial, sugerenciasParaNia } from '../dominio/historial-nia';
+import { criteriosDesde, sugerenciasPara } from '../dominio/sugerencias';
+import {
+  COMO_FILTRAR,
+  FICHAS_CATALOGO,
+  FICHAS_JUEGO,
+  FILTRAR_EL_CATALOGO,
+  HABLAR_DE_UN_JUEGO,
+  PIDE_JUEGO,
+  SALUDO_CHAT_CATALOGO,
+  saludoDeJuego,
+  sinMarkdown,
+} from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { HistorialStore } from '../estado/historial-store';
+import { PanoramaStore } from '../estado/panorama-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { UsuarioStore } from '../estado/usuario-store';
+import { ElegirJuegoChat } from './elegir-juego-chat';
+import { VotoNia } from './voto-nia';
 
 const MAXIMO_TEXTO = 500;
-/** La API acepta 10 mensajes; se manda la cola más reciente. */
-const MAXIMO_MENSAJES = 10;
 
 /** Lo mismo que DIAS_DE_RETENCION_NIA en api/valoraciones.py. */
 const DIAS_DE_RETENCION_NIA = 180;
 
-const SUGERENCIAS_JUEGO = ['¿Por qué tiene ese riesgo?', '¿Cuánto cuesta?', '¿Qué dice la crítica?'];
-
-/** Sin juego elegido, las preguntas de arranque son del catálogo entero. */
-const SUGERENCIAS_CATALOGO = [
-  '¿Qué juegos de acción tienen riesgo bajo?',
-  '¿Hay algo gratis?',
-  '¿De dónde salen los datos?',
-];
-
-/** Lo primero que se ve cuando la conversación está vacía: antes había un hueco. */
-/** No repite el rótulo de arriba ("Pregúntale a Nia"): dice qué sabe contestar, que es
- * lo que el rótulo no dice. */
-const BIENVENIDA_CHAT =
-  'Puedo contarte por qué tiene ese riesgo, qué motivos aparecen en las reseñas, qué ' +
-  'dijo la crítica y cuánto cuesta. Lo que no hago es decirte si comprarlo.';
-
-const BIENVENIDA_CATALOGO =
-  'Puedo filtrar los juegos del catálogo por género, riesgo de arrepentimiento y precio, leer la ' +
-  'ficha de cualquiera y contarte de dónde salen los datos. Lo que no hago es elegir por ti.';
+/** Lo que acompaña a cada mensaje, por posición en el hilo. No va dentro del mensaje: los
+ * mensajes se reenvían a la API tal cual y ahí solo caben rol y contenido. */
+interface Extra {
+  /** El id que la API le puso a la respuesta, para votarla. */
+  id?: string;
+  /** Lo que consultó antes de responder. */
+  pasos?: string[];
+  /** Los appids que puede pintar como tarjeta: la API ya los filtró. */
+  juegos?: number[];
+  /** Los appids que se pintan como «Sugerencia según tu perfil». */
+  sugerencias?: number[];
+  /** Nia pidió un juego: el mensaje trae el buscador hasta que se elige. */
+  pideJuego?: boolean;
+  resuelto?: boolean;
+  /** Pidieron sugerencias sin perfil: el mensaje invita a crearlo. */
+  pidePerfil?: boolean;
+  /** La pregunta pedía comparar: si hay dos o más tarjetas, se ofrece abrirlas en Comparar. */
+  comparar?: boolean;
+}
 
 /** El chat de Nia, con un juego fijado o sobre el catálogo entero.
  *
  * Con `appid`, el backend le pasa los datos de ese juego; sin él, Nia usa sus herramientas
- * sobre el catálogo. La conversación vive solo en pantalla y no se guarda; lo que sí queda
- * anotado del lado del servidor es cada pregunta y su respuesta, para poder votarlas. */
+ * sobre el catálogo, y si la pregunta es de un juego lo pide con un buscador dentro del
+ * chat. La conversación vive solo en pantalla; del lado del servidor queda anotada cada
+ * pregunta con su respuesta, para poder votarlas. */
 @Component({
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [VotoNia, RouterLink, Portada, PildoraBanda],
+  imports: [VotoNia, RouterLink, Portada, PildoraBanda, ElegirJuegoChat],
   // Nia lleva su violeta en cualquier vista donde aparezca (la ficha, la burbuja): el
   // botón principal y los compactos de adentro toman el color de acción de su vista.
   host: { 'data-vista': 'nia' },
@@ -82,63 +96,111 @@ const BIENVENIDA_CATALOGO =
         </p>
       }
 
-      @if (!mensajes().length) {
-        <p class="globo-nia bienvenida" data-testid="nia-bienvenida">
-          <span class="quien">Nia</span>
-          {{ bienvenida() }}
+      @if (fijadoEnElChat(); as juego) {
+        <p class="hablando" data-testid="nia-hablando">
+          Hablando de <strong>{{ juego.nombre }}</strong>
+          <button type="button" class="boton-texto" data-testid="nia-hablando-cambiar" (click)="cambiarJuego()">
+            Cambiar
+          </button>
         </p>
       }
 
-      @if (mensajes().length) {
-        <ol class="conversacion" #conversacion data-testid="conversacion">
-          @for (mensaje of mensajes(); track $index) {
-            <li class="mensaje" [attr.data-rol]="mensaje.rol" [attr.data-testid]="'mensaje-' + mensaje.rol">
-              <span class="quien meta mono">{{ mensaje.rol === 'usuario' ? 'Tú' : 'Nia' }}</span>
-              @if (pasosPorMensaje()[$index]; as pasos) {
-                <p class="pasos meta" data-testid="nia-pasos">{{ pasos.join(' · ') }}</p>
+      <ol class="conversacion" #conversacion data-testid="conversacion">
+        <li class="mensaje" data-rol="nia" data-testid="nia-bienvenida">
+          <span class="quien meta mono">Nia</span>
+          <p class="texto">{{ bienvenida() }}</p>
+        </li>
+        @for (mensaje of mensajes(); track $index) {
+          @let extra = extras()[$index];
+          <li
+            class="mensaje"
+            [class.pide-juego]="extra?.pideJuego"
+            [attr.data-rol]="mensaje.rol"
+            [attr.data-testid]="'mensaje-' + mensaje.rol"
+          >
+            <span class="quien meta mono">
+              {{ mensaje.rol === 'usuario' ? 'Tú' : extra?.pideJuego ? 'Nia · necesito un juego' : 'Nia' }}
+            </span>
+            @if (extra?.pasos?.length) {
+              <p class="pasos meta" data-testid="nia-pasos">{{ extra!.pasos!.join(' · ') }}</p>
+            }
+            <p class="texto">{{ mensaje.contenido }}</p>
+            @if (extra?.pideJuego && !extra?.resuelto) {
+              <app-elegir-juego-chat (elegido)="fijarJuego($event, $index)" />
+            }
+            @if (extra?.pidePerfil) {
+              <a class="compacto invitar" data-tono="perfil" routerLink="/perfil" data-testid="nia-crear-perfil">
+                Crear mi perfil →
+              </a>
+            }
+            @if (extra?.juegos?.length) {
+              <ul class="tarjetas" data-testid="nia-juegos">
+                @for (juego of tarjetas(extra!.juegos!); track juego.appid) {
+                  <li>
+                    <a class="tarjeta" [routerLink]="['/juego', juego.appid]" data-testid="nia-tarjeta">
+                      <app-portada class="mini" [src]="juego.portada_url" radio="6px" />
+                      <span class="nombre">{{ juego.nombre }}</span>
+                      <app-pildora-banda [banda]="juego.banda_riesgo" [compacta]="true" />
+                    </a>
+                  </li>
+                }
+              </ul>
+              @if (extra?.comparar && extra!.juegos!.length >= 2) {
+                <a
+                  class="compacto invitar"
+                  data-tono="comparar"
+                  routerLink="/comparar"
+                  [queryParams]="{ appids: extra!.juegos!.slice(0, 4).join(',') }"
+                  data-testid="nia-comparar"
+                >
+                  Verlos en Comparar →
+                </a>
               }
-              <p class="texto">{{ mensaje.contenido }}</p>
-              @if (juegosPorMensaje()[$index]; as appids) {
-                <ul class="tarjetas" data-testid="nia-juegos">
-                  @for (juego of tarjetas(appids); track juego.appid) {
-                    <li>
-                      <a class="tarjeta" [routerLink]="['/juego', juego.appid]" data-testid="nia-tarjeta">
-                        <app-portada class="mini" [src]="juego.portada_url" radio="6px" />
-                        <span class="nombre">{{ juego.nombre }}</span>
-                        <app-pildora-banda [banda]="juego.banda_riesgo" [compacta]="true" />
-                      </a>
-                    </li>
-                  }
-                </ul>
-              }
-              @if (mensaje.rol === 'nia' && idPorMensaje()[$index]; as idRespuesta) {
-                <app-voto-nia [idRespuesta]="idRespuesta" />
-              }
-            </li>
-          }
-          @if (esperando()) {
-            <li class="mensaje" data-rol="nia">
-              <span class="quien meta mono">Nia</span>
-              <p class="texto meta" data-testid="nia-escribiendo">
-                <span class="puntos" aria-hidden="true"><span></span><span></span><span></span></span>
-                {{ progreso() }}
-              </p>
-            </li>
-          }
-        </ol>
-      }
+            }
+            @if (extra?.sugerencias?.length) {
+              <ul class="sugeridos" data-testid="nia-sugerencias">
+                @for (juego of tarjetas(extra!.sugerencias!); track juego.appid) {
+                  <li>
+                    <a class="sugerido" [routerLink]="['/juego', juego.appid]" data-testid="nia-sugerencia">
+                      <app-portada class="portada" [src]="juego.portada_url" radio="8px" />
+                      <span class="rotulo">Sugerencia según tu perfil</span>
+                      <span class="nombre">{{ juego.nombre }}</span>
+                      <app-pildora-banda [banda]="juego.banda_riesgo" [compacta]="true" />
+                      @if (porQue()[juego.appid]; as razon) {
+                        <span class="porque">{{ razon }}</span>
+                      }
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+            @if (mensaje.rol === 'nia' && extra?.id; as idRespuesta) {
+              <app-voto-nia [idRespuesta]="extra!.id!" />
+            }
+          </li>
+        }
+        @if (esperando()) {
+          <li class="mensaje" data-rol="nia">
+            <span class="quien meta mono">Nia</span>
+            <p class="texto meta" data-testid="nia-escribiendo">
+              <span class="puntos" aria-hidden="true"><span></span><span></span><span></span></span>
+              {{ progreso() }}
+            </p>
+          </li>
+        }
+      </ol>
 
       @if (pendientes().length) {
         <div class="sugerencias">
-          @for (sugerencia of pendientes(); track sugerencia) {
+          @for (ficha of pendientes(); track ficha) {
             <button
               type="button"
               class="compacto"
               data-testid="sugerencia-nia"
               [disabled]="esperando()"
-              (click)="preguntar(sugerencia)"
+              (click)="tocarFicha(ficha)"
             >
-              {{ sugerencia }}
+              {{ ficha }}
             </button>
           }
         </div>
@@ -149,9 +211,9 @@ const BIENVENIDA_CATALOGO =
         @if (modo() === 'demostracion') {
           Modo demostración: respuestas automáticas sin IA.
         } @else if (modo() === 'openai') {
-          Respuesta generada con IA a partir de los datos de este juego.
+          Respuesta generada con IA a partir de los datos del catálogo.
         } @else {
-          Nia responde solo con los datos de este juego.
+          Nia responde solo con los datos del catálogo.
         }
       </p>
 
@@ -167,7 +229,7 @@ const BIENVENIDA_CATALOGO =
           #campo
           id="nia-pregunta"
           rows="2"
-          [attr.placeholder]="appid() === null ? 'Pregúntale algo del catálogo…' : 'Pregúntale algo sobre este juego…'"
+          [attr.placeholder]="appidEfectivo() === null ? 'Pregúntale algo del catálogo…' : 'Pregúntale algo sobre este juego…'"
           [attr.maxlength]="maximo"
           data-testid="nia-pregunta"
           [value]="texto()"
@@ -239,9 +301,6 @@ const BIENVENIDA_CATALOGO =
       font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
     }
-    .bienvenida {
-      margin: 0;
-    }
     /* Con alto propio, la conversación es lo que crece y el campo queda al final. El
        host es flex column (chat/nia-pagina.ts), así que la sección llena lo que haya. */
     .nia.alto {
@@ -265,32 +324,58 @@ const BIENVENIDA_CATALOGO =
       max-height: none;
       overflow-y: visible;
     }
+    .hablando {
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-8);
+      margin: 0;
+      padding: 2px 4px 2px var(--espacio-12);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      background: var(--superficie-lienzo);
+      font-size: var(--texto-body-sm);
+    }
     .conversacion {
       list-style: none;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-8);
+      gap: var(--espacio-12);
       max-height: min(72vh, 620px);
       overflow-y: auto;
     }
+    /* Sus globos a la izquierda y los tuyos a la derecha, como en cualquier chat. */
     .mensaje {
+      align-self: flex-start;
+      max-width: 92%;
+      box-sizing: border-box;
       background: var(--superficie-lienzo);
-      border-radius: var(--radio-tarjeta);
-      padding: var(--espacio-8) var(--espacio-12);
+      border-radius: 4px var(--radio-tarjeta) var(--radio-tarjeta) var(--radio-tarjeta);
+      padding: var(--espacio-8) var(--espacio-12) var(--espacio-12);
     }
     .mensaje[data-rol='usuario'] {
+      align-self: flex-end;
       background: var(--acento-sistema);
+      border-radius: var(--radio-tarjeta) 4px var(--radio-tarjeta) var(--radio-tarjeta);
+    }
+    /* Cuando Nia necesita un juego, su mensaje cambia de contorno: el azul de información,
+       no los colores del riesgo ni su violeta, para que se lea como «me falta algo». */
+    .mensaje.pide-juego {
+      width: 92%;
+      border: 2px dashed var(--info);
+      background: color-mix(in srgb, var(--info) 8%, var(--superficie-lienzo));
     }
     .quien {
       display: block;
       margin-bottom: var(--espacio-4);
     }
+    /* Letra de lectura: 17 px con aire, la respuesta es lo que se viene a leer. */
     .texto {
       margin: 0;
-      font-size: var(--texto-body-sm);
-      line-height: var(--interlineado-largo);
+      font-size: 17px;
+      line-height: 1.5;
       overflow-wrap: anywhere;
     }
     /* Lo que consultó antes de responder. Va arriba, en letra de dato: es el rastro de
@@ -298,6 +383,10 @@ const BIENVENIDA_CATALOGO =
     .pasos {
       margin: 0 0 var(--espacio-4);
       font-size: var(--texto-caption);
+    }
+    .invitar {
+      display: inline-flex;
+      margin-top: var(--espacio-8);
     }
     /* Los juegos que nombra, como tarjeta: el appid lo devolvió una herramienta y la
        portada sale del catálogo del navegador, nunca de lo que diga el modelo. */
@@ -328,15 +417,53 @@ const BIENVENIDA_CATALOGO =
       width: 46px;
       flex: none;
     }
+    /* Las sugerencias del perfil van aparte de las tarjetas de datos: rótulo propio, filo
+       del rosa de Tu perfil y el riesgo de cada una al lado, también cuando es alto. */
+    .sugeridos {
+      list-style: none;
+      margin: var(--espacio-8) 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-8);
+    }
+    .sugerido {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) auto;
+      gap: 4px var(--espacio-12);
+      align-items: center;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie));
+      border-radius: var(--radio-boton);
+      background: var(--superficie);
+      color: inherit;
+      text-decoration: none;
+    }
+    .sugerido .portada {
+      grid-row: 1 / span 3;
+      width: 88px;
+    }
+    .sugerido .rotulo {
+      grid-column: 2 / span 2;
+      justify-self: start;
+      padding: 1px 10px;
+      border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie));
+      border-radius: var(--radio-pildora);
+      font-size: var(--texto-caption);
+    }
+    .sugerido .nombre {
+      font-weight: var(--peso-clave);
+      font-size: 17px;
+    }
+    .sugerido .porque {
+      grid-column: 2 / span 2;
+      color: var(--texto-meta);
+      font-size: var(--texto-caption);
+    }
     .sugerencias {
       display: flex;
       flex-wrap: wrap;
       gap: var(--espacio-8);
-    }
-    /* Las sugerencias se pulsan para preguntar: son compactos del violeta de Nia. */
-    .sugerencias .chip[disabled] {
-      opacity: 0.55;
-      cursor: not-allowed;
     }
     /* El modo se ve siempre, no solo cuando responde por reglas: saber quién contesta es
        parte de la respuesta, y el punto verde tiene que decir que contestó una IA. */
@@ -399,6 +526,7 @@ const BIENVENIDA_CATALOGO =
     }
     textarea {
       font: inherit;
+      font-size: 17px;
       letter-spacing: inherit;
       color: var(--texto);
       background: var(--superficie-lienzo);
@@ -423,6 +551,21 @@ const BIENVENIDA_CATALOGO =
     .error {
       margin: 0;
     }
+    @media (max-width: 560px) {
+      .mensaje {
+        max-width: 100%;
+      }
+      .sugerido {
+        grid-template-columns: 72px minmax(0, 1fr);
+      }
+      .sugerido .portada {
+        width: 72px;
+      }
+      .sugerido .rotulo,
+      .sugerido .porque {
+        grid-column: 2;
+      }
+    }
   `,
 })
 export class Nia {
@@ -436,25 +579,73 @@ export class Nia {
   /** En su propia página el chat ocupa todo el panel: la conversación crece y el campo de
    * escribir se queda abajo, como en cualquier chat. */
   readonly llenaAlto = input(false);
+  /** El primer mensaje y las fichas de arranque, si quien lo monta quiere otros (la
+   * burbuja saluda distinto). */
+  readonly saludo = input<string | null>(null);
+  readonly fichas = input<readonly string[] | null>(null);
+
+  /** Se eligió un juego desde el buscador del chat: quien lo monta puede reflejarlo. */
+  readonly juegoFijado = output<JuegoCatalogo>();
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
   private readonly perfil = inject(PerfilStore);
   private readonly catalogo = inject(CatalogoStore);
+  private readonly panorama = inject(PanoramaStore);
   private readonly historial = inject(HistorialStore);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
   private readonly cuerpo = viewChild<ElementRef<HTMLElement>>('cuerpo');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
 
   protected readonly maximo = MAXIMO_TEXTO;
-  protected readonly sugerencias = computed(() => (this.appid() === null ? SUGERENCIAS_CATALOGO : SUGERENCIAS_JUEGO));
-  protected readonly bienvenida = computed(() =>
-    this.appid() === null ? BIENVENIDA_CATALOGO : BIENVENIDA_CHAT,
-  );
   /** El mismo número que aplica api/valoraciones.py (DIAS_DE_RETENCION_NIA): si allá
    * cambia, aquí también, o el aviso miente. */
   protected readonly diasQueSeGuarda = DIAS_DE_RETENCION_NIA;
-  /** Las que todavía no se preguntaron en esta conversación: una sugerencia ya usada solo
+
+  /** El juego del que se habla: el de la entrada o el que se eligió dentro del chat. */
+  readonly appidEfectivo = signal<number | null>(null);
+
+  protected readonly texto = signal('');
+  protected readonly esperando = signal(false);
+  protected readonly error = signal('');
+  protected readonly mensajes = signal<MensajeChat[]>([]);
+  protected readonly extras = signal<Record<number, Extra>>({});
+  /** '' hasta la primera respuesta: entonces se sabe si contestó el modelo o las reglas. */
+  protected readonly modo = signal<'' | 'openai' | 'demostracion'>('');
+  /** Mientras espera, el texto cambia: a los cuatro segundos deja de ser "escribiendo". */
+  protected readonly progreso = signal('Escribiendo…');
+  private relojProgreso?: ReturnType<typeof setTimeout>;
+
+  private readonly juegoEfectivo = computed(() => {
+    const appid = this.appidEfectivo();
+    return appid === null ? null : (this.catalogo.porAppid().get(appid) ?? null);
+  });
+
+  /** El juego elegido dentro del chat, cuando nadie más lo muestra (la burbuja). */
+  protected readonly fijadoEnElChat = computed(() =>
+    this.appid() === null ? this.juegoEfectivo() : null,
+  );
+
+  protected readonly bienvenida = computed(() => {
+    const propio = this.saludo();
+    if (propio) {
+      return propio;
+    }
+    const juego = this.appid() === null ? null : this.juegoEfectivo();
+    if (juego) {
+      return saludoDeJuego(juego.nombre, juego.banda_riesgo);
+    }
+    return this.appid() === null ? SALUDO_CHAT_CATALOGO : '¡Hola! Soy Nia 👋 ¿Qué quieres saber de este juego?';
+  });
+
+  private readonly todasLasFichas = computed(() => {
+    if (this.appidEfectivo() !== null) {
+      return FICHAS_JUEGO;
+    }
+    return this.fichas() ?? FICHAS_CATALOGO;
+  });
+
+  /** Las fichas que todavía no se tocaron en esta conversación: una ya usada solo
    * repetiría la misma respuesta. Cuando no queda ninguna, la fila desaparece. */
   protected readonly pendientes = computed(() => {
     const preguntadas = new Set(
@@ -462,36 +653,49 @@ export class Nia {
         .filter((mensaje) => mensaje.rol === 'usuario')
         .map((mensaje) => mensaje.contenido.trim()),
     );
-    return this.sugerencias().filter((sugerencia) => !preguntadas.has(sugerencia));
+    return this.todasLasFichas().filter((ficha) => !preguntadas.has(ficha));
   });
-  protected readonly texto = signal('');
-  protected readonly esperando = signal(false);
-  protected readonly error = signal('');
-  protected readonly mensajes = signal<MensajeChat[]>([]);
-  /** El id que la API le puso a cada respuesta, por posición en el hilo. No va dentro del
-   * mensaje: los mensajes se reenvían a la API tal cual y ahí solo caben rol y contenido. */
-  protected readonly idPorMensaje = signal<Record<number, string>>({});
-  /** Lo que consultó antes de responder, por posición. */
-  protected readonly pasosPorMensaje = signal<Record<number, string[]>>({});
-  /** Los appids que la respuesta puede pintar como tarjeta, por posición. La API ya los
-   * filtró: solo pasan los que una herramienta devolvió en ese turno. */
-  protected readonly juegosPorMensaje = signal<Record<number, number[]>>({});
-  /** '' hasta la primera respuesta: entonces se sabe si contestó el modelo o las reglas. */
-  protected readonly modo = signal<'' | 'openai' | 'demostracion'>('');
-  /** Mientras espera, el texto cambia: a los cuatro segundos deja de ser "escribiendo". */
-  protected readonly progreso = signal('Escribiendo…');
-  private relojProgreso?: ReturnType<typeof setTimeout>;
+
+  /** Lo único del perfil que viaja: las sugerencias ya calculadas en el navegador, con su
+   * porqué. Sin perfil guardado no va nada. */
+  private readonly sugerencias = computed(() => {
+    const valores = this.perfil.valores();
+    if (!valores) {
+      return [];
+    }
+    const resultado = sugerenciasPara(this.catalogo.juegos(), criteriosDesde(valores), this.panorama.porAppid());
+    return sugerenciasParaNia(resultado.sugerencias);
+  });
+
+  /** El porqué de cada sugerencia, para su tarjeta: el mismo que calculó el navegador. */
+  protected readonly porQue = computed(() =>
+    Object.fromEntries(
+      this.sugerencias().map((s) => [
+        s.appid,
+        // "Coincide en Acción y Rol; el más específico…": en la tarjeta basta la coincidencia.
+        s.razones
+          .slice(0, 2)
+          .map((razon) => razon.split(';')[0].replace(/\.$/, ''))
+          .join(' · '),
+      ]),
+    ),
+  );
 
   constructor() {
-    // Al cambiar de juego, la conversación empieza de cero: el contexto es otro.
+    // Al cambiar el juego de la entrada, la conversación empieza de cero: el contexto es
+    // otro. Si quien lo monta solo refleja el que se eligió dentro del chat, no se borra.
     effect(() => {
-      this.appid();
-      this.mensajes.set([]);
-      this.idPorMensaje.set({});
-      this.pasosPorMensaje.set({});
-      this.juegosPorMensaje.set({});
-      this.modo.set('');
-      this.error.set('');
+      const entrada = this.appid();
+      if (entrada === untracked(this.appidEfectivo) && untracked(this.mensajes).length) {
+        return;
+      }
+      untracked(() => {
+        this.appidEfectivo.set(entrada);
+        this.mensajes.set([]);
+        this.extras.set({});
+        this.modo.set('');
+        this.error.set('');
+      });
     });
 
     effect(() => {
@@ -519,23 +723,59 @@ export class Nia {
     return appids.map((appid) => porAppid.get(appid)).filter((juego): juego is JuegoCatalogo => !!juego);
   }
 
-  protected preguntar(pregunta: string): void {
+  protected tocarFicha(ficha: string): void {
+    if (ficha === HABLAR_DE_UN_JUEGO) {
+      this.agregar({ rol: 'usuario', contenido: ficha });
+      this.abrirBuscador();
+      return;
+    }
+    if (ficha === FILTRAR_EL_CATALOGO) {
+      this.agregar({ rol: 'usuario', contenido: ficha });
+      this.ofrecerFiltros();
+      return;
+    }
+    this.preguntar(ficha);
+  }
+
+  /** Nia pide el juego sin pasar por la API (la ficha «Hablar de un juego», o «Cambiar»). */
+  abrirBuscador(): void {
+    this.agregar({ rol: 'nia', contenido: PIDE_JUEGO }, { pideJuego: true });
+  }
+
+  /** Lo que ofrece el globito de Explorar: cómo pedirle filtros. */
+  ofrecerFiltros(): void {
+    this.agregar({ rol: 'nia', contenido: COMO_FILTRAR });
+    this.campo()?.nativeElement.focus({ preventScroll: true });
+  }
+
+  protected cambiarJuego(): void {
+    this.appidEfectivo.set(null);
+    this.abrirBuscador();
+  }
+
+  protected fijarJuego(juego: JuegoCatalogo, posicion: number): void {
+    this.appidEfectivo.set(juego.appid);
+    this.extras.update((extras) => ({ ...extras, [posicion]: { ...extras[posicion], resuelto: true } }));
+    this.juegoFijado.emit(juego);
+    this.historial.registrar({ tipo: 'nia', appid: juego.appid, titulo: juego.nombre });
+    // La pregunta que quedó pendiente se responde ya con el juego, sin que se repita. Si
+    // no había (se tocó «Hablar de un juego»), Nia abre con la invitación de ese juego.
+    const anteriores = this.mensajes().slice(0, posicion);
+    const pendiente = [...anteriores].reverse().find((mensaje) => mensaje.rol === 'usuario');
+    if (!pendiente || pendiente.contenido === HABLAR_DE_UN_JUEGO) {
+      this.agregar({ rol: 'nia', contenido: saludoDeJuego(juego.nombre, juego.banda_riesgo) });
+      return;
+    }
+    const hastaLaPregunta = anteriores.slice(0, anteriores.lastIndexOf(pendiente) + 1);
+    this.consultar(hastaLaPregunta, pendiente.contenido);
+  }
+
+  preguntar(pregunta: string): void {
     const contenido = pregunta.trim().slice(0, MAXIMO_TEXTO);
     if (!contenido || this.esperando()) {
       return;
     }
-
-    const mensajes = [...this.mensajes(), { rol: 'usuario' as const, contenido }];
-    this.mensajes.set(mensajes);
-    const appid = this.appid();
-    // Sin juego no hay ficha que recordar: el historial guarda juegos, no conversaciones.
-    if (appid !== null) {
-      this.historial.registrar({
-        tipo: 'nia',
-        appid,
-        titulo: this.catalogo.porAppid().get(appid)?.nombre ?? `Juego ${appid}`,
-      });
-    }
+    this.agregar({ rol: 'usuario', contenido });
     this.texto.set('');
     // [value] solo escribe en el DOM cuando el valor cambia respecto al último que pintó.
     // Si se escribe y se envía antes de que Angular alcance a pintar lo escrito (pegar y
@@ -546,6 +786,28 @@ export class Nia {
     if (campo) {
       campo.value = '';
     }
+    this.consultar(this.mensajes(), contenido);
+  }
+
+  private agregar(mensaje: MensajeChat, extra?: Extra): void {
+    const posicion = this.mensajes().length;
+    this.mensajes.update((actuales) => [...actuales, mensaje]);
+    if (extra) {
+      this.extras.update((extras) => ({ ...extras, [posicion]: extra }));
+    }
+  }
+
+  /** Manda el hilo (hasta la pregunta) y agrega la respuesta al final de la conversación. */
+  private consultar(hilo: MensajeChat[], pregunta: string): void {
+    const appid = this.appidEfectivo();
+    // Sin juego no hay ficha que recordar: el historial guarda juegos, no conversaciones.
+    if (appid !== null) {
+      this.historial.registrar({
+        tipo: 'nia',
+        appid,
+        titulo: this.catalogo.porAppid().get(appid)?.nombre ?? `Juego ${appid}`,
+      });
+    }
     this.error.set('');
     this.esperando.set(true);
     this.progreso.set('Escribiendo…');
@@ -555,31 +817,16 @@ export class Nia {
       4000,
     );
 
+    const sugerencias = this.sugerencias();
     this.api
       .preguntarANia({
         usuario: this.usuario.id,
         ...(appid !== null ? { appid } : {}),
-        mensajes: mensajes.slice(-MAXIMO_MENSAJES),
-        ...(this.perfil.perfil() ? { perfil: this.perfil.perfil()! } : {}),
+        mensajes: recortarHistorial(hilo),
+        ...(sugerencias.length ? { sugerencias } : {}),
       })
       .subscribe({
-        next: (respuesta) => {
-          const posicion = this.mensajes().length;
-          this.idPorMensaje.update((ids) => ({ ...ids, [posicion]: respuesta.id }));
-          if (respuesta.pasos.length) {
-            this.pasosPorMensaje.update((pasos) => ({ ...pasos, [posicion]: respuesta.pasos }));
-          }
-          if (respuesta.juegos.length) {
-            this.juegosPorMensaje.update((juegos) => ({ ...juegos, [posicion]: respuesta.juegos }));
-          }
-          this.mensajes.update((actuales) => [
-            ...actuales,
-            { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },
-          ]);
-          this.modo.set(respuesta.modo);
-          this.esperando.set(false);
-          clearTimeout(this.relojProgreso);
-        },
+        next: (respuesta) => this.recibir(respuesta, pregunta),
         error: (error: HttpErrorResponse) => {
           this.esperando.set(false);
           clearTimeout(this.relojProgreso);
@@ -590,5 +837,23 @@ export class Nia {
           );
         },
       });
+  }
+
+  private recibir(respuesta: RespuestaNia, pregunta: string): void {
+    this.agregar(
+      { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },
+      {
+        id: respuesta.id,
+        pasos: respuesta.pasos,
+        juegos: respuesta.juegos,
+        sugerencias: respuesta.sugerencias ?? [],
+        pideJuego: respuesta.pide_juego ?? false,
+        pidePerfil: respuesta.pide_perfil ?? false,
+        comparar: /compar|\bvs\b|diferencia/i.test(pregunta),
+      },
+    );
+    this.modo.set(respuesta.modo);
+    this.esperando.set(false);
+    clearTimeout(this.relojProgreso);
   }
 }

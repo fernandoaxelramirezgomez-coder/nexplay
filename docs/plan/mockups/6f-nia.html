@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup 6F · Nia</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1152px; margin: 0 auto; padding: 72px 24px 24px; container: contenido / inline-size; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; margin: 0; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .nota-mockup p { margin: 0; }
+  .nota-mockup p + p, .nota-mockup p + ul { margin-top: 8px; }
+  .escena {
+    padding: 40px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .contenido { max-width: 1152px; margin: 0 auto; container: contenido / inline-size; display: flex; flex-direction: column; gap: 24px; }
+  .dos { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .muestra { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  /* El chat: letra de lectura a 17 px (punto 31). */
+  .chat { display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie); }
+  .chat-cabeza { display: flex; align-items: center; gap: 12px; }
+  .chat-cabeza img { width: 48px; height: 48px; object-fit: cover; object-position: top; border-radius: 50%; background: var(--superficie-2); }
+  .chat-cabeza strong { font-family: var(--fuente-display); font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .chat-cabeza span { display: block; color: var(--texto-2); font-size: 16px; }
+  .hilo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .globo { max-width: 92%; padding: 12px 14px; border-radius: 16px; font-size: 17px; line-height: 1.5; }
+  .globo .quien { display: block; margin-bottom: 2px; color: var(--texto-2); font-family: var(--fuente-mono); font-size: 16px; }
+  .globo p { margin: 0; }
+  .de-nia { align-self: flex-start; border-top-left-radius: 4px; background: var(--superficie-2); }
+  .de-ti { align-self: flex-end; border-top-right-radius: 4px; background: var(--acento-sistema); color: var(--texto); }
+  .de-ti .quien { color: var(--texto); }
+  /* 34: cuando Nia necesita un juego, su mensaje cambia de contorno y trae el buscador. */
+  .pide-juego { border: 2px dashed var(--info); background: color-mix(in srgb, var(--info) 8%, var(--superficie)); }
+  .pide-juego .quien { color: var(--texto); }
+  .buscador-chat { display: flex; align-items: center; gap: 8px; margin-top: 10px; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--borde-control); background: var(--superficie); color: var(--texto); font-size: 17px; }
+  .resultados { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .resultados li { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 8px; border-radius: 10px; border: 1px solid var(--borde); background: var(--superficie); }
+  .resultados img, .tarjeta-mini img { width: 64px; height: 30px; object-fit: cover; border-radius: 6px; }
+  .resultados .nombre { flex: 1; min-width: 0; }
+  .hablando { align-self: flex-start; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie-2); font-size: 16px; }
+  .hablando a { color: var(--enlace); }
+  .tarjetas-mini { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tarjeta-mini { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--borde); background: var(--superficie); font-size: 16px; }
+  .tarjeta-mini .nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pildora { flex: none; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--f); background: var(--superficie); color: var(--t); font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .pildora[data-banda='bajo'] { --f: var(--banda-bajo-filo); --t: var(--banda-bajo-texto); }
+  .pildora[data-banda='medio'] { --f: var(--banda-medio-filo); --t: var(--banda-medio-texto); }
+  .pildora[data-banda='alto'] { --f: var(--banda-alto-filo); --t: var(--banda-alto-texto); }
+  .modo { display: flex; align-items: center; gap: 8px; color: var(--texto-2); font-size: 16px; }
+  .modo::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--neon); }
+  .campo { display: flex; gap: 8px; align-items: stretch; }
+  .campo span { flex: 1; min-height: 52px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto-2); font-size: 17px; }
+
+  /* 36: sugerencias según el perfil, rotuladas y con el riesgo al lado. */
+  .sugerencia { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie)); background: var(--superficie); }
+  .sugerencia img { grid-row: 1 / span 3; width: 96px; height: 45px; object-fit: cover; border-radius: 8px; }
+  .sugerencia .etiqueta-perfil { grid-column: 2 / span 2; justify-self: start; padding: 1px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie)); color: var(--texto); font-size: 16px; }
+  .sugerencia .nombre { font-weight: 700; font-size: 17px; }
+  .sugerencia .porque { grid-column: 2 / span 2; color: var(--texto-2); font-size: 16px; }
+  .lista-sugerencias { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+  /* 35: la burbuja, más grande, con su globo de contexto. */
+  .esquinas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .esquina { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 10px; min-height: 250px; padding: 16px; border-radius: 16px; border: 1px solid var(--borde); background: color-mix(in srgb, var(--superficie) 70%, transparent); }
+  .esquina .donde { position: absolute; top: 12px; left: 14px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); font-family: var(--fuente-mono); font-size: 16px; }
+  .globito { position: relative; max-width: 280px; padding: 12px 40px 12px 14px; border-radius: 16px 16px 4px 16px; border: 1px solid color-mix(in srgb, var(--t-nia) var(--mezcla-filo), var(--superficie)); background: var(--superficie); box-shadow: 0 10px 30px rgb(0 0 0 / 0.25); font-size: 17px; line-height: 1.45; }
+  .globito .cerrar { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--texto-2); font-size: 18px; }
+  .globito .accion { display: inline-flex; margin-top: 8px; min-height: 40px; align-items: center; padding: 0 14px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--t-nia) var(--mezcla-filo), var(--superficie)); color: var(--texto); font-size: 16px; }
+  .burbuja { position: relative; width: 84px; height: 84px; border-radius: 50%; padding: 0; border: 3px solid var(--t-nia); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--t-nia) 35%, var(--superficie)), var(--superficie)); box-shadow: 0 0 0 6px rgb(var(--canal-nia) / 0.18), 0 12px 30px rgb(0 0 0 / 0.35); overflow: visible; }
+  .burbuja img { position: absolute; left: 50%; bottom: 0; width: 96px; transform: translateX(-50%); }
+  .burbuja-hoy { width: 64px; height: 64px; border-width: 2px; }
+  .burbuja-hoy img { width: 64px; }
+  .panel-abierto { width: min(100%, 360px); display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--t-nia) var(--mezcla-filo), var(--superficie)); background: var(--superficie); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-nia { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); font-size: 16px; }
+
+  .tabla { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla th, .tabla td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla td:first-child { font-family: var(--fuente-mono); }
+  .tabla .ok { color: var(--exito); } .tabla .mal { color: var(--error); font-weight: 700; }
+  .preguntas { columns: 2; column-gap: 32px; margin: 8px 0 0; padding-inline-start: 24px; }
+  .preguntas li { break-inside: avoid; margin-bottom: 4px; }
+  .decisiones { counter-reset: d; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .decisiones li { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie-2); }
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 900px) {
+    .dos, .esquinas { grid-template-columns: 1fr; }
+    .preguntas { columns: 1; }
+  }
+  @container contenido (max-width: 560px) {
+    .tarjetas-mini { grid-template-columns: 1fr; }
+    .globo { max-width: 100%; }
+    .sugerencia { grid-template-columns: 72px minmax(0, 1fr); }
+    .sugerencia img { width: 72px; height: 34px; }
+    .sugerencia .pildora { grid-column: 2; justify-self: start; }
+    .sugerencia .porque, .sugerencia .etiqueta-perfil { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup 6F</h1>
+  <p>Nia con otra voz, memoria del hilo, un buscador dentro del chat cuando le falta el juego, una burbuja más grande que saluda según la vista y sugerencias según tu perfil. Las respuestas de ejemplo usan datos reales del catálogo; las propuestas de búsqueda web y de parámetros de OpenAI van con su costo.</p>
+</header>
+
+<!-- ═══ Lo que dicen tus pruebas ═══ -->
+<section class="escena" data-vista="nia" id="evidencia">
+  <div class="contenido">
+    <p class="rotulo-mockup">Punto de partida · lo que dejaron tus pruebas (datos/valoraciones.db)</p>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>30, ya resuelto.</strong> Las preguntas pegadas («¿y cuál de esos es el más barato?¿Qué tal Zelda Breat…») son de las 21:05 del 25 sep; el arreglo <code>3fa0fd1</code> es de las 23:26 y desde entonces ninguna llegó pegada. El recorrido lo comprueba en cada corrida: «en /nia y en la ficha, el campo se vacía al enviar y la segunda pregunta llega sola».</li>
+        <li><strong>La grabadora:</strong> 23 de 26 respuestas fueron del modo demostración, y a «es bueno el juego?», «me lo puedes resumir» y «resume el cuadro de texto anterior» contestó <strong>7 veces lo mismo</strong>: la explicación del riesgo, porque es lo que responde cuando no reconoce la pregunta.</li>
+        <li><strong>No entiende el hilo:</strong> «¿y cuál de esos es el más barato?», «Compara Hades y Hollow Knight» y «Que tal Zelda Breath of the Wild» recibieron la misma frase de «Puedo filtrar el catálogo por…».</li>
+        <li><strong>Con IA</strong> (3 respuestas, <code>gpt-5.6-sol</code>): en una dijo «su banda de arrepentimiento temprano es baja» (palabra prohibida) y metió el aviso de la señal en una pregunta de precio.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 y 32 ═══ -->
+<section class="escena" data-vista="nia" id="voz">
+  <div class="contenido">
+    <p class="rotulo-mockup">31 y 32 · Voz cálida, remate que invita a seguir y memoria del hilo</p>
+    <div class="dos">
+      <div class="muestra">
+        <div class="chat">
+          <div class="chat-cabeza"><img src="../../../frontend/public/nia/chat.png" alt="" /><div><strong>Nia</strong><span>Tu amiga gamer que lee los datos</span></div></div>
+          <ol class="hilo">
+            <li class="globo de-nia"><span class="quien">Nia</span><p>¡Hola! Soy Nia 👋 Leo los datos de los 123 juegos del catálogo como lo haría alguien que reseña juegos. ¿Buscas algo en particular o ya tienes uno en mente?</p></li>
+            <li class="globo de-ti"><span class="quien">Tú</span><p>¿Qué juegos de acción tienen riesgo bajo?</p></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>¡Hay 25! 🎮 Te dejo los primeros ocho; el resto está en Explorar con esos filtros. Riesgo bajo quiere decir que dejan poca señal de arrepentimiento temprano: pocas reseñas negativas en las primeras 2 horas. ¿Los ordeno por precio?</p>
+              <ul class="tarjetas-mini">
+                <li class="tarjeta-mini"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1172470/header.jpg" alt="" /><span class="nombre">Apex Legends™</span><span class="pildora" data-banda="bajo">bajo</span></li>
+                <li class="tarjeta-mini"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/504230/header.jpg" alt="" /><span class="nombre">Celeste</span><span class="pildora" data-banda="bajo">bajo</span></li>
+                <li class="tarjeta-mini"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/268910/header.jpg" alt="" /><span class="nombre">Cuphead</span><span class="pildora" data-banda="bajo">bajo</span></li>
+                <li class="tarjeta-mini"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/588650/header.jpg" alt="" /><span class="nombre">Dead Cells</span><span class="pildora" data-banda="bajo">bajo</span></li>
+              </ul>
+            </li>
+            <li class="globo de-ti"><span class="quien">Tú</span><p>¿y cuál de esos es el más barato?</p></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>De esos ocho, Apex Legends™ y Destiny 2 son gratis 🎁 y el más barato de pago es Dead Cells, a $116.99 MXN. ¿Te cuento qué dicen sus reseñas?</p></li>
+            <li class="globo de-ti"><span class="quien">Tú</span><p>Resume lo que me dijiste</p></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>Va, en corto ✍️ De acción con riesgo bajo hay 25; de los ocho que te mostré, dos son gratis y Dead Cells es el más barato de pago. ¿Seguimos con alguno?</p></li>
+          </ol>
+          <p class="modo">Respuesta generada con IA a partir de los datos del catálogo.</p>
+          <div class="campo"><span>Pregúntale algo del catálogo…</span><a class="boton-cta" href="#">Preguntar</a></div>
+        </div>
+      </div>
+      <div class="nota-mockup">
+        <p><strong>Voz (31)</strong>, en el prompt y en las reglas del modo demostración:</p>
+        <ul>
+          <li>Cercana, de amiga gamer: saluda solo la primera vez, 1 a 3 emojis por respuesta, nunca más.</li>
+          <li>60 palabras o menos, y cierra con una pregunta corta que invite a seguir («¿Los ordeno por precio?»).</li>
+          <li>Se mantienen las reglas de siempre: «riesgo de arrepentimiento», nunca «banda»; la señal se explica una vez; no dice qué comprar.</li>
+          <li>Letra del chat a 17 px con interlineado 1.5 (hoy 16 px); sus globos a la izquierda, los tuyos a la derecha.</li>
+        </ul>
+        <p><strong>Memoria (32):</strong> hoy la API acepta 10 mensajes y al modelo le llegan los últimos 8. Propongo mandar el hilo completo con tope: hasta 40 mensajes o 8,000 caracteres, lo que llegue primero, contando desde el más reciente. Con gpt-5.6-sol eso son unos 2,000 tokens más por respuesta: $0.008.</p>
+        <p>En modo demostración, «resume», «en corto» y «lo que dijiste antes» juntan la primera frase de cada respuesta suya; «de esos» y «¿y cuál de esos…?» se aplican a la última lista que dio.</p>
+        <p><strong>Casos de prueba nuevos</strong> (unitarios y en el recorrido, sin OpenAI): «resume», «¿y cuál de esos es el más barato?», «lo que dijiste antes».</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 34 ═══ -->
+<section class="escena" data-vista="nia" id="elegir">
+  <div class="contenido">
+    <p class="rotulo-mockup">34 · Cuando le falta el juego, lo pide con otro contorno y un buscador dentro del chat</p>
+    <div class="dos">
+      <div class="muestra">
+        <div class="chat">
+          <ol class="hilo">
+            <li class="globo de-ti"><span class="quien">Tú</span><p>¿Por qué tiene ese riesgo?</p></li>
+            <li class="globo de-nia pide-juego"><span class="quien">Nia · necesito un juego</span><p>¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.</p>
+              <div class="buscador-chat"><svg class="i"><use href="#i-buscar"/></svg><span>had</span></div>
+              <ul class="resultados">
+                <li><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg" alt="" /><span class="nombre">Hades</span><span class="pildora" data-banda="bajo">bajo</span></li>
+              </ul>
+            </li>
+            <li class="hablando">Hablando de <strong>Hades</strong> <a href="#">Cambiar</a></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>¡Va, Hades! ⚔️ Tiene riesgo bajo: tiene nota de la crítica y su Metacritic (93) está por encima del promedio del catálogo. Esa señal sale de reseñas negativas escritas en las primeras 2 horas. ¿Te cuento qué dicen esas reseñas?</p></li>
+          </ol>
+        </div>
+      </div>
+      <div class="nota-mockup">
+        <ul>
+          <li><strong>Cuándo:</strong> la pregunta habla de «este juego», «ese riesgo» o «cuánto cuesta» y no hay juego abierto. En modo demostración se detecta con reglas; con IA, con una herramienta <code>pedir_juego</code>. La API responde con <code>pide_juego: true</code> y el chat pinta el buscador.</li>
+          <li><strong>Cómo se ve:</strong> contorno punteado y fondo en el azul de información, no en los colores del riesgo ni en el violeta de Nia, para que se lea como «me falta algo».</li>
+          <li><strong>Al elegir,</strong> el chat fija el juego («Hablando de Hades · Cambiar») y responde la pregunta que quedó pendiente, sin que la repitas.</li>
+          <li>La burbuja deja de pedir el juego antes de hablar: saluda, conversa sobre el catálogo y usa este buscador cuando haga falta.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 ═══ -->
+<section class="escena" data-vista="nia" id="burbuja">
+  <div class="contenido">
+    <p class="rotulo-mockup">35 · Una burbuja más grande, que saluda y dice una cosa por vista</p>
+    <div class="esquinas">
+      <div class="esquina muestra">
+        <span class="donde">Hoy</span>
+        <span class="burbuja burbuja-hoy"><img src="../../../frontend/public/nia/chat.png" alt="" /></span>
+      </div>
+      <div class="esquina muestra">
+        <span class="donde">Explorar</span>
+        <div class="globito"><span class="cerrar" aria-hidden="true">×</span>¿Te ayudo a filtrar? 🔎 Dime un género, un precio o un riesgo.<br /><span class="accion">Filtrar con Nia</span></div>
+        <span class="burbuja"><img src="../../../frontend/public/nia/chat.png" alt="" /></span>
+      </div>
+      <div class="esquina muestra">
+        <span class="donde">Tu perfil</span>
+        <div class="globito"><span class="cerrar" aria-hidden="true">×</span>Con tu perfil te sugiero juegos que encajan contigo ✨<br /><span class="accion">Ver sugerencias</span></div>
+        <span class="burbuja"><img src="../../../frontend/public/nia/chat.png" alt="" /></span>
+      </div>
+      <div class="esquina muestra">
+        <span class="donde">Comparar</span>
+        <div class="globito"><span class="cerrar" aria-hidden="true">×</span>¿Te resumo en qué se diferencian estos 2? 📊<br /><span class="accion">Resumir la comparación</span></div>
+        <span class="burbuja"><img src="../../../frontend/public/nia/chat.png" alt="" /></span>
+      </div>
+      <div class="esquina muestra">
+        <span class="donde">Al abrirla</span>
+        <div class="panel-abierto">
+          <div class="chat-cabeza"><img src="../../../frontend/public/nia/chat.png" alt="" /><div><strong>Nia</strong><span>Asistente de NexPlay</span></div></div>
+          <p class="globo de-nia"><span class="quien">Nia</span>¡Hola! ¿Qué juego estás viendo? 👀</p>
+          <div class="chips"><span class="chip-nia">Filtrar el catálogo</span><span class="chip-nia">Hablar de un juego</span><span class="chip-nia">¿Hay algo gratis?</span></div>
+        </div>
+        <span class="burbuja"><img src="../../../frontend/public/nia/chat.png" alt="" /></span>
+      </div>
+      <div class="esquina muestra">
+        <span class="donde">Ficha (su chat)</span>
+        <div class="panel-abierto">
+          <p class="globo de-nia"><span class="quien">Nia</span>¿Te explico por qué Hades tiene riesgo bajo? 🙂</p>
+          <div class="chips"><span class="chip-nia">Sí, explícamelo</span><span class="chip-nia">¿Qué dicen las reseñas?</span><span class="chip-nia">¿Cuánto cuesta?</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Más grande:</strong> de 64 a 84 px, con Nia asomándose por encima del anillo y un halo violeta. En teléfono, 72 px.</li>
+        <li><strong>Un mensaje por vista y por sesión:</strong> el globito sale una vez, a los 2 segundos de entrar; se va solo a los 10 segundos o con la ×, y no vuelve en esa sesión. Nunca tapa un botón principal: en Perfil sube con la barra de guardar, como hoy la burbuja.</li>
+        <li><strong>En la ficha no hay burbuja</strong> (su chat ya está en la columna): el primer mensaje de ese chat es el contextual. En Inicio, Historial, Panorama y Cómo funciona no hay globito; al abrirla, saluda.</li>
+        <li>Con «reducir movimiento», el globito aparece sin animación.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 36 ═══ -->
+<section class="escena" data-vista="nia" id="sugerencias">
+  <div class="contenido">
+    <p class="rotulo-mockup">36 · Sugerencias según tu perfil, con el riesgo de cada juego al lado</p>
+    <div class="dos">
+      <div class="muestra">
+        <div class="chat">
+          <ol class="hilo">
+            <li class="globo de-ti"><span class="quien">Tú</span><p>¿Qué me recomiendas?</p></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>Con lo que declaraste en tu perfil, estos encajan contigo ✨ Elegir es tuyo: te dejo el riesgo de cada uno al lado. ¿Te explico alguno?</p>
+              <ul class="lista-sugerencias">
+                <li class="sugerencia"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg" alt="" /><span class="etiqueta-perfil">Sugerencia según tu perfil</span><span class="nombre">Hades</span><span class="pildora" data-banda="bajo">riesgo bajo</span><span class="porque">Rol · $282.99, en tu rango · ~31 h típicas</span></li>
+                <li class="sugerencia"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/632470/header.jpg" alt="" /><span class="etiqueta-perfil">Sugerencia según tu perfil</span><span class="nombre">Disco Elysium</span><span class="pildora" data-banda="bajo">riesgo bajo</span><span class="porque">Rol · $459.00, en tu rango · ~33 h típicas</span></li>
+                <li class="sugerencia"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/2344520/header.jpg" alt="" /><span class="etiqueta-perfil">Sugerencia según tu perfil</span><span class="nombre">Diablo® IV</span><span class="pildora" data-banda="alto">riesgo alto</span><span class="porque">Rol · $249.75, en tu rango · ~42 h típicas</span></li>
+              </ul>
+            </li>
+            <li class="globo de-ti"><span class="quien">Tú (sin perfil)</span><p>¿Qué me recomiendas?</p></li>
+            <li class="globo de-nia"><span class="quien">Nia</span><p>Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto.</p><a class="compacto" data-tono="perfil" href="#" style="margin-top:10px">Crear mi perfil →</a></li>
+          </ol>
+        </div>
+      </div>
+      <div class="nota-mockup">
+        <ul>
+          <li><strong>De dónde sale la lista:</strong> de las mismas sugerencias de Tu perfil (<code>dominio/sugerencias.ts</code>: géneros, gasto, horas y tolerancia). Las de arriba son un ejemplo con juegos reales de Rol entre $200 y $500; la lista real la arma esa función.</li>
+          <li><strong>Qué viaja:</strong> el navegador calcula la lista y, al preguntar, manda a la API solo los juegos sugeridos y su porqué, no tu perfil. Con IA, eso llega a OpenAI, y la tarjeta Servicios de Fuentes lo dirá: «tu perfil no; si pides sugerencias, sí la lista que sale de él».</li>
+          <li><strong>Cómo se ve:</strong> filo y rótulo en el rosa de Tu perfil, «Sugerencia según tu perfil» en cada tarjeta y el riesgo en su píldora, también cuando es alto. Nunca «cómprate este».</li>
+          <li>Sin perfil, Nia no inventa gustos: invita a crearlo.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 ═══ -->
+<section class="escena" data-vista="neutro" id="entendimiento">
+  <div class="contenido">
+    <p class="rotulo-mockup">33 · Lo que el modo demostración entiende de más</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla">
+        <thead><tr><th>Si dices</th><th>Nia entiende</th><th>Y responde (datos de hoy)</th></tr></thead>
+        <tbody>
+          <tr><td>baratos, económicos, que no cueste mucho</td><td>Ordena por precio, de menor a mayor</td><td>«Los más baratos de pago: Assetto Corsa ($56.99), Vampire Survivors ($59.00), Civilization VI ($59.90)…» y los 7 gratuitos aparte</td></tr>
+          <tr><td>caros, los más caros</td><td>Ordena de mayor a menor</td><td>Los cinco más caros, con su riesgo</td></tr>
+          <tr><td>gratis, free, f2p, sin pagar</td><td>Solo gratuitos</td><td>Los 7 gratuitos del catálogo</td></tr>
+          <tr><td>para jugar poco, partidas cortas, tengo poco tiempo</td><td>Horas típicas de 20 o menos (las de la ficha)</td><td>Los que se recomiendan con pocas horas jugadas</td></tr>
+          <tr><td>difícil, retador</td><td>«Dificultad» como motivo más mencionado</td><td>Los juegos donde más se queja la gente de la dificultad, dicho así</td></tr>
+          <tr><td>fácil, relajado</td><td>No hay dato de eso</td><td>Lo dice y ofrece lo más cercano: sin «dificultad» entre sus motivos</td></tr>
+          <tr><td>nuevo, reciente, de este año</td><td>Lanzados de 2024 en adelante</td><td>Los 7 del catálogo de 2024 a 2026</td></tr>
+          <tr><td>pokemon, baldurs gate, hades (sin acentos ni ™)</td><td>El juego del catálogo, si está</td><td>Ficha corta del juego</td></tr>
+          <tr><td>compara Hades y Hollow Knight</td><td>Los dos lado a lado</td><td>Riesgo, precio y crítica de cada uno, y «Verlos en Comparar →»</td></tr>
+          <tr><td>¿cuál me compro?</td><td>No elige</td><td>Resume en qué se diferencian y pregunta qué pesa más: precio, riesgo u horas</td></tr>
+          <tr><td>resume, en corto, lo que dijiste antes</td><td>Resumen del hilo (32)</td><td>Una frase por respuesta suya</td></tr>
+          <tr><td>¿y cuál de esos…?, de esos</td><td>La última lista que dio</td><td>Filtra u ordena esa lista</td></tr>
+          <tr><td>¿es bueno?, ¿vale la pena?</td><td>Fortalezas y debilidades, sin veredicto</td><td>Crítica, riesgo, precio frente al catálogo y motivo más mencionado</td></tr>
+          <tr><td>Zelda, Mario Bros</td><td>Fuera del catálogo</td><td>«Zelda no está en este catálogo de Steam, así que no tengo señal sobre él.» y ofrece buscar por género</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota-mockup">
+      <p><strong>Con IA, 25 preguntas reales que corres tú</strong> (yo no llamo a OpenAI). Dejo <code>herramientas/preguntas_nia.py</code>: manda cada una a <code>/nia</code> y anota si falla alguna regla (más de 60 palabras, más de 3 emojis, dice «banda» o «cómprate», nombra un juego que no está en el catálogo, no cierra con pregunta). El resultado queda en <code>registros/preguntas_nia.json</code> y lo paso al plan.</p>
+      <ol class="preguntas">
+        <li>¿Qué juegos de acción tienen riesgo bajo?</li>
+        <li>¿y cuál de esos es el más barato?</li>
+        <li>Resume lo que me dijiste</li>
+        <li>Compara Hades y Hollow Knight</li>
+        <li>¿Cuál me compro?</li>
+        <li>Que tal Zelda Breath of the Wild</li>
+        <li>¿Hay algo gratis?</li>
+        <li>juegos de estrategia baratos</li>
+        <li>algo para jugar poco entre semana</li>
+        <li>¿cuál es el más difícil?</li>
+        <li>¿qué hay nuevo?</li>
+        <li>baldurs gate 3 vale la pena?</li>
+        <li>¿Por qué tiene ese riesgo? (sin juego)</li>
+        <li>¿Qué me recomiendas? (con perfil)</li>
+        <li>¿Qué me recomiendas? (sin perfil)</li>
+        <li>es bueno el juego? (en la ficha de A Short Hike)</li>
+        <li>¿Cuánto cuesta? (en la ficha de Hades)</li>
+        <li>¿Qué dice la crítica?</li>
+        <li>se parece al mario bros o sonic? (en Cuphead)</li>
+        <li>lo que dijiste antes, más corto</li>
+        <li>¿de dónde salen los datos?</li>
+        <li>¿qué juego me ayuda a estudiar la naturaleza?</li>
+        <li>dame juegos de rol de menos de 300 pesos</li>
+        <li>¿cuántos juegos tienen riesgo alto?</li>
+        <li>gracias, eres lo máximo</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 y 38 ═══ -->
+<section class="escena" data-vista="neutro" id="openai">
+  <div class="contenido">
+    <p class="rotulo-mockup">37 · Búsqueda en internet: propuesta de costo y tope (no se activa sin tu visto bueno)</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla">
+        <thead><tr><th>Concepto</th><th>Precio (developers.openai.com, 26 sep 2026)</th><th>Por respuesta de Nia</th></tr></thead>
+        <tbody>
+          <tr><td>Herramienta de búsqueda web</td><td>$10.00 por 1,000 búsquedas</td><td>$0.010</td></tr>
+          <tr><td>Contenido de la búsqueda</td><td>En modelos de razonamiento (gpt-5.6-sol) se cobra como entrada: $4.00 por millón</td><td>~5,000 tokens: $0.020</td></tr>
+          <tr><td>Respuesta normal de Nia</td><td>gpt-5.6-sol: $4.00 entrada / $20.00 salida por millón</td><td>~3,000 de entrada y ~800 de salida: $0.028</td></tr>
+          <tr><td><strong>Respuesta con búsqueda</strong></td><td></td><td><strong>~$0.06</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Reglas:</strong> solo si la pregunta pide algo de fuera del catálogo (tendencias, novedades, qué juega un streamer); 1 búsqueda por respuesta como máximo; la respuesta cita la fuente con enlace y dice «esto viene de internet, no del catálogo», con una etiqueta distinta a la de los datos.</li>
+        <li><strong>Tope propuesto:</strong> 20 búsquedas al día en total y 3 por navegador. En el peor caso, $1.20 al día y unos $36 al mes. Al llegar al tope, Nia lo dice y contesta con el catálogo.</li>
+        <li><strong>Técnica:</strong> hoy Nia llama a Chat Completions; la búsqueda web de OpenAI se usa como herramienta de la Responses API, así que activarla implica mover esa llamada. Lo verifico al implementar, con una sola prueba que corres tú.</li>
+      </ul>
+    </div>
+
+    <p class="rotulo-mockup">38 · Parámetros de OpenAI, verificados</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla">
+        <thead><tr><th>Parámetro</th><th>Hoy</th><th>Propuesta</th></tr></thead>
+        <tbody>
+          <tr><td>modelo</td><td><code>gpt-5.6-sol</code>, según las 3 respuestas guardadas (sale de .env; no lo leo)</td><td>Igual. Es de razonamiento: los tokens de pensar cuentan en el tope de salida</td></tr>
+          <tr><td>max_completion_tokens</td><td>400</td><td class="mal">1,200: con 400 el razonamiento puede comerse el tope y la respuesta sale vacía, y hoy eso cae al modo demostración sin avisar por qué</td></tr>
+          <tr><td>temperature</td><td>0.3 (si el modelo la rechaza, se quita sola)</td><td>Pedir 0.7 para la voz cálida; si la rechaza, el tono lo da el prompt</td></tr>
+          <tr><td>reasoning_effort</td><td>No se manda</td><td>«low»: respuestas cortas, más rápidas y baratas</td></tr>
+          <tr><td>emojis y el filtro de markdown</td><td><code>sinMarkdown</code> quita asteriscos y viñetas</td><td class="ok">Prueba unitaria con emojis de 1 y de 2 caracteres (👋 🎮 ✍️ 🎁) para que no se corten ni se borren</td></tr>
+          <tr><td>palabras prohibidas</td><td>Solo en el prompt</td><td>Además, un filtro de salida: «banda» → «riesgo», y una prueba que lo cubre</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="decisiones">
+  <div class="contenido">
+    <p class="rotulo-mockup">Lo que necesito que decidas</p>
+    <ol class="decisiones nota-mockup">
+      <li><strong>36:</strong> ¿la lista de sugerencias se calcula en el navegador y solo esa lista viaja a Nia (y a OpenAI)? Si sí, la tarjeta Servicios cambia su texto.</li>
+      <li><strong>37:</strong> ¿apruebas 20 búsquedas al día y 3 por navegador (~$1.20 al día como máximo), o la búsqueda web se queda para después de la 6F?</li>
+      <li><strong>38:</strong> ¿subo max_completion_tokens a 1,200 y mando reasoning_effort «low»?</li>
+      <li><strong>35:</strong> ¿el globito sale solo una vez por vista y por sesión, como en el mockup, o solo al abrir la burbuja?</li>
+    </ol>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+</svg>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>
