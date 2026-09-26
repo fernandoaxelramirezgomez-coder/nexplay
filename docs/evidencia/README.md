@@ -38,6 +38,11 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
 - `simulacion_123.py` y `simulacion_123.txt`: la simulación de entrenar con los 123 (solo
   validación cruzada, sin escribir artefactos) y su salida completa.
+- `metacritic-por-banda.md`, `metacritic_por_banda.py` y `metacritic-por-banda.txt`: la
+  tasa real de arrepentimiento temprano por banda y por cobertura de crítica, separada
+  entre los 83 de data-v1 (descriptiva: el modelo ya los vio) y los 40 externos. Responde
+  si la banda alta es solo «no tiene nota de Metacritic», con la advertencia de que «alto
+  con nota» son 10 juegos en todo el catálogo.
 - `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
   a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 

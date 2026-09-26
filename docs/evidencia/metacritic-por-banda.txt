@@ -1,0 +1,19 @@
+
+===== data-v1 (83)
+banda  cobertura   juegos   reseñas  con señal  prevalencia
+bajo   con nota        30    45,198        298       0.66%
+medio  con nota        23    34,698        386       1.11%
+alto   con nota         7    10,599        231       2.18%
+alto   sin nota        23    33,477      1,799       5.37%
+total                  83   123,972      2,714       2.19%
+
+===== externos (40)
+banda  cobertura   juegos   reseñas  con señal  prevalencia
+bajo   con nota        13    19,698        366       1.86%
+medio  con nota        14    21,098        344       1.63%
+alto   con nota         3     4,500        149       3.31%
+alto   sin nota        10    15,099        553       3.66%
+total                  40    60,395      1,412       2.34%
+
+cuadre externos: 40 juegos (json: 40), 60,395 filas (json: 60,395), 1,412 con señal (json: 1,412)
+'alto con nota' en todo el catálogo: 10 juegos
