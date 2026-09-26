@@ -46,7 +46,7 @@ import { TarjetaJuego } from './tarjeta-juego';
     .estante {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-12);
+      gap: var(--espacio-4);
     }
     .cabecera {
       display: flex;
@@ -105,10 +105,14 @@ import { TarjetaJuego } from './tarjeta-juego';
       border-color: var(--neon);
     }
     /* Estante horizontal: las tres bandas caben casi sin bajar. */
+    /* El padding deja ver el resplandor de las portadas, que sale de las tarjetas (arriba
+       sube 40 px: con menos, la fila lo cortaba en recto); el margen negativo devuelve la
+       primera tarjeta a la línea del título. */
     .fila {
       list-style: none;
-      margin: 0;
-      padding: 0 var(--espacio-4) var(--espacio-8);
+      margin: 0 calc(-1 * var(--espacio-24));
+      padding: var(--espacio-40) var(--espacio-24) var(--espacio-24);
+      scroll-padding-inline: var(--espacio-24);
       display: grid;
       grid-auto-flow: column;
       grid-auto-columns: 296px;
@@ -131,12 +135,17 @@ import { TarjetaJuego } from './tarjeta-juego';
        de una tarjeta y media y no llega a esa esquina. */
     @media (min-width: 641px) {
       .fila {
-        margin-inline-end: 64px;
+        margin-inline-end: calc(64px - var(--espacio-24));
       }
     }
+    /* En teléfono la página tiene 16 px de margen y no 24: el sangrado de la fila también,
+       o se saldría de la pantalla. */
     @media (max-width: 640px) {
       .fila {
         grid-auto-columns: 78vw;
+        margin-inline: calc(-1 * var(--espacio-16));
+        padding-inline: var(--espacio-16);
+        scroll-padding-inline: var(--espacio-16);
       }
       .controles {
         display: none;

@@ -23,11 +23,11 @@ const MOTIVOS: MotivoInsatisfaccion[] = [
 
 /** La historia son líneas de segmentos: para revisarla basta el texto plano de todas. */
 function plano(lineas: ReturnType<typeof historiaPerfil>): string {
-  return (lineas ?? []).map((linea) => linea.map((s) => s.texto).join('')).join(' ');
+  return (lineas ?? []).map((linea) => linea.segmentos.map((s) => s.texto).join('')).join(' ');
 }
 
 function lineas(resultado: ReturnType<typeof historiaPerfil>): string[] {
-  return (resultado ?? []).map((linea) => linea.map((s) => s.texto).join(''));
+  return (resultado ?? []).map((linea) => linea.segmentos.map((s) => s.texto).join(''));
 }
 
 function palabras(linea: string): number {
@@ -66,6 +66,11 @@ describe('historiaPerfil', () => {
     expect(generos).toBe('Dentro de tus géneros: Acción.');
     expect(tiempo).toBe('Llegas a 2 h en 1–2 sesiones, dentro del reembolso.');
     expect(compra).toBe('Sería una de tus 3–6 compras del año.');
+  });
+
+  it('cada línea dice de qué habla, en el orden géneros, tiempo, compra', () => {
+    const resultado = historiaPerfil(perfilDePrueba(), juegoDePrueba(), MOTIVOS) ?? [];
+    expect(resultado.map((linea) => linea.tipo)).toEqual(['generos', 'tiempo', 'compra']);
   });
 
   it('no repite el motivo dominante, que ya sale en su propia sección', () => {

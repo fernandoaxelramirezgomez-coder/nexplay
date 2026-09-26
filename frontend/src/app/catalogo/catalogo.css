@@ -11,21 +11,26 @@
 
 .buscador-explorar {
   display: block;
-  margin-bottom: var(--espacio-16);
 }
 
 .exploracion-cabecera {
   display: flex;
-  gap: var(--espacio-24);
+  flex-wrap: wrap;
+  gap: var(--espacio-16) var(--espacio-24);
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: var(--espacio-16);
 }
 
+/* El título de la vista toma el tratamiento de base.css, como los demás: aquí solo se
+   acota el ancho para que parta en dos líneas parejas. */
 .exploracion h1 {
-  margin: 0;
-  font-size: clamp(var(--texto-subheading), 2.4vw, var(--texto-heading-sm));
-  line-height: 1.1;
+  max-width: 18ch;
+}
+
+.exploracion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
 }
 
 .exploracion .meta {
@@ -74,7 +79,6 @@
 
   .buscador-explorar {
   display: block;
-  margin-bottom: var(--espacio-16);
 }
 
 .exploracion-cabecera {

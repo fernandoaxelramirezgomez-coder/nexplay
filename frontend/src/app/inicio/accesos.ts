@@ -76,14 +76,9 @@ interface Acceso {
     .tarjeta-accion {
       height: 100%;
     }
-    /* En teléfono el espaciado de 0.08 em partía «Preguntar a Nia» en dos líneas. */
     @media (max-width: 760px) {
       .rejilla {
         grid-template-columns: 1fr;
-      }
-      .tarjeta-accion .titulo {
-        font-size: 20px;
-        letter-spacing: 0.04em;
       }
     }
   `,

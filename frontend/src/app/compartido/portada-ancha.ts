@@ -6,6 +6,7 @@ import {
   effect,
   input,
   linkedSignal,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -20,7 +21,9 @@ const VOLUMEN_POR_OMISION = 0.6;
  * que nadie quiere, y además el navegador lo bloquearía. */
 function volumenGuardado(): number {
   try {
-    const valor = Number(localStorage.getItem(CLAVE_VOLUMEN));
+    // Sin nada guardado, Number(null) daba 0 y la corredera arrancaba en cero.
+    const crudo = localStorage.getItem(CLAVE_VOLUMEN);
+    const valor = crudo === null ? NaN : Number(crudo);
     return valor >= 0 && valor <= 1 ? valor : VOLUMEN_POR_OMISION;
   } catch {
     return VOLUMEN_POR_OMISION;
@@ -40,19 +43,26 @@ function guardarVolumen(valor: number): void {
  * esta a library_hero.jpg, que está pensada para llevar el logo encima y recortada al
  * centro suele quedar casi vacía.
  *
- * Encima va el primer tráiler, en loop y mudo. La portada en gris queda debajo hasta que
- * el video dispara canplay, y se queda sola si el juego no tiene video, si el video falla
- * o si se pidió menos movimiento: en ese caso ni siquiera se pide el video. Solo la usa
- * la ficha; en la rejilla del catálogo serían veinte videos a la vez.
+ * Encima va el primer tráiler, mudo. La portada en gris queda debajo hasta que el video
+ * dispara canplay, y se queda sola si el juego no tiene video o si el video falla. Con
+ * «reducir movimiento» el video no se pide solo: un botón lo trae si la persona quiere.
+ * La usan la ficha (modo 'ficha', en loop) y el escenario de tráileres de Explorar (modo
+ * 'carrusel', que avisa al terminar para pasar al siguiente); en la rejilla del catálogo
+ * serían veinte videos a la vez.
  *
  * Los controles son el mínimo de WCAG: 2.2.2 pide poder parar el movimiento automático de
- * más de 5 s y 1.4.2 poder callar el audio. Aparecen al pasar el ratón o con foco de
- * teclado, y en pantallas táctiles siempre. */
+ * más de 5 s y 1.4.2 poder callar el audio. Van siempre a la vista, con fondo propio y de
+ * 48 px: escondidos hasta el hover, la revisión del usuario final no los encontró. */
 @Component({
   selector: 'app-portada-ancha',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="marco" [class.cargando]="estado() === 'cargando'" data-testid="portada-ancha">
+    <div
+      class="marco"
+      [class.cargando]="estado() === 'cargando'"
+      [class.carrusel]="modo() === 'carrusel'"
+      data-testid="portada-ancha"
+    >
       <img
         [src]="fuente()"
         alt=""
@@ -66,7 +76,7 @@ function guardarVolumen(valor: number): void {
         <video
           #video
           muted
-          loop
+          [loop]="enBucle()"
           playsinline
           preload="auto"
           aria-hidden="true"
@@ -74,16 +84,19 @@ function guardarVolumen(valor: number): void {
           [attr.data-estado]="estadoVideo()"
           [class.visible]="listo()"
           (canplay)="alPoderReproducir($event)"
+          (ended)="terminado.emit()"
           (error)="estadoVideo.set('fallido')"
         ></video>
         @if (listo()) {
-          <div class="controles" data-testid="portada-controles">
+          <!-- data-fondo-peor: el fondo de la barra encima de la parte más clara posible
+               del video, para el comprobador de contraste del recorrido. -->
+          <div class="controles" data-testid="portada-controles" data-fondo-peor="#3c3f4c">
             <button
               type="button"
               class="control"
               data-testid="portada-pausa"
               [attr.aria-label]="estadoVideo() === 'pausado' ? 'Reproducir el tráiler' : 'Pausar el tráiler'"
-              (click)="alternar()"
+              (click)="alternar(); interaccion.emit()"
             >
               @if (estadoVideo() === 'pausado') {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
@@ -98,7 +111,7 @@ function guardarVolumen(valor: number): void {
               data-testid="portada-silenciar"
               [attr.aria-pressed]="silenciado()"
               [attr.aria-label]="silenciado() ? 'Activar el sonido del tráiler' : 'Silenciar el tráiler'"
-              (click)="alternarSonido()"
+              (click)="alternarSonido(); interaccion.emit()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 9h3l5-4v14l-5-4H4z" />
@@ -121,10 +134,27 @@ function guardarVolumen(valor: number): void {
               aria-label="Volumen del tráiler"
               data-testid="portada-volumen"
               [value]="volumen()"
-              (input)="cambiarVolumen($any($event.target).valueAsNumber)"
+              (input)="cambiarVolumen($any($event.target).valueAsNumber); interaccion.emit()"
             />
+            @if (modo() === 'ficha') {
+              <span class="estado-sonido" data-testid="portada-estado">
+                Tráiler · {{ silenciado() ? 'sin sonido' : 'con sonido' }}
+              </span>
+            }
           </div>
         }
+      } @else if (video() && menosMovimiento && estadoVideo() !== 'fallido') {
+        <div class="controles" data-fondo-peor="#3c3f4c">
+          <button
+            type="button"
+            class="control con-texto"
+            data-testid="portada-pedir-video"
+            (click)="pedido.set(true); interaccion.emit()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+            Ver el tráiler
+          </button>
+        </div>
       }
     </div>
   `,
@@ -170,61 +200,81 @@ function guardarVolumen(valor: number): void {
     video.visible {
       opacity: 1;
     }
-    /* Los dos botones y el volumen en una sola barra: con tres piezas absolutas sueltas,
-       la corredera tapaba la pausa en cuanto la franja se angostaba. */
+    /* Los dos botones, el volumen y el estado en una sola barra con fondo propio, abajo a
+       la izquierda. Flota sobre el video, no sobre la página: es oscura en los dos temas. */
     .controles {
       position: absolute;
-      inset-block-end: var(--espacio-8);
-      inset-inline-end: var(--espacio-8);
+      inset-block-end: var(--espacio-12);
+      inset-inline-start: var(--espacio-12);
       display: flex;
       align-items: center;
       gap: var(--espacio-8);
-      opacity: 0;
-      transition: opacity var(--duracion-rapida) var(--curva);
+      max-width: calc(100% - 2 * var(--espacio-12));
+      padding: 6px;
+      border: 1px solid rgb(255 255 255 / 0.28);
+      border-radius: var(--radio-pildora);
+      background: rgb(11 15 31 / 0.8);
+      color: #f2f4ff;
+    }
+    /* En el escenario de tráileres el pie es de la información del juego: la barra sube a
+       la esquina de arriba. */
+    .carrusel .controles {
+      inset-block: var(--espacio-12) auto;
+      inset-inline: auto var(--espacio-12);
     }
     .control {
       display: grid;
       place-items: center;
-      width: 44px;
-      height: 44px;
+      flex: none;
+      width: 48px;
+      height: 48px;
       padding: 0;
-      border: 1px solid color-mix(in srgb, var(--neon) 45%, transparent);
+      border: 1px solid rgb(255 255 255 / 0.4);
       border-radius: var(--radio-pildora);
-      /* Flota sobre el video, no sobre la página: sigue siendo oscuro en los dos temas. */
-      background: rgba(11, 12, 36, 0.72);
-      color: var(--texto);
+      background: rgb(255 255 255 / 0.12);
+      color: #ffffff;
       cursor: pointer;
     }
-    .control svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
+    .control:hover {
+      background: rgb(255 255 255 / 0.22);
     }
-    .marco:hover .controles,
-    .controles:focus-within {
-      opacity: 1;
+    .control.con-texto {
+      display: inline-flex;
+      gap: var(--espacio-8);
+      width: auto;
+      padding: 0 var(--espacio-16) 0 var(--espacio-12);
+      font-size: var(--texto-body-sm);
+    }
+    .control svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
     }
     .control:focus-visible,
     .volumen:focus-visible {
-      outline: 2px solid var(--neon);
+      outline: 2px solid #22d3ee;
       outline-offset: 2px;
     }
-    /* La corredera no se despliega: ocupa su ancho desde el principio y aparece con la
-       barra entera. Cuando crecía al pasar el ratón por el botón de sonido, la barra —que
-       está anclada por su borde derecho— empujaba los dos botones 88 px a la izquierda, y
-       el segundo clic en el mismo sitio caía en la corredera en vez de silenciar. */
+    /* La corredera ocupa su ancho desde el principio: cuando crecía al pasar el ratón por
+       el botón de sonido, empujaba los botones y el segundo clic en el mismo sitio caía
+       en la corredera en vez de silenciar. */
     .volumen {
-      width: 88px;
+      flex: 0 1 96px;
+      min-width: 56px;
       height: 44px;
       margin: 0;
       padding: 0;
-      accent-color: var(--neon);
+      accent-color: #22d3ee;
       cursor: pointer;
     }
-    /* Sin ratón no hay hover que lo descubra: en pantallas táctiles queda a la vista. */
-    @media (hover: none) {
-      .controles {
-        opacity: 1;
+    .estado-sonido {
+      padding-inline: 2px var(--espacio-8);
+      font-size: var(--texto-caption);
+      white-space: nowrap;
+    }
+    @media (max-width: 480px) {
+      .estado-sonido {
+        display: none;
       }
     }
     @keyframes pulso {
@@ -240,6 +290,10 @@ function guardarVolumen(valor: number): void {
         aspect-ratio: 16 / 9;
       }
     }
+    .marco.carrusel {
+      height: auto;
+      aspect-ratio: 16 / 9;
+    }
   `,
 })
 export class PortadaAncha {
@@ -248,6 +302,13 @@ export class PortadaAncha {
   readonly respaldo = input.required<string>();
   /** video_url del catálogo: el tráiler en HLS, o null si el juego no tiene. */
   readonly video = input<string | null>(null);
+  readonly modo = input<'ficha' | 'carrusel'>('ficha');
+  /** Sin bucle, el video termina y avisa con `terminado`: el carrusel pasa al siguiente. */
+  readonly enBucle = input(true);
+
+  readonly terminado = output<void>();
+  /** Cualquier control tocado por la persona: el carrusel deja de avanzar solo. */
+  readonly interaccion = output<void>();
 
   protected readonly estado = linkedSignal<number, 'cargando' | 'lista' | 'fallida'>({
     source: this.appid,
@@ -273,11 +334,17 @@ export class PortadaAncha {
 
   protected readonly volumen = signal(volumenGuardado());
 
-  private readonly menosMovimiento =
+  protected readonly menosMovimiento =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /** Con menos movimiento el video no se pide solo; lo pide la persona con el botón. */
+  protected readonly pedido = linkedSignal<string | null, boolean>({
+    source: this.video,
+    computation: () => !this.menosMovimiento,
+  });
+
   protected readonly videoActivo = computed(
-    () => !!this.video() && !this.menosMovimiento && this.estadoVideo() !== 'fallido',
+    () => !!this.video() && this.pedido() && this.estadoVideo() !== 'fallido',
   );
 
   protected readonly listo = computed(

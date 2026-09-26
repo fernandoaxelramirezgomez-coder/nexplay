@@ -60,6 +60,9 @@ const BIENVENIDA_CATALOGO =
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [VotoNia, RouterLink, Portada, PildoraBanda],
+  // Nia lleva su violeta en cualquier vista donde aparezca (la ficha, la burbuja): el
+  // botón principal y los compactos de adentro toman el color de acción de su vista.
+  host: { 'data-vista': 'nia' },
   template: `
     <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()" [class.alto]="llenaAlto()">
       @if (muestraTitulo()) {
@@ -68,6 +71,10 @@ const BIENVENIDA_CATALOGO =
           <h2 class="titulo">Pregúntale a Nia</h2>
         </header>
       }
+      <!-- Todo lo que va entre la cabecera y el campo: en la columna de la ficha (alto) se
+           desplaza como un solo bloque, y el campo con «Preguntar» se queda siempre abajo.
+           Fuera de ahí no es una caja (display: contents). -->
+      <div class="cuerpo-chat" #cuerpo>
       @if (muestraIntro()) {
         <p class="meta intro">
           Responde con los datos de este juego: su riesgo, los motivos de las reseñas, la crítica y el precio. No
@@ -126,7 +133,7 @@ const BIENVENIDA_CATALOGO =
           @for (sugerencia of pendientes(); track sugerencia) {
             <button
               type="button"
-              class="chip"
+              class="compacto"
               data-testid="sugerencia-nia"
               [disabled]="esperando()"
               (click)="preguntar(sugerencia)"
@@ -152,6 +159,7 @@ const BIENVENIDA_CATALOGO =
         No escribas datos personales: se guardan tu pregunta y la respuesta durante
         {{ diasQueSeGuarda }} días, para poder revisar los votos.
       </p>
+      </div>
 
       <label class="escribir">
         <span class="solo-lector">Escribe tu pregunta para Nia</span>
@@ -240,12 +248,22 @@ const BIENVENIDA_CATALOGO =
       flex: 1;
       min-height: 0;
     }
-    .nia.alto .conversacion {
-      flex: 1;
-      max-height: none;
+    .cuerpo-chat {
+      display: contents;
     }
-    .nia.alto .escribir {
-      margin-top: auto;
+    /* En la columna de la ficha el alto es el de la pantalla: si no alcanza, el cuerpo se
+       desplaza por dentro y el campo con «Preguntar» se queda a la vista. */
+    .nia.alto .cuerpo-chat {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: var(--espacio-8);
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .nia.alto .conversacion {
+      max-height: none;
+      overflow-y: visible;
     }
     .conversacion {
       list-style: none;
@@ -315,22 +333,7 @@ const BIENVENIDA_CATALOGO =
       flex-wrap: wrap;
       gap: var(--espacio-8);
     }
-    /* Aquí los chips se pulsan para preguntar: llevan filo y superficie para que se lean
-       como botones y no como el texto de al lado. */
-    .sugerencias .chip {
-      padding: var(--espacio-8) var(--espacio-12);
-      border: 1px solid var(--borde-control);
-      border-radius: var(--radio-pildora);
-      background: var(--superficie-lienzo);
-      font-family: var(--fuente-texto);
-    }
-    .sugerencias .chip:hover:not([disabled]) {
-      border-color: var(--neon);
-      color: var(--texto);
-    }
-    .sugerencias .chip::after {
-      content: none;
-    }
+    /* Las sugerencias se pulsan para preguntar: son compactos del violeta de Nia. */
     .sugerencias .chip[disabled] {
       opacity: 0.55;
       cursor: not-allowed;
@@ -440,6 +443,7 @@ export class Nia {
   private readonly catalogo = inject(CatalogoStore);
   private readonly historial = inject(HistorialStore);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
+  private readonly cuerpo = viewChild<ElementRef<HTMLElement>>('cuerpo');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
 
   protected readonly maximo = MAXIMO_TEXTO;
@@ -494,9 +498,16 @@ export class Nia {
       this.mensajes();
       this.esperando();
       const lista = this.conversacion()?.nativeElement;
+      const cuerpo = this.cuerpo()?.nativeElement;
       if (lista) {
-        // Tras pintar: si se ajusta antes, el último mensaje queda cortado.
-        requestAnimationFrame(() => (lista.scrollTop = lista.scrollHeight));
+        // Tras pintar: si se ajusta antes, el último mensaje queda cortado. En la columna
+        // de la ficha lo que se desplaza es el cuerpo entero, no solo la lista.
+        requestAnimationFrame(() => {
+          lista.scrollTop = lista.scrollHeight;
+          if (cuerpo) {
+            cuerpo.scrollTop = cuerpo.scrollHeight;
+          }
+        });
       }
     });
   }

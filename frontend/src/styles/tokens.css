@@ -45,6 +45,8 @@
   --canal-perfil: 244 114 182;
   --canal-panorama: 163 230 53;
   --canal-neutro: 148 163 214;
+  /* El azul de estado info, como canal: lo usa el bloque de opinión de la ficha. */
+  --canal-info: 96 165 250;
   --t-inicio: var(--c-inicio);
   --t-explorar: var(--c-explorar);
   --t-comparar: var(--c-comparar);
@@ -66,6 +68,8 @@
   /* Resplandor de los botones con el color de su acción. En claro baja: sobre papel un
      halo fuerte ensucia más de lo que destaca. */
   --brillo-boton: 0.3;
+  /* Resplandor del color dominante de la portada detrás de cada tarjeta del catálogo. */
+  --brillo-portada: 0.55;
 
   /* Riesgo: el relleno del chip y, como texto o filo, su tinta. Texto encima: #0B0F1F. */
   --banda-bajo: #34d399;
@@ -217,6 +221,7 @@
   --enlace: #0e738f;
   --foco: #0e738f;
   --brillo-boton: 0.18;
+  --brillo-portada: 0.4;
 
   /* Riesgo en claro: el chip conserva el relleno vivo con texto tinta, y su filo y su
      texto sobre papel usan la variante oscura. El ámbar #B45309 daba 4.19:1 sobre

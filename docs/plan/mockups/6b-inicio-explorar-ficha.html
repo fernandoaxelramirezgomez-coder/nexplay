@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup 6B · Inicio, Explorar y Ficha</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ── Marco del mockup (no es parte de la app) ─────────────────────────────── */
+  .encabezado-mockup { max-width: 1152px; margin: 0 auto; padding: 72px 24px 24px; container: contenido / inline-size; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup {
+    position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px;
+    border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer;
+  }
+  .rotulo-mockup {
+    align-self: flex-start; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control);
+    background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .nota-mockup {
+    padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie);
+    color: var(--texto-2); font-size: 16px; line-height: 1.5;
+  }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .variante { display: flex; flex-direction: column; gap: 12px; }
+  .variante > .rotulo-mockup { text-transform: none; letter-spacing: 0; }
+
+  /* ── El lienzo de cada vista: el mismo fondo espacial de app.css ───────────── */
+  .escena {
+    padding: 40px 24px 56px;
+    border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 0.6px, transparent 1.2px) 17px 29px / 53px 61px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .contenido { max-width: 1152px; margin: 0 auto; container: contenido / inline-size; display: flex; flex-direction: column; gap: 24px; }
+  .muestra { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+  /* Texto de color nunca directo sobre la nebulosa: la sobrelínea va en etiqueta. */
+  .sobrelinea {
+    display: inline-block; margin: 0 0 14px; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie);
+    color: var(--neon); font-size: var(--texto-caption); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .pildora { display: inline-block; padding: 1px 11px; border: 1px solid var(--filo-banda); border-radius: var(--radio-pildora); color: var(--texto-sobre-banda); font-size: 16px; white-space: nowrap; }
+  .pildora[data-banda='bajo'] { background: var(--banda-bajo); --filo-banda: var(--banda-bajo-texto); }
+  .pildora[data-banda='medio'] { background: var(--banda-medio); --filo-banda: var(--banda-medio-texto); }
+  .pildora[data-banda='alto'] { background: var(--banda-alto); --filo-banda: var(--banda-alto-texto); }
+  .campo {
+    flex: 1; min-width: 0; min-height: 56px; padding: 0 18px; border-radius: 14px; display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--borde-control); background: var(--fondo); color: var(--texto-2); font-size: 17px;
+  }
+  :root[data-tema='claro'] .campo { background: #ffffff; }
+  .compacto svg.i { width: 18px; height: 18px; }
+
+  /* ═══ INICIO ═══════════════════════════════════════════════════════════════ */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr); gap: 48px; align-items: center; }
+  .titular { font-size: clamp(40px, 5.6cqw, 64px); max-width: 16ch; }
+  /* 7: la entrada deja la voz baja: texto pleno, 22 px, separada del título por aire y
+     por un filo del color de la vista. */
+  .entrada {
+    margin-top: 32px; padding-inline-start: 18px; border-inline-start: 3px solid var(--accion);
+    color: var(--texto); font-size: clamp(20px, 1.9cqw, 22px); line-height: 1.5; max-width: 52ch;
+  }
+  .ejemplo {
+    display: grid; grid-template-columns: 150px minmax(0, 1fr); overflow: hidden; border-radius: 16px;
+    border: 1px solid var(--borde); background: var(--superficie);
+  }
+  .ejemplo img { width: 100%; height: 100%; object-fit: cover; }
+  .ejemplo .cuerpo { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .ejemplo .rotulo { font-family: var(--fuente-mono); color: var(--neon); letter-spacing: 0.1em; text-transform: uppercase; font-size: 16px; }
+  .ejemplo .nombre { font-size: 22px; font-weight: 700; }
+  .ejemplo ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; color: var(--texto-2); font-size: 16px; }
+  .ejemplo a { color: var(--enlace); font-weight: 700; }
+
+  .accion-principal {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px 28px; align-items: center;
+    padding: clamp(20px, 3cqw, 34px); border-radius: 24px;
+    border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+    background: radial-gradient(ellipse 60% 90% at 0% 0%, rgb(var(--accion-canal) / 0.16), transparent 70%), var(--superficie);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.3);
+  }
+  :root[data-tema='claro'] .accion-principal { box-shadow: 0 18px 44px rgb(11 15 31 / 0.1); }
+  .icono-grande {
+    width: 84px; height: 84px; border-radius: 22px; display: grid; place-items: center;
+    color: var(--accion-tinta); background: rgb(var(--accion-canal) / 0.16); box-shadow: 0 0 40px rgb(var(--accion-canal) / 0.25);
+  }
+  .icono-grande svg.i { width: 44px; height: 44px; }
+  .titulo-accion {
+    font-family: var(--fuente-display); font-weight: 700; text-transform: uppercase; line-height: 1; letter-spacing: 0.02em;
+    font-size: clamp(30px, 4.4cqw, 52px);
+    background: var(--titulo-degradado); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .accion-principal .sub { margin-top: 8px; color: var(--texto-2); font-size: 20px; line-height: 1.4; }
+  .accion-principal .buscar { grid-column: 1 / -1; display: flex; gap: 12px; align-items: stretch; }
+  .accion-principal .boton-cta { min-height: 56px; font-size: 18px; padding-inline: 28px; }
+  .aclaracion { grid-column: 1 / -1; color: var(--texto-2); font-family: var(--fuente-mono); font-size: 16px; line-height: 1.5; }
+
+  .rejilla-accesos { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .rejilla-accesos .tarjeta-accion { height: 100%; }
+
+  .fuentes-enlaces { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .fuente {
+    display: flex; flex-direction: column; gap: 8px; height: 100%; padding: 18px; border-radius: 16px;
+    border: 1px solid var(--borde); background: var(--superficie);
+  }
+  .fuente .origen { font-family: var(--fuente-display); font-weight: 700; font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .fuente .api { font-family: var(--fuente-mono); color: var(--neon); font-size: 16px; }
+  .fuente p { color: var(--texto-2); font-size: 16px; line-height: 1.45; flex: 1; }
+  .fuente a { color: var(--enlace); text-underline-offset: 4px; font-size: 16px; }
+
+  @container contenido (max-width: 820px) {
+    .hero { grid-template-columns: 1fr; gap: 32px; }
+    .fuentes-enlaces { grid-template-columns: 1fr; }
+  }
+  @container contenido (max-width: 600px) {
+    .rejilla-accesos { grid-template-columns: 1fr; }
+    .rejilla-accesos .tarjeta-accion .titulo { font-size: 20px; letter-spacing: 0.04em; }
+    .accion-principal { grid-template-columns: 1fr; }
+    .icono-grande { width: 64px; height: 64px; }
+    .icono-grande svg.i { width: 34px; height: 34px; }
+    .accion-principal .buscar { flex-direction: column; }
+    /* El ejemplo apila la portada arriba: al lado, la píldora no cabía. */
+    .ejemplo { grid-template-columns: 1fr; }
+    .ejemplo img { aspect-ratio: 616 / 353; height: auto; }
+    /* En teléfono la tarjeta de acción se compacta: con 52 px de icono y 0.08 em, los
+       títulos de dos palabras se partían. Va a base.css en la implementación. */
+    .tarjeta-accion { grid-template-columns: 44px minmax(0, 1fr) 20px; gap: 4px 12px; padding: 16px; min-height: 84px; }
+    .tarjeta-accion .insignia { width: 44px; height: 44px; }
+    .tarjeta-accion .titulo { font-size: 20px; letter-spacing: 0.04em; }
+    /* En teléfono la acción va primero: el orden visual es título, buscar, entrada. */
+    .inicio-movil { display: flex; flex-direction: column; gap: 32px; }
+    .inicio-movil .hero { display: contents; }
+    .inicio-movil .hero-mensaje { display: contents; }
+    .inicio-movil .titulos-hero { order: 1; }
+    .inicio-movil .accion-principal { order: 2; }
+    .inicio-movil .entrada { order: 3; margin-top: 0; }
+    .inicio-movil .ejemplo { order: 4; }
+    .inicio-movil .accesos { order: 5; }
+    .inicio-movil .fuentes { order: 6; }
+  }
+
+  /* ═══ EXPLORAR ═════════════════════════════════════════════════════════════ */
+  .exploracion-cabecera { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .exploracion-cabecera h1 { max-width: 18ch; }
+
+  /* 9: tráileres. El escenario con el video activo y, al lado, los seis de la lista. */
+  .trailers { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 16px; }
+  .escenario-video { position: relative; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; background: #0b0f1f; border: 1px solid var(--borde); }
+  .escenario-video > img { width: 100%; height: 100%; object-fit: cover; }
+  .velo {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px;
+    padding: clamp(16px, 2.4cqw, 28px);
+    background: linear-gradient(to top, rgb(11 15 31 / 0.94), rgb(11 15 31 / 0.78) 45%, transparent 80%);
+    color: #f2f4ff;
+  }
+  .velo .nombre-video { font-family: var(--fuente-display); font-weight: 700; font-size: clamp(24px, 3cqw, 36px); text-transform: uppercase; line-height: 1.05; }
+  .velo .detalle { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; font-size: 16px; }
+  .velo .detalle .motivo { color: #d6dbf5; }
+  .velo .ver-ficha { color: #0b0f1f; background: #f2f4ff; border: 0; min-height: 44px; padding: 0 18px; border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+  /* Controles siempre visibles, con fondo propio: nada de aparecer solo con el ratón. */
+  .controles-video { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
+  .control {
+    width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+    border: 1px solid rgb(255 255 255 / 0.4); background: rgb(11 15 31 / 0.78); color: #ffffff;
+  }
+  .control svg.i { width: 22px; height: 22px; }
+  .progreso { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgb(255 255 255 / 0.18); }
+  .progreso span { display: block; width: 38%; height: 100%; background: var(--accion); }
+  .lista-trailers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .lista-trailers button {
+    width: 100%; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: center; text-align: start;
+    padding: 6px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: pointer; font: inherit;
+  }
+  .lista-trailers img { width: 112px; aspect-ratio: 460 / 215; object-fit: cover; border-radius: 8px; }
+  .lista-trailers .t-nombre { font-size: 16px; font-weight: 700; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lista-trailers .t-nivel { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--texto-2); font-size: 16px; }
+  .lista-trailers .punto { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .lista-trailers [aria-current='true'] { border-color: var(--neon); background: var(--acento-sistema); box-shadow: inset 0 0 0 1px var(--neon); }
+  .pie-trailers { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--texto-2); font-size: 16px; }
+  .pie-trailers .flechas { display: flex; gap: 8px; }
+  .pie-trailers .flechas button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); display: grid; place-items: center; cursor: pointer; }
+
+  .filtros { display: flex; flex-direction: column; gap: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-genero { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto); display: inline-flex; align-items: center; font-size: 16px; }
+  .chip-genero[aria-pressed='true'] { border-color: var(--neon); color: var(--texto); background: var(--acento-sistema); }
+
+  .estante-cabecera { display: flex; align-items: center; gap: 12px; font-size: 20px; }
+  .estante-cabecera .conteo { font-family: var(--fuente-mono); color: var(--texto-2); font-size: 16px; }
+  .fila { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+
+  /* 10: la tarjeta. A: filo del riesgo (60 %) y sombreado del riesgo abajo; el color de
+     la portada es el halo al pasar. B: filo del color de la portada y sombreado del riesgo. */
+  .tarjeta {
+    position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 16px;
+    border: 1px solid var(--filo); background: linear-gradient(to top, var(--sombra-riesgo), transparent 62%), var(--superficie);
+    transition: transform 150ms var(--curva), box-shadow 150ms var(--curva);
+  }
+  .tarjeta[data-banda='bajo'] { --filo: var(--banda-bajo-filo); --sombra-riesgo: color-mix(in srgb, var(--banda-bajo) 20%, transparent); }
+  .tarjeta[data-banda='medio'] { --filo: var(--banda-medio-filo); --sombra-riesgo: color-mix(in srgb, var(--banda-medio) 20%, transparent); }
+  .tarjeta[data-banda='alto'] { --filo: var(--banda-alto-filo); --sombra-riesgo: color-mix(in srgb, var(--banda-alto) 20%, transparent); }
+  .tarjeta.es-hover, .tarjeta:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px var(--filo), 0 14px 36px color-mix(in srgb, var(--color-portada, var(--accion)) 55%, transparent);
+  }
+  .variante-b .tarjeta { border-width: 2px; border-color: var(--color-portada-filo, var(--borde-control)); }
+  .tarjeta .lienzo { position: relative; aspect-ratio: 460 / 215; }
+  .tarjeta .lienzo img { width: 100%; height: 100%; object-fit: cover; }
+  .tarjeta .compacto { position: absolute; top: 8px; right: 8px; min-height: 36px; padding: 0 12px; }
+  .tarjeta .cuerpo { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 18px; }
+  .tarjeta .nombre { font-size: 18px; font-weight: 700; line-height: 1.2; }
+  .tarjeta .datos, .tarjeta .motivo { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); line-height: 1.4; }
+  .muestra-color { display: inline-flex; align-items: center; gap: 6px; font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); }
+  .muestra-color i { width: 14px; height: 14px; border-radius: 4px; background: var(--color-portada-filo, transparent); border: 1px solid var(--borde-control); }
+
+  @container contenido (max-width: 900px) {
+    .fila { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @container contenido (max-width: 700px) {
+    .trailers { grid-template-columns: 1fr; }
+    .lista-trailers { flex-direction: row; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+    .lista-trailers li { flex: 0 0 168px; scroll-snap-align: start; }
+    .lista-trailers button { grid-template-columns: 1fr; }
+    .lista-trailers img { width: 100%; }
+    .controles-video { top: 10px; right: 10px; }
+    .velo .detalle .motivo { display: none; }
+  }
+  /* En teléfono los estantes se deslizan, como en la app. */
+  @container contenido (max-width: 520px) {
+    .fila { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+    .fila li { flex: 0 0 72%; scroll-snap-align: start; }
+  }
+
+  /* ═══ FICHA ════════════════════════════════════════════════════════════════ */
+  .portada-ancha { position: relative; height: clamp(220px, 30cqw, 340px); border-radius: 20px; overflow: hidden; border: 1px solid var(--borde); background: #0b0f1f; }
+  .portada-ancha img { width: 100%; height: 100%; object-fit: cover; }
+  /* 13: la barra del video, siempre visible, con fondo y botones de 48 px. */
+  .barra-video {
+    position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px 6px 6px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.28); background: rgb(11 15 31 / 0.8); color: #f2f4ff;
+  }
+  .barra-video .control { background: rgb(255 255 255 / 0.12); }
+  .barra-video input { width: 110px; accent-color: #22d3ee; }
+  .barra-video .estado { font-size: 16px; padding-inline-start: 4px; white-space: nowrap; }
+  .titulos { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .nombre-banda { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; min-width: 0; }
+  /* El nombre del juego es título de vista, pero un nombre de cuatro palabras no puede
+     irse a tres líneas en teléfono: aquí el mínimo baja a 32 px. */
+  .nombre-banda h1 { font-size: clamp(32px, 5cqw, 56px); }
+  .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* El veredicto y la descripción, en un panel con el filo del riesgo: la palabra clave
+     va en el color del riesgo, y ese color sobre la nebulosa no llegaba a 4.5:1. */
+  .resumen-riesgo {
+    display: flex; flex-direction: column; gap: 18px; padding: 24px 26px; border-radius: 16px;
+    border: 1px solid var(--banda-alto-filo);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--banda-alto) 10%, transparent), transparent 55%), var(--superficie);
+    box-shadow: inset 5px 0 0 var(--banda-alto-texto);
+  }
+  .veredicto p { font-size: clamp(24px, 3cqw, 34px); line-height: 1.25; }
+  .veredicto .palabra { color: var(--banda-alto-texto); font-weight: 700; }
+  .descripcion { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .descripcion-corta { padding: 18px 22px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .descripcion .texto { font-size: 20px; line-height: 1.5; color: var(--texto); }
+  .descripcion .recortada { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .descripcion .de-quien { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); }
+
+  .columnas { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .principal, .lateral { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+  /* 14: cada bloque con contenedor, encabezado con icono y un color propio. */
+  .bloque {
+    position: relative; display: flex; flex-direction: column; gap: 16px; padding: 22px 24px 24px; border-radius: 16px;
+    border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--tono, var(--borde));
+  }
+  .bloque > .boton-texto, .bloque > .tarjeta-accion { align-self: flex-start; }
+  .bloque > .tarjeta-accion { align-self: stretch; }
+  .bloque[data-seccion='motivos'] { --tono: var(--t-inicio); --tono-canal: var(--canal-inicio); }
+  .bloque[data-seccion='factores'] { --tono: var(--t-neutro); --tono-canal: var(--canal-neutro); }
+  .bloque[data-seccion='perfil'] { --tono: var(--t-perfil); --tono-canal: var(--canal-perfil); }
+  .bloque[data-seccion='opinion'] { --tono: var(--info); --tono-canal: 96 165 250; }
+  .bloque[data-seccion='comentarios'] { --tono: var(--t-explorar); --tono-canal: var(--canal-explorar); }
+  .bloque-cabecera { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; }
+  .bloque-cabecera .insignia { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--tono); background: rgb(var(--tono-canal) / 0.14); }
+  .bloque-titulo { font-family: var(--fuente-display); font-weight: 700; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tono); line-height: 1.15; }
+  .bloque-sub { grid-column: 2; color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .etiqueta-afinidad {
+    grid-column: 3; grid-row: 1 / span 2; align-self: start; padding: 4px 12px; border-radius: 999px; font-size: 16px; white-space: nowrap;
+    border: 1px solid color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie)); color: var(--texto);
+  }
+
+  .barras { display: grid; grid-template-columns: 130px minmax(0, 1fr) 3.5rem; gap: 10px 14px; align-items: center; font-size: 17px; }
+  .barras .pista { height: 10px; border-radius: 999px; background: var(--superficie-2); overflow: hidden; }
+  .barras .pista span { display: block; height: 100%; border-radius: 999px; background: var(--tono); }
+  .barras .pct { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); text-align: end; }
+  .bloque .pie-bloque { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; font-size: 16px; color: var(--texto-2); }
+  .bloque .pie-bloque a, .bloque a.enlace { color: var(--enlace); text-underline-offset: 4px; }
+  .factores { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 18px; }
+  .factores li { display: flex; gap: 10px; align-items: baseline; }
+  .factores .flecha { color: var(--banda-alto-texto); font-weight: 700; }
+  .leyenda { font-size: 16px; color: var(--texto-2); }
+
+  /* 15: la historia de perfil, destacada. */
+  .bloque.destacado {
+    border-color: color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie));
+    background: linear-gradient(135deg, rgb(var(--tono-canal) / 0.13), transparent 58%), var(--superficie);
+    box-shadow: inset 0 3px 0 var(--tono), 0 0 36px rgb(var(--tono-canal) / 0.16);
+  }
+  .respuestas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .respuestas li {
+    padding: 6px 12px; border-radius: 999px; font-size: 16px; color: var(--texto);
+    border: 1px solid color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie)); background: var(--superficie-2);
+  }
+  .respuestas .quien { color: var(--texto-2); }
+  .lineas { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .lineas li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 20px; line-height: 1.4; }
+  .lineas .punto-icono { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--tono); background: rgb(var(--tono-canal) / 0.14); }
+  .lineas .punto-icono svg.i { width: 18px; height: 18px; }
+  .clave { font-weight: 700; color: var(--texto); text-decoration: underline; text-decoration-color: var(--tono); text-decoration-thickness: 3px; text-underline-offset: 5px; }
+  .aviso-historia { font-size: 16px; color: var(--texto-2); line-height: 1.5; }
+
+  .estrellas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .estrellas button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--tono); cursor: pointer; }
+  .estrellas svg.i { width: 30px; height: 30px; }
+  .estrellas .resumen { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); padding-inline-start: 8px; }
+  .area { min-height: 84px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde-control); background: var(--fondo); color: var(--texto-2); font-size: 17px; }
+  :root[data-tema='claro'] .area { background: #ffffff; }
+  .fila-envio { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .fila-envio .cuenta { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto-2); }
+
+  .ficha-tecnica dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 18px; font-size: 17px; }
+  .ficha-tecnica dt { color: var(--texto-2); }
+  .ficha-tecnica dd { margin: 0; font-family: var(--fuente-mono); font-size: 16px; }
+
+  .panel-nia {
+    display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+    background: radial-gradient(ellipse 80% 60% at 0% 0%, rgb(var(--accion-canal) / 0.12), transparent 70%), var(--superficie);
+  }
+  .panel-nia .cabeza { display: flex; align-items: center; gap: 12px; }
+  .panel-nia .cabeza img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--accion); background: var(--superficie-2); }
+  .panel-nia .cabeza strong { font-family: var(--fuente-display); font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accion-tinta); }
+  .panel-nia .cabeza span { display: block; font-size: 16px; color: var(--texto-2); }
+  .globo { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--borde); background: var(--superficie-2); font-size: 17px; line-height: 1.45; }
+  .sugerencias { display: flex; flex-wrap: wrap; gap: 8px; }
+  .panel-nia .aviso { font-size: 16px; color: var(--texto-2); line-height: 1.45; }
+
+  @container contenido (max-width: 900px) {
+    .columnas { grid-template-columns: 1fr; }
+  }
+  @container contenido (max-width: 520px) {
+    .barra-video { left: 10px; bottom: 10px; right: 10px; }
+    .barra-video input { flex: 1; width: auto; min-width: 0; }
+    .barras { grid-template-columns: 104px minmax(0, 1fr) 3rem; font-size: 16px; }
+    .bloque { padding: 18px 16px 20px; }
+    .bloque-titulo { font-size: 18px; letter-spacing: 0.04em; }
+    .tarjeta-accion { grid-template-columns: 44px minmax(0, 1fr) 20px; gap: 4px 12px; padding: 16px; min-height: 84px; }
+    .tarjeta-accion .insignia { width: 44px; height: 44px; }
+    .tarjeta-accion .titulo { font-size: 20px; letter-spacing: 0.04em; }
+    .bloque-cabecera { grid-template-columns: 40px minmax(0, 1fr); }
+    .etiqueta-afinidad { grid-column: 1 / -1; grid-row: auto; justify-self: start; margin-top: 8px; }
+    .lineas li { font-size: 18px; }
+  }
+
+  /* ── Medición ─────────────────────────────────────────────────────────────── */
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+  .tabla-puntos { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla-puntos th, .tabla-puntos td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla-puntos th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla-puntos td:first-child { font-family: var(--fuente-mono); white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-explorar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-comparar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-nia" viewBox="0 0 24 24"><path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/></symbol>
+  <symbol id="i-panorama" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 19v-6m4 6V8m4 11v-4"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4"/><path d="M6.2 19.2a6 6 0 0 1 11.6 0"/></symbol>
+  <symbol id="i-pausa" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+  <symbol id="i-mudo" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6m0-6 6 6"/></symbol>
+  <symbol id="i-sonido" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-izq" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></symbol>
+  <symbol id="i-der" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-motivos" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4m0 3h.01"/></symbol>
+  <symbol id="i-factores" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-estrella" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-comentarios" viewBox="0 0 24 24"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h1a2 2 0 0 1 2 2v10l-3-3h-6a2 2 0 0 1-2-2v-1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-moneda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.2A3 3 0 0 0 12.2 8H11a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-1.2A3 3 0 0 1 9 14.8M12 6v2m0 8v2"/></symbol>
+  <symbol id="i-ficha" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup 6B</h1>
+  <p>Inicio, Explorar y Ficha, con los tokens y estilos reales de la app después de la 6A. Lo que va en recuadro punteado es nota del mockup, no parte del diseño. Al final, qué cambia por punto y lo que la página midió de sí misma.</p>
+</header>
+
+<!-- ════════════════════════════════ INICIO ═══════════════════════════════ -->
+<section class="escena" data-vista="inicio" id="inicio">
+  <div class="contenido">
+    <p class="rotulo-mockup">Inicio · puntos 7 y 8</p>
+    <div class="muestra inicio-movil">
+      <section class="hero">
+        <div class="hero-mensaje">
+          <div class="titulos-hero">
+            <p class="sobrelinea mono">Evidencia antes de comprar</p>
+            <h1 class="titular">Descubre qué podría frustrarte en las primeras dos horas</h1>
+          </div>
+          <p class="entrada">NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus motivos frecuentes y el contexto que puede importar para ti.</p>
+        </div>
+        <aside class="ejemplo" aria-label="Así se ve una segunda opinión">
+          <img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg" alt="" />
+          <div class="cuerpo">
+            <p class="rotulo">Ejemplo del catálogo</p>
+            <p class="nombre">Hades</p>
+            <span><span class="pildora" data-banda="bajo">Riesgo de arrepentimiento: bajo</span></span>
+            <ul><li>✓ Motivos frecuentes en reseñas</li><li>✓ Factores que mueven la estimación</li></ul>
+            <a href="#">Ver análisis completo →</a>
+          </div>
+        </aside>
+      </section>
+
+      <section class="accion-principal" aria-labelledby="titulo-buscar">
+        <span class="icono-grande" aria-hidden="true"><svg class="i"><use href="#i-buscar"/></svg></span>
+        <div>
+          <h2 class="titulo-accion" id="titulo-buscar">Buscar un juego</h2>
+          <p class="sub">Escribe el nombre y mira su riesgo de arrepentimiento antes de comprarlo.</p>
+        </div>
+        <div class="buscar">
+          <span class="campo"><svg class="i"><use href="#i-buscar"/></svg>Hollow Knight, Cyberpunk, Portal…</span>
+          <button class="boton-cta" type="button">Buscar un juego →</button>
+        </div>
+        <p class="aclaracion">Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.</p>
+      </section>
+
+      <section class="accesos" aria-labelledby="titulo-accesos">
+        <h2 class="rotulo-seccion" id="titulo-accesos">Qué puedes hacer aquí</h2>
+        <ul class="rejilla-accesos">
+          <li><a class="tarjeta-accion" data-tono="explorar" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-explorar"/></svg></span><span class="titulo">Explorar</span><span class="sub">Los 123 juegos, por nivel de riesgo</span><span class="chevron">›</span></a></li>
+          <li><a class="tarjeta-accion" data-tono="comparar" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-comparar"/></svg></span><span class="titulo">Comparar</span><span class="sub">Hasta cuatro juegos lado a lado</span><span class="chevron">›</span></a></li>
+          <li><a class="tarjeta-accion" data-tono="nia" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-nia"/></svg></span><span class="titulo">Preguntar a Nia</span><span class="sub">Tu asistente del catálogo</span><span class="chevron">›</span></a></li>
+          <li><a class="tarjeta-accion" data-tono="panorama" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-panorama"/></svg></span><span class="titulo">Panorama</span><span class="sub">Los datos del catálogo en gráficas</span><span class="chevron">›</span></a></li>
+        </ul>
+      </section>
+
+      <section class="fuentes" aria-labelledby="titulo-fuentes">
+        <h2 class="rotulo-seccion" id="titulo-fuentes">De dónde salen los datos</h2>
+        <ul class="fuentes-enlaces">
+          <li><div class="fuente"><span class="origen">Steam</span><span class="api">appreviews</span><p>Las reseñas, su voto y las horas que llevaba jugadas quien escribió cada una.</p><a href="https://partner.steamgames.com/doc/store/getreviews">Documentación de Steam ↗</a></div></li>
+          <li><div class="fuente"><span class="origen">Steam</span><span class="api">appdetails</span><p>Precio, géneros, fecha de lanzamiento, descripción y tráileres de cada juego.</p><a href="https://store.steampowered.com/api/appdetails?appids=1938010">Ver una respuesta de ejemplo ↗</a></div></li>
+          <li><div class="fuente"><span class="origen">Metacritic</span><span class="api">nota de la crítica</span><p>La calificación de la crítica; llega a través de appdetails de Steam.</p><a href="https://www.metacritic.com/">metacritic.com ↗</a></div></li>
+        </ul>
+      </section>
+    </div>
+    <div class="nota-mockup">
+      <strong>Inicio.</strong> Una sola acción principal: la tarjeta «Buscar un juego», con el buscador que ya existe dentro (sugiere mientras escribes; el botón lleva a la ficha si hay una coincidencia exacta y, si no, a Explorar ya filtrado). Sale el botón «Ver los 123 juegos del catálogo» (lo dice la tarjeta de Explorar) y el botón «Ver el panorama completo» del final (lo dice la de Panorama): eran otras dos acciones principales. En teléfono el orden es título → buscar → entrada → ejemplo. Las cifras de «De dónde salen los datos» y «Qué no es» se quedan como están, debajo de estas tres fuentes.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ EXPLORAR ═════════════════════════════ -->
+<section class="escena" data-vista="explorar" id="explorar">
+  <div class="contenido">
+    <p class="rotulo-mockup">Explorar · puntos 9, 10 y 11</p>
+    <div class="muestra">
+      <header class="exploracion-cabecera">
+        <div><p class="sobrelinea mono">Catálogo</p><h1>Explora por género y nivel de riesgo</h1></div>
+        <p class="meta mono"><strong>123</strong> juegos de Steam</p>
+      </header>
+
+      <section aria-label="Tráileres del catálogo" class="variante">
+        <div class="trailers">
+          <div class="escenario-video">
+            <img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/105600/capsule_616x353.jpg" alt="" />
+            <div class="velo">
+              <span><span class="pildora" data-banda="medio">Riesgo de arrepentimiento: medio</span></span>
+              <p class="nombre-video">Terraria</p>
+              <p class="detalle"><span class="motivo">Motivo principal: controles</span><a class="ver-ficha" href="#">Ver ficha →</a></p>
+            </div>
+            <div class="controles-video">
+              <button class="control" type="button" aria-label="Pausar el tráiler"><svg class="i"><use href="#i-pausa"/></svg></button>
+              <button class="control" type="button" aria-label="Activar el sonido"><svg class="i"><use href="#i-mudo"/></svg></button>
+            </div>
+            <div class="progreso"><span></span></div>
+          </div>
+          <ol class="lista-trailers">
+            <li><button type="button"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/440/header.jpg" alt=""/><span><span class="t-nombre">Team Fortress 2</span><span class="t-nivel"><i class="punto" style="background:var(--banda-bajo)"></i>Riesgo bajo</span></span></button></li>
+            <li><button type="button"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg" alt=""/><span><span class="t-nombre">Grand Theft Auto V Legacy</span><span class="t-nivel"><i class="punto" style="background:var(--banda-bajo)"></i>Riesgo bajo</span></span></button></li>
+            <li><button type="button" aria-current="true"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/105600/header.jpg" alt=""/><span><span class="t-nombre">Terraria</span><span class="t-nivel"><i class="punto" style="background:var(--banda-medio)"></i>Riesgo medio</span></span></button></li>
+            <li><button type="button"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg" alt=""/><span><span class="t-nombre">Cyberpunk 2077</span><span class="t-nivel"><i class="punto" style="background:var(--banda-medio)"></i>Riesgo medio</span></span></button></li>
+            <li><button type="button"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/553850/header.jpg" alt=""/><span><span class="t-nombre">HELLDIVERS™ 2</span><span class="t-nivel"><i class="punto" style="background:var(--banda-alto)"></i>Riesgo alto</span></span></button></li>
+            <li><button type="button"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/252490/header.jpg" alt=""/><span><span class="t-nombre">Rust</span><span class="t-nivel"><i class="punto" style="background:var(--banda-alto)"></i>Riesgo alto</span></span></button></li>
+          </ol>
+        </div>
+        <div class="pie-trailers">
+          <span>Tráiler 3 de 6 · sin sonido · dos por nivel, los más reseñados en Steam</span>
+          <span class="flechas"><button type="button" aria-label="Tráiler anterior"><svg class="i"><use href="#i-izq"/></svg></button><button type="button" aria-label="Tráiler siguiente"><svg class="i"><use href="#i-der"/></svg></button></span>
+        </div>
+      </section>
+
+      <div class="filtros">
+        <span class="campo"><svg class="i"><use href="#i-buscar"/></svg>¿Qué juego estás pensando comprar?</span>
+        <div class="chips"><span class="chip-genero" aria-pressed="true">Todos</span><span class="chip-genero">Acción</span><span class="chip-genero">Aventura</span><span class="chip-genero">Rol</span><span class="chip-genero">Estrategia</span><span class="chip-genero">Indie</span></div>
+      </div>
+
+      <div class="variante">
+        <p class="rotulo-mockup">A · recomendada: filo del riesgo, halo de la portada al pasar</p>
+        <section>
+          <h2 class="estante-cabecera"><span class="pildora" data-banda="bajo">Riesgo de arrepentimiento: bajo</span><span class="conteo">(43)</span></h2>
+          <ul class="fila">
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1172470/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Apex Legends™</h3><p class="datos">Metacritic 88<br/>Gratis</p><p class="motivo">Motivo principal: rendimiento</p></div></article></li>
+            <li><article class="tarjeta es-hover" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Baldur's Gate 3</h3><p class="datos">Metacritic 96<br/>$1,299.00 MXN</p><p class="motivo">Motivo principal: rendimiento</p></div></article></li>
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/736260/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button" aria-pressed="true">✓ Comparando</button></div><div class="cuerpo"><h3 class="nombre">Baba Is You</h3><p class="datos">Metacritic 87<br/>$154.99 MXN</p><p class="motivo">Sin motivos suficientes</p></div></article></li>
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/244210/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Assetto Corsa</h3><p class="datos">Metacritic 85<br/>$56.99 MXN</p><p class="motivo">Motivo principal: controles</p></div></article></li>
+          </ul>
+        </section>
+        <section>
+          <h2 class="estante-cabecera"><span class="pildora" data-banda="alto">Riesgo de arrepentimiento: alto</span><span class="conteo">(43)</span></h2>
+          <ul class="fila">
+            <li><article class="tarjeta" data-banda="alto"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1944430/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Amnesia: The Bunker</h3><p class="datos">Sin nota de Metacritic<br/>$282.99 MXN</p><p class="motivo">Motivo principal: rendimiento</p></div></article></li>
+            <li><article class="tarjeta" data-banda="alto"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/924970/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Back 4 Blood</h3><p class="datos">Metacritic 77<br/>$1,199.00 MXN</p><p class="motivo">Motivo principal: dificultad</p></div></article></li>
+            <li><article class="tarjeta" data-banda="alto"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1517290/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Battlefield™ 2042</h3><p class="datos">Sin nota de Metacritic<br/>$1,399.00 MXN</p><p class="motivo">Motivo principal: rendimiento</p></div></article></li>
+            <li><article class="tarjeta" data-banda="alto"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/2358720/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Black Myth: Wukong</h3><p class="datos">Sin nota de Metacritic<br/>$999.00 MXN</p><p class="motivo">Motivo principal: dificultad</p></div></article></li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="variante variante-b">
+        <p class="rotulo-mockup">B · lo que pedía la revisión: filo del color de la portada</p>
+        <section>
+          <h2 class="estante-cabecera"><span class="pildora" data-banda="bajo">Riesgo de arrepentimiento: bajo</span><span class="conteo">(43)</span></h2>
+          <ul class="fila">
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1172470/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Apex Legends™</h3><p class="datos">Metacritic 88<br/>Gratis</p><p class="muestra-color"><i></i><span class="hex"></span></p></div></article></li>
+            <li><article class="tarjeta es-hover" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Baldur's Gate 3</h3><p class="datos">Metacritic 96<br/>$1,299.00 MXN</p><p class="muestra-color"><i></i><span class="hex"></span></p></div></article></li>
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/736260/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Baba Is You</h3><p class="datos">Metacritic 87<br/>$154.99 MXN</p><p class="muestra-color"><i></i><span class="hex"></span></p></div></article></li>
+            <li><article class="tarjeta" data-banda="bajo"><div class="lienzo"><img crossorigin="anonymous" data-dominante src="https://cdn.cloudflare.steamstatic.com/steam/apps/244210/header.jpg" alt=""/><button class="compacto" data-tono="comparar" type="button">+ Comparar</button></div><div class="cuerpo"><h3 class="nombre">Assetto Corsa</h3><p class="datos">Metacritic 85<br/>$56.99 MXN</p><p class="muestra-color"><i></i><span class="hex"></span></p></div></article></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <strong>Explorar.</strong>
+      <ul>
+        <li><strong>Título (11):</strong> pasa al tratamiento de vista de la 6A (Chakra, mayúsculas, degradado); hoy es el único título de vista que se quedó chico.</li>
+        <li><strong>Tráileres (9):</strong> entre el título y el buscador, arriba de los estantes. Seis: dos por nivel, los que más reseñas tienen en Steam (sale de <code>/panorama</code>, sin tocar la API). Arranca sin sonido; al terminar un tráiler pasa al siguiente; con «reducir movimiento» no arranca solo. Pausa y sonido siempre visibles, de 48 px y con fondo. Solo se carga el video activo; los demás son portadas. En teléfono la lista pasa a una tira que se desliza.</li>
+        <li><strong>Tarjetas (10):</strong> las portadas de Steam permiten leer su color (<code>access-control-allow-origin: *</code>), así que el color dominante sale en el navegador y se guarda por juego. <strong>Las dos pedidas chocan</strong>: la revisión pide el color de la portada en el borde, y la paleta que aprobaste pone el borde del color del riesgo al 60 %. A mantiene tu paleta (filo del riesgo, sombreado del riesgo abajo) y usa la portada para el halo al pasar. B pone la portada en el filo (aclarado hasta 3:1) y deja el riesgo solo en el sombreado. Recomiendo A: en B el color de la portada compite con el del riesgo, y dos portadas rojas parecen «riesgo alto» aunque estén en el estante bajo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ FICHA ════════════════════════════════ -->
+<section class="escena" data-vista="explorar" id="ficha">
+  <div class="contenido">
+    <p class="rotulo-mockup">Ficha · puntos 12 a 16</p>
+    <div class="muestra">
+      <a class="compacto" data-tono="neutro" href="#" style="align-self:flex-start">← Volver</a>
+      <div class="portada-ancha">
+        <img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1938010/capsule_616x353.jpg" alt="" />
+        <div class="barra-video">
+          <button class="control" type="button" aria-label="Pausar el tráiler"><svg class="i"><use href="#i-pausa"/></svg></button>
+          <button class="control" type="button" aria-label="Activar el sonido"><svg class="i"><use href="#i-mudo"/></svg></button>
+          <input type="range" min="0" max="100" value="60" aria-label="Volumen" />
+          <span class="estado">Tráiler · sin sonido</span>
+        </div>
+      </div>
+
+      <header class="titulos">
+        <div class="nombre-banda"><h1>WILD HEARTS™</h1><span class="pildora" data-banda="alto">Riesgo de arrepentimiento: alto</span></div>
+        <div class="acciones">
+          <button class="compacto" data-tono="comparar" type="button"><svg class="i"><use href="#i-comparar"/></svg>+ Comparar</button>
+          <a class="compacto" data-tono="neutro" href="#">Ver en Steam ↗</a>
+        </div>
+      </header>
+
+      <section class="resumen-riesgo" data-banda="alto">
+        <div class="veredicto"><p>Tiende a generar <span class="palabra">más</span> arrepentimiento temprano que el resto del catálogo</p></div>
+        <div class="descripcion">
+          <p class="texto recortada">Domina una tecnología ancestral para cazar bestias enormes. WILD HEARTS™ da una vuelta de tuerca a los juegos de caza incorporando una tecnología que te permite enfrentarte a bestias enormes imbuidas por la naturaleza. Caza en solitario o en compañía.</p>
+          <button class="boton-texto" type="button">Ver más</button>
+        </div>
+      </section>
+      <div class="variante">
+        <p class="rotulo-mockup">Descripción corta (Gotham Knights, 99 caracteres): cabe en dos líneas, sin «Ver más»</p>
+        <div class="descripcion descripcion-corta"><p class="texto">Gotham City ha muerto. Batman ha muerto. Hay una nueva guardia que debe proteger la ciudad.</p></div>
+      </div>
+
+      <div class="columnas">
+        <div class="principal">
+          <section class="bloque" data-seccion="motivos">
+            <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-motivos"/></svg></span><h2 class="bloque-titulo">Motivos más frecuentes</h2><p class="bloque-sub">De qué se quejan las reseñas negativas de las primeras dos horas.</p></header>
+            <div class="barras">
+              <span>rendimiento</span><span class="pista"><span style="width:86%"></span></span><span class="pct">86%</span>
+              <span>bugs</span><span class="pista"><span style="width:25%"></span></span><span class="pct">25%</span>
+              <span>dificultad</span><span class="pista"><span style="width:9%"></span></span><span class="pct">9%</span>
+            </div>
+            <p class="pie-bloque"><a href="#">Ver los 6 motivos →</a><span>Sobre 213 reseñas clasificadas.</span></p>
+          </section>
+
+          <section class="bloque" data-seccion="factores">
+            <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-factores"/></svg></span><h2 class="bloque-titulo">Qué mueve esta estimación</h2><p class="bloque-sub">Los datos del juego que empujan el riesgo hacia arriba o hacia abajo.</p></header>
+            <ul class="factores"><li><span class="flecha">↑</span>No tiene nota de la crítica</li><li><span class="flecha">↑</span>Cuesta más que el promedio del catálogo</li></ul>
+            <p class="pie-bloque"><span class="leyenda">↑ sube el riesgo estimado · ↓ lo baja</span><a href="#">Cómo calculamos esta estimación →</a></p>
+          </section>
+
+          <div class="variante">
+            <p class="rotulo-mockup">Con perfil</p>
+            <section class="bloque destacado" data-seccion="perfil">
+              <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-perfil"/></svg></span><h2 class="bloque-titulo">Por qué te tocaría a ti</h2><p class="bloque-sub">Cómo encaja este juego con lo que declaraste.</p><span class="etiqueta-afinidad">Afinidad · no cambia el riesgo</span></header>
+              <ul class="respuestas" aria-label="Tu perfil"><li><span class="quien">Compras:</span> 3–6 al año</li><li><span class="quien">Tiempo:</span> 4 a 9 h por semana</li><li><span class="quien">Fricción:</span> media</li><li>PC</li><li>Acción</li><li>Rol</li></ul>
+              <ul class="lineas">
+                <li><span class="punto-icono"><svg class="i"><use href="#i-check"/></svg></span><span><span class="clave">Dentro</span> de tus géneros: Acción.</span></li>
+                <li><span class="punto-icono"><svg class="i"><use href="#i-reloj"/></svg></span><span>Llegas a 2 h en <span class="clave">1–2 sesiones</span>, dentro del reembolso.</span></li>
+                <li><span class="punto-icono"><svg class="i"><use href="#i-moneda"/></svg></span><span>Sería una de tus <span class="clave">3–6 compras</span> del año.</span></li>
+              </ul>
+              <p class="aviso-historia">Esto es contexto sobre ti y el juego, no una recomendación. Tu perfil no cambia el riesgo estimado: el modelo solo usa datos del juego.</p>
+              <a class="boton-texto" href="#">Editar tu perfil</a>
+            </section>
+          </div>
+
+          <div class="variante">
+            <p class="rotulo-mockup">Sin perfil</p>
+            <section class="bloque destacado" data-seccion="perfil">
+              <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-perfil"/></svg></span><h2 class="bloque-titulo">Por qué te tocaría a ti</h2><p class="bloque-sub">Aparece cuando nos cuentas cómo juegas.</p></header>
+              <p class="lectura" style="font-size:20px">Con tu perfil, aquí ves si el juego entra en tus géneros, en cuántas sesiones llegarías a las dos horas del reembolso y cuánto pesa la compra en tu año.</p>
+              <a class="tarjeta-accion" data-tono="perfil" href="#"><span class="insignia"><svg viewBox="0 0 24 24"><use href="#i-perfil"/></svg></span><span class="titulo">Crear tu perfil</span><span class="sub">Cuéntanos cómo juegas · 1 minuto</span><span class="chevron">›</span></a>
+            </section>
+          </div>
+
+          <section class="bloque" data-seccion="opinion">
+            <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-estrella"/></svg></span><h2 class="bloque-titulo">Tu opinión</h2><p class="bloque-sub">¿Te sirvió esta segunda opinión?</p></header>
+            <div class="estrellas"><button type="button" aria-label="1 estrella"><svg class="i"><use href="#i-estrella"/></svg></button><button type="button" aria-label="2 estrellas"><svg class="i"><use href="#i-estrella"/></svg></button><button type="button" aria-label="3 estrellas"><svg class="i"><use href="#i-estrella"/></svg></button><button type="button" aria-label="4 estrellas"><svg class="i"><use href="#i-estrella"/></svg></button><button type="button" aria-label="5 estrellas"><svg class="i"><use href="#i-estrella"/></svg></button><span class="resumen">2.0 ★ · 1 valoración</span></div>
+          </section>
+
+          <section class="bloque" data-seccion="comentarios">
+            <header class="bloque-cabecera"><span class="insignia"><svg class="i"><use href="#i-comentarios"/></svg></span><h2 class="bloque-titulo">Comentarios</h2><p class="bloque-sub">Lo que dicen otras personas. Públicos y anónimos: no compartas datos personales.</p></header>
+            <p style="font-size:18px">Todavía no hay comentarios. El tuyo sería el primero.</p>
+            <div class="area">Escribe un comentario público…</div>
+            <div class="fila-envio"><button class="compacto" type="button">Enviar</button><span class="cuenta">0/500</span></div>
+          </section>
+        </div>
+
+        <aside class="lateral">
+          <section class="bloque ficha-tecnica">
+            <header class="bloque-cabecera"><span class="insignia" style="--tono: var(--texto-2); --tono-canal: var(--canal-neutro)"><svg class="i"><use href="#i-ficha"/></svg></span><h2 class="bloque-titulo" style="color: var(--texto)">Ficha técnica</h2></header>
+            <dl><dt>Crítica</dt><dd>Sin nota de Metacritic</dd><dt>Géneros</dt><dd>Acción · Aventura</dd><dt>Precio</dt><dd>$1,599.00 MXN</dd><dt>Lanzamiento</dt><dd>16 FEB 2023</dd></dl>
+          </section>
+          <section class="panel-nia" data-vista="nia">
+            <div class="cabeza"><img src="../../../frontend/public/nia/chat.png" alt="" /><div><strong>Pregúntale a Nia</strong><span>Responde solo con los datos de este juego.</span></div></div>
+            <p class="globo">Puedo contarte por qué tiene ese riesgo, qué motivos aparecen en las reseñas, qué dijo la crítica y cuánto cuesta. Lo que no hago es decirte si comprarlo.</p>
+            <div class="sugerencias"><button class="compacto" type="button">¿Por qué tiene ese riesgo?</button><button class="compacto" type="button">¿Cuánto cuesta?</button><button class="compacto" type="button">¿Qué dice la crítica?</button></div>
+            <div class="area">Pregúntale algo sobre este juego…</div>
+            <div class="fila-envio"><button class="boton-cta" type="button">Preguntar →</button><span class="cuenta">0/500</span></div>
+            <p class="aviso">No escribas datos personales: se guardan tu pregunta y la respuesta durante 180 días, para poder revisar los votos.</p>
+          </section>
+        </aside>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <strong>Ficha.</strong>
+      <ul>
+        <li><strong>Veredicto:</strong> la frase de riesgo y la descripción pasan a un panel con el filo y la barra del color del riesgo. «← Volver» pasa a compacto. Regla nueva que sale de medir: el texto de color (acción, enlace, riesgo) no va directo sobre la nebulosa sino en panel o etiqueta; sobre su punto más claro bajaba a 3.3–3.9:1.</li>
+        <li><strong>Ver más (12):</strong> solo aparece si el recorte de dos líneas esconde texto; se mide al pintar y al cambiar el ancho. La de Gotham Knights (99 caracteres) cabe entera y no lo lleva.</li>
+        <li><strong>Video (13):</strong> la barra de controles se queda siempre visible, abajo a la izquierda, con fondo oscuro propio y botones de 48 px, en escritorio y en táctil. Sin tráiler, no hay barra.</li>
+        <li><strong>Bloques (14):</strong> cada sección es una tarjeta con icono, título y una línea, y un color propio que no es de riesgo: motivos cian, factores gris azulado, tu perfil rosa (el de la vista Tu perfil), tu opinión azul, comentarios turquesa. Nia se queda violeta, con su botón principal en su color.</li>
+        <li><strong>Tu perfil (15):</strong> tarjeta destacada con tus respuestas en chips, las tres líneas con icono y la etiqueta «Afinidad · no cambia el riesgo». Sin perfil, la tarjeta de acción «Crear tu perfil».</li>
+        <li><strong>Botones (16):</strong> Comparar y Ver en Steam como compactos (dorado y gris azulado); Preguntar es el botón principal, en el violeta de Nia; Enviar un comentario, compacto. El nombre del juego baja a 32 px de mínimo para no irse a tres líneas en teléfono.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ RESUMEN ═══════════════════════════════ -->
+<section class="escena" data-vista="neutro" id="resumen">
+  <div class="contenido">
+    <p class="rotulo-mockup">Qué cambia por punto</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla-puntos">
+        <thead><tr><th>Punto</th><th>Qué se hace</th></tr></thead>
+        <tbody>
+          <tr><td>7</td><td>Entrada en texto pleno, 22 px, separada del título; una sola acción principal (buscar) en tarjeta grande; salen los otros dos botones principales. Los accesos ya son tarjetas de color (6A).</td></tr>
+          <tr><td>8</td><td>Tres fuentes con su enlace en «De dónde salen los datos»: Steam appreviews, Steam appdetails y Metacritic. La sección «Fuentes» de Cómo funciona y el pie es de la 6E.</td></tr>
+          <tr><td>9</td><td>Tráileres en Explorar: seis, dos por nivel, sin sonido, controles siempre visibles.</td></tr>
+          <tr><td>10</td><td>Tarjeta con el color del riesgo; color dominante de la portada (A: halo; B: filo). Hay que elegir.</td></tr>
+          <tr><td>11</td><td>Título de Explorar con el tratamiento de la 6A.</td></tr>
+          <tr><td>12</td><td>«Ver más» solo si hay texto escondido.</td></tr>
+          <tr><td>13</td><td>Controles del video siempre visibles, con fondo y de 48 px.</td></tr>
+          <tr><td>14</td><td>Cada bloque con contenedor, icono, título y color propio.</td></tr>
+          <tr><td>15</td><td>Tarjeta destacada de perfil con chips; sin perfil, «Crear tu perfil».</td></tr>
+          <tr><td>16</td><td>Comparar, Ver en Steam, Preguntar y Enviar con el sistema de la 6A.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    const fondoControl = mezcla([11, 15, 31], 0.78, [255, 255, 255]);
+    filas.push({ texto: 'icono de los controles del video', fondo: aHex(fondoControl), pide: 3, da: contraste([255, 255, 255], fondoControl) });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>

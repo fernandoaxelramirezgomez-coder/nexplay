@@ -16,8 +16,8 @@
 > - **Tareas largas** (descarga de datos, capturas de las tres resoluciones) en segundo
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
-> Estado: plan guardado el 2026-09-25. **6A hecha** (puntos 1 a 6) el 2026-09-26; lo
-> siguiente es el mockup de la **6B**. Las capturas no se versionan: las de la app salen
+> Estado: plan guardado el 2026-09-25. **6A hecha** (puntos 1 a 6) y **6B hecha** (puntos
+> 7 a 16) el 2026-09-26; lo siguiente es el mockup de la **6C** (Perfil). Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
@@ -86,29 +86,29 @@ texto y el fondo le pareció el mismo en todas partes.
 FASE 6B — Inicio, Explorar y Ficha
 ═══════════════════════════════════════════════════════════════
 INICIO
-- [ ] 7. La descripción bajo el título no se distingue: subir tamaño y contraste y separarla
+- [x] 7. La descripción bajo el título no se distingue: subir tamaño y contraste y separarla
    del título. Una sola acción principal (buscar) en tarjeta grande estilo omoggle; las
    cuatro tarjetas de "Qué puedes hacer aquí" como botones anchos con color propio.
-- [ ] 8. Enlaces a las fuentes: Steam (appreviews y appdetails) y Metacritic, visibles, y en
+- [x] 8. Enlaces a las fuentes: Steam (appreviews y appdetails) y Metacritic, visibles, y en
    la sección "Fuentes" (fase 6E).
 
 EXPLORAR
-- [ ] 9. Carrusel de videos de los juegos (los tráilers que ya usa la ficha), arriba de los
+- [x] 9. Carrusel de videos de los juegos (los tráilers que ya usa la ficha), arriba de los
    estantes, silenciado, con controles visibles y bien acomodado en las tres
    resoluciones.
-- [ ] 10. Cada tarjeta con color/sombreado según su nivel de riesgo (verde, ámbar, rosa) y, si
+- [x] 10. Cada tarjeta con color/sombreado según su nivel de riesgo (verde, ámbar, rosa) y, si
     se puede sacar el color dominante de la portada, usarlo en el borde.
-- [ ] 11. Título de la vista chico: aplicar la tipografía de la fase 6A.
+- [x] 11. Título de la vista chico: aplicar la tipografía de la fase 6A.
 
 FICHA DE JUEGO
-- [ ] 12. Bug: "Ver más" aparece aunque la descripción sea corta. Solo si hay texto oculto.
-- [ ] 13. Botones del video casi no se ven: más grandes, con fondo, siempre visibles en
+- [x] 12. Bug: "Ver más" aparece aunque la descripción sea corta. Solo si hay texto oculto.
+- [x] 13. Botones del video casi no se ven: más grandes, con fondo, siempre visibles en
     pantallas táctiles.
-- [ ] 14. Bloques con distinción clara: cada sección (motivos, factores, tu perfil, opinión,
+- [x] 14. Bloques con distinción clara: cada sección (motivos, factores, tu perfil, opinión,
     comentarios) con contenedor, tipografía y color de encabezado propios.
-- [ ] 15. "Por qué te tocaría a ti" más visible: tarjeta destacada con resumen del perfil
+- [x] 15. "Por qué te tocaría a ti" más visible: tarjeta destacada con resumen del perfil
     (respuestas en chips) y las tres líneas. Sin perfil, llamado claro a crearlo.
-- [ ] 16. Botones (Comparar, Ver en Steam, Preguntar, Enviar) con el sistema de la fase 6A.
+- [x] 16. Botones (Comparar, Ver en Steam, Preguntar, Enviar) con el sistema de la fase 6A.
 
 ═══════════════════════════════════════════════════════════════
 FASE 6C — Perfil
@@ -341,3 +341,60 @@ detente en su ALTO con el mockup de la identidad visual.
   con el color vivo en claro, `--borde-control` aparte, filetes opacos, nebulosa graduada).
   El botón de tema **se queda al pie del menú como pastilla, sin flotante**. La acción
   principal del inicio («Buscar un juego →» en tarjeta grande) se hace en la **6B**.
+- **Mockup 6B** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
+  oscuro: 0 contrastes que no pasan (219 textos y filos por tema), sin desborde, letra
+  mínima 16 px. Lo que salió al medir: el texto de color (sobrelínea, enlaces, la palabra
+  del veredicto en el color del riesgo) puesto directo sobre la nebulosa bajaba a 3.3–3.9:1
+  en su punto más claro; la regla aprobada solo cubría `--texto` y `--texto-2`. En el
+  mockup ese texto va en etiqueta o en panel. Para el punto 10 hay dos variantes, porque la
+  revisión pide el color de la portada en el borde y la paleta aprobada pone ahí el del
+  riesgo al 60 %: A (recomendada) conserva la paleta y usa la portada para el halo; B pone
+  la portada en el filo, aclarado hasta 3:1.
+- **Decisiones del dueño sobre el mockup 6B** (2026-09-26): tarjetas en la variante A,
+  más el color dominante de la portada como resplandor detrás de la imagen, siempre
+  visible (también en táctil), sin tocar el filo: filo y sombreado son solo del riesgo. La
+  regla del texto sobre la nebulosa se aplica en todas las vistas y entra al comprobador.
+  «Buscar un juego →» con el campo vacío lleva a Explorar. Los tráileres dejan de pasar
+  solos al pasar el cursor o al tocar uno, y solo suena el que la persona activó.
+- **6B hecha** (2026-09-26):
+  - **Inicio (7, 8)**: la entrada en texto pleno de 22 px con el filo del color de la
+    vista; la tarjeta «Buscar un juego» es la única acción principal (vacío → Explorar,
+    nombre exacto → su ficha, lo demás → Explorar filtrado; `dominio/busqueda.ts`); salen
+    «Ver los 123 juegos» y «Ver el panorama completo». En teléfono: título, buscar,
+    entrada, ejemplo. «De dónde salen los datos» abre con las tres fuentes enlazadas
+    (appreviews, appdetails, Metacritic).
+  - **Explorar (9, 10, 11)**: el título con el tratamiento de la 6A. Seis tráileres arriba
+    de los estantes, dos por nivel, los más reseñados en Steam (`dominio/trailers.ts`, con
+    `/panorama`, sin tocar la API). Arrancan mudos y pasan solos al terminar; con el cursor
+    o el foco encima se quedan, y desde que se toca uno, las flechas o un control, ya no
+    pasan solos. Cada tráiler arranca mudo. El escenario es la misma portada ancha de la
+    ficha en modo carrusel; en tableta y teléfono la lista pasa a una tira que se desliza
+    (a 1024 px, al lado del escenario, ya no cabían el nombre y el nivel). Las tarjetas llevan el filo del riesgo (60 %, 75 % en claro) y
+    un velo del color del nivel abajo; detrás, el resplandor del color dominante de su
+    portada, calculado en el navegador (las portadas de Steam traen
+    `access-control-allow-origin: *`) cuando la tarjeta está por verse, y guardado por
+    juego. «Comparar» pasa a compacto dorado.
+  - **Ficha (12 a 16)**: «Ver más» solo si el recorte esconde texto (se mide al pintar y
+    al cambiar de ancho). La barra del video, siempre a la vista, con fondo propio,
+    botones de 48 px y «Tráiler · sin sonido». Con «reducir movimiento» el tráiler no se
+    pide solo y un botón «Ver el tráiler» lo trae. El veredicto y la descripción van en un
+    panel con el filo y la barra del riesgo. Cada sección es un bloque con icono, título,
+    una línea y color propio: motivos cian, factores gris azulado, tu perfil rosa
+    (destacado, con lo declarado en chips, tres líneas con icono y «Afinidad · no cambia el
+    riesgo»; sin perfil, la tarjeta «Crear tu perfil»), tu opinión azul y comentarios
+    turquesa, que ahora es su propio bloque. Comparar y Ver en Steam son compactos; Nia
+    lleva su violeta en cualquier vista (su botón principal y sus sugerencias).
+  - **Regla del texto sobre la nebulosa**: el recorrido mide cada texto visible de las 9
+    vistas, en los dos temas y los tres anchos, contra su fondo real; sin panel, contra el
+    punto más claro de la nebulosa. La primera medición encontró 28 fallas, todas en claro:
+    el enlace del pie «Metodología» (3.6–4.2:1, pasa a compacto) y el chip elegido de
+    Panorama (4.21:1: la letra queda en color de texto y lo elegido lo marca la barra de
+    color). La sobrelínea de las vistas va en etiqueta.
+  - **Dos fallos previos que salieron al probar**: con la predicción en error, leer su
+    valor lanzaba y tumbaba el pintado de toda la ficha (el aviso «No se pudo calcular el
+    riesgo» nunca se veía); y sin volumen guardado, `Number(null)` daba 0 y la corredera
+    del tráiler arrancaba en cero.
+  - **La columna de Nia en la ficha a 674 px de alto**: con los bloques nuevos, el campo
+    con «Preguntar» quedaba 49 px por debajo de la ventana (lo detectó el recorrido). Todo
+    lo que va entre la cabecera de Nia y el campo se desplaza ahora como un solo bloque
+    dentro de la columna, y el campo se queda abajo, a la vista.

@@ -7,8 +7,13 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
   selector: 'app-metadatos-juego',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="seccion" data-testid="metadatos">
-      <h2 class="rotulo-seccion">Ficha técnica</h2>
+    <section class="bloque" data-testid="metadatos">
+      <header class="bloque-cabecera">
+        <span class="insignia" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+        </span>
+        <h2 class="bloque-titulo">Ficha técnica</h2>
+      </header>
       <dl class="datos">
         <dt class="meta">Crítica</dt>
         <dd class="mono">{{ metacritic() }}</dd>
@@ -28,9 +33,6 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
     </section>
   `,
   styles: `
-    .rotulo-seccion {
-      margin-bottom: var(--espacio-16);
-    }
     .datos {
       display: grid;
       grid-template-columns: auto 1fr;

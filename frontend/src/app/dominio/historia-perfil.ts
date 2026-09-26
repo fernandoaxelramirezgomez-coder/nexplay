@@ -19,19 +19,28 @@ const DIAS_DE_REEMBOLSO = 14;
  * como una explicación del riesgo, que es justo lo que no es. Lo que decía la fricción ya
  * lo dice la sección de motivos con su porcentaje, así que aquí sobraba.
  *
- * Devuelve null si no hay perfil declarado; entonces no hay historia que contar. */
+ * Devuelve null si no hay perfil declarado; entonces no hay historia que contar. Cada
+ * línea dice de qué habla, para que la ficha le ponga su icono. */
 export function historiaPerfil(
   perfil: PerfilJugador | null,
   juego: JuegoCatalogo,
   _motivos: readonly MotivoInsatisfaccion[] = [],
-): Segmento[][] | null {
+): LineaHistoria[] | null {
   if (!perfil) {
     return null;
   }
 
-  return [lineaGeneros(perfil, juego), lineaTiempo(perfil), lineaCompra(perfil, juego)].filter(
-    (linea) => linea.length,
-  );
+  const lineas: LineaHistoria[] = [
+    { tipo: 'generos', segmentos: lineaGeneros(perfil, juego) },
+    { tipo: 'tiempo', segmentos: lineaTiempo(perfil) },
+    { tipo: 'compra', segmentos: lineaCompra(perfil, juego) },
+  ];
+  return lineas.filter((linea) => linea.segmentos.length);
+}
+
+export interface LineaHistoria {
+  tipo: 'generos' | 'tiempo' | 'compra';
+  segmentos: Segmento[];
 }
 
 function lineaGeneros(perfil: PerfilJugador, juego: JuegoCatalogo): Segmento[] {

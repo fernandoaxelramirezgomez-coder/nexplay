@@ -9,11 +9,12 @@ import { CompararStore } from '../estado/comparar-store';
 import { Buscador } from './buscador';
 import { Estante } from './estante';
 import { FiltrosCatalogo } from './filtros-catalogo';
+import { Trailers } from './trailers';
 
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Buscador, Estante, FiltrosCatalogo, Skeleton],
+  imports: [Buscador, Estante, FiltrosCatalogo, Skeleton, Trailers],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })

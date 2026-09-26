@@ -1,38 +1,47 @@
 <div class="inicio" data-testid="inicio">
   <section class="hero" aria-labelledby="titulo-principal">
     <div class="hero-mensaje">
-      <p class="sobrelinea mono">Evidencia antes de comprar</p>
-      <h1 class="titular" id="titulo-principal">
-        Descubre qué podría frustrarte en las primeras dos horas
-      </h1>
-      <p class="entrada">
+      <div class="titulos-hero">
+        <p class="sobrelinea mono">Evidencia antes de comprar</p>
+        <h1 class="titular" id="titulo-principal">
+          Descubre qué podría frustrarte en las primeras dos horas
+        </h1>
+      </div>
+      <p class="entrada" data-testid="inicio-entrada">
         NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus
         motivos frecuentes y el contexto que puede importar para ti.
       </p>
-      <app-buscador #buscador [juegos]="catalogo.juegos()" [texto]="texto()" (textoCambio)="texto.set($event)" />
-      <p class="aclaracion mono">
-        Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.
-      </p>
-      <a class="boton-fantasma ver-catalogo" routerLink="/explorar" data-testid="inicio-explorar">
-        Ver los {{ catalogo.juegos().length }} juegos del catálogo
-      </a>
     </div>
 
     <app-carrusel-ejemplo [pausado]="buscador.panelDesplegado()" />
   </section>
 
+  <!-- La única acción principal de la pantalla. -->
+  <section class="accion-principal" aria-labelledby="titulo-buscar" data-testid="inicio-buscar">
+    <span class="icono-grande" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+    </span>
+    <div>
+      <h2 class="titulo-accion" id="titulo-buscar">Buscar un juego</h2>
+      <p class="sub">Escribe el nombre y mira su riesgo de arrepentimiento antes de comprarlo.</p>
+    </div>
+    <form class="buscar" role="search" (submit)="buscar($event)">
+      <app-buscador
+        #buscador
+        class="campo-buscar"
+        etiqueta=""
+        [juegos]="catalogo.juegos()"
+        [texto]="texto()"
+        (textoCambio)="texto.set($event)"
+      />
+      <button type="submit" class="boton-cta" data-testid="inicio-buscar-boton">Buscar un juego →</button>
+    </form>
+    <p class="aclaracion mono">
+      Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.
+    </p>
+  </section>
+
   <app-accesos />
 
   <app-fuentes-datos />
-
-  <section class="muestra">
-    <a class="boton-cta" routerLink="/panorama" data-testid="inicio-panorama">
-      Ver el panorama completo del catálogo
-    </a>
-    <p class="meta">
-      Diez lecturas de los 123 juegos y de las reseñas que los sostienen: cuántas horas
-      llevaba jugadas quien escribió cada reseña, cómo se reparte el riesgo por género y qué
-      dice la crítica.
-    </p>
-  </section>
 </div>

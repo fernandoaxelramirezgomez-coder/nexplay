@@ -115,3 +115,30 @@ export function formularioDesde(valores: ValoresPerfil): FormularioAlta {
     plataforma: valores.plataforma as Plataforma,
   };
 }
+
+export interface RespuestaPerfil {
+  /** De qué pregunta sale; los géneros van sin rótulo, uno por chip. */
+  pregunta: string | null;
+  texto: string;
+}
+
+/** Lo declarado, en chips cortos para la ficha: los rangos como se eligieron, sin los
+ * puntos medios que viajan a la API. Las preguntas sin responder no salen. */
+export function respuestasPerfil(valores: ValoresPerfil): RespuestaPerfil[] {
+  const respuestas: RespuestaPerfil[] = [];
+  if (valores.compras !== null) {
+    respuestas.push({ pregunta: 'Compras', texto: `${rangoDeComprasCorto(valores.compras)} al año` });
+  }
+  if (valores.horas !== null) {
+    respuestas.push({ pregunta: 'Tiempo', texto: `${rangoDeHoras(valores.horas)} por semana` });
+  }
+  const friccion = FRICCION.find((opcion) => opcion.valor === valores.friccion);
+  if (friccion) {
+    respuestas.push({ pregunta: 'Fricción', texto: friccion.etiqueta.toLowerCase() });
+  }
+  const plataforma = PLATAFORMAS.find((opcion) => opcion.valor === valores.plataforma);
+  if (plataforma) {
+    respuestas.push({ pregunta: null, texto: plataforma.etiqueta });
+  }
+  return [...respuestas, ...valores.generos.map((genero) => ({ pregunta: null, texto: genero }))];
+}

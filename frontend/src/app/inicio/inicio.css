@@ -1,24 +1,9 @@
-/* El inicio: el titular, el buscador y el carrusel de ejemplo. Vivían en el catálogo,
-   cuando la portada hacía de presentación y de catálogo a la vez. */
+/* El inicio: el titular, la acción principal (buscar), el carrusel de ejemplo, los
+   accesos y de dónde salen los datos. */
 .inicio {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-24);
-}
-
-.muestra {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--espacio-12);
-  padding-top: var(--espacio-24);
-  border-top: var(--filete);
-}
-
-.muestra .meta {
-  margin: 0;
-  max-width: var(--medida-lectura);
-  line-height: var(--interlineado-largo);
+  gap: var(--espacio-40);
 }
 
 .hero {
@@ -26,7 +11,7 @@
   grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
   gap: clamp(var(--espacio-40), 6vw, 72px);
   align-items: center;
-  padding: var(--espacio-48) 0 var(--espacio-40);
+  padding: var(--espacio-24) 0 0;
 }
 
 .hero-mensaje,
@@ -34,42 +19,110 @@
   min-width: 0;
 }
 
-.sobrelinea {
-  margin: 0 0 var(--espacio-12);
-  color: var(--neon);
-  font-size: var(--texto-caption);
-  font-weight: var(--peso-titular);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .titular {
   max-width: 17ch;
-  font-size: clamp(var(--texto-heading-sm), 4.7vw, var(--texto-display));
-  line-height: 1;
-  letter-spacing: -0.05em;
+  font-size: clamp(40px, 5.6cqw, 64px);
 }
 
+/* La entrada deja la voz baja: texto pleno y más grande, separada del título por aire y
+   por un filo del color de la vista. Antes era gris fino y no se distinguía. */
 .entrada {
-  margin: var(--espacio-24) 0;
-  max-width: 59ch;
-  color: var(--texto-meta);
-  font-size: var(--texto-body);
-  font-weight: var(--peso-tenue);
+  margin: var(--espacio-40) 0 0;
+  max-width: 52ch;
+  padding-inline-start: 18px;
+  border-inline-start: 3px solid var(--accion);
+  color: var(--texto);
+  font-size: clamp(20px, 1.9cqw, 22px);
   line-height: var(--interlineado-largo);
 }
 
+/* La acción principal, en una tarjeta grande: icono, título enorme, una línea y el
+   buscador con su botón. */
+.accion-principal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px 28px;
+  padding: clamp(20px, 3cqw, 34px);
+  border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse 60% 90% at 0% 0%, rgb(var(--accion-canal) / 0.16), transparent 70%),
+    var(--superficie);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.3);
+}
+
+:root[data-tema='claro'] .accion-principal {
+  box-shadow: 0 18px 44px rgb(11 15 31 / 0.1);
+}
+
+.icono-grande {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 22px;
+  color: var(--accion-tinta);
+  background: rgb(var(--accion-canal) / 0.16);
+  box-shadow: 0 0 40px rgb(var(--accion-canal) / 0.25);
+}
+
+.icono-grande svg {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.titulo-accion {
+  font-family: var(--fuente-display);
+  font-size: clamp(30px, 4.4cqw, 52px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--titulo-degradado);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.accion-principal .sub {
+  margin-top: var(--espacio-8);
+  color: var(--texto-meta);
+  font-size: var(--texto-body);
+  line-height: 1.4;
+}
+
+.buscar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-12);
+}
+
+/* El buscador trae un tope de 680 px para cuando va suelto; en la tarjeta llega al botón. */
+.buscar .campo-buscar {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.buscar .boton-cta {
+  flex: none;
+  min-height: 56px;
+  padding-inline: 28px;
+  font-size: 18px;
+}
+
 .aclaracion {
-  margin: var(--espacio-12) 0 0;
+  grid-column: 1 / -1;
   max-width: 66ch;
   color: var(--texto-meta);
   font-size: var(--texto-caption);
   line-height: var(--interlineado-largo);
-}
-
-.ver-catalogo {
-  align-self: flex-start;
-  margin-top: var(--espacio-16);
 }
 
 @container contenido (max-width: 900px) {
@@ -84,34 +137,59 @@
 }
 
 @media (max-width: 640px) {
-  .hero {
-    gap: var(--espacio-24);
-    padding: var(--espacio-40) 0 var(--espacio-24);
+  .inicio {
+    gap: 32px;
   }
 
   .titular {
     font-size: clamp(38px, 11vw, 50px);
   }
 
-  /* En móvil la acción principal va primero: el buscador sube justo debajo del titular y
-     el párrafo de entrada baja después. El carrusel ya queda debajo, en la rejilla de una
-     columna. */
+  /* En teléfono la acción va primero: título, buscar, entrada y después el ejemplo. */
+  .hero,
   .hero-mensaje {
-    display: flex;
-    flex-direction: column;
+    display: contents;
   }
 
-  .hero-mensaje app-buscador {
+  .titulos-hero {
     order: 1;
-    margin-top: var(--espacio-24);
+    padding-top: var(--espacio-24);
   }
 
-  .aclaracion {
+  .accion-principal {
     order: 2;
+    grid-template-columns: 1fr;
   }
 
   .entrada {
     order: 3;
-    margin: var(--espacio-24) 0 0;
+    margin: 0;
+  }
+
+  app-carrusel-ejemplo {
+    order: 4;
+  }
+
+  app-accesos {
+    order: 5;
+  }
+
+  app-fuentes-datos {
+    order: 6;
+  }
+
+  .icono-grande {
+    width: 64px;
+    height: 64px;
+  }
+
+  .icono-grande svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .buscar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

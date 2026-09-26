@@ -16,96 +16,91 @@
   gap: var(--espacio-12);
 }
 
+/* El nombre del juego es el título de la vista, con su tratamiento; un nombre de cuatro
+   palabras no puede irse a tres líneas en teléfono, así que aquí el mínimo es 32 px. */
 .titulos h1 {
-  font-size: var(--texto-heading);
+  font-size: clamp(32px, 5cqw, 56px);
+}
+
+.nombre-banda {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-12) var(--espacio-16);
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .acciones {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--espacio-8);
+}
+
+.acciones svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .aviso:empty {
   display: none;
 }
 
-/* Lo primero que se lee de un juego, antes del riesgo, como en cualquier tienda. */
-.descripcion {
-  margin: 0;
+/* El veredicto y la descripción, en un panel con el filo y la barra del color del riesgo.
+   La palabra clave va en ese color, y sobre la superficie pasa contraste; directo sobre
+   la nebulosa, no. */
+.resumen-riesgo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-16);
+  padding: 22px var(--espacio-24) var(--espacio-24) 30px;
+  border: 1px solid var(--filo-riesgo, var(--borde));
+  border-radius: var(--radio-tarjeta);
+  background:
+    linear-gradient(90deg, var(--velo-riesgo, transparent), transparent 55%),
+    var(--superficie);
+  box-shadow: inset 5px 0 0 var(--tinta-riesgo, var(--borde));
 }
 
-/* Veredicto: el bloque protagonista. Franja del color de la banda sobre el lienzo,
-   donde los tres colores sí pasan contraste como texto. */
+.resumen-riesgo[data-banda='bajo'] {
+  --filo-riesgo: var(--banda-bajo-filo);
+  --tinta-riesgo: var(--banda-bajo-texto);
+  --velo-riesgo: color-mix(in srgb, var(--banda-bajo) 10%, transparent);
+}
+
+.resumen-riesgo[data-banda='medio'] {
+  --filo-riesgo: var(--banda-medio-filo);
+  --tinta-riesgo: var(--banda-medio-texto);
+  --velo-riesgo: color-mix(in srgb, var(--banda-medio) 10%, transparent);
+}
+
+.resumen-riesgo[data-banda='alto'] {
+  --filo-riesgo: var(--banda-alto-filo);
+  --tinta-riesgo: var(--banda-alto-texto);
+  --velo-riesgo: color-mix(in srgb, var(--banda-alto) 10%, transparent);
+}
+
 .veredicto {
-  border-left: 6px solid;
-  padding: var(--espacio-12) 0 var(--espacio-12) var(--espacio-24);
   display: flex;
   flex-direction: column;
   gap: var(--espacio-8);
 }
 
-.veredicto[data-banda='bajo'] {
-  border-color: var(--banda-bajo-texto);
-}
-
-.veredicto[data-banda='medio'] {
-  border-color: var(--banda-medio-texto);
-}
-
-.veredicto[data-banda='alto'] {
-  border-color: var(--banda-alto-texto);
-}
-
-.rotulo {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: var(--texto-caption);
-  color: var(--texto-meta);
-}
-
 .titular {
-  font-size: clamp(var(--texto-subheading), 3.2vw, var(--texto-heading));
-  line-height: 1.15;
+  font-size: clamp(var(--texto-subheading), 3cqw, 34px);
+  line-height: 1.2;
 }
 
-.veredicto[data-banda='bajo'] .palabra {
-  color: var(--banda-bajo-texto);
-}
-
-.veredicto[data-banda='medio'] .palabra {
-  color: var(--banda-medio-texto);
-}
-
-.veredicto[data-banda='alto'] .palabra {
-  color: var(--banda-alto-texto);
+.veredicto .palabra {
+  color: var(--tinta-riesgo);
+  font-weight: var(--peso-clave);
 }
 
 .veredicto .meta {
   margin: 0;
   max-width: var(--medida-lectura);
-}
-
-.nombre-banda {
-  display: flex;
-  align-items: center;
-  gap: var(--espacio-12);
-  flex-wrap: wrap;
-}
-
-/* La descripción de Steam, a dos líneas con un botón para abrirla. */
-.descripcion .texto.recortada {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.descripcion {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--espacio-4);
 }
 
 .titular app-nota-info {
@@ -121,22 +116,39 @@
   margin: 0;
 }
 
-/* Dos columnas en escritorio; la derecha acompaña el scroll. */
+/* La descripción de Steam, a dos líneas con un botón para abrirla. */
+.descripcion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+  margin: 0;
+}
+
+.descripcion .texto.recortada {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Dos columnas en escritorio; la derecha acompaña el scroll. Cada sección es su propio
+   bloque, así que la pila solo pone el aire entre ellos. */
 .columnas {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
-  gap: var(--espacio-64);
+  gap: var(--espacio-24);
   align-items: start;
-  margin-top: var(--espacio-24);
+  margin-top: var(--espacio-8);
 }
 
 .principal,
 .lateral {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-40);
+  gap: 20px;
+  min-width: 0;
 }
-
 
 /* Con techo: sin él la columna era más alta que la pantalla, nunca llegaba a pegarse y
    el campo de "Preguntar" solo aparecía al final del scroll. Con el techo, el chat se
@@ -144,28 +156,14 @@
 .lateral {
   position: sticky;
   top: var(--espacio-16);
-  max-height: calc(100dvh - var(--espacio-32));
+  max-height: calc(100dvh - 32px);
 }
 
-/* El chat ya trae su propio borde con brillo: el filete de la pila encima sobraría. */
 .lateral > app-nia {
   display: flex;
   flex: 1;
   min-height: 0;
-  padding-top: 0;
-  border-top: 0;
 }
-
-.rotulo-seccion {
-  margin-bottom: var(--espacio-16);
-}
-
-.como-calculamos {
-  margin-top: var(--espacio-16);
-  color: var(--texto-meta);
-  font-size: var(--texto-caption);
-}
-
 
 /* Mismo criterio que el catálogo: lo que decide es el ancho de .contenido. */
 @container contenido (max-width: 900px) {
@@ -176,5 +174,11 @@
   .lateral {
     position: static;
     max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .resumen-riesgo {
+    padding: 18px var(--espacio-16) 20px 22px;
   }
 }

@@ -20,17 +20,25 @@ const MINIMO_PARA_BARRAS = 3;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NotaInfo],
   template: `
-    <section class="seccion" data-testid="motivos">
-      <h2 class="rotulo-seccion">
-        Motivos más frecuentes
-        <!-- La nota explica los porcentajes: donde no hay porcentajes, no hay nada que explicar. -->
-        @if (conBarras()) {
-          <app-nota-info etiqueta="Cómo se leen estos porcentajes" idPrueba="motivos-info">
-            Cada porcentaje es sobre las reseñas que mencionan algún motivo, no sobre todas las analizadas.
-            Suman más de 100% porque una misma reseña puede mencionar varios.
-          </app-nota-info>
-        }
-      </h2>
+    <section class="bloque" data-seccion="motivos" data-testid="motivos">
+      <header class="bloque-cabecera">
+        <span class="insignia" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v4m0 3h.01" />
+          </svg>
+        </span>
+        <h2 class="bloque-titulo">
+          Motivos más frecuentes
+          <!-- La nota explica los porcentajes: donde no hay porcentajes, no hay nada que explicar. -->
+          @if (conBarras()) {
+            <app-nota-info etiqueta="Cómo se leen estos porcentajes" idPrueba="motivos-info">
+              Cada porcentaje es sobre las reseñas que mencionan algún motivo, no sobre todas las analizadas.
+              Suman más de 100% porque una misma reseña puede mencionar varios.
+            </app-nota-info>
+          }
+        </h2>
+        <p class="bloque-sub">De qué se quejan las reseñas negativas de las primeras dos horas.</p>
+      </header>
       @if (explicacion(); as datos) {
         @if (datos.motivos.length && !conBarras()) {
           <p class="lectura escueto" data-testid="motivos-escueto">
@@ -74,15 +82,9 @@ const MINIMO_PARA_BARRAS = 3;
     </section>
   `,
   styles: `
-    .rotulo-seccion {
-      display: flex;
-      align-items: center;
-      gap: var(--espacio-4);
-      margin-bottom: var(--espacio-16);
-    }
     .lista {
       list-style: none;
-      margin: 0 0 var(--espacio-16);
+      margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
@@ -97,13 +99,13 @@ const MINIMO_PARA_BARRAS = 3;
     .pista {
       height: 10px;
       border-radius: var(--radio-pildora);
-      background: var(--superficie-lienzo);
+      background: var(--superficie-2);
       overflow: hidden;
     }
     .barra {
       display: block;
       height: 100%;
-      background: var(--neon);
+      background: var(--tono, var(--neon));
     }
     .valor {
       text-align: right;

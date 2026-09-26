@@ -6,17 +6,22 @@ import { ResumenValoraciones } from '../api/contrato';
 import { textoCalificacion } from '../dominio/calificacion';
 import { UsuarioStore } from '../estado/usuario-store';
 import { Estrellas } from './estrellas';
-import { HiloComentarios } from './hilo-comentarios';
 
 /** Calificación de 1 a 5 estrellas sobre la segunda opinión: una por persona y juego, y
- * se puede cambiar o quitar. Debajo va el hilo público de comentarios. */
+ * se puede cambiar o quitar. El hilo de comentarios va aparte, en su propio bloque. */
 @Component({
   selector: 'app-valoracion-opinion',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HiloComentarios, Estrellas],
+  imports: [Estrellas],
   template: `
-    <section class="valoracion" data-testid="valoracion">
-      <h3 class="titulo">¿Te sirvió esta segunda opinión?</h3>
+    <section class="bloque valoracion" data-seccion="opinion" data-testid="valoracion">
+      <header class="bloque-cabecera">
+        <span class="insignia" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /></svg>
+        </span>
+        <h2 class="bloque-titulo">Tu opinión</h2>
+        <p class="bloque-sub">¿Te sirvió esta segunda opinión?</p>
+      </header>
 
       <div class="botones">
         <app-estrellas [valor]="mia()" [deshabilitado]="guardando()" (elegir)="valorar($event)" />
@@ -34,8 +39,6 @@ import { HiloComentarios } from './hilo-comentarios';
         }
       </div>
 
-      <app-hilo-comentarios [appid]="appid()" />
-
       <p class="meta aviso" role="status" aria-live="polite">{{ aviso() }}</p>
     </section>
   `,
@@ -44,9 +47,6 @@ import { HiloComentarios } from './hilo-comentarios';
       display: flex;
       flex-direction: column;
       gap: var(--espacio-12);
-    }
-    .titulo {
-      font-size: var(--texto-body-sm);
     }
     .botones {
       display: flex;

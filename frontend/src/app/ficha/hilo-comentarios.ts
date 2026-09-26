@@ -29,8 +29,17 @@ const MAXIMO_TEXTO = 500;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconoPulgar],
   template: `
-    <section class="hilo" data-testid="hilo-comentarios">
-      <h3 class="titulo">Lo que dicen otras personas</h3>
+    <section class="bloque hilo" data-seccion="comentarios" data-testid="hilo-comentarios">
+      <header class="bloque-cabecera">
+        <span class="insignia" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z" />
+            <path d="M18 9h1a2 2 0 0 1 2 2v10l-3-3h-6a2 2 0 0 1-2-2v-1" />
+          </svg>
+        </span>
+        <h2 class="bloque-titulo">Comentarios</h2>
+        <p class="bloque-sub">Lo que dicen otras personas.</p>
+      </header>
       <p class="meta aviso-publico" data-testid="aviso-publico">
         Los comentarios son públicos y anónimos: cualquiera puede verlos. No compartas datos personales.
       </p>
@@ -85,7 +94,7 @@ const MAXIMO_TEXTO = 500;
                 <div class="acciones">
                   <button
                     type="button"
-                    class="boton-cta"
+                    class="compacto"
                     data-testid="comentario-guardar-edicion"
                     [disabled]="ocupado() === comentario.id || !borrador().trim()"
                     (click)="guardarEdicion(comentario.id)"
@@ -106,7 +115,7 @@ const MAXIMO_TEXTO = 500;
                   <span class="meta">¿Eliminar este comentario?</span>
                   <button
                     type="button"
-                    class="boton-cta"
+                    class="compacto"
                     data-testid="comentario-confirmar-eliminar"
                     [disabled]="ocupado() === comentario.id"
                     (click)="eliminar(comentario.id)"
@@ -153,7 +162,7 @@ const MAXIMO_TEXTO = 500;
       <div class="acciones">
         <button
           type="button"
-          class="boton-cta"
+          class="compacto"
           data-testid="enviar-comentario"
           [disabled]="enviando() || !texto().trim()"
           (click)="enviar()"
@@ -167,17 +176,6 @@ const MAXIMO_TEXTO = 500;
     </section>
   `,
   styles: `
-    .hilo {
-      border-top: 1px solid var(--linea);
-      margin-top: var(--espacio-16);
-      padding-top: var(--espacio-16);
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-12);
-    }
-    .titulo {
-      font-size: var(--texto-body-sm);
-    }
     .aviso-publico {
       margin: 0;
       max-width: var(--medida-lectura);

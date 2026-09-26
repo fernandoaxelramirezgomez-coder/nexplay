@@ -1,9 +1,20 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
 import { Portada } from '../compartido/portada';
 import { textoMetacritic, textoPrecio } from '../dominio/formato';
+import { ColorPortadaStore } from '../estado/color-portada-store';
 import { CompararStore } from '../estado/comparar-store';
 import { MotivosStore } from '../estado/motivos-store';
 
@@ -14,14 +25,25 @@ import { MotivosStore } from '../estado/motivos-store';
   host: {
     '(pointerenter)': 'pedirMotivo()',
     '(focusin)': 'pedirMotivo()',
+    '[style.--color-portada]': 'colorPortada()',
   },
   template: `
-    <article class="tarjeta-juego" data-testid="tarjeta-juego" [attr.data-appid]="juego().appid">
+    <!-- El resplandor va detrás de la tarjeta, del tamaño de la portada, con su color
+         dominante: siempre a la vista, también en táctil. El filo y el sombreado de la
+         tarjeta son del riesgo y de nada más. -->
+    <span class="resplandor" aria-hidden="true" data-testid="tarjeta-resplandor"></span>
+    <article
+      class="tarjeta-juego"
+      data-testid="tarjeta-juego"
+      [attr.data-appid]="juego().appid"
+      [attr.data-banda]="juego().banda_riesgo"
+    >
       <div class="lienzo">
         <app-portada [src]="juego().portada_url" [prioritaria]="prioritaria()" radio="0" />
         <button
           type="button"
-          class="comparar toque-amplio"
+          class="compacto comparar toque-amplio"
+          data-tono="comparar"
           data-testid="boton-comparar"
           [attr.aria-pressed]="enComparacion()"
           [attr.aria-label]="
@@ -29,7 +51,7 @@ import { MotivosStore } from '../estado/motivos-store';
           "
           (click)="alternar()"
         >
-          {{ enComparacion() ? 'Comparando' : 'Comparar' }}
+          {{ enComparacion() ? '✓ Comparando' : '+ Comparar' }}
         </button>
         @if (rechazado()) {
           <p class="aviso-lleno" role="status" data-testid="aviso-lleno">{{ comparar.aviso() }}</p>
@@ -45,21 +67,61 @@ import { MotivosStore } from '../estado/motivos-store';
     </article>
   `,
   styles: `
+    :host {
+      position: relative;
+      display: block;
+      height: 100%;
+      isolation: isolate;
+    }
+    .resplandor {
+      position: absolute;
+      z-index: -1;
+      /* Más grande que la portada: lo que asoma por los lados y por arriba es el halo. */
+      inset: -4px -12px 40% -12px;
+      border-radius: 28px;
+      background: var(--color-portada, rgb(var(--canal-neutro)));
+      filter: blur(12px);
+      opacity: var(--brillo-portada);
+      transition: opacity var(--duracion) var(--curva);
+    }
+    :host(:hover) .resplandor,
+    :host(:focus-within) .resplandor {
+      opacity: calc(var(--brillo-portada) + 0.2);
+    }
+    /* Filo y sombreado del riesgo: el filo mezclado con la superficie al 60 % (75 % en
+       claro) y abajo un velo del color del nivel. */
     .tarjeta-juego {
       position: relative;
       height: 100%;
       display: flex;
       flex-direction: column;
-      background: var(--superficie-tarjeta);
+      border: 1px solid var(--filo-riesgo, var(--borde));
+      background:
+        linear-gradient(to top, var(--sombra-riesgo, transparent), transparent 62%),
+        var(--superficie-tarjeta);
       border-radius: var(--radio-tarjeta);
       overflow: hidden;
       transition:
         background var(--duracion) var(--curva),
         transform var(--duracion) var(--curva);
     }
+    .tarjeta-juego[data-banda='bajo'] {
+      --filo-riesgo: var(--banda-bajo-filo);
+      --sombra-riesgo: color-mix(in srgb, var(--banda-bajo) 20%, transparent);
+    }
+    .tarjeta-juego[data-banda='medio'] {
+      --filo-riesgo: var(--banda-medio-filo);
+      --sombra-riesgo: color-mix(in srgb, var(--banda-medio) 20%, transparent);
+    }
+    .tarjeta-juego[data-banda='alto'] {
+      --filo-riesgo: var(--banda-alto-filo);
+      --sombra-riesgo: color-mix(in srgb, var(--banda-alto) 20%, transparent);
+    }
     .tarjeta-juego:hover,
     .tarjeta-juego:has(.enlace:focus-visible) {
-      background: var(--superficie-tarjeta-hover);
+      background:
+        linear-gradient(to top, var(--sombra-riesgo, transparent), transparent 62%),
+        var(--superficie-tarjeta-hover);
       transform: translateY(-2px);
     }
     .tarjeta-juego:has(.enlace:focus-visible) {
@@ -117,28 +179,16 @@ import { MotivosStore } from '../estado/motivos-store';
       display: block;
     }
     /* Siempre a la vista: escondido tras el hover, con ratón no se descubre y la vista
-       de comparar quedaba pidiendo un botón que nadie encontraba. */
+       de comparar quedaba pidiendo un botón que nadie encontraba. Es un compacto del
+       dorado de Comparar, opaco, con sombra para despegarse de portadas claras. */
     .comparar {
       position: absolute;
-      opacity: 0.88;
-      transition: opacity var(--duracion) var(--curva);
       top: var(--espacio-8);
       right: var(--espacio-8);
       z-index: 1;
-      min-height: 32px;
-      padding: 4px var(--espacio-12);
-      border: 1px solid var(--texto);
-      border-radius: var(--radio-pildora);
-      background: var(--superficie-lienzo);
-      /* Sombra para que se despegue también de portadas claras (Wild Hearts, Civilization). */
+      min-height: 36px;
+      padding: 0 var(--espacio-12);
       box-shadow: var(--sombra-tarjeta);
-      color: var(--texto);
-      font-size: var(--texto-caption);
-      cursor: pointer;
-    }
-    .comparar[aria-pressed='true'] {
-      background: var(--acento-sistema);
-      color: var(--neon);
     }
     /* Pegado al botón que se tocó: arriba de la página nadie lo relacionaba con el clic. */
     .aviso-lleno {
@@ -157,16 +207,11 @@ import { MotivosStore } from '../estado/motivos-store';
       font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
     }
-    .tarjeta-juego:hover .comparar,
-    .tarjeta-juego:focus-within .comparar,
-    .comparar[aria-pressed='true'] {
-      opacity: 1;
-    }
     /* Sin cursor (táctil) el botón crece hasta el área de toque completa. */
     @media (hover: none) {
       .comparar {
         min-height: 44px;
-        padding: var(--espacio-8) var(--espacio-16);
+        padding: 0 var(--espacio-16);
       }
     }
   `,
@@ -177,6 +222,32 @@ export class TarjetaJuego {
 
   protected readonly comparar = inject(CompararStore);
   private readonly motivos = inject(MotivosStore);
+  private readonly colores = inject(ColorPortadaStore);
+
+  protected readonly colorPortada = computed(() => this.colores.color(this.juego().appid) ?? null);
+
+  constructor() {
+    // El color se pide cuando la tarjeta está por verse: pedirlo para las 123 de golpe
+    // bajaría todas las portadas aunque nadie deslice los estantes.
+    const anfitrion = inject(ElementRef<HTMLElement>).nativeElement;
+    const destruir = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof IntersectionObserver === 'undefined') {
+        return;
+      }
+      const observador = new IntersectionObserver(
+        (entradas) => {
+          if (entradas.some((entrada) => entrada.isIntersecting)) {
+            this.colores.pedir(this.juego().appid, this.juego().portada_url);
+            observador.disconnect();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+      observador.observe(anfitrion);
+      destruir.onDestroy(() => observador.disconnect());
+    });
+  }
 
   protected readonly enComparacion = computed(() => this.comparar.appids().includes(this.juego().appid));
   /** El aviso de "ya hay cuatro" vive en la tarjeta que lo provocó y se va solo. */

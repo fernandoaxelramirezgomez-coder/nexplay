@@ -15,6 +15,33 @@ const ENTRENAMIENTO = {
   prAucTrivial: 0.0234,
 };
 
+/** Las tres fuentes, con un enlace a cada una. appdetails no tiene documentación oficial
+ * de Steam: se enlaza una respuesta real, que es lo más honesto que hay. La nota de
+ * Metacritic llega dentro de appdetails. */
+const ORIGENES = [
+  {
+    quien: 'Steam',
+    api: 'appreviews',
+    que: 'Las reseñas, su voto y las horas que llevaba jugadas quien escribió cada una.',
+    enlace: 'https://partner.steamgames.com/doc/store/getreviews',
+    textoEnlace: 'Documentación de Steam',
+  },
+  {
+    quien: 'Steam',
+    api: 'appdetails',
+    que: 'Precio, géneros, fecha de lanzamiento, descripción y tráileres de cada juego.',
+    enlace: 'https://store.steampowered.com/api/appdetails?appids=1938010',
+    textoEnlace: 'Ver una respuesta de ejemplo',
+  },
+  {
+    quien: 'Metacritic',
+    api: 'nota de la crítica',
+    que: 'La calificación de la crítica; llega a través de appdetails de Steam.',
+    enlace: 'https://www.metacritic.com/',
+    textoEnlace: 'metacritic.com',
+  },
+] as const;
+
 /** De dónde salen los datos, con las cifras de la base y no escritas a mano, y qué no es
  * NexPlay. Va junto: el tamaño de la muestra y sus límites se leen mejor de corrido. */
 @Component({
@@ -23,6 +50,17 @@ const ENTRENAMIENTO = {
   template: `
     <section class="fuentes" aria-labelledby="titulo-fuentes" data-testid="inicio-fuentes">
       <h2 class="rotulo-seccion" id="titulo-fuentes">De dónde salen los datos</h2>
+
+      <ul class="origenes" data-testid="inicio-origenes">
+        @for (origen of origenes; track origen.api) {
+          <li class="origen">
+            <span class="quien">{{ origen.quien }}</span>
+            <span class="api mono">{{ origen.api }}</span>
+            <p>{{ origen.que }}</p>
+            <a [href]="origen.enlace" target="_blank" rel="noopener">{{ origen.textoEnlace }} ↗</a>
+          </li>
+        }
+      </ul>
 
       @if (datos(); as p) {
         <ol class="cadena" data-testid="cadena-datos">
@@ -98,6 +136,43 @@ const ENTRENAMIENTO = {
     .fuentes {
       padding-top: var(--espacio-24);
       border-top: var(--filete);
+    }
+    .origenes {
+      list-style: none;
+      margin: var(--espacio-16) 0 var(--espacio-40);
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+      gap: var(--espacio-12);
+    }
+    .origen {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-8);
+      padding: 18px;
+      border: 1px solid var(--borde);
+      border-radius: var(--radio-tarjeta);
+      background: var(--superficie);
+    }
+    .quien {
+      font-family: var(--fuente-display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .api {
+      color: var(--neon);
+    }
+    .origen p {
+      flex: 1;
+      margin: 0;
+      color: var(--texto-meta);
+      line-height: 1.45;
+    }
+    .origen a {
+      color: var(--enlace);
+      text-underline-offset: 4px;
     }
     .rotulo-seccion + .rotulo-seccion,
     .cadena + .rotulo-seccion {
@@ -179,6 +254,7 @@ export class FuentesDatos {
   protected readonly panorama = inject(PanoramaStore);
   protected readonly datos = this.panorama.datos;
   protected readonly entrenamiento = ENTRENAMIENTO;
+  protected readonly origenes = ORIGENES;
 
   protected readonly num = numero;
   protected readonly pct = porcentaje;

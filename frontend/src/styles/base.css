@@ -108,6 +108,23 @@ b {
   letter-spacing: 0.1em;
 }
 
+/* Sobrelínea de una vista ("Catálogo", "Evidencia antes de comprar"): va en etiqueta.
+   Es texto del color de acción y el texto de color no se pone directo sobre la nebulosa:
+   en su punto más claro bajaba a 3.9:1. Sobre la superficie de la etiqueta pasa siempre. */
+.sobrelinea {
+  display: inline-block;
+  margin: 0 0 var(--espacio-12);
+  padding: 4px var(--espacio-12);
+  border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie));
+  border-radius: var(--radio-pildora);
+  background: var(--superficie);
+  color: var(--neon);
+  font-size: var(--texto-caption);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 /* Estructura en mono: fechas, géneros, conteos, porcentajes. */
 .mono {
   font-family: var(--fuente-mono);
@@ -368,6 +385,137 @@ b {
   box-shadow: inset 0 0 0 2px var(--tono, var(--accion-tinta));
 }
 
+/* En teléfono la tarjeta se compacta: con 52 px de icono y 0.08 em de espaciado, los
+   títulos de dos palabras («Preguntar a Nia», «Crear tu perfil») se partían. */
+@media (max-width: 640px) {
+  .tarjeta-accion {
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    gap: var(--espacio-4) var(--espacio-12);
+    min-height: 84px;
+    padding: var(--espacio-16);
+  }
+  .tarjeta-accion .insignia {
+    width: 44px;
+    height: 44px;
+  }
+  .tarjeta-accion .titulo {
+    font-size: 20px;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* Bloque: cada sección de la ficha en su tarjeta, con un icono, un título en mayúsculas,
+   una línea que dice qué hay ahí y un color propio que no es de riesgo (data-seccion).
+   El filo de arriba lleva ese color. */
+.bloque {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-16);
+  min-width: 0;
+  padding: 22px var(--espacio-24) var(--espacio-24);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: inset 0 3px 0 var(--tono, var(--borde));
+}
+
+.bloque > .boton-texto {
+  align-self: flex-start;
+}
+
+.bloque-cabecera {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 14px;
+}
+
+.bloque-cabecera .insignia {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--tono, var(--texto));
+  background: rgb(var(--tono-canal, var(--canal-neutro)) / 0.14);
+}
+
+.bloque-cabecera .insignia svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bloque-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  margin: 0;
+  color: var(--tono, var(--texto));
+  font-family: var(--fuente-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bloque-sub {
+  grid-column: 2;
+  margin: 0;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: 1.4;
+}
+
+/* Destacado: el bloque que más importa para quien lo lee (hoy, "Por qué te tocaría a ti"). */
+.bloque.destacado {
+  border-color: color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie));
+  background:
+    linear-gradient(135deg, rgb(var(--tono-canal) / 0.13), transparent 58%),
+    var(--superficie);
+  box-shadow:
+    inset 0 3px 0 var(--tono),
+    0 0 36px rgb(var(--tono-canal) / 0.16);
+}
+
+[data-seccion='motivos'] {
+  --tono: var(--t-inicio);
+  --tono-canal: var(--canal-inicio);
+}
+[data-seccion='factores'] {
+  --tono: var(--t-neutro);
+  --tono-canal: var(--canal-neutro);
+}
+[data-seccion='perfil'] {
+  --tono: var(--t-perfil);
+  --tono-canal: var(--canal-perfil);
+}
+[data-seccion='opinion'] {
+  --tono: var(--info);
+  --tono-canal: var(--canal-info);
+}
+[data-seccion='comentarios'] {
+  --tono: var(--t-explorar);
+  --tono-canal: var(--canal-explorar);
+}
+
+@media (max-width: 640px) {
+  .bloque {
+    padding: 18px var(--espacio-16) 20px;
+  }
+  .bloque-titulo {
+    font-size: 18px;
+    letter-spacing: 0.04em;
+  }
+}
+
 /* El color de cada vista, para lo que lleva a ella: ícono del menú, tarjeta, compacto. */
 [data-tono='inicio'] {
   --tono: var(--t-inicio);
@@ -452,8 +600,10 @@ b {
   background: var(--borde-control);
 }
 
+/* Lo elegido lo marca la barra de color; la letra se queda en el color de texto, que es
+   el que pasa contraste sobre la nebulosa (en color de acción bajaba a 4.2:1 en claro). */
 .chip[aria-pressed='true'] {
-  color: var(--neon);
+  color: var(--texto);
 }
 
 .chip[aria-pressed='true']::after {

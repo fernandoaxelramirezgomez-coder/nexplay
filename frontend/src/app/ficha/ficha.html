@@ -1,14 +1,14 @@
 <div class="ficha" data-testid="ficha">
-  <button type="button" class="boton-texto volver toque-amplio" (click)="volver()" data-testid="volver">← Volver</button>
+  <button type="button" class="compacto volver" data-tono="neutro" (click)="volver()" data-testid="volver">← Volver</button>
 
   @if (noEncontrado()) {
-    <section class="seccion" data-testid="ficha-no-encontrado">
+    <section class="bloque" data-testid="ficha-no-encontrado">
       <h1>Juego no encontrado</h1>
       <p class="lectura">Este appid no está en el catálogo de NexPlay.</p>
       <a class="boton-cta" routerLink="/explorar">Ir al catálogo</a>
     </section>
   } @else if (catalogo.error()) {
-    <section class="seccion">
+    <section class="bloque">
       <h1>No se pudo cargar el catálogo</h1>
       <p class="lectura">Revisa que la API esté corriendo y vuelve a intentarlo.</p>
       <button type="button" class="boton-fantasma" (click)="catalogo.reintentar()">Reintentar</button>
@@ -26,68 +26,99 @@
       <div class="acciones">
         <button
           type="button"
-          class="boton-fantasma"
+          class="compacto"
+          data-tono="comparar"
           data-testid="boton-comparar"
           [attr.aria-pressed]="enComparacion()"
           (click)="alternarComparar(juego.appid)"
         >
-          {{ enComparacion() ? 'En comparación' : 'Comparar' }}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 3v18" /></svg>
+          {{ enComparacion() ? '✓ En comparación' : '+ Comparar' }}
         </button>
-        <a class="boton-fantasma" [href]="juego.tienda_url" target="_blank" rel="noopener">Ver en Steam ↗</a>
+        <a class="compacto" data-tono="neutro" [href]="juego.tienda_url" target="_blank" rel="noopener">Ver en Steam ↗</a>
       </div>
     </header>
     @if (rechazado()) {
       <p class="aviso" role="status" data-testid="aviso-lleno">{{ comparar.aviso() }}</p>
     }
 
-    @if (errorRiesgo()) {
-      <p class="veredicto-error" data-testid="ficha-riesgo-error">
-        No se pudo calcular el riesgo. Revisa que la API esté corriendo.
-      </p>
-    } @else if (cargando() || !prediccion()) {
-      <app-skeleton alto="120px" />
-    } @else {
-      <section class="veredicto" [attr.data-banda]="prediccion()!.nivel" data-testid="ficha-veredicto">
-        <p class="titular">
-          @for (segmento of titular(); track $index) {@if (segmento.clave) {<span class="palabra">{{ segmento.texto }}</span>} @else {<ng-container>{{ segmento.texto }}</ng-container>}}<app-nota-info
-            etiqueta="Qué significa el riesgo de arrepentimiento"
-            idPrueba="veredicto-info"
-          >
-            {{ explicacionRiesgo }} Reparte los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo en tres
-            niveles: compara este juego con los demás y no es una probabilidad.
-          </app-nota-info>
+    <!-- El veredicto y la descripción, en un panel con el filo del riesgo: la palabra
+         clave va en el color del riesgo y ese color, directo sobre la nebulosa, no
+         llegaba a 4.5:1. -->
+    <section class="resumen-riesgo" [attr.data-banda]="prediccion()?.nivel ?? juego.banda_riesgo" data-testid="ficha-resumen">
+      @if (errorRiesgo()) {
+        <p class="veredicto-error" data-testid="ficha-riesgo-error">
+          No se pudo calcular el riesgo. Revisa que la API esté corriendo.
         </p>
-        @if (prediccion()!.nota_plataforma; as nota) {
-          <p class="meta nota">{{ nota }}</p>
-        }
-      </section>
-    }
+      } @else if (cargando() || !prediccion()) {
+        <app-skeleton alto="72px" />
+      } @else {
+        <div class="veredicto" [attr.data-banda]="prediccion()!.nivel" data-testid="ficha-veredicto">
+          <p class="titular">
+            @for (segmento of titular(); track $index) {@if (segmento.clave) {<span class="palabra">{{ segmento.texto }}</span>} @else {<ng-container>{{ segmento.texto }}</ng-container>}}<app-nota-info
+              etiqueta="Qué significa el riesgo de arrepentimiento"
+              idPrueba="veredicto-info"
+            >
+              {{ explicacionRiesgo }} Reparte los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo en tres
+              niveles: compara este juego con los demás y no es una probabilidad.
+            </app-nota-info>
+          </p>
+          @if (prediccion()!.nota_plataforma; as nota) {
+            <p class="meta nota">{{ nota }}</p>
+          }
+        </div>
+      }
 
-    @if (juego.descripcion; as descripcion) {
-      <div class="descripcion">
-        <p class="lectura texto" [class.recortada]="!descripcionEntera()" data-testid="ficha-descripcion">
-          {{ descripcion }}
-        </p>
-        <button type="button" class="boton-texto" data-testid="ficha-ver-mas" (click)="descripcionEntera.set(!descripcionEntera())">
-          {{ descripcionEntera() ? 'Ver menos' : 'Ver más' }}
-        </button>
-      </div>
-    } @else {
-      <p class="meta descripcion" data-testid="ficha-sin-descripcion">Descripción no disponible en español.</p>
-    }
+      @if (juego.descripcion; as descripcion) {
+        <div class="descripcion">
+          <p
+            #textoDescripcion
+            class="lectura texto"
+            [class.recortada]="!descripcionEntera()"
+            data-testid="ficha-descripcion"
+          >
+            {{ descripcion }}
+          </p>
+          <!-- Solo si el recorte de dos líneas esconde algo: una descripción corta ya se
+               lee entera y el botón no abriría nada. -->
+          @if (descripcionEntera() || descripcionRecortada()) {
+            <button
+              type="button"
+              class="boton-texto"
+              data-testid="ficha-ver-mas"
+              [attr.aria-expanded]="descripcionEntera()"
+              (click)="descripcionEntera.set(!descripcionEntera())"
+            >
+              {{ descripcionEntera() ? 'Ver menos' : 'Ver más' }}
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="meta descripcion" data-testid="ficha-sin-descripcion">Descripción no disponible en español.</p>
+      }
+    </section>
 
     <div class="columnas">
-      <!-- El orden es el del razonamiento: qué riesgo tiene, por qué lo dicen las reseñas,
-           qué lo mueve en el modelo y, al final, qué opina quien lo leyó. -->
-      <div class="principal pila-separada">
+      <!-- El orden es el del razonamiento: por qué lo dicen las reseñas, qué lo mueve en
+           el modelo, cómo encaja contigo y, al final, qué opina quien lo leyó. -->
+      <div class="principal">
         @if (cargandoMotivos()) {
-          <section class="seccion"><app-skeleton alto="160px" /></section>
+          <section class="bloque" data-seccion="motivos"><app-skeleton alto="160px" /></section>
         } @else {
           <app-motivos-barras [explicacion]="explicacion()" />
         }
 
-        <section class="seccion" data-testid="factores">
-          <h2 class="rotulo-seccion">Qué mueve esta estimación</h2>
+        <section class="bloque" data-seccion="factores" data-testid="factores">
+          <header class="bloque-cabecera">
+            <span class="insignia" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
+                <circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" />
+              </svg>
+            </span>
+            <h2 class="bloque-titulo">Qué mueve esta estimación</h2>
+            <p class="bloque-sub">Los datos del juego que empujan el riesgo hacia arriba o hacia abajo.</p>
+          </header>
           @if (cargando()) {
             <app-skeleton alto="96px" />
           } @else if (factores().length) {
@@ -111,14 +142,16 @@
         <app-historia-perfil [juego]="juego" [motivos]="explicacion()?.motivos ?? []" />
 
         <app-valoracion-opinion [appid]="juego.appid" />
+
+        <app-hilo-comentarios [appid]="juego.appid" />
       </div>
 
-      <aside class="lateral pila-separada">
+      <aside class="lateral">
         <app-metadatos-juego [juego]="juego" />
         <app-nia [appid]="juego.appid" [muestraIntro]="false" [llenaAlto]="true" />
       </aside>
     </div>
   } @else {
-    <section class="seccion"><app-skeleton alto="200px" /></section>
+    <section class="bloque"><app-skeleton alto="200px" /></section>
   }
 </div>

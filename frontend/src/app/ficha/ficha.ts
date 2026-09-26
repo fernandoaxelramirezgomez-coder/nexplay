@@ -1,5 +1,17 @@
 import { Location } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 
@@ -17,6 +29,7 @@ import { CompararStore } from '../estado/comparar-store';
 import { HistorialStore } from '../estado/historial-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { FactoresModelo } from './factores-modelo';
+import { HiloComentarios } from './hilo-comentarios';
 import { HistoriaPerfil } from './historia-perfil';
 import { MetadatosJuego } from './metadatos-juego';
 import { MotivosBarras } from './motivos-barras';
@@ -33,6 +46,7 @@ import { ValoracionOpinion } from './valoracion-opinion';
     MetadatosJuego,
     FactoresModelo,
     ValoracionOpinion,
+    HiloComentarios,
     Nia,
     HistoriaPerfil,
     NotaInfo,
@@ -71,8 +85,14 @@ export class Ficha {
     stream: ({ params }) => this.api.explicacion(params),
   });
 
-  protected readonly prediccion = this.prediccionRecurso.value;
-  protected readonly explicacion = this.explicacionRecurso.value;
+  // value() lanza si el recurso está en error, y eso tumbaba el pintado de toda la ficha:
+  // el aviso de "No se pudo calcular el riesgo" nunca llegaba a verse.
+  protected readonly prediccion = computed(() =>
+    this.prediccionRecurso.hasValue() ? this.prediccionRecurso.value() : undefined,
+  );
+  protected readonly explicacion = computed(() =>
+    this.explicacionRecurso.hasValue() ? this.explicacionRecurso.value() : undefined,
+  );
   protected readonly cargando = computed(
     () => this.catalogo.cargando() || this.prediccionRecurso.isLoading() || this.perfil.cargandoNeutro(),
   );
@@ -122,8 +142,13 @@ export class Ficha {
    * junto a la acción; antes salía al abrir la ficha con la bandeja llena. */
   protected readonly rechazado = signal(false);
   /** La descripción de Steam entra recortada a dos líneas: es lo que el juego dice de sí
-   * mismo, no lo que se viene a leer aquí. */
-  protected readonly descripcionEntera = signal(false);
+   * mismo, no lo que se viene a leer aquí. Cada juego entra recortado. */
+  protected readonly descripcionEntera = linkedSignal({ source: this.appid, computation: () => false });
+  /** Si el recorte esconde texto: "Ver más" solo aparece entonces. Una descripción que
+   * cabe en dos líneas mostraba el botón y al pulsarlo no pasaba nada. */
+  protected readonly descripcionRecortada = signal(false);
+  private readonly textoDescripcion = viewChild<ElementRef<HTMLElement>>('textoDescripcion');
+  private readonly anchoDescripcion = signal(0);
   private reloj?: ReturnType<typeof setTimeout>;
 
   protected alternarComparar(appid: number): void {
@@ -136,6 +161,29 @@ export class Ficha {
   }
 
   constructor() {
+    // Se mide después de pintar, con el texto puesto y el recorte aplicado; abierta no hay
+    // recorte que medir y se conserva lo último medido.
+    afterRenderEffect({
+      read: () => {
+        this.juego();
+        this.anchoDescripcion();
+        const elemento = this.textoDescripcion()?.nativeElement;
+        if (elemento && !this.descripcionEntera()) {
+          this.descripcionRecortada.set(elemento.scrollHeight > elemento.clientHeight + 1);
+        }
+      },
+    });
+    // Y otra vez cuando cambia su ancho: girar el teléfono o encoger la barra lateral.
+    effect((alLimpiar) => {
+      const elemento = this.textoDescripcion()?.nativeElement;
+      if (!elemento || typeof ResizeObserver === 'undefined') {
+        return;
+      }
+      const observador = new ResizeObserver(([entrada]) => this.anchoDescripcion.set(entrada.contentRect.width));
+      observador.observe(elemento);
+      alLimpiar(() => observador.disconnect());
+    });
+
     // Abrir una ficha es lo que llena el historial; se anota cuando el catálogo ya
     // llegó, que es cuando se sabe el nombre y la banda.
     effect(() => {

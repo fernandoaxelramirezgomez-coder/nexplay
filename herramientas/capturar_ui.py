@@ -1251,10 +1251,11 @@ def _mover_volumen(pagina: Page, tecla: str, veces: int) -> None:
 
 
 def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
-    """Pausar el tráiler (WCAG 2.2.2) y callar su audio (1.4.2), ocultos hasta hover o foco.
+    """Pausar el tráiler (WCAG 2.2.2) y callar su audio (1.4.2), siempre a la vista.
 
-    El tráiler arranca mudo, porque el navegador no deja otra cosa y porque audio que suena
-    solo en cada ficha que se abre no lo quiere nadie: el sonido es siempre una acción."""
+    Desde la 6B la barra no se esconde: con fondo propio y botones de 48 px, porque
+    escondida hasta el hover la revisión del usuario final no la encontró. El tráiler
+    arranca mudo: el sonido es siempre una acción de la persona."""
     problemas = []
     controles = pagina.get_by_test_id("portada-controles")
     boton = pagina.get_by_test_id("portada-pausa")
@@ -1262,13 +1263,19 @@ def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
     video = pagina.get_by_test_id("portada-video")
     pagina.mouse.move(0, 0)
     pagina.wait_for_timeout(400)
-    if _opacidad(controles) > 0.05:
-        problemas.append("los controles del tráiler se ven sin hover ni foco")
-    pagina.get_by_test_id("portada-ancha").hover()
-    pagina.wait_for_timeout(400)
+    medidas = boton.bounding_box() or {"width": 0, "height": 0}
+    fondo = controles.evaluate("c => getComputedStyle(c).backgroundColor")
+    estado = pagina.get_by_test_id("portada-estado")
     if _opacidad(controles) < 0.95:
-        problemas.append("los controles del tráiler no aparecen al pasar el ratón")
-    pagina.mouse.move(0, 0)
+        problemas.append("los controles del tráiler no se ven en reposo")
+    elif min(medidas["width"], medidas["height"]) < 47.5:
+        problemas.append(f"los botones del tráiler miden menos de 48 px ({medidas})")
+    elif fondo.startswith("rgba") and float(re.findall(r"[\d.]+", fondo)[3]) < 0.5:
+        problemas.append(f"la barra del tráiler no tiene fondo propio ({fondo})")
+    elif not estado.count() or "sin sonido" not in estado.inner_text():
+        problemas.append("la barra del tráiler no dice que va sin sonido")
+    else:
+        print("video:    controles siempre a la vista, con fondo, de 48 px y con «Tráiler · sin sonido»")
 
     # Con teclado: foco visible, Enter pausa y el video deja de avanzar.
     # Un Tab antes: el navegador solo pinta :focus-visible si la última interacción fue
@@ -1276,8 +1283,6 @@ def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
     pagina.keyboard.press("Tab")
     boton.focus()
     pagina.wait_for_timeout(400)
-    if _opacidad(controles) < 0.95:
-        problemas.append("los controles del tráiler no aparecen con foco de teclado")
     ruta = destino / "video-pausa-foco.png"
     pagina.get_by_test_id("portada-ancha").screenshot(path=ruta)
     pagina.keyboard.press("Enter")
@@ -1291,7 +1296,7 @@ def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
     if not _avanza_el_video(pagina) or boton.get_attribute("aria-label") != "Pausar el tráiler":
         problemas.append("Enter otra vez no reanuda el tráiler")
     if not problemas:
-        print(f"video:    controles: ocultos en reposo, aparecen con hover y con foco; Enter pausa y reanuda ({ruta.relative_to(_RAIZ)})")
+        print(f"video:    con teclado, Enter pausa y reanuda ({ruta.relative_to(_RAIZ)})")
 
     # El sonido: arranca mudo, el botón lo activa y la corredera mueve el volumen real.
     problemas += _sonido_del_video(pagina, silenciar)
@@ -1466,10 +1471,191 @@ def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]
             problemas.append(f"con prefers-reduced-motion se pide el tráiler ({len(pedidos)} peticiones)")
         elif not _portada_en_gris(otra):
             problemas.append("con prefers-reduced-motion la portada no queda en gris")
+        elif not otra.get_by_test_id("portada-pedir-video").count():
+            problemas.append("con prefers-reduced-motion no hay botón para ver el tráiler")
         else:
-            print("video:    con prefers-reduced-motion no se pide el video; queda la portada en gris")
+            otra.get_by_test_id("portada-pedir-video").click()
+            if _esperar_video(otra) != "reproduciendo":
+                problemas.append("con prefers-reduced-motion, «Ver el tráiler» no lo reproduce")
+            else:
+                print("video:    con prefers-reduced-motion no se pide solo; «Ver el tráiler» lo trae y reproduce")
     finally:
         contexto.close()
+    return problemas
+
+
+def _trailers_esperados(api: str) -> list[int]:
+    """Replica dominio/trailers.ts: por nivel, los dos con tráiler más reseñados en Steam."""
+    catalogo = _catalogo_api(api)
+    try:
+        with urllib.request.urlopen(f"{api}/panorama", timeout=10) as respuesta:
+            por_juego = {f["appid"]: f for f in json.load(respuesta)["por_juego"]}
+    except OSError as exc:
+        sys.exit(f"No pude leer {api}/panorama para comparar: {exc}")
+    elegidos = []
+    for banda in ("bajo", "medio", "alto"):
+        del_nivel = [j for j in catalogo if j["banda_riesgo"] == banda and j.get("video_url")]
+        del_nivel.sort(key=lambda j: -((por_juego.get(j["appid"]) or {}).get("resenas_en_steam") or -1))
+        elegidos += [j["appid"] for j in del_nivel[:2]]
+    return elegidos
+
+
+def _nombre_trailer(pagina: Page) -> str:
+    return pagina.get_by_test_id("trailer-nombre").inner_text().strip()
+
+
+def _terminar_trailer(pagina: Page) -> None:
+    """Finge el final del tráiler: esperar uno entero haría la corrida minutos más larga."""
+    pagina.locator("[data-testid=trailers] [data-testid=portada-video]").dispatch_event("ended")
+    pagina.wait_for_timeout(400)
+
+
+def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Fase 6B: el inicio con una sola acción principal, los tráileres de Explorar, las
+    tarjetas con el color del riesgo y el resplandor de su portada, y la ficha en bloques."""
+    problemas = []
+    base = url.rstrip("/")
+    catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+
+    # Inicio: una sola acción principal, las tres fuentes enlazadas y adónde lleva buscar.
+    _abrir(pagina, base)
+    pagina.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    principales = pagina.locator(".boton-cta:visible").count()
+    enlaces = pagina.get_by_test_id("inicio-origenes").locator("a").evaluate_all("as => as.map(a => a.href)")
+    if principales != 1:
+        problemas.append(f"el inicio tiene {principales} acciones principales y no una")
+    if len(enlaces) != 3 or not any("getreviews" in e for e in enlaces) or not any("metacritic" in e for e in enlaces):
+        problemas.append(f"«De dónde salen los datos» no enlaza las tres fuentes ({enlaces})")
+    pagina.get_by_test_id("inicio-buscar").screenshot(path=destino / "inicio-buscar.png")
+    destinos = []
+    for escrito, esperado in (("", "/explorar"), ("terraria", "/juego/105600"), ("terra", "/explorar?q=terra")):
+        _abrir(pagina, base)
+        campo = pagina.get_by_test_id("inicio-buscar").get_by_test_id("filtro-texto")
+        campo.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        if escrito:
+            campo.fill(escrito)
+        pagina.get_by_test_id("inicio-buscar-boton").click()
+        try:
+            pagina.wait_for_url(f"**{esperado}", timeout=_TIMEOUT_MS)
+            destinos.append(f"«{escrito}» → {esperado}")
+        except TiempoAgotado:
+            problemas.append(f"«Buscar un juego →» con «{escrito}» no lleva a {esperado} ({pagina.url})")
+    if principales == 1 and len(destinos) == 3:
+        print(f"inicio:   una sola acción principal; tres fuentes enlazadas; buscar lleva {', '.join(destinos)}")
+
+    # Tráileres de Explorar.
+    esperados = _trailers_esperados(api)
+    _abrir(pagina, f"{base}/explorar")
+    pagina.mouse.move(0, 0)
+    pagina.get_by_test_id("trailers").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    nombres = [n.strip() for n in pagina.get_by_test_id("trailer-opcion").locator(".t-nombre").all_inner_texts()]
+    if nombres != [catalogo[a]["nombre"] for a in esperados]:
+        problemas.append(f"los tráileres no son dos por nivel, los más reseñados ({nombres})")
+    estado = _esperar_video(pagina)
+    mudo = pagina.locator("[data-testid=trailers] [data-testid=portada-video]").evaluate("v => v.muted")
+    if estado != "reproduciendo" or not mudo:
+        problemas.append(f"el primer tráiler no arranca solo y mudo (estado {estado}, mudo {mudo})")
+    pagina.get_by_test_id("trailers").screenshot(path=destino / "trailers.png")
+    avanza = lambda: pagina.get_by_test_id("trailers").get_attribute("data-avanza-solo")
+    primero = _nombre_trailer(pagina)
+    _terminar_trailer(pagina)
+    segundo = _nombre_trailer(pagina)
+    if segundo == primero:
+        problemas.append("al terminar un tráiler no pasa solo al siguiente")
+    pagina.get_by_test_id("trailer-escenario").hover()
+    pagina.wait_for_timeout(300)
+    quieto_encima = avanza() == "false"
+    _terminar_trailer(pagina)
+    if not quieto_encima or _nombre_trailer(pagina) != segundo:
+        problemas.append("con el cursor encima, los tráileres siguen pasando solos")
+    pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(300)
+    if avanza() != "true":
+        problemas.append("al quitar el cursor, los tráileres no vuelven a pasar solos")
+    pagina.get_by_test_id("trailer-opcion").nth(4).click()
+    pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(300)
+    elegido = pagina.get_by_test_id("trailer-opcion").nth(4).get_attribute("aria-current")
+    if elegido != "true" or avanza() != "false":
+        problemas.append("tocar un tráiler no lo pone ni deja de pasar solo")
+    _esperar_video(pagina)
+    trailer_video = pagina.locator("[data-testid=trailers] [data-testid=portada-video]")
+    pagina.get_by_test_id("trailers").get_by_test_id("portada-silenciar").click()
+    pagina.wait_for_timeout(300)
+    con_sonido = not trailer_video.evaluate("v => v.muted")
+    pagina.get_by_test_id("trailer-siguiente").click()
+    _esperar_video(pagina)
+    siguiente_mudo = trailer_video.evaluate("v => v.muted")
+    if not con_sonido or not siguiente_mudo:
+        problemas.append(f"el sonido no es solo del tráiler activado (activado {con_sonido}, el siguiente mudo {siguiente_mudo})")
+    if not any("tráiler" in p for p in problemas):
+        print(f"tráileres: {len(nombres)}, dos por nivel; arrancan mudos y pasan solos; se quedan con el cursor "
+              f"encima y dejan de pasar al tocar uno; solo suena el activado ({(destino / 'trailers.png').relative_to(_RAIZ)})")
+
+    # Tarjetas: filo del riesgo y resplandor de la portada, siempre visible.
+    pagina.get_by_test_id("estante-bajo").scroll_into_view_if_needed()
+    pagina.wait_for_timeout(2500)
+    tarjetas = pagina.evaluate("""() => [...document.querySelectorAll('app-tarjeta-juego')]
+        .filter(t => { const r = t.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0 && r.left < innerWidth && r.right > 0; })
+        .map(t => {
+            const a = t.querySelector('[data-testid=tarjeta-juego]');
+            const probar = document.createElement('div');
+            probar.style.color = `var(--banda-${a.dataset.banda}-filo)`;
+            t.appendChild(probar);
+            const filo = getComputedStyle(probar).color;
+            probar.remove();
+            return { banda: a.dataset.banda, borde: getComputedStyle(a).borderTopColor, filo,
+                     color: getComputedStyle(t).getPropertyValue('--color-portada').trim(),
+                     brillo: Number(getComputedStyle(t.querySelector('.resplandor')).opacity) };
+        })""")
+    sin_color = [x for x in tarjetas if not x["color"]]
+    mal_filo = [x for x in tarjetas if x["borde"] != x["filo"]]
+    apagadas = [x for x in tarjetas if x["brillo"] < 0.3]
+    if not tarjetas or mal_filo or apagadas or len(sin_color) > len(tarjetas) // 2:
+        problemas.append(f"tarjetas: {len(mal_filo)} sin el filo de su riesgo, {len(apagadas)} sin resplandor, "
+                         f"{len(sin_color)} de {len(tarjetas)} sin color de portada")
+    else:
+        pagina.get_by_test_id("estante-bajo").screenshot(path=destino / "tarjetas-resplandor.png")
+        print(f"tarjetas: {len(tarjetas)} a la vista con el filo de su riesgo y el resplandor de su portada "
+              f"({len(tarjetas) - len(sin_color)} con color propio; "
+              f"{(destino / 'tarjetas-resplandor.png').relative_to(_RAIZ)})")
+
+    # Con menos movimiento, los tráileres no arrancan ni pasan solos.
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT, reduced_motion="reduce")
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        pedidos = []
+        otra.on("request", lambda r: pedidos.append(r.url) if "video.akamai" in r.url else None)
+        _abrir(otra, f"{base}/explorar")
+        otra.get_by_test_id("trailers").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(1500)
+        boton = otra.get_by_test_id("trailers").get_by_test_id("portada-pedir-video")
+        if pedidos or not boton.count() or otra.get_by_test_id("trailers").get_attribute("data-avanza-solo") != "false":
+            problemas.append(f"con prefers-reduced-motion los tráileres arrancan o pasan solos ({len(pedidos)} peticiones)")
+        else:
+            print("tráileres: con prefers-reduced-motion no arrancan ni pasan solos; «Ver el tráiler» lo trae")
+    finally:
+        contexto.close()
+
+    # La ficha en bloques, cada uno con su color; el de perfil, destacado.
+    _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("hilo-comentarios").wait_for(state="attached", timeout=_TIMEOUT_MS)
+    bloques = pagina.evaluate("""() => ['motivos', 'factores', 'historia-perfil', 'valoracion', 'hilo-comentarios'].map(id => {
+        const b = document.querySelector(`[data-testid=${id}]`);
+        return { id, bloque: !!b && b.classList.contains('bloque'), seccion: b?.dataset.seccion ?? null,
+                 destacado: !!b && b.classList.contains('destacado'),
+                 tono: b ? getComputedStyle(b).getPropertyValue('--tono').trim() : '' };
+    })""")
+    tonos = {b["tono"] for b in bloques}
+    if not all(b["bloque"] and b["seccion"] for b in bloques) or len(tonos) != len(bloques):
+        problemas.append(f"la ficha no tiene cada sección en su bloque con color propio ({bloques})")
+    elif not next(b for b in bloques if b["id"] == "historia-perfil")["destacado"]:
+        problemas.append("«Por qué te tocaría a ti» no va destacado")
+    else:
+        print(f"ficha:    {len(bloques)} secciones en bloque, cada una con su color ({', '.join(b['seccion'] for b in bloques)}); "
+              "la de perfil, destacada")
     return problemas
 
 
@@ -1507,7 +1693,7 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
     pagina.screenshot(path=ruta, full_page=True)
     print(f"cómo funciona: nav, {pasos} pasos y la metodología; el pie solo enlaza ({ruta.relative_to(_RAIZ)})")
 
-    # Sin perfil, la ficha ofrece crearlo con un botón de la misma jerarquía que "Comparar".
+    # Sin perfil, la ficha ofrece crearlo con una tarjeta de acción del rosa de Tu perfil.
     _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
     boton = pagina.get_by_test_id("historia-crear-perfil")
     try:
@@ -1523,14 +1709,14 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
         print("factores: la sección conserva los factores y enlaza a 'Cómo calculamos esta estimación'")
     clases = boton.get_attribute("class") or ""
     comparar = pagina.get_by_test_id("boton-comparar").get_attribute("class") or ""
-    if "boton-fantasma" not in clases or "boton-fantasma" not in comparar:
-        problemas.append(f"'Crear tu perfil' no tiene la jerarquía de 'Comparar' ({clases!r} vs {comparar!r})")
+    if "tarjeta-accion" not in clases or "compacto" not in comparar:
+        problemas.append(f"sin perfil, 'Crear tu perfil' no es tarjeta de acción o 'Comparar' no es compacto ({clases!r}, {comparar!r})")
     ruta = destino / "historia-crear-perfil.png"
     pagina.get_by_test_id("historia-perfil").screenshot(path=ruta)
     boton.click()
     try:
         pagina.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        print(f"perfil:   sin perfil, la ficha ofrece 'Crear tu perfil' como botón y lleva a /perfil ({ruta.relative_to(_RAIZ)})")
+        print(f"perfil:   sin perfil, la ficha ofrece 'Crear tu perfil' como tarjeta de acción y lleva a /perfil ({ruta.relative_to(_RAIZ)})")
     except TiempoAgotado:
         problemas.append("'Crear tu perfil' no lleva a /perfil")
     return problemas
@@ -1572,6 +1758,40 @@ def _angular_descripcion(pagina: Page, url: str, api: str) -> list[str]:
             problemas.append(f"{nombre}: muestra descripción además del respaldo")
     if not problemas:
         print(f"descripción: los {min(len(sin_texto), _MUESTRA_SIN_DESCRIPCION)} revisados caen al respaldo")
+
+    # "Ver más" solo si el recorte esconde algo: la más larga lo lleva y abre el texto; la
+    # más corta cabe en dos líneas y no.
+    con_texto = sorted((len(j["descripcion"]), appid) for appid, j in catalogo.items() if j.get("descripcion"))
+    corta, larga = con_texto[0][1], con_texto[-1][1]
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{larga}")
+    pagina.get_by_test_id("ficha-descripcion").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    # El veredicto reemplaza a su esqueleto y empuja el botón unos píxeles: se espera a que
+    # llegue antes de hacer clic, o el clic cae donde el botón estaba.
+    pagina.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_timeout(500)
+    ver_mas = pagina.get_by_test_id("ficha-ver-mas")
+    if not ver_mas.count():
+        problemas.append(f"{catalogo[larga]['nombre']}: la descripción más larga no ofrece «Ver más»")
+    else:
+        ver_mas.click()
+        try:
+            pagina.wait_for_function(
+                "() => document.querySelector('[data-testid=ficha-ver-mas]')?.textContent.trim() === 'Ver menos'",
+                timeout=5000,
+            )
+        except TiempoAgotado:
+            pass
+        abierta = pagina.get_by_test_id("ficha-descripcion").evaluate("p => p.scrollHeight <= p.clientHeight + 1")
+        if not abierta or ver_mas.inner_text().strip() != "Ver menos":
+            problemas.append(f"«Ver más» no abre la descripción completa (abierta {abierta}, dice {ver_mas.inner_text()!r})")
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{corta}")
+    pagina.get_by_test_id("ficha-descripcion").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_timeout(500)
+    if pagina.get_by_test_id("ficha-ver-mas").count():
+        problemas.append(f"{catalogo[corta]['nombre']}: la descripción cabe entera y aun así ofrece «Ver más»")
+    elif not any("Ver más" in p for p in problemas):
+        print(f"ver más:  {catalogo[larga]['nombre']} lo ofrece y abre el texto; "
+              f"{catalogo[corta]['nombre']} ({con_texto[0][0]} caracteres) cabe entera y no lo lleva")
 
     _abrir(pagina, url)
     return problemas
@@ -1688,10 +1908,11 @@ _CONTRASTES = _pares_de_contraste()
 # puede aparecer en la barra, y tiene que caber con ella.
 _PERFIL_EN_LA_BARRA = {
     "valores": {"compras": 4, "horas": 6, "friccion": 3, "plataforma": "pc", "generos": ["Acción", "Rol", "Estrategia"]},
+    # Lo que devuelve POST /perfil para esos valores: la fricción viaja como nivel.
     "perfil": {
-        "compras_al_anio": 4, "horas_por_semana": 6, "tolerancia_friccion": 3,
-        "tags_preferidos": ["Action", "RPG", "Strategy"], "tags_rechazados": [], "plataforma": "pc",
-        "segmento": "veterano", "disponibilidad": "media",
+        "compras_al_anio": 4, "horas_por_semana": 6.0, "tolerancia_friccion": "media",
+        "tags_preferidos": ["acción", "rol", "estrategia"], "tags_rechazados": [], "plataforma": "pc",
+        "segmento": "novato", "disponibilidad": "media",
     },
 }
 _VISTAS_DE_COLOR = ("inicio", "explorar", "comparar", "nia", "perfil", "panorama", "neutro")
@@ -1859,6 +2080,88 @@ def _revisar_contrastes(pagina: Page, tema: str) -> list[str]:
     else:
         print(f"contraste: tema {tema}, {len(problemas)} de {medidos} pares no pasan")
     return problemas
+
+
+# Regla de la 6B: el texto va sobre un fondo que le dé 4.5:1, y la nebulosa no cuenta como
+# fondo seguro. Para cada texto visible se compone la pila de background-color de sus
+# ancestros; si ningún panel opaco lo cubre antes de llegar al lienzo (.armazon > .columna), se toma
+# el punto más claro de la nebulosa de la vista: --fondo-2 con la nebulosa y el brillo de
+# su color encima. Donde el texto va sobre un video o una imagen, el contenedor declara su
+# peor fondo en data-fondo-peor. Los títulos con degradado recortado (color transparente)
+# se miden aparte, con los tokens.
+_JS_TEXTO_SOBRE_NEBULOSA = """
+() => {
+    const aRgba = (valor) => {
+        const n = (valor.match(/-?[\\d.]+(e-?\\d+)?/g) || []).map(Number);
+        if (valor.startsWith('color(srgb')) return [n[0] * 255, n[1] * 255, n[2] * 255, n.length > 3 ? n[3] : 1];
+        if (valor.startsWith('#')) {
+            const h = valor.slice(1);
+            return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).concat([1]);
+        }
+        return [n[0], n[1], n[2], n.length > 3 ? n[3] : 1];
+    };
+    const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+    const lum = (rgb) => {
+        const [r, g, b] = rgb.map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+    const armazon = document.querySelector('.armazon') || document.documentElement;
+    const tok = (n) => getComputedStyle(armazon).getPropertyValue(n).trim();
+    const canal = tok('--accion-canal').split(/\\s+/).map(Number);
+    const peorNebulosa = mezcla(canal, Number(tok('--brillo')),
+        mezcla(canal, Number(tok('--nebulosa')), aRgba(tok('--fondo-2')).slice(0, 3)));
+    const fondoDe = (el) => {
+        const capas = [];
+        let base = null;
+        for (let a = el; a; a = a.parentElement) {
+            if (a.dataset && a.dataset.fondoPeor) { base = aRgba(a.dataset.fondoPeor).slice(0, 3); break; }
+            const [r, g, b, alfa] = aRgba(getComputedStyle(a).backgroundColor);
+            if (alfa > 0) {
+                capas.push([[r, g, b], alfa]);
+                if (alfa >= 0.999) { base = capas.pop()[0]; break; }
+            }
+            // El lienzo es la columna del armazón; otras .columna (las de las gráficas) no.
+            if (a.classList && a.classList.contains('columna') && a.parentElement?.classList.contains('armazon')) {
+                base = peorNebulosa; break;
+            }
+        }
+        let fondo = base || peorNebulosa;
+        while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+        return fondo;
+    };
+    const fallas = [];
+    for (const el of document.querySelectorAll('body *')) {
+        if (el.closest('svg, .solo-lector, [aria-hidden="true"]')) continue;
+        if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        const e = getComputedStyle(el);
+        if (e.visibility === 'hidden' || Number(e.opacity) === 0) continue;
+        const [cr, cg, cb, ca] = aRgba(e.color);
+        if (ca === 0) continue;
+        const fondo = fondoDe(el);
+        const color = ca < 1 ? mezcla([cr, cg, cb], ca, fondo) : [cr, cg, cb];
+        const razon = contraste(color, fondo);
+        if (razon < 4.5) {
+            fallas.push({
+                texto: el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 40),
+                razon: Math.round(razon * 100) / 100,
+                fondo: '#' + fondo.map(v => Math.round(v).toString(16).padStart(2, '0')).join(''),
+            });
+        }
+    }
+    return fallas;
+}
+"""
+
+
+def _texto_sobre_la_nebulosa(pagina: Page, donde: str) -> list[str]:
+    fallas = pagina.evaluate(_JS_TEXTO_SOBRE_NEBULOSA)
+    return [
+        f"{donde}: «{f['texto']}» da {f['razon']}:1 sobre {f['fondo']} (pide 4.5:1)"
+        for f in fallas[:6]
+    ]
 
 
 def _desborde(pagina: Page) -> int:
@@ -2129,6 +2432,7 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     # color de acción sin abrir la app.
     carpeta_vistas = destino / "vistas"
     carpeta_vistas.mkdir(parents=True, exist_ok=True)
+    textos_con_falla = 0
     rutas = [
         "/",
         "/explorar",
@@ -2165,6 +2469,9 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                     sobra = _desborde(otra)
                     if sobra:
                         problemas.append(f"tema {tema} en {nombre}: {ruta_app} desborda {sobra} px")
+                    sobre_nebulosa = _texto_sobre_la_nebulosa(otra, f"tema {tema} en {nombre}, {ruta_app}")
+                    problemas += sobre_nebulosa
+                    textos_con_falla += len(sobre_nebulosa)
                     _esperar_quietud(otra)
                     slug = ruta_app.strip("/").split("/")[0] or "inicio"
                     otra.screenshot(path=carpeta_vistas / f"{slug}-{tema}-{vista['width']}.png")
@@ -2217,6 +2524,9 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                 contexto.close()
 
     print(f"vistas:   9 rutas × 2 temas × 3 anchos en {carpeta_vistas.relative_to(_RAIZ)}")
+    if not textos_con_falla:
+        print("nebulosa: en las 9 vistas, 2 temas y 3 anchos, todo texto da 4.5:1 sobre su fondo; "
+              "sin panel, contra el punto más claro de la nebulosa")
     _abrir(pagina, url)
     return problemas
 
@@ -2227,6 +2537,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_ficha(pagina, url, destino)
         + _angular_descripcion(pagina, url, api)
         + _angular_video(pagina, url, destino, api)
+        + _angular_6b(pagina, url, destino, api)
         + _angular_como_funciona(pagina, url, destino)
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)

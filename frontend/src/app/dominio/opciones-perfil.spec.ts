@@ -6,6 +6,7 @@ import {
   ValoresPerfil,
   estaCompleto,
   formularioDesde,
+  respuestasPerfil,
 } from './opciones-perfil';
 
 const DECLARADO: ValoresPerfil = { compras: 4, horas: 6, friccion: 3, plataforma: 'pc', generos: [] };
@@ -42,5 +43,21 @@ describe('opciones-perfil', () => {
   it('se niega a armar un formulario a medias en vez de inventar valores', () => {
     expect(() => formularioDesde(VALORES_VACIOS)).toThrow();
     expect(() => formularioDesde({ ...DECLARADO, horas: null })).toThrow();
+  });
+
+  it('resume lo declarado en chips con los rangos elegidos, no con los puntos medios', () => {
+    const valores = { compras: 4, horas: 6, friccion: 3 as const, plataforma: 'pc' as const, generos: ['Acción', 'Rol'] };
+    expect(respuestasPerfil(valores).map((r) => (r.pregunta ? `${r.pregunta}: ${r.texto}` : r.texto))).toEqual([
+      'Compras: 3–6 al año',
+      'Tiempo: entre 4 y 9 h por semana',
+      'Fricción: media',
+      'PC',
+      'Acción',
+      'Rol',
+    ]);
+  });
+
+  it('las preguntas sin responder no salen en el resumen', () => {
+    expect(respuestasPerfil(VALORES_VACIOS)).toEqual([]);
   });
 });

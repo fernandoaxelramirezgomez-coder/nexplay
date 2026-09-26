@@ -77,19 +77,19 @@ const ESTRELLAS = [1, 2, 3, 4, 5] as const;
     }
     /* Elegidas: neón lleno, el mismo acento de todo lo que está activo en la app. */
     .llena {
-      color: var(--neon);
+      color: var(--tono, var(--neon));
     }
     .llena svg {
-      fill: var(--neon);
+      fill: var(--tono, var(--neon));
     }
     /* Vista previa: crecen un poco y brillan; se nota que todavía no está confirmado. */
     .previa {
-      color: var(--neon-hover);
+      color: var(--tono, var(--neon-hover));
       transform: scale(1.12);
       filter: drop-shadow(0 0 calc(6px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.55 * var(--halo-alfa))));
     }
     .previa svg {
-      fill: var(--neon-hover);
+      fill: var(--tono, var(--neon-hover));
     }
     .estrella[disabled] {
       cursor: progress;

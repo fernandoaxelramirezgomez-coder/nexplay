@@ -7,19 +7,11 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <a class="enlace toque-amplio" routerLink="/como-funciona" fragment="titulo-metodologia" data-testid="enlace-metodologia">
+    <a class="compacto" data-tono="neutro" routerLink="/como-funciona" fragment="titulo-metodologia" data-testid="enlace-metodologia">
       Metodología: cómo se calcula el riesgo →
     </a>
   `,
-  styles: `
-    .enlace {
-      color: var(--enlace);
-      text-decoration: underline;
-      text-underline-offset: 4px;
-    }
-    .enlace:hover {
-      text-decoration-thickness: 2px;
-    }
-  `,
+  // Compacto y no enlace suelto: el pie va sobre la nebulosa, y el texto de color directo
+  // sobre ella no llegaba a 4.5:1 en el tema claro.
 })
 export class Metodologia {}
