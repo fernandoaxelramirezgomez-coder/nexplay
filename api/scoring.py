@@ -21,6 +21,7 @@ from .schemas import (
     DireccionFactor,
     FactorPrediccion,
     MotivoInsatisfaccion,
+    NivelFriccion,
     NivelRelativo,
     NivelRiesgo,
     PerfilJugador,
@@ -56,7 +57,7 @@ _ETIQUETAS_FEATURES = {
 # muestra chica (mismo criterio que descarta diferencias de PR-AUC menores al
 # ruido entre folds en el notebook): mejor no reportar motivos que inventar
 # certeza sobre 2 o 3 reseñas.
-_UMBRAL_MIN_CASOS = 5
+UMBRAL_MIN_CASOS = 5
 
 # Palabras clave en inglés: la ingesta filtra language=english (ver
 # ingesta_steam.py), así que es lo que hay en el texto de las reseñas.
@@ -191,6 +192,21 @@ def _factores_prediccion(X: pd.DataFrame) -> list[FactorPrediccion]:
     return factores[:3]
 
 
+# Existe solo porque predecir() pide un perfil en su firma; ningún dato de este perfil
+# mueve el score, porque el modelo es de título. Vive aquí, y no en cada módulo que
+# necesita la banda de un juego, para que todos puntúen con lo mismo.
+_PERFIL_NEUTRO = PerfilJugador(
+    compras_al_anio=5,  # a medio camino entre 0 y el umbral de "veterano" (10)
+    horas_por_semana=8,
+    tolerancia_friccion=NivelFriccion.MEDIA,
+    tags_preferidos=[],
+    tags_rechazados=[],
+    plataforma=Plataforma.PC,
+    segmento="novato",
+    disponibilidad="media",
+)
+
+
 def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
     X = _construir_features(perfil, appid)
     riesgo = round(float(_PIPELINE.predict_proba(X)[0, 1]), 4)
@@ -210,6 +226,14 @@ def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
     )
 
 
+def prediccion_de_titulo(appid: int) -> PrediccionRiesgo:
+    """La predicción del juego, sin perfil: la banda y los factores que la mueven.
+
+    Es lo que sirve el catálogo y lo que Nia usa para explicar la banda. El riesgo es del
+    título, así que no hay una versión "para tu perfil" de esto."""
+    return predecir(_PERFIL_NEUTRO, appid)
+
+
 def _textos_resenas_y1(appid: int) -> list[str]:
     con = sqlite3.connect(_DB_PATH)
     try:
@@ -220,6 +244,26 @@ def _textos_resenas_y1(appid: int) -> list[str]:
     finally:
         con.close()
     return [texto for (texto,) in filas if texto]
+
+
+def contar_motivos(appid: int) -> tuple[dict[str, int], int, int]:
+    """Cuántas reseñas Y=1 de este juego menciona cada categoría, cuántas se clasificaron
+    en alguna y cuántos casos Y=1 hay en total.
+
+    Devuelve conteos crudos y no frecuencias porque quien agrega todo el catálogo
+    (api/panorama.py) necesita sumar reseñas, no promediar porcentajes de juegos con
+    muestras de tamaños muy distintos."""
+    textos = _textos_resenas_y1(appid)
+    conteos = {categoria: 0 for categoria in _PATRONES_MOTIVOS}
+    n_clasificados = 0
+    for texto in textos:
+        categorias_encontradas = [c for c, patron in _PATRONES_MOTIVOS.items() if patron.search(texto)]
+        if not categorias_encontradas:
+            continue
+        n_clasificados += 1
+        for categoria in categorias_encontradas:
+            conteos[categoria] += 1
+    return conteos, n_clasificados, len(textos)
 
 
 def motivos_frecuentes(appid: int) -> dict:
@@ -234,21 +278,10 @@ def motivos_frecuentes(appid: int) -> dict:
     """
     sin_datos = {"n_casos": 0, "pct_clasificados": 0.0, "motivos": []}
 
-    textos = _textos_resenas_y1(appid)
-    n_casos = len(textos)
-    if n_casos < _UMBRAL_MIN_CASOS:
-        logger.info("appid=%s con %s casos Y=1 (< %s): sin motivos, muestra insuficiente", appid, n_casos, _UMBRAL_MIN_CASOS)
+    conteos, n_clasificados, n_casos = contar_motivos(appid)
+    if n_casos < UMBRAL_MIN_CASOS:
+        logger.info("appid=%s con %s casos Y=1 (< %s): sin motivos, muestra insuficiente", appid, n_casos, UMBRAL_MIN_CASOS)
         return {**sin_datos, "n_casos": n_casos}
-
-    conteos = {categoria: 0 for categoria in _PATRONES_MOTIVOS}
-    n_clasificados = 0
-    for texto in textos:
-        categorias_encontradas = [c for c, patron in _PATRONES_MOTIVOS.items() if patron.search(texto)]
-        if not categorias_encontradas:
-            continue
-        n_clasificados += 1
-        for categoria in categorias_encontradas:
-            conteos[categoria] += 1
 
     if n_clasificados == 0:
         logger.info("appid=%s: ninguna reseña Y=1 clasificada en alguna categoría", appid)

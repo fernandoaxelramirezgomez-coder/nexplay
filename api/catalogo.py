@@ -13,9 +13,9 @@ store.steampowered.com/app/{appid}, verificado contra appids reales del
 catálogo (fase 0).
 
 banda_riesgo es el riesgo del título: el modelo usa solo datos del juego
-(conjunto 'juego'), así que la banda es la misma para cualquier persona.
-_PERFIL_NEUTRO existe solo porque scoring.predecir() pide un perfil en su
-firma; ningún dato de ese perfil mueve el score."""
+(conjunto 'juego'), así que la banda es la misma para cualquier persona. La
+puntúa scoring.prediccion_de_titulo(), el mismo camino que usa Nia para
+explicar de dónde sale la banda."""
 
 import logging
 import re
@@ -23,23 +23,11 @@ import sqlite3
 from pathlib import Path
 
 from . import scoring
-from .schemas import JuegoCatalogo, NivelFriccion, NivelRiesgo, PerfilJugador, Plataforma
+from .schemas import JuegoCatalogo, NivelRiesgo, Plataforma
 
 logger = logging.getLogger(__name__)
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "datos" / "nexplay.db"
-
-_PERFIL_NEUTRO = PerfilJugador(
-    compras_al_anio=5,  # a medio camino entre 0 y el umbral de "veterano" (10)
-    horas_por_semana=8,
-    tolerancia_friccion=NivelFriccion.MEDIA,
-    tags_preferidos=[],
-    tags_rechazados=[],
-    plataforma=Plataforma.PC,
-    segmento="novato",
-    disponibilidad="media",
-)
-
 
 def _url_portada(appid: int) -> str:
     return f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg"
@@ -105,7 +93,7 @@ def _cargar_catalogo() -> list[JuegoCatalogo]:
     ) in filas:
         descripcion = _descripcion_en_espanol(descripcion_corta)
         sin_espanol += descripcion is None
-        prediccion = scoring.predecir(_PERFIL_NEUTRO, appid)
+        prediccion = scoring.prediccion_de_titulo(appid)
         catalogo.append(
             JuegoCatalogo(
                 appid=appid,

@@ -285,3 +285,66 @@ class ExplicacionJuego(BaseModel):
         description="Proporción de esas reseñas que mencionan al menos una categoría de motivo",
     )
     motivos: list[MotivoInsatisfaccion]
+
+
+class TramoPlaytime(BaseModel):
+    """Cuántas reseñas se escribieron dentro de cada tramo de horas jugadas. El primero
+    es el de la ventana de reembolso de Steam, que es donde se define la etiqueta."""
+
+    tramo: str
+    cuantas: int
+    fraccion: float = Field(..., ge=0, le=1)
+
+
+class VentanaMuestra(BaseModel):
+    desde: str = Field(..., description="Fecha de la reseña más vieja, YYYY-MM-DD")
+    hasta: str
+
+
+class CalidadMuestra(BaseModel):
+    """Qué tan buena es la muestra de reseñas, en proporciones sobre el total descargado."""
+
+    compradas_en_steam: float = Field(..., ge=0, le=1)
+    recibidas_gratis: float = Field(..., ge=0, le=1)
+    acceso_anticipado: float = Field(..., ge=0, le=1)
+    con_voto_util: float = Field(..., ge=0, le=1, description="Al menos un voto de 'útil' de otra persona")
+    perfiles_privados: float = Field(
+        ..., ge=0, le=1, description="num_games_owned = 0: bandera de privacidad, no biblioteca vacía"
+    )
+    en_ingles: float = Field(..., ge=0, le=1)
+    resenas_en_ingles: int = Field(
+        ..., description="El conteo, no la proporción: redondeada a cuatro decimales, 184366/184367 da 1.0"
+    )
+
+
+class JuegoPanorama(BaseModel):
+    """Una fila por juego. No trae la banda de riesgo a propósito: el cliente la cruza
+    con /catalogo, que es donde vive."""
+
+    appid: int
+    resenas: int = Field(..., description="Reseñas descargadas de este juego")
+    casos_senal: int = Field(..., description="De esas, las que cumplen playtime < 120 min y voto negativo")
+    prevalencia: float = Field(..., ge=0, le=1)
+    resenas_en_steam: Optional[int] = Field(None, description="Las que Steam reporta en total para el juego")
+    consenso: Optional[str] = Field(None, description="Resumen de Steam, p. ej. 'Very Positive'")
+    motivo_principal: Optional[str] = Field(None, description="None si el juego no llega al mínimo de casos")
+
+
+class PanoramaCatalogo(BaseModel):
+    """Panorama de la muestra de reseñas con la que trabaja NexPlay. Es descriptivo: sale
+    de contar la base, no de predecir nada, así que ninguna cifra de aquí es un score."""
+
+    juegos: int
+    resenas_descargadas: int
+    resenas_en_steam: int
+    cobertura: float = Field(..., ge=0, le=1, description="descargadas / las que Steam reporta")
+    ventana: VentanaMuestra
+    casos_senal: int
+    prevalencia: float = Field(..., ge=0, le=1)
+    playtime_al_resenar: list[TramoPlaytime]
+    muestra: CalidadMuestra
+    motivos: list[MotivoInsatisfaccion] = Field(
+        default_factory=list, description="Motivos agregados de todo el catálogo, sobre las reseñas clasificadas"
+    )
+    resenas_clasificadas: int = Field(..., description="Casos Y=1 que mencionan al menos un motivo")
+    por_juego: list[JuegoPanorama]

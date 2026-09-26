@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import catalogo, limites, nia, scoring, valoraciones
+from . import catalogo, limites, nia, panorama, scoring, valoraciones
 from .config import configuracion
 from .schemas import (
     Comentario,
@@ -18,6 +18,7 @@ from .schemas import (
     JuegoCatalogo,
     NivelFriccion,
     NivelRiesgo,
+    PanoramaCatalogo,
     PerfilJugador,
     PrediccionRiesgo,
     ReaccionComentario,
@@ -102,6 +103,13 @@ def predecir_riesgo(solicitud: SolicitudPrediccion) -> PrediccionRiesgo:
     if catalogo.obtener(solicitud.appid) is None:
         raise HTTPException(status_code=404, detail="appid no encontrado en el catálogo")
     return scoring.predecir(solicitud.perfil, solicitud.appid)
+
+
+@app.get("/panorama", response_model=PanoramaCatalogo)
+def ver_panorama() -> PanoramaCatalogo:
+    """Cuántas reseñas hay detrás del catálogo, de cuándo son y cuántas traen la señal.
+    Se calcula al arrancar, no por petición."""
+    return panorama.resumen()
 
 
 @app.get("/explicacion/{appid}", response_model=ExplicacionJuego)

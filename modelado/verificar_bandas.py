@@ -3,8 +3,8 @@ versionada (docs/bandas_referencia.json).
 
 Sirve para detectar que un reentrenamiento (por ejemplo, el del build de Docker
 con preparar_entorno.py) clasifica distinto de lo validado. Las bandas salen del
-mismo camino que sirve la API: api/catalogo.py puntúa cada juego con su perfil
-neutro vía scoring.predecir().
+mismo camino que sirve la API: api/catalogo.py puntúa cada juego con
+scoring.prediccion_de_titulo().
 
 Solo se comparan las bandas: entrenar_modelo.py pone la fecha del día en
 modelo_version, así que un modelo reentrenado nunca coincide ni en versión ni en
@@ -52,7 +52,7 @@ def generar(ruta: Path) -> int:
         "generado": date.today().isoformat(),
         "modelo_version": scoring._VERSION_MODELO,
         "umbrales": {"medio": scoring._UMBRAL_MEDIO, "alto": scoring._UMBRAL_ALTO},
-        "perfil": "neutro (api/catalogo.py, _PERFIL_NEUTRO)",
+        "perfil": "neutro (api/scoring.py, _PERFIL_NEUTRO)",
         "nota": "solo 'bandas' se compara; lo demás es trazabilidad",
         "bandas": {
             appid: {"nombre": j["nombre"], "banda": j["banda"]}
