@@ -17,7 +17,7 @@
           <path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" />
         </svg>
       </button>
-      <a routerLink="/" class="marca-movil" aria-label="NexPlay, ir al catálogo">
+      <a routerLink="/" class="marca-movil" aria-label="NexPlay, ir al inicio">
         <img [src]="tema.esClaro() ? 'logo-header.png' : 'logo-oscuro.png'" alt="" width="46" height="40" />
       </a>
     </header>
@@ -43,9 +43,6 @@
       </main>
 
       <footer class="pie">
-        @if (enPortada()) {
-          <app-nia-mascota />
-        }
         <app-metodologia />
       </footer>
     </div>

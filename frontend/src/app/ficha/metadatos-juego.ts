@@ -43,15 +43,19 @@ import { textoMetacritic, textoPrecio } from '../dominio/formato';
     .generos {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--espacio-8);
+      gap: 0 var(--espacio-12);
     }
-    .generos .chip + .chip::before {
-      content: '·';
-      margin-inline-end: var(--espacio-8);
-      color: var(--borde-control);
-    }
-    .chip {
+    /* Sin puntos entre chips: el ::before de .chip es su área de toque, así que el
+       separador quedaba flotando a media altura y, al envolverse, abría renglón. El aire
+       del gap ya separa, y aquí los chips no se pulsan. */
+    .generos .chip {
+      padding-inline: 0;
+      color: var(--texto);
+      font-family: var(--fuente-texto);
       cursor: default;
+    }
+    .generos .chip::after {
+      content: none;
     }
   `,
 })

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { Plataforma } from '../api/contrato';
@@ -9,7 +9,8 @@ import {
   HORAS,
   PLATAFORMAS,
   ValoresPerfil,
-  VALORES_POR_DEFECTO,
+  VALORES_VACIOS,
+  estaCompleto,
   formularioDesde,
 } from '../dominio/opciones-perfil';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -27,7 +28,7 @@ import { TarjetasOpcion } from './tarjetas-opcion';
 })
 export class Perfil {
   private readonly api = inject(NexplayApi);
-  private readonly router = inject(Router);
+  private readonly inyector = inject(Injector);
   protected readonly perfil = inject(PerfilStore);
   protected readonly catalogo = inject(CatalogoStore);
 
@@ -36,8 +37,11 @@ export class Perfil {
   protected readonly friccion = FRICCION;
   protected readonly plataformas = PLATAFORMAS;
 
-  protected readonly valores = signal<ValoresPerfil>(this.perfil.valores() ?? VALORES_POR_DEFECTO);
+  protected readonly valores = signal<ValoresPerfil>(this.perfil.valores() ?? VALORES_VACIOS);
+  /** Sin las cuatro respuestas no hay perfil que crear: el botón espera. */
+  protected readonly completo = computed(() => estaCompleto(this.valores()));
   protected readonly guardando = signal(false);
+  protected readonly guardado = signal(false);
   protected readonly error = signal('');
 
   protected readonly resumen = computed(() => {
@@ -46,11 +50,12 @@ export class Perfil {
       return null;
     }
     const generos = perfil.tags_preferidos.length ? perfil.tags_preferidos.join(', ') : 'sin géneros elegidos';
-    return `Segmento ${perfil.segmento}, disponibilidad ${perfil.disponibilidad}, tolerancia a la fricción ${perfil.tolerancia_friccion}, plataforma ${perfil.plataforma}. Géneros: ${generos}.`;
+    return `Disponibilidad ${perfil.disponibilidad}, tolerancia a la fricción ${perfil.tolerancia_friccion}, plataforma ${perfil.plataforma}. Géneros: ${generos}.`;
   });
 
   protected cambiar<K extends keyof ValoresPerfil>(clave: K, valor: ValoresPerfil[K]): void {
     this.valores.update((actuales) => ({ ...actuales, [clave]: valor }));
+    this.guardado.set(false);
   }
 
   protected cambiarPlataforma(valor: Plataforma): void {
@@ -74,7 +79,13 @@ export class Perfil {
       next: (perfil) => {
         this.perfil.guardar(valores, perfil);
         this.guardando.set(false);
-        this.router.navigate(['/']);
+        this.guardado.set(true);
+        // Los juegos parecidos aparecen justo debajo al guardar: irse al catálogo dejaba
+        // sin ver lo único que el perfil cambia.
+        afterNextRender(
+          () => document.querySelector('[data-testid="sugerencias"]')?.scrollIntoView({ block: 'start' }),
+          { injector: this.inyector },
+        );
       },
       error: () => {
         this.guardando.set(false);
@@ -85,6 +96,6 @@ export class Perfil {
 
   protected borrar(): void {
     this.perfil.borrar();
-    this.valores.set(VALORES_POR_DEFECTO);
+    this.valores.set(VALORES_VACIOS);
   }
 }

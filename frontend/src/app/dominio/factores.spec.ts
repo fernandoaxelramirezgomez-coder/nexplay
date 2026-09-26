@@ -43,12 +43,27 @@ describe('factoresVisibles', () => {
 });
 
 describe('fraseFactor', () => {
-  it('arma la frase con la posición y la dirección', () => {
+  it('dice qué se ve del juego y después qué hace con la estimación', () => {
     expect(fraseFactor(factor('cobertura de crítica especializada'))).toBe(
-      'cobertura de crítica especializada, por debajo del promedio del catálogo — aumenta el riesgo estimado.',
+      'No tiene nota de la crítica · en este catálogo eso sube el riesgo estimado.',
     );
     expect(fraseFactor(factor('nota de Metacritic', { valor_relativo: 'alto', direccion: 'reduce' }))).toBe(
-      'nota de Metacritic, por encima del promedio del catálogo — reduce el riesgo estimado.',
+      'Su nota de Metacritic está por encima del promedio del catálogo · en este catálogo eso baja el riesgo estimado.',
+    );
+  });
+
+  it('la gratuidad y el descuento se leen como lo que son, no como un promedio', () => {
+    expect(fraseFactor(factor('gratuidad del juego', { valor_relativo: 'alto', direccion: 'aumenta' }))).toBe(
+      'Es gratis · en este catálogo eso sube el riesgo estimado.',
+    );
+    expect(fraseFactor(factor('descuento actual del juego', { valor_relativo: 'bajo', direccion: 'reduce' }))).toBe(
+      'No está con descuento · en este catálogo eso baja el riesgo estimado.',
+    );
+  });
+
+  it('una etiqueta que no conoce no se queda sin frase', () => {
+    expect(fraseFactor(factor('variable nueva'))).toBe(
+      'variable nueva, por debajo del promedio del catálogo · en este catálogo eso sube el riesgo estimado.',
     );
   });
 });

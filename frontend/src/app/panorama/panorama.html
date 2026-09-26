@@ -1,0 +1,158 @@
+<div class="panorama" data-testid="panorama">
+  <header class="cabecera">
+    <h1>Panorama del catálogo</h1>
+    <p class="lectura entrada">
+      Cómo se reparten los {{ catalogo.juegos().length }} juegos de Steam que sirve NexPlay y qué hay en las
+      reseñas que sostienen cada banda. Filtra por género o por banda y todas las gráficas se recalculan.
+    </p>
+  </header>
+
+  @if (catalogo.error()) {
+    <p class="meta" role="alert">No se pudo cargar el catálogo. Revisa que la API esté corriendo.</p>
+  } @else if (catalogo.cargando()) {
+    <p class="meta" role="status">Cargando el catálogo…</p>
+  } @else {
+    <form class="filtros" data-testid="panorama-filtros" (submit)="$event.preventDefault()">
+      <label class="filtro">
+        <span class="etiqueta">Género</span>
+        <select data-testid="filtro-genero" [value]="genero()" (change)="genero.set($any($event.target).value)">
+          <option value="">Todos los géneros</option>
+          @for (opcion of catalogo.generos(); track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+      </label>
+      <div class="filtro" role="group" aria-label="Filtrar por banda de riesgo">
+        <span class="etiqueta">{{ rotulo }}</span>
+        <div class="bandas">
+          <button type="button" class="chip" [attr.aria-pressed]="!banda()" (click)="banda.set('')">Todas</button>
+          @for (opcion of bandas; track opcion) {
+            <button
+              type="button"
+              class="chip"
+              data-testid="filtro-banda"
+              [attr.aria-pressed]="banda() === opcion"
+              (click)="banda.set(banda() === opcion ? '' : opcion)"
+            >
+              {{ opcion }}
+            </button>
+          }
+        </div>
+      </div>
+      <p class="conteo meta mono" aria-live="polite" data-testid="panorama-conteo">
+        {{ corte().length }} de {{ catalogo.juegos().length }} juegos
+      </p>
+    </form>
+
+    @if (!corte().length) {
+      <p class="meta" role="status" data-testid="panorama-vacio">
+        Ningún juego del catálogo cumple ese corte. Quita un filtro para volver a ver algo.
+      </p>
+    } @else {
+      <section class="bloque" aria-labelledby="titulo-catalogo">
+        <h2 id="titulo-catalogo">Lo que se ve del catálogo</h2>
+
+        <section class="grafica" aria-labelledby="t-bandas" data-testid="panorama-bandas">
+          <h3 class="rotulo-seccion" id="t-bandas">Riesgo general</h3>
+          <p class="meta explica">
+            Las bandas son tercios de la distribución de riesgo del catálogo: siempre hay juegos en las tres.
+          </p>
+          <app-grafica-barras [segmentos]="reparto()" idPrueba="barras-bandas" />
+        </section>
+
+        <section class="grafica" aria-labelledby="t-generos" data-testid="panorama-generos">
+          <h3 class="rotulo-seccion" id="t-generos">Qué parte de cada género cae en riesgo alto</h3>
+          <p class="meta explica">
+            Solo los géneros con al menos {{ minimoGenero }} juegos: con menos, el porcentaje dice más del
+            tamaño de la muestra que del género. Cada barra lleva su cuenta.
+          </p>
+          <app-grafica-barras [segmentos]="generos()" [maximo]="1" idPrueba="barras-generos" />
+        </section>
+
+        <section class="grafica" aria-labelledby="t-precio" data-testid="panorama-precio">
+          <h3 class="rotulo-seccion" id="t-precio">Precio mediano por banda</h3>
+          <p class="meta explica">
+            El precio es una de las variables del modelo. Solo cuenta los juegos de pago con precio conocido:
+            meter los gratuitos como cero movería la mediana de la banda donde más hay.
+          </p>
+          <app-grafica-barras [segmentos]="precios()" idPrueba="barras-precio" />
+        </section>
+
+        <section class="grafica" aria-labelledby="t-critica" data-testid="panorama-critica">
+          <h3 class="rotulo-seccion" id="t-critica">Juegos sin nota de Metacritic</h3>
+          <p class="meta explica">
+            Que un juego tenga nota de Metacritic o no es otra de las variables. La cobertura de crítica no
+            llega igual a todo el catálogo.
+          </p>
+          <app-grafica-barras [segmentos]="sinCritica()" [maximo]="1" idPrueba="barras-critica" />
+        </section>
+
+        <section class="grafica" aria-labelledby="t-gratis" data-testid="panorama-gratis">
+          <h3 class="rotulo-seccion" id="t-gratis">Juegos gratuitos por banda</h3>
+          <p class="meta explica">
+            Si un juego es gratis o no también entra al modelo, y en este catálogo los gratuitos no se reparten
+            parejo entre las tres bandas.
+          </p>
+          <app-grafica-barras [segmentos]="gratuitos()" [maximo]="1" idPrueba="barras-gratis" />
+        </section>
+
+        <section class="grafica" aria-labelledby="t-anios" data-testid="panorama-anios">
+          <h3 class="rotulo-seccion" id="t-anios">Cuándo salieron</h3>
+          <p class="meta explica">
+            El año de lanzamiento no entra al modelo; está para ver de qué época es el catálogo.
+          </p>
+          <app-grafica-columnas [segmentos]="anios()" idPrueba="columnas-anios" />
+        </section>
+      </section>
+
+      <section class="bloque" aria-labelledby="titulo-muestra">
+        <h2 id="titulo-muestra">Lo que hay en las reseñas</h2>
+        <app-graficas-muestra [compacto]="true" [juegos]="corte()" />
+
+        <section class="grafica" aria-labelledby="t-motivos" data-testid="panorama-motivos">
+          <h3 class="rotulo-seccion" id="t-motivos">Qué se menciona en las reseñas con señal</h3>
+          @if (panorama.datos(); as p) {
+            <p class="meta explica">
+              Conteo por palabras clave sobre las {{ num(p.resenas_clasificadas) }} reseñas con señal que
+              mencionan al menos una de las seis categorías, de {{ num(p.casos_senal) }} en total. Una reseña
+              puede caer en varias, así que la suma pasa del 100%.
+            </p>
+            <app-grafica-barras [segmentos]="motivos()" [maximo]="1" idPrueba="barras-motivos" />
+          }
+        </section>
+
+        <section class="grafica" aria-labelledby="t-motivo-banda" data-testid="panorama-motivo-banda">
+          <h3 class="rotulo-seccion" id="t-motivo-banda">El motivo más mencionado, juego por juego</h3>
+          <p class="meta explica">
+            Cuenta juegos, no reseñas: así un juego con miles de reseñas no decide por los demás. Los juegos
+            con menos de cinco reseñas con señal no nombran motivo.
+          </p>
+          <app-grafica-apilada [filas]="motivoPorBanda()" [leyenda]="leyendaMotivos()" idPrueba="apilada-motivos" />
+        </section>
+
+        @if (panorama.datos(); as p) {
+          <section class="grafica" aria-labelledby="t-ficha" data-testid="panorama-ficha">
+            <h3 class="rotulo-seccion" id="t-ficha">La muestra, en corto</h3>
+            <dl class="ficha">
+              <div><dt>Reseñas descargadas</dt><dd class="mono">{{ num(p.resenas_descargadas) }}</dd></div>
+              <div><dt>De las que Steam reporta</dt><dd class="mono">{{ pct(p.cobertura) }}</dd></div>
+              <div><dt>Ventana</dt><dd class="mono">{{ p.ventana.desde }} → {{ p.ventana.hasta }}</dd></div>
+              <div><dt>Con señal de arrepentimiento temprano</dt><dd class="mono">{{ pctFino(p.prevalencia) }}</dd></div>
+              <div><dt>Compradas en Steam</dt><dd class="mono">{{ pct(p.muestra.compradas_en_steam) }}</dd></div>
+              <div><dt>Con al menos un voto de «útil»</dt><dd class="mono">{{ pct(p.muestra.con_voto_util) }}</dd></div>
+              <div><dt>Escritas en acceso anticipado</dt><dd class="mono">{{ pct(p.muestra.acceso_anticipado) }}</dd></div>
+              <div><dt>De perfiles privados</dt><dd class="mono">{{ pct(p.muestra.perfiles_privados) }}</dd></div>
+            </dl>
+            <p class="meta explica">
+              Las cifras de este bloque son de toda la muestra y no cambian con los filtros: describen de dónde
+              salen los datos, no el corte que estás mirando.
+              <a class="boton-texto" routerLink="/como-funciona" fragment="titulo-metodologia">
+                Cómo se calcula el riesgo →
+              </a>
+            </p>
+          </section>
+        }
+      </section>
+    }
+  }
+</div>

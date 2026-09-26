@@ -114,6 +114,21 @@
   --sombra-tarjeta: 0 2px 10px rgba(0, 0, 0, 0.55);
   --velo: rgba(6, 7, 24, 0.62);
 
+  /* Vidrio: la superficie de tarjeta a medio camino de la transparencia. Se define con
+     color-mix sobre --superficie-tarjeta y solo se usa encima del lienzo, así que lo que
+     queda debajo del texto siempre está entre dos superficies ya medidas y el contraste
+     no se pierde. El desenfoque va dentro de @supports; sin él queda el color y se lee
+     igual. */
+  --vidrio: color-mix(in srgb, var(--superficie-tarjeta) 78%, transparent);
+  --vidrio-borde: color-mix(in srgb, var(--linea) 75%, transparent);
+  --vidrio-desenfoque: blur(14px);
+
+  /* Sombra difusa y baja, para lo que flota. No sustituye al paso de color: lo acompaña. */
+  --sombra-suave: 0 10px 30px rgba(0, 0, 0, 0.38);
+
+  /* El radio de burbuja: más redondo que la tarjeta, para lo que flota o invita a tocar. */
+  --radio-burbuja: 24px;
+
   /* Tinta de banda: la banda cuando es texto, filo o halo, no relleno. Aquí vale lo mismo
      que el relleno; en claro se oscurece, porque un verde neón sobre papel da 1.5:1. */
   --banda-bajo-texto: var(--banda-bajo);
@@ -166,6 +181,9 @@
   --resplandor: 0 0 0 1px #0b6f8c, 0 2px 10px rgba(11, 111, 140, 0.22);
   --sombra-tarjeta: 0 2px 10px rgba(20, 23, 61, 0.12);
   --velo: rgba(20, 23, 61, 0.35);
+  /* Sobre papel la sombra se afina: una sombra fuerte ensucia en vez de elevar. */
+  --sombra-suave: 0 10px 30px rgba(20, 23, 61, 0.12);
+  --vidrio: color-mix(in srgb, var(--superficie-tarjeta) 72%, transparent);
 
   /* Relleno del estado activo: el texto encima da 14.7:1 y el acento 4.9:1. */
   --acento-sistema: #dff0f8;

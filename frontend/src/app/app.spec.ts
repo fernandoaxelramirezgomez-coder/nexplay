@@ -19,12 +19,21 @@ describe('App (shell)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('la navegación vive en la barra lateral, con sus cuatro secciones', async () => {
+  it('la navegación vive en la barra lateral, con las ocho secciones', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
     const enlaces = [...html.querySelectorAll('app-barra-lateral nav a.item')].map((a) => a.textContent?.trim());
-    expect(enlaces).toEqual(['Explorar', 'Comparar', 'Tu perfil', 'Cómo funciona']);
+    expect(enlaces).toEqual([
+      'Inicio',
+      'Explorar',
+      'Comparar',
+      'Nia',
+      'Tu perfil',
+      'Historial',
+      'Panorama',
+      'Cómo funciona',
+    ]);
   });
 
   it('el pie enlaza a la metodología en vez de repetirla', async () => {

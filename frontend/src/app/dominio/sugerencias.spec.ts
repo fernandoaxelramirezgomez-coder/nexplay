@@ -50,14 +50,38 @@ describe('sugerenciasPara', () => {
     for (const sugerencia of sugerencias) {
       expect(sugerencia.coincidencias.length).toBeGreaterThan(0);
     }
-    // Empatan en géneros; primero el de mejor nota de la crítica.
-    expect(sugerencias.slice(0, 2).map((s) => s.juego.nombre)).toEqual(['Cities: Skylines', 'Frostpunk']);
+    // Los tres cubren los dos géneros declarados; entre ellos manda la nota de la crítica.
+    expect(sugerencias.slice(0, 3).map((s) => s.juego.nombre)).toEqual([
+      'Kitchen Sink',
+      'Cities: Skylines',
+      'Frostpunk',
+    ]);
   });
 
-  it('el juego que acapara géneros no le gana al que coincide justo', () => {
+  /** Antes el juego que traía seis géneros bajaba por traerlos, y eso dejaba tres
+   * coincidencias por debajo de dos. Ahora traer géneros de más solo desempata al final:
+   * con la misma cobertura, la misma nota y el mismo precio, gana el que coincide justo. */
+  it('el que acapara géneros solo gana si además tiene mejor nota', () => {
     const { sugerencias } = sugerenciasPara(CATALOGO, perfil(['Simuladores', 'Estrategia']));
-    const posicion = sugerencias.findIndex((s) => s.juego.nombre === 'Kitchen Sink');
-    expect(posicion).toBeGreaterThan(1);
+    expect(sugerencias[0].juego.nombre).toBe('Kitchen Sink');
+    expect(sugerencias[0].juego.metacritic).toBe(90);
+  });
+
+  it('con todo lo demás igual, el que coincide justo va antes que el acaparador', () => {
+    // Sobre el catálogo completo: con dos juegos sueltos ningún género es raro y los pesos
+    // salen todos en cero, que es justo cuando la rareza no significa nada.
+    const justo = juego('Justo', ['Estrategia', 'Simuladores'], { metacritic: 85, precio_final: 300 });
+    const acapara = juego('Acapara', ['Estrategia', 'Simuladores', 'Acción', 'Rol', 'Indie'], {
+      metacritic: 85,
+      precio_final: 300,
+    });
+    const { sugerencias } = sugerenciasPara(
+      [...CATALOGO, acapara, justo],
+      perfil(['Estrategia', 'Simuladores']),
+    );
+    const nombres = sugerencias.map((s) => s.juego.nombre);
+    expect(nombres.indexOf('Justo')).toBeGreaterThanOrEqual(0);
+    expect(nombres.indexOf('Justo')).toBeLessThan(nombres.indexOf('Acapara'));
   });
 
   it('un género rechazado saca al juego aunque coincida en otro', () => {
@@ -85,7 +109,8 @@ describe('sugerenciasPara', () => {
     const { sugerencias } = sugerenciasPara(CATALOGO, perfil(['Acción']));
     const empatados = sugerencias.filter((s) => s.juego.generos.length === 1);
     expect(empatados.map((s) => s.juego.nombre)).toEqual(['Portal', 'Dark Souls', 'Doom']);
-    expect(empatados.map((s) => s.empatanConEl)).toEqual([2, 2, 2]);
+    // Cuatro juegos cubren "Acción" entero, así que cada uno empata con los otros tres.
+    expect(empatados.map((s) => s.empatanConEl)).toEqual([3, 3, 3]);
   });
 
   it('el precio no cambia la afinidad: solo desempata', () => {
@@ -96,12 +121,13 @@ describe('sugerenciasPara', () => {
     expect(sugerencias.map((s) => s.juego.nombre)).toEqual(['Barato', 'Caro']);
   });
 
-  it('la afinidad ordena, pero no se usa como probabilidad', () => {
+  it('la cobertura ordena, pero no se usa como probabilidad', () => {
     const { sugerencias } = sugerenciasPara(CATALOGO, perfil(['Simuladores', 'Estrategia']));
-    const valores = sugerencias.map((s) => s.afinidad);
+    const valores = sugerencias.map((s) => s.cobertura);
     expect(valores).toEqual([...valores].sort((a, b) => b - a));
     for (const valor of valores) {
       expect(valor).toBeGreaterThan(0);
+      expect(valor).toBeLessThanOrEqual(1);
     }
   });
 
@@ -147,5 +173,62 @@ describe('porQueCoincide', () => {
         expect(texto, `"${texto}" dice "${frase}"`).not.toContain(frase);
       }
     }
+  });
+});
+
+/** El caso que reportó la revisión: con Acción, Aventura y Casual declarados, el orden
+ * ponía tres coincidencias por debajo de dos y "sin nota" por encima de 81. Los datos son
+ * los del catálogo real (géneros, Metacritic y precio de esos seis juegos). */
+describe('el orden que reportó la revisión', () => {
+  const CATALOGO = [
+    juego('Marvel’s Spider-Man Remastered', ['Acción', 'Aventura', 'Casual'], { metacritic: null, precio_final: 999 }),
+    juego('Battlefield™ 2042', ['Acción', 'Aventura', 'Casual'], { metacritic: null, precio_final: 1399 }),
+    juego('Starbound', ['Acción', 'Aventura', 'Casual', 'Indie', 'Rol'], { metacritic: 81, precio_final: 204.99 }),
+    juego('Vampire Survivors', ['Acción', 'Casual', 'Indie', 'Rol'], { metacritic: 86, precio_final: 59 }),
+    juego('Diablo® IV', ['Acción', 'Aventura', 'Casual', 'Rol', 'Indie'], { metacritic: null, precio_final: 249.75 }),
+    juego('The Sims™ 4', ['Aventura', 'Casual', 'Indie', 'Simuladores'], { metacritic: null, precio_final: null }),
+  ];
+  const DECLARADO = perfil(['Acción', 'Aventura', 'Casual']);
+
+  it('los que cubren los tres géneros van antes que los que cubren dos', () => {
+    const orden = sugerenciasPara(CATALOGO, DECLARADO).sugerencias.map((s) => s.juego.nombre);
+    const treses = ['Marvel’s Spider-Man Remastered', 'Battlefield™ 2042', 'Starbound', 'Diablo® IV'];
+    const doses = ['Vampire Survivors', 'The Sims™ 4'];
+    for (const tres of treses) {
+      for (const dos of doses) {
+        expect(orden.indexOf(tres)).toBeLessThan(orden.indexOf(dos));
+      }
+    }
+  });
+
+  it('entre los que cubren lo mismo, el que tiene nota va antes que los que no', () => {
+    const orden = sugerenciasPara(CATALOGO, DECLARADO).sugerencias.map((s) => s.juego.nombre);
+    expect(orden[0]).toBe('Starbound');
+    expect(orden.indexOf('Starbound')).toBeLessThan(orden.indexOf('Diablo® IV'));
+  });
+
+  it('sin nota, desempata el precio de menor a mayor', () => {
+    const orden = sugerenciasPara(CATALOGO, DECLARADO).sugerencias.map((s) => s.juego.nombre);
+    expect(orden).toEqual([
+      'Starbound',
+      'Diablo® IV',
+      'Marvel’s Spider-Man Remastered',
+      'Battlefield™ 2042',
+      'Vampire Survivors',
+      'The Sims™ 4',
+    ]);
+  });
+
+  it('el precio desconocido va al final, y el gratuito al principio', () => {
+    const iguales = [
+      juego('Sin precio', ['Acción'], { metacritic: 80, precio_final: null, es_gratis: false }),
+      juego('Gratis', ['Acción'], { metacritic: 80, precio_final: null, es_gratis: true }),
+      juego('Barato', ['Acción'], { metacritic: 80, precio_final: 50 }),
+    ];
+    expect(sugerenciasPara(iguales, perfil(['Acción'])).sugerencias.map((s) => s.juego.nombre)).toEqual([
+      'Gratis',
+      'Barato',
+      'Sin precio',
+    ]);
   });
 });

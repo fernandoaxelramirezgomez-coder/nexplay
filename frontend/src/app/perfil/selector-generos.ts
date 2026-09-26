@@ -21,7 +21,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
             [attr.aria-pressed]="elegidos().includes(genero)"
             (click)="alternar.emit(genero)"
           >
-            {{ genero }}
+            @if (elegidos().includes(genero)) {
+            <span aria-hidden="true">✓ </span>
+          }{{ genero }}
           </button>
         } @empty {
           <p class="meta">El catálogo todavía no cargó sus géneros.</p>
@@ -47,6 +49,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       display: flex;
       flex-wrap: wrap;
       gap: var(--espacio-8);
+    }
+    /* Nombres de género, no cifras: van en la fuente del texto, igual que en Explorar. */
+    .chips .chip {
+      font-family: var(--fuente-texto);
     }
   `,
 })

@@ -4,7 +4,10 @@ import { Router, RouterLink } from '@angular/router';
 import { Skeleton } from '../compartido/skeleton';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore, MAXIMO_COMPARAR } from '../estado/comparar-store';
+import { HistorialStore } from '../estado/historial-store';
+import { CapsulasComparar } from './capsulas-comparar';
 import { ColumnaComparar } from './columna-comparar';
+import { TablaComparar } from './tabla-comparar';
 
 function aNumeros(appids: string | undefined): number[] {
   return (appids ?? '')
@@ -16,7 +19,7 @@ function aNumeros(appids: string | undefined): number[] {
 @Component({
   selector: 'app-comparar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ColumnaComparar, Skeleton],
+  imports: [RouterLink, CapsulasComparar, ColumnaComparar, TablaComparar, Skeleton],
   templateUrl: './comparar.html',
   styleUrl: './comparar.css',
 })
@@ -27,6 +30,7 @@ export class Comparar {
   protected readonly catalogo = inject(CatalogoStore);
   protected readonly comparar = inject(CompararStore);
   private readonly router = inject(Router);
+  private readonly historial = inject(HistorialStore);
 
   protected readonly maximo = MAXIMO_COMPARAR;
 
@@ -54,9 +58,26 @@ export class Comparar {
   );
 
   constructor() {
-    // La URL manda al entrar o al volver atrás; la bandeja manda al quitar un juego.
     effect(() => {
-      const deLaUrl = aNumeros(this.appids());
+      const juegos = this.juegos();
+      if (juegos.length > 1) {
+        this.historial.registrar({
+          tipo: 'comparado',
+          titulo: juegos.map((juego) => juego.nombre).join(' · '),
+          appids: juegos.map((juego) => juego.appid),
+        });
+      }
+    });
+
+    // La URL manda al entrar con ?appids= o al volver atrás; la bandeja manda al quitar un
+    // juego. Sin el parámetro, la URL no dice nada y la bandeja se queda como estaba:
+    // antes, entrar a /comparar desde el menú borraba la selección guardada.
+    effect(() => {
+      const crudo = this.appids();
+      if (crudo === undefined) {
+        return;
+      }
+      const deLaUrl = aNumeros(crudo);
       if (deLaUrl.join(',') !== untracked(() => this.comparar.appids()).join(',')) {
         this.comparar.reemplazar(deLaUrl);
       }

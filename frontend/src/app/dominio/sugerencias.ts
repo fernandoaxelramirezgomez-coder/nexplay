@@ -10,13 +10,17 @@ export interface Sugerencia {
   juego: JuegoCatalogo;
   /** Géneros declarados que el juego tiene, con el nombre tal como los sirve el catálogo. */
   coincidencias: string[];
-  /** 0 a 1. Solo ordena esta lista; no es una probabilidad ni se muestra como número. */
+  /** 0 a 1: cuánto de lo que declaraste cubre el juego, pesando más los géneros raros.
+   * Es el criterio principal del orden. No es una probabilidad ni se muestra como número. */
+  cobertura: number;
+  /** 0 a 1: parecido entre los dos conjuntos de géneros (Jaccard ponderado). Solo separa
+   * a los que cubren lo mismo y ya empataron en crítica y precio. */
   afinidad: number;
   /** El género coincidente que menos juegos tienen: el que hace específica la coincidencia. */
   generoMasEspecifico: string;
   /** Cuántos juegos del catálogo tienen ese género. */
   juegosConEseGenero: number;
-  /** Cuántos otros juegos empatan en afinidad: entonces manda el desempate. */
+  /** Cuántos otros juegos cubren lo mismo: entonces manda el desempate. */
   empatanConEl: number;
 }
 
@@ -54,11 +58,19 @@ function peso(cuenta: Map<string, number>, total: number, genero: string): numbe
  * rechazado. Sin él, la lista se rellena con juegos sin nada en común cuando el género
  * declarado es raro (con "Carreras" hay 4 juegos en todo el catálogo).
  *
- * Orden: Jaccard ponderado por rareza —lo compartido sobre todo lo que hay entre los dos—,
- * así que coincidir en un género raro sube y traer muchos géneros de más baja. La afinidad
- * mira SOLO géneros: el precio y la crítica desempatan, y así la explicación de por qué un
- * juego va antes que otro es literal. Con "Acción" empatan 16 juegos en el catálogo real;
- * se ordenan por nota de la crítica, luego por precio y luego por nombre. */
+ * Orden: primero **cuánto cubre de lo que declaraste**, pesando más los géneros raros. Un
+ * juego que tiene tus tres géneros va antes que uno que tiene dos, aunque el segundo no
+ * traiga nada de más; antes se usaba Jaccard como criterio principal y eso dejaba a
+ * Diablo IV (3 coincidencias, 5 géneros) por debajo de Vampire Survivors (2 de 4), que es
+ * justo lo contrario de lo que la lista promete.
+ *
+ * Entre los que cubren lo mismo desempata la crítica —los que no tienen nota van al final,
+ * no al principio—, luego el precio (los gratuitos primero, los de precio desconocido al
+ * final) y, ya en último lugar, el parecido de conjuntos: con todo lo demás igual, el que
+ * no trae seis géneros de más va antes. El nombre cierra para que el orden sea estable.
+ *
+ * La afinidad mira SOLO géneros: la crítica y el precio desempatan, nunca puntúan, y así la
+ * explicación de por qué un juego va antes que otro es literal. */
 export function sugerenciasPara(
   juegos: readonly JuegoCatalogo[],
   perfil: PerfilJugador | null,
@@ -79,12 +91,14 @@ export function sugerenciasPara(
       const pesoComun = coincidencias.reduce((suma, g) => suma + peso(cuenta, juegos.length, g), 0);
       const union = pesoJuego + pesoPerfil - pesoComun;
       const afinidad = union > 0 ? pesoComun / union : 0;
+      const cobertura = pesoPerfil > 0 ? pesoComun / pesoPerfil : 0;
       const masEspecifico = [...coincidencias].sort(
         (a, b) => (cuenta.get(a.toLowerCase()) ?? 0) - (cuenta.get(b.toLowerCase()) ?? 0),
       )[0];
       return {
         juego,
         coincidencias,
+        cobertura,
         afinidad,
         generoMasEspecifico: masEspecifico ?? '',
         juegosConEseGenero: cuenta.get(masEspecifico?.toLowerCase() ?? '') ?? juegos.length,
@@ -99,21 +113,37 @@ export function sugerenciasPara(
 
   puntuados.sort(
     (a, b) =>
+      b.cobertura - a.cobertura ||
+      critica(b.juego) - critica(a.juego) ||
+      precio(a.juego) - precio(b.juego) ||
       b.afinidad - a.afinidad ||
-      (b.juego.metacritic ?? 0) - (a.juego.metacritic ?? 0) ||
-      (a.juego.precio_final ?? 0) - (b.juego.precio_final ?? 0) ||
       a.juego.nombre.localeCompare(b.juego.nombre, 'es'),
   );
 
   const sugerencias = puntuados.slice(0, cuantas).map((s) => ({
     ...s,
-    empatanConEl: puntuados.filter((otro) => otro !== s && casiIgual(otro.afinidad, s.afinidad)).length,
+    empatanConEl: puntuados.filter((otro) => otro !== s && casiIgual(otro.cobertura, s.cobertura)).length,
   }));
   return { sugerencias, candidatos: puntuados.length, motivo: 'ok' };
 }
 
 function casiIgual(a: number, b: number): boolean {
   return Math.abs(a - b) < 1e-9;
+}
+
+/** Sin nota de la crítica el juego va al final del desempate, no al principio: no tener
+ * cobertura no es una nota baja, pero tampoco es un punto a favor. */
+function critica(juego: JuegoCatalogo): number {
+  return juego.metacritic ?? -1;
+}
+
+/** Los gratuitos valen cero; los de precio desconocido van al final, que es lo único
+ * honesto que se puede hacer con un dato que no está. */
+function precio(juego: JuegoCatalogo): number {
+  if (juego.es_gratis) {
+    return 0;
+  }
+  return juego.precio_final ?? Number.POSITIVE_INFINITY;
 }
 
 /** Por qué este juego está en la lista, en palabras. Describe la coincidencia; no dice qué
@@ -136,7 +166,8 @@ export function porQueCoincide(sugerencia: Sugerencia, totalJuegos: number): str
 /** La regla de desempate es la misma para toda la lista: se dice una vez al pie, no en
  * cada tarjeta, donde sería la misma frase seis veces. */
 export const NOTA_DESEMPATE =
-  'Varios juegos comparten los mismos géneros: entre ellos se ordenan por la nota de la crítica y luego por el precio.';
+  'Varios juegos cubren los mismos géneros que declaraste: entre ellos van primero los que ' +
+  'tienen nota de la crítica, de mayor a menor, y después los más baratos.';
 
 /** Si algún juego de la lista empata con otro, la nota de desempate tiene sentido. */
 export function hayEmpates(sugerencias: readonly Sugerencia[]): boolean {

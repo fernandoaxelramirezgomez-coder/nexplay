@@ -81,10 +81,36 @@
   color: var(--banda-alto-texto);
 }
 
-.frase,
 .veredicto .meta {
   margin: 0;
   max-width: var(--medida-lectura);
+}
+
+.nombre-banda {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-12);
+  flex-wrap: wrap;
+}
+
+/* La descripción de Steam, a dos líneas con un botón para abrirla. */
+.descripcion .texto.recortada {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.descripcion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+}
+
+.titular app-nota-info {
+  margin-inline-start: var(--espacio-4);
+  vertical-align: middle;
 }
 
 .nota {
@@ -112,9 +138,22 @@
 }
 
 
+/* Con techo: sin él la columna era más alta que la pantalla, nunca llegaba a pegarse y
+   el campo de "Preguntar" solo aparecía al final del scroll. Con el techo, el chat se
+   queda con el hueco que sobra y su conversación es la que se desplaza. */
 .lateral {
   position: sticky;
   top: var(--espacio-16);
+  max-height: calc(100dvh - var(--espacio-32));
+}
+
+/* El chat ya trae su propio borde con brillo: el filete de la pila encima sobraría. */
+.lateral > app-nia {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .rotulo-seccion {
@@ -136,10 +175,6 @@
 
   .lateral {
     position: static;
+    max-height: none;
   }
-}
-
-/* El chat de Nia ya trae su propio borde con brillo: el filete de la pila encima sobraría. */
-.lateral > app-nia {
-  border-top: 0;
 }

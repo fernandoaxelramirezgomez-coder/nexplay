@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { FactorPrediccion } from '../api/contrato';
+import { lecturaDeJugador } from '../dominio/factores';
 
 const NOTA_METACRITIC = 'nota de Metacritic';
 
@@ -11,6 +12,10 @@ const NOTA_METACRITIC = 'nota de Metacritic';
   selector: 'app-factores-modelo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <p class="leyenda meta">
+      <span class="marca" data-direccion="aumenta" aria-hidden="true">↑</span> sube el riesgo estimado ·
+      <span class="marca" data-direccion="reduce" aria-hidden="true">↓</span> lo baja
+    </p>
     <ul class="factores" data-testid="factores-lista">
       @for (factor of factores(); track factor.etiqueta) {
         <li class="factor" [attr.data-direccion]="factor.direccion">
@@ -22,22 +27,32 @@ const NOTA_METACRITIC = 'nota de Metacritic';
             }
           </svg>
           <div>
-            <p class="etiqueta">{{ factor.etiqueta }}</p>
-            <p class="detalle meta">
+            <p class="etiqueta">
               @if (factor.etiqueta === notaMetacritic && metacritic() !== null) {
-                {{ metacritic() }}, {{ factor.valor_relativo === 'alto' ? 'por encima' : 'por debajo' }} del promedio
-                del catálogo ({{ promedioTexto() }})
+                Su nota de Metacritic está {{ factor.valor_relativo === 'alto' ? 'por encima' : 'por debajo' }} del
+                promedio
               } @else {
-                {{ factor.valor_relativo === 'alto' ? 'Por encima' : 'Por debajo' }} del promedio del catálogo
+                {{ comoSeLee(factor) }}
               }
-              · {{ factor.direccion }} el riesgo estimado
             </p>
+            @if (factor.etiqueta === notaMetacritic && metacritic() !== null) {
+              <p class="detalle meta">{{ metacritic() }} contra {{ promedioTexto() }} del catálogo</p>
+            }
           </div>
         </li>
       }
     </ul>
   `,
   styles: `
+    .leyenda {
+      margin: 0 0 var(--espacio-12);
+    }
+    .marca[data-direccion='aumenta'] {
+      color: var(--banda-alto-texto);
+    }
+    .marca[data-direccion='reduce'] {
+      color: var(--banda-bajo-texto);
+    }
     .factores {
       list-style: none;
       margin: 0;
@@ -78,6 +93,10 @@ export class FactoresModelo {
   readonly promedio = input<number | null>(null);
 
   protected readonly notaMetacritic = NOTA_METACRITIC;
+
+  protected comoSeLee(factor: FactorPrediccion): string {
+    return lecturaDeJugador(factor);
+  }
 
   protected promedioTexto(): string {
     const promedio = this.promedio();

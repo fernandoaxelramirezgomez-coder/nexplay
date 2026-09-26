@@ -185,3 +185,52 @@ export interface RespuestaNia {
   modelo: string | null;
   aviso: string | null;
 }
+
+/** GET /panorama: la muestra de reseñas detrás del catálogo. Es descriptivo —sale de
+ * contar la base, no de predecir—, así que ninguna cifra de aquí es un score. */
+export interface TramoPlaytime {
+  /** "Menos de 2 h" es la ventana de reembolso de Steam: ahí se define la etiqueta. */
+  tramo: string;
+  cuantas: number;
+  fraccion: number;
+}
+
+export interface CalidadMuestra {
+  compradas_en_steam: number;
+  recibidas_gratis: number;
+  acceso_anticipado: number;
+  con_voto_util: number;
+  /** num_games_owned = 0: bandera de privacidad, no biblioteca vacía. */
+  perfiles_privados: number;
+  en_ingles: number;
+  /** El conteo, no la proporción: 184,366 de 184,367 redondea a 1.0 y diría "todas". */
+  resenas_en_ingles: number;
+}
+
+/** Una fila por juego. No trae la banda: se cruza con /catalogo, que es donde vive. */
+export interface JuegoPanorama {
+  appid: number;
+  resenas: number;
+  casos_senal: number;
+  prevalencia: number;
+  resenas_en_steam: number | null;
+  /** Resumen de Steam, en inglés: 'Very Positive', 'Mixed'… */
+  consenso: string | null;
+  /** null si el juego no llega al mínimo de casos para nombrar uno. */
+  motivo_principal: string | null;
+}
+
+export interface PanoramaCatalogo {
+  juegos: number;
+  resenas_descargadas: number;
+  resenas_en_steam: number;
+  cobertura: number;
+  ventana: { desde: string; hasta: string };
+  casos_senal: number;
+  prevalencia: number;
+  playtime_al_resenar: TramoPlaytime[];
+  muestra: CalidadMuestra;
+  motivos: MotivoInsatisfaccion[];
+  resenas_clasificadas: number;
+  por_juego: JuegoPanorama[];
+}

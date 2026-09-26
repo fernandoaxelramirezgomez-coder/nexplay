@@ -3,11 +3,14 @@ import { rxResource } from '@angular/core/rxjs-interop';
 
 import { FormularioAlta, PerfilJugador } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
+import { HistorialStore } from './historial-store';
 import { ValoresPerfil } from '../dominio/opciones-perfil';
 
-// v2: antes se guardaba el tamaño de la biblioteca en un campo que la API lee como
-// compras al año. Los perfiles v1 no se migran porque su número no es comparable.
-const CLAVE = 'nexplay.perfil.v2';
+// v3: hasta v2 el formulario venía con respuestas puestas (compras 4, horas 6, fricción
+// media), así que un perfil guardado podía tener valores que nadie declaró. No se migran:
+// el formulario arranca vacío y lo declarado tiene que ser de quien lo declara.
+// v2 fue el cambio de "tamaño de la biblioteca" a "compras al año", que tampoco se migró.
+const CLAVE = 'nexplay.perfil.v3';
 
 /** El perfil neutro lo deriva la API: se manda a /perfil para no duplicar aquí
  * las heurísticas de segmento y disponibilidad. */
@@ -44,6 +47,7 @@ function leerGuardado(): Guardado | null {
 @Injectable({ providedIn: 'root' })
 export class PerfilStore {
   private readonly api = inject(NexplayApi);
+  private readonly historial = inject(HistorialStore);
   private readonly guardado = signal<Guardado | null>(leerGuardado());
 
   readonly perfil = computed(() => this.guardado()?.perfil ?? null);
@@ -62,6 +66,10 @@ export class PerfilStore {
 
   guardar(valores: ValoresPerfil, perfil: PerfilJugador): void {
     this.guardado.set({ valores, perfil });
+    this.historial.registrar({
+      tipo: 'perfil',
+      titulo: `${perfil.compras_al_anio} compras al año · ${perfil.horas_por_semana} h por semana · fricción ${perfil.tolerancia_friccion}`,
+    });
     try {
       localStorage.setItem(CLAVE, JSON.stringify({ valores, perfil }));
     } catch {

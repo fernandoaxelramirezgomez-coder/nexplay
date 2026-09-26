@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { NivelRiesgo } from '../api/contrato';
 import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
@@ -10,7 +10,7 @@ import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
   selector: 'app-pildora-banda',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<span class="pildora" [attr.data-banda]="banda()" data-testid="pildora-banda"
-    >{{ rotulo }} · {{ banda() }}</span
+    >{{ compacta() ? corta() : rotulo + ' · ' + banda() }}</span
   >`,
   styles: `
     .pildora {
@@ -38,5 +38,13 @@ import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 })
 export class PildoraBanda {
   readonly banda = input.required<NivelRiesgo>();
+  /** Solo el nivel, con mayúscula: para una celda o una fila de resultados, donde repetir
+   * "Riesgo general" en cada línea estira todo y no agrega nada. */
+  readonly compacta = input(false);
+
   protected readonly rotulo = ROTULO_RIESGO;
+  protected readonly corta = computed(() => {
+    const banda = this.banda();
+    return banda.charAt(0).toUpperCase() + banda.slice(1);
+  });
 }

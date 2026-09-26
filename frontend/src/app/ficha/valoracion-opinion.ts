@@ -41,9 +41,6 @@ import { HiloComentarios } from './hilo-comentarios';
   `,
   styles: `
     .valoracion {
-      border-top: 1px solid var(--linea);
-      margin-top: var(--espacio-16);
-      padding-top: var(--espacio-16);
       display: flex;
       flex-direction: column;
       gap: var(--espacio-12);

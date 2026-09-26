@@ -1,0 +1,117 @@
+/* El inicio: el titular, el buscador y el carrusel de ejemplo. Vivían en el catálogo,
+   cuando la portada hacía de presentación y de catálogo a la vez. */
+.inicio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-24);
+}
+
+.muestra {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-12);
+  padding-top: var(--espacio-24);
+  border-top: var(--filete);
+}
+
+.muestra .meta {
+  margin: 0;
+  max-width: var(--medida-lectura);
+  line-height: var(--interlineado-largo);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
+  gap: clamp(var(--espacio-40), 6vw, 72px);
+  align-items: center;
+  padding: var(--espacio-48) 0 var(--espacio-40);
+}
+
+.hero-mensaje,
+.demostracion {
+  min-width: 0;
+}
+
+.sobrelinea {
+  margin: 0 0 var(--espacio-12);
+  color: var(--neon);
+  font-size: var(--texto-caption);
+  font-weight: var(--peso-titular);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.titular {
+  max-width: 17ch;
+  font-size: clamp(var(--texto-heading-sm), 4.7vw, var(--texto-display));
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.entrada {
+  margin: var(--espacio-24) 0;
+  max-width: 59ch;
+  color: var(--texto-meta);
+  font-size: var(--texto-body);
+  font-weight: var(--peso-tenue);
+  line-height: var(--interlineado-largo);
+}
+
+.aclaracion {
+  margin: var(--espacio-12) 0 0;
+  max-width: 66ch;
+  color: var(--texto-meta);
+  font-size: var(--texto-caption);
+  line-height: var(--interlineado-largo);
+}
+
+.ver-catalogo {
+  align-self: flex-start;
+  margin-top: var(--espacio-16);
+}
+
+@container contenido (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: var(--espacio-40);
+  }
+
+  .titular {
+    max-width: 19ch;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    gap: var(--espacio-24);
+    padding: var(--espacio-40) 0 var(--espacio-24);
+  }
+
+  .titular {
+    font-size: clamp(38px, 11vw, 50px);
+  }
+
+  /* En móvil la acción principal va primero: el buscador sube justo debajo del titular y
+     el párrafo de entrada baja después. El carrusel ya queda debajo, en la rejilla de una
+     columna. */
+  .hero-mensaje {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-mensaje app-buscador {
+    order: 1;
+    margin-top: var(--espacio-24);
+  }
+
+  .aclaracion {
+    order: 2;
+  }
+
+  .entrada {
+    order: 3;
+    margin: var(--espacio-24) 0 0;
+  }
+}

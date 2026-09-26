@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, linkedSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
 
 // SVG inline: si la portada de Steam no carga, se muestra esto sin depender de otro servicio.
 const RESPALDO =
@@ -10,29 +10,45 @@ const RESPALDO =
       "text-anchor='middle' dominant-baseline='middle'>Sin portada</text></svg>",
   );
 
+/** El arte vertical que Steam publica por appid. No existe para todos los juegos, así
+ * que quien lo use tiene que poder quedarse sin él. */
+export function arteVertical(appid: number): string {
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/library_600x900.jpg`;
+}
+
 @Component({
   selector: 'app-portada',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="marco" [class.cargando]="estado() === 'cargando'" [style.border-radius]="radio()">
-      <img
-        [src]="estado() === 'fallida' ? respaldo : src()"
-        alt=""
-        width="460"
-        height="215"
-        [attr.loading]="prioritaria() ? 'eager' : 'lazy'"
-        [attr.fetchpriority]="prioritaria() ? 'high' : null"
-        (load)="estado.set(estado() === 'fallida' ? 'fallida' : 'lista')"
-        (error)="estado.set('fallida')"
-      />
+    <div class="marco" [class.cargando]="cargando()" [style.border-radius]="radio()">
+      <picture>
+        <!-- En una ranura alta, el arte vertical de Steam; la imagen ancha en la misma
+             ranura solo cabe recortada por la mitad del logo. -->
+        @if (usarAlta()) {
+          <source [srcset]="alta()" [attr.media]="mediaAlta()" width="600" height="900" />
+        }
+        <img
+          [src]="fuente()"
+          alt=""
+          width="460"
+          height="215"
+          [attr.loading]="prioritaria() ? 'eager' : 'lazy'"
+          [attr.fetchpriority]="prioritaria() ? 'high' : null"
+          (load)="cargando.set(false)"
+          (error)="fallar()"
+        />
+      </picture>
     </div>
   `,
   styles: `
     :host {
       display: block;
     }
+    picture {
+      display: contents;
+    }
     .marco {
-      aspect-ratio: 460 / 215;
+      aspect-ratio: var(--proporcion-portada, 460 / 215);
       overflow: hidden;
       background: var(--superficie-tarjeta-hover);
     }
@@ -61,10 +77,37 @@ export class Portada {
   readonly prioritaria = input(false);
   /** '0' cuando la tarjeta ya recorta las esquinas con su propio overflow. */
   readonly radio = input('var(--radio-tarjeta)');
+  /** El arte vertical de Steam (600×900), para ranuras más altas que anchas. Se usa solo
+   * donde la consulta de medios diga; si no carga, queda la imagen ancha de siempre. */
+  readonly alta = input<string | null>(null);
+  /** Desde qué ancho de ventana se usa el arte vertical. */
+  readonly mediaAlta = input('(min-width: 861px)');
 
-  protected readonly respaldo = RESPALDO;
-  protected readonly estado = linkedSignal<string, 'cargando' | 'lista' | 'fallida'>({
+  protected readonly fallida = linkedSignal<string, boolean>({
     source: this.src,
-    computation: () => 'cargando',
+    computation: () => false,
   });
+  protected readonly cargando = linkedSignal<string, boolean>({
+    source: this.src,
+    computation: () => true,
+  });
+  /** Si el arte vertical no está publicado, el <source> se retira y queda la ancha. */
+  private readonly altaViva = linkedSignal<string | null, boolean>({
+    source: this.alta,
+    computation: () => true,
+  });
+
+  protected readonly usarAlta = computed(() => !!this.alta() && this.altaViva() && !this.fallida());
+  protected readonly fuente = computed(() => (this.fallida() ? RESPALDO : this.src()));
+
+  /** El error puede venir del arte vertical o de la imagen ancha: primero se descarta el
+   * vertical, y solo si también falla la ancha se enseña el respaldo gris. */
+  protected fallar(): void {
+    if (this.usarAlta()) {
+      this.altaViva.set(false);
+      return;
+    }
+    this.fallida.set(true);
+    this.cargando.set(false);
+  }
 }

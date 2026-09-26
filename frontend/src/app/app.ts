@@ -6,14 +6,13 @@ import { filter, map, startWith } from 'rxjs';
 import { BarraLateral } from './barra-lateral/barra-lateral';
 import { NiaFlotante } from './chat/nia-flotante';
 import { Metodologia } from './compartido/metodologia';
-import { NiaMascota } from './compartido/nia-mascota';
 import { BarraStore } from './estado/barra-store';
 import { CompararStore } from './estado/comparar-store';
 import { TemaStore } from './estado/tema-store';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, BarraLateral, Metodologia, NiaFlotante, NiaMascota],
+  imports: [RouterOutlet, RouterLink, BarraLateral, Metodologia, NiaFlotante],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -52,12 +51,11 @@ export class App {
     { initialValue: this.router.url },
   );
 
-  /** En la ficha, Nia ya vive en la columna lateral con el juego abierto: la burbuja
-   * ahí sería la misma conversación dos veces. */
-  protected readonly muestraNiaFlotante = computed(() => !this.ruta().startsWith('/juego/'));
+  /** Ni en la ficha ni en la página de Nia: en las dos ya hay una conversación abierta y
+   * la burbuja sería la misma, ofrecida dos veces. En el resto del sitio acompaña. */
+  protected readonly muestraNiaFlotante = computed(() => {
+    const ruta = this.ruta().split(/[?#]/)[0];
+    return !ruta.startsWith('/juego/') && ruta !== '/nia';
+  });
 
-  /** El saludo de Nia va al pie y solo en la portada: arriba competía con el buscador,
-   * que en móvil es lo primero que hay que ver. Los filtros del catálogo viajan en la URL
-   * (?q=, ?genero=), así que se compara solo la ruta. */
-  protected readonly enPortada = computed(() => this.ruta().split(/[?#]/)[0] === '/');
 }

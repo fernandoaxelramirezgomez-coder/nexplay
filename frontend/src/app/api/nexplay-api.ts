@@ -9,6 +9,7 @@ import {
   FiltrosCatalogo,
   FormularioAlta,
   JuegoCatalogo,
+  PanoramaCatalogo,
   PerfilJugador,
   PrediccionRiesgo,
   ReaccionComentario,
@@ -46,6 +47,10 @@ export class NexplayApi {
 
   explicacion(appid: number): Observable<ExplicacionJuego> {
     return this.http.get<ExplicacionJuego>(`${this.base}/explicacion/${appid}`);
+  }
+
+  panorama(): Observable<PanoramaCatalogo> {
+    return this.http.get<PanoramaCatalogo>(`${this.base}/panorama`);
   }
 
   valoraciones(appid: number, usuario: string): Observable<ResumenValoraciones> {

@@ -36,7 +36,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       flex-wrap: wrap;
       gap: var(--espacio-8);
     }
+    /* Son nombres de género, no cifras: van en la fuente del texto. En la mono parecían
+       una etiqueta de sistema y pesaban más que el propio catálogo. */
     .chip {
+      font-family: var(--fuente-texto);
       min-height: 36px;
       padding: 7px var(--espacio-12);
       border: 1px solid var(--borde-control);

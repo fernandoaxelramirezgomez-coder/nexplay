@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
@@ -27,10 +27,13 @@ import { MotivosStore } from '../estado/motivos-store';
           [attr.aria-label]="
             (enComparacion() ? 'Quitar de la comparación: ' : 'Agregar a la comparación: ') + juego().nombre
           "
-          (click)="comparar.alternar(juego().appid)"
+          (click)="alternar()"
         >
           {{ enComparacion() ? 'Comparando' : 'Comparar' }}
         </button>
+        @if (rechazado()) {
+          <p class="aviso-lleno" role="status" data-testid="aviso-lleno">{{ comparar.aviso() }}</p>
+        }
       </div>
       <div class="cuerpo">
         <h3 class="nombre">
@@ -113,9 +116,11 @@ import { MotivosStore } from '../estado/motivos-store';
     .tarjeta-juego:focus-within .motivo {
       display: block;
     }
+    /* Siempre a la vista: escondido tras el hover, con ratón no se descubre y la vista
+       de comparar quedaba pidiendo un botón que nadie encontraba. */
     .comparar {
       position: absolute;
-      opacity: 0;
+      opacity: 0.88;
       transition: opacity var(--duracion) var(--curva);
       top: var(--espacio-8);
       right: var(--espacio-8);
@@ -135,14 +140,31 @@ import { MotivosStore } from '../estado/motivos-store';
       background: var(--acento-sistema);
       color: var(--neon);
     }
+    /* Pegado al botón que se tocó: arriba de la página nadie lo relacionaba con el clic. */
+    .aviso-lleno {
+      position: absolute;
+      top: calc(var(--espacio-8) + 40px);
+      right: var(--espacio-8);
+      z-index: 2;
+      max-width: 240px;
+      margin: 0;
+      padding: var(--espacio-8) var(--espacio-12);
+      border: 1px solid var(--banda-alto-texto);
+      border-radius: var(--radio-tarjeta);
+      background: var(--superficie-lienzo);
+      box-shadow: var(--sombra-suave);
+      color: var(--texto);
+      font-size: var(--texto-caption);
+      line-height: var(--interlineado-largo);
+    }
     .tarjeta-juego:hover .comparar,
-    .tarjeta-juego:focus-within .comparar {
+    .tarjeta-juego:focus-within .comparar,
+    .comparar[aria-pressed='true'] {
       opacity: 1;
     }
-    /* Sin cursor (táctil) no hay hover: el botón queda siempre visible y más grande. */
+    /* Sin cursor (táctil) el botón crece hasta el área de toque completa. */
     @media (hover: none) {
       .comparar {
-        opacity: 1;
         min-height: 44px;
         padding: var(--espacio-8) var(--espacio-16);
       }
@@ -157,6 +179,18 @@ export class TarjetaJuego {
   private readonly motivos = inject(MotivosStore);
 
   protected readonly enComparacion = computed(() => this.comparar.appids().includes(this.juego().appid));
+  /** El aviso de "ya hay cuatro" vive en la tarjeta que lo provocó y se va solo. */
+  protected readonly rechazado = signal(false);
+  private reloj?: ReturnType<typeof setTimeout>;
+
+  protected alternar(): void {
+    const resultado = this.comparar.alternar(this.juego().appid);
+    clearTimeout(this.reloj);
+    this.rechazado.set(resultado === 'lleno');
+    if (resultado === 'lleno') {
+      this.reloj = setTimeout(() => this.rechazado.set(false), 4000);
+    }
+  }
   protected readonly metacritic = computed(() => textoMetacritic(this.juego().metacritic));
   protected readonly precio = computed(() => textoPrecio(this.juego()));
 

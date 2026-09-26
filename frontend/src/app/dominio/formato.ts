@@ -16,6 +16,18 @@ export function textoMetacritic(metacritic: number | null): string {
   return metacritic === null ? 'Sin nota de Metacritic' : `Metacritic ${metacritic}`;
 }
 
+const ENTEROS = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
+
+/** 184367 → "184,367". Para conteos grandes: sin separador no se leen. */
+export function numero(valor: number): string {
+  return ENTEROS.format(valor);
+}
+
+/** 0.0224 → "2.24%". Un decimal no alcanza cuando la cifra es de dos dígitos por mil. */
+export function porcentajeFino(fraccion: number): string {
+  return `${(fraccion * 100).toFixed(2)}%`;
+}
+
 /** 0.86 → "86%". Solo para frecuencias y coberturas, nunca para el score de riesgo. */
 export function porcentaje(fraccion: number): string {
   return `${Math.round(fraccion * 100)}%`;

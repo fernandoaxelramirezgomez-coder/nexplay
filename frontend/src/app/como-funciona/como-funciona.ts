@@ -13,12 +13,13 @@ export const PASOS: readonly Paso[] = [
   {
     titulo: 'Buscar un juego',
     texto: 'El catálogo reúne juegos de Steam ordenados en tres estantes, de menor a mayor riesgo general.',
-    enlace: { ruta: '/', texto: 'Ir al catálogo' },
+    enlace: { ruta: '/explorar', texto: 'Ir al catálogo' },
   },
   {
     titulo: 'Ver su banda y sus motivos',
     texto:
       'La ficha muestra si el juego tiende a generar más o menos arrepentimiento temprano que el resto del catálogo, y los motivos que más aparecen en esas reseñas.',
+    enlace: { ruta: '/panorama', texto: 'Ver cómo se reparte el catálogo' },
   },
   {
     titulo: 'Crear tu perfil (opcional)',
@@ -29,7 +30,8 @@ export const PASOS: readonly Paso[] = [
   {
     titulo: 'Preguntarle a Nia',
     texto:
-      'Nia responde con los datos del juego abierto: su banda, los motivos, la crítica y el precio. Está en cada ficha y en la burbuja del resto de las páginas.',
+      'Nia responde con los datos del juego que tenga a la vista: su banda, los motivos, la crítica y el precio. Tiene su propia página, está en cada ficha y asoma como burbuja en el catálogo.',
+    enlace: { ruta: '/nia', texto: 'Hablar con Nia' },
   },
 ];
 

@@ -1,5 +1,5 @@
 import { MotivoInsatisfaccion, PerfilJugador } from '../api/contrato';
-import { historiaPerfil, partirDatos } from './historia-perfil';
+import { historiaPerfil } from './historia-perfil';
 import { juegoDePrueba } from './juego-prueba';
 
 function perfilDePrueba(cambios: Partial<PerfilJugador> = {}): PerfilJugador {
@@ -21,9 +21,17 @@ const MOTIVOS: MotivoInsatisfaccion[] = [
   { motivo: 'bugs', frecuencia: 0.25 },
 ];
 
-/** La historia se lee como un párrafo: para revisarla basta el texto plano. */
-function plano(segmentos: ReturnType<typeof historiaPerfil>): string {
-  return (segmentos ?? []).map((s) => s.texto).join('');
+/** La historia son líneas de segmentos: para revisarla basta el texto plano de todas. */
+function plano(lineas: ReturnType<typeof historiaPerfil>): string {
+  return (lineas ?? []).map((linea) => linea.map((s) => s.texto).join('')).join(' ');
+}
+
+function lineas(resultado: ReturnType<typeof historiaPerfil>): string[] {
+  return (resultado ?? []).map((linea) => linea.map((s) => s.texto).join(''));
+}
+
+function palabras(linea: string): number {
+  return linea.trim().split(/\s+/).length;
 }
 
 describe('historiaPerfil', () => {
@@ -33,71 +41,59 @@ describe('historiaPerfil', () => {
 
   it('dice si el juego cae dentro o fuera de los géneros declarados', () => {
     const dentro = plano(historiaPerfil(perfilDePrueba(), juegoDePrueba(), MOTIVOS));
-    expect(dentro).toContain('dentro');
+    expect(dentro).toContain('Dentro');
     expect(dentro).toContain('Acción');
 
     const fuera = plano(historiaPerfil(perfilDePrueba({ tags_preferidos: ['estrategia'] }), juegoDePrueba(), MOTIVOS));
-    expect(fuera).toContain('fuera');
+    expect(fuera).toContain('Fuera');
   });
 
   it('sin géneros declarados no inventa afinidad', () => {
     const texto = plano(historiaPerfil(perfilDePrueba({ tags_preferidos: [] }), juegoDePrueba(), MOTIVOS));
     expect(texto).toContain('No declaraste géneros');
-    expect(texto).not.toContain('dentro de lo que sueles jugar');
+    expect(texto).not.toContain('Dentro de tus géneros');
   });
 
-  it('cruza la tolerancia baja con el motivo dominante cuando es fricción', () => {
+  /** Tres líneas de una ojeada: en prosa, esto se leía como una explicación del riesgo,
+   * que es justo lo que no es. Doce palabras es lo que cabe en un renglón. */
+  it('son tres líneas cortas: géneros, tiempo hasta las dos horas y peso de la compra', () => {
+    const resultado = lineas(historiaPerfil(perfilDePrueba(), juegoDePrueba(), MOTIVOS));
+    expect(resultado).toHaveLength(3);
+    for (const linea of resultado) {
+      expect(palabras(linea)).toBeLessThanOrEqual(12);
+    }
+    const [generos, tiempo, compra] = resultado;
+    expect(generos).toBe('Dentro de tus géneros: Acción.');
+    expect(tiempo).toBe('Llegas a 2 h en 1–2 sesiones, dentro del reembolso.');
+    expect(compra).toBe('Sería una de tus 3–6 compras del año.');
+  });
+
+  it('no repite el motivo dominante, que ya sale en su propia sección', () => {
     const texto = plano(
       historiaPerfil(perfilDePrueba({ tolerancia_friccion: 'baja' }), juegoDePrueba(), [
         { motivo: 'bugs', frecuencia: 0.4 },
       ]),
     );
-    expect(texto).toContain('bugs');
-    expect(texto).toContain('justo lo que menos toleras');
-    expect(texto).toContain('40%');
-  });
-
-  it('con tolerancia alta el mismo motivo no se presenta como problema', () => {
-    const texto = plano(
-      historiaPerfil(perfilDePrueba({ tolerancia_friccion: 'alta' }), juegoDePrueba(), [
-        { motivo: 'bugs', frecuencia: 0.4 },
-      ]),
-    );
-    expect(texto).toContain('no te frena');
-    expect(texto).not.toContain('justo lo que menos toleras');
-  });
-
-  it('un motivo que no es fricción no se cruza con la tolerancia', () => {
-    const texto = plano(
-      historiaPerfil(perfilDePrueba({ tolerancia_friccion: 'baja' }), juegoDePrueba(), [
-        { motivo: 'contenido', frecuencia: 0.3 },
-      ]),
-    );
-    expect(texto).toContain('no es fricción de juego');
-  });
-
-  it('sin motivos suficientes lo dice en vez de suponer', () => {
-    const texto = plano(historiaPerfil(perfilDePrueba(), juegoDePrueba(), []));
-    expect(texto).toContain('No hay suficientes reseñas de arrepentimiento temprano');
+    expect(texto).not.toContain('bugs');
+    expect(texto).not.toContain('40%');
   });
 
   it('el reembolso depende de los 14 días, no de las horas por semana', () => {
     // 2 h por semana llega a las dos horas en una semana: sigue dentro del plazo.
     const normal = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 2 }), juegoDePrueba(), MOTIVOS));
-    expect(normal).toContain('dentro de los 14 días');
-    expect(normal).not.toContain('venció');
+    expect(normal).toContain('dentro del reembolso');
 
     // Media hora por semana: tardaría un mes en llegar, y el plazo corre igual.
     const lento = plano(historiaPerfil(perfilDePrueba({ horas_por_semana: 0.5 }), juegoDePrueba(), MOTIVOS));
-    expect(lento).toContain('caduca a los 14 días de la compra aunque no hayas jugado');
+    expect(lento).toContain('más de 14 días: el reembolso caduca antes');
   });
 
   it('un juego gratuito no habla de cuánto pesa la compra', () => {
     const texto = plano(
       historiaPerfil(perfilDePrueba(), juegoDePrueba({ es_gratis: true, precio_final: 0 }), MOTIVOS),
     );
-    expect(texto).toContain('gratuito');
-    expect(texto).not.toContain('compras al año');
+    expect(texto).toContain('Gratuito');
+    expect(texto).not.toContain('compras');
   });
 
   it('sin precio no se inventa cuánto pesa la compra', () => {
@@ -114,25 +110,15 @@ describe('historiaPerfil', () => {
     }
   });
 
-  it('con una compra al año dice «1 juego», en singular', () => {
+  /** A la API viaja el punto medio del rango (1, 4, 11 o 25); lo declarado fue un rango,
+   * así que es el rango lo que se cuenta de vuelta, ahora en cifras para que la línea
+   * quepa en un renglón. */
+  it('nombra el rango de compras que se eligió, no el punto medio', () => {
     const uno = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 1 }), juegoDePrueba(), MOTIVOS));
-    expect(uno).toContain('1 juego al año');
-    expect(uno).not.toContain('1 juegos');
-    const cinco = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 5 }), juegoDePrueba(), MOTIVOS));
-    expect(cinco).toContain('5 juegos al año');
-  });
-});
-
-describe('partirDatos', () => {
-  it('marca porcentajes, horas, días, juegos y compras sin cambiar el texto', () => {
-    const texto = 'Con 6 h por semana, dentro de los 14 días; rendimiento (86% de las clasificadas), 1 juego y 20 compras.';
-    const trozos = partirDatos(texto);
-    expect(trozos.map((t) => t.texto).join('')).toBe(texto);
-    expect(trozos.filter((t) => t.dato).map((t) => t.texto)).toEqual(['6 h', '14 días', '86%', '1 juego', '20 compras']);
-  });
-
-  it('un número suelto o una palabra con h no son datos', () => {
-    const trozos = partirDatos('Half-Life 2 tiene horas de sobra');
-    expect(trozos.some((t) => t.dato)).toBe(false);
+    expect(uno).toContain('una de tus 0–2 compras del año');
+    const cuatro = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 4 }), juegoDePrueba(), MOTIVOS));
+    expect(cuatro).toContain('una de tus 3–6 compras del año');
+    const muchos = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 25 }), juegoDePrueba(), MOTIVOS));
+    expect(muchos).toContain('Compras más de 15 al año: este sería uno más');
   });
 });

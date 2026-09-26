@@ -1,121 +1,9 @@
-<div class="catalogo">
-  <section class="hero" aria-labelledby="titulo-principal">
-    <div class="hero-mensaje">
-      <p class="sobrelinea mono">Evidencia antes de comprar</p>
-      <h1 class="titular" id="titulo-principal">
-        Descubre qué podría frustrarte en las primeras dos horas
-      </h1>
-      <p class="entrada">
-        NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus
-        motivos frecuentes y el contexto que puede importar para ti.
-      </p>
-      <app-buscador
-        [juegos]="catalogo.juegos()"
-        [texto]="texto()"
-        (textoCambio)="cambiarTexto($event)"
-      />
-      <p class="aclaracion mono">
-        Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.
-      </p>
-    </div>
-
-    @if (destacado(); as juego) {
-      <aside
-        class="demostracion"
-        role="region"
-        aria-roledescription="carrusel"
-        aria-label="Ejemplos de segunda opinión"
-        data-testid="hero-carrusel"
-        [attr.data-pausado]="ejemploPausado()"
-        (mouseenter)="ejemploPausado.set(true)"
-        (mouseleave)="ejemploPausado.set(false)"
-        (focusin)="ejemploPausado.set(true)"
-        (focusout)="alSalirDelEjemplo($event)"
-      >
-        <div class="demostracion-fila">
-          <p class="demostracion-etiqueta mono">Así se ve una segunda opinión</p>
-          @if (ejemplos().length > 1) {
-            <div class="carrusel-controles">
-              <span class="carrusel-posicion mono" data-testid="hero-posicion"
-                >{{ indiceEjemplo() + 1 }} / {{ ejemplos().length }}</span
-              >
-              <button
-                type="button"
-                class="carrusel-flecha toque-amplio"
-                aria-label="Ejemplo anterior"
-                data-testid="hero-anterior"
-                (click)="moverEjemplo(-1)"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg>
-              </button>
-              <button
-                type="button"
-                class="carrusel-flecha toque-amplio"
-                aria-label="Ejemplo siguiente"
-                data-testid="hero-siguiente"
-                (click)="moverEjemplo(1)"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
-              </button>
-            </div>
-          }
-        </div>
-        <!-- El track por appid rehace la tarjeta en cada cambio: así entra con su fundido.
-             Mientras rota solo no se anuncia cada cambio; si alguien lo detuvo o lo movió a
-             mano, sí. -->
-        @for (juego of [juego]; track juego.appid) {
-        <a
-          class="vistazo"
-          [routerLink]="['/juego', juego.appid]"
-          [attr.aria-label]="'Ver el análisis de ' + juego.nombre"
-          [attr.aria-live]="rotaSolo && !ejemploPausado() ? 'off' : 'polite'"
-          aria-roledescription="diapositiva"
-          [attr.data-appid]="juego.appid"
-          data-testid="hero-ejemplo"
-        >
-          <div class="vistazo-portada">
-            <app-portada [src]="juego.portada_url" [prioritaria]="true" radio="0" />
-          </div>
-          <div class="vistazo-cuerpo">
-            <div class="vistazo-cabecera">
-              <div>
-                <p class="vistazo-sobrelinea mono">Ejemplo del catálogo</p>
-                <h2 id="titulo-ejemplo">{{ juego.nombre }}</h2>
-              </div>
-              <app-pildora-banda [banda]="juego.banda_riesgo" />
-            </div>
-            <ul class="vistazo-lista">
-              <li>
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12.5 9.2 17 19 7" /></svg>
-                Motivos frecuentes en reseñas
-              </li>
-              <li>
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 18V9m8 9V5m8 13v-6" /></svg>
-                Factores que mueven la estimación
-              </li>
-              <li>
-                <svg aria-hidden="true" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="8" />
-                  <path d="M12 11v5m0-8h.01" />
-                </svg>
-                Contexto para decidir por tu cuenta
-              </li>
-            </ul>
-            <span class="vistazo-accion"
-              >Ver análisis completo <span aria-hidden="true">→</span></span
-            >
-          </div>
-        </a>
-        }
-      </aside>
-    }
-  </section>
-
+<div class="explorar" data-testid="explorar">
   <section class="exploracion" aria-labelledby="titulo-exploracion">
     <header class="exploracion-cabecera">
       <div>
         <p class="sobrelinea mono">Catálogo</p>
-        <h2 id="titulo-exploracion">Explora por género y nivel de riesgo</h2>
+        <h1 id="titulo-exploracion">Explora por género y nivel de riesgo</h1>
       </div>
       @if (!catalogo.cargando() && !catalogo.error()) {
         <p class="meta mono" data-testid="catalogo-conteo">
@@ -128,6 +16,13 @@
         </p>
       }
     </header>
+    <app-buscador
+      class="buscador-explorar"
+      [juegos]="catalogo.juegos()"
+      [texto]="texto()"
+      [sugerir]="false"
+      (textoCambio)="cambiarTexto($event)"
+    />
     <app-filtros-catalogo
       [genero]="generoActivo()"
       [generos]="catalogo.generos()"
@@ -143,8 +38,6 @@
       </button>
     </div>
   } @else {
-    <p class="aviso" role="status" aria-live="polite">{{ comparar.aviso() }}</p>
-
     @if (catalogo.cargando()) {
       @for (banda of bandas; track banda) {
         <div class="estante-cargando" aria-hidden="true">
@@ -157,7 +50,9 @@
         </div>
       }
     } @else {
-      @for (estante of estantes(); track estante.banda; let primero = $first) {
+      <!-- Con un filtro puesto, las bandas sin ningún juego no aportan nada: se ven tres
+           títulos con (0) debajo del resultado que sí hay. -->
+      @for (estante of estantesVisibles(); track estante.banda; let primero = $first) {
         <app-estante [estante]="estante" [prioritario]="primero" />
       }
     }

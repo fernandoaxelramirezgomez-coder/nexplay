@@ -7,7 +7,9 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 
 import { BarraStore } from '../estado/barra-store';
 import { CompararStore } from '../estado/comparar-store';
@@ -36,7 +38,7 @@ import { TemaStore } from '../estado/tema-store';
   template: `
     <nav class="riel" id="riel" aria-label="Secciones" (keydown.escape)="barra.cerrarCajon()">
       <div class="cima">
-        <a routerLink="/" class="marca" aria-label="NexPlay, ir al catálogo" (click)="barra.cerrarCajon()">
+        <a routerLink="/" class="marca" aria-label="NexPlay, ir al inicio" (click)="barra.cerrarCajon()">
           <!-- El logotipo tiene dos versiones: "Nex" es blanco en una y azul marino en
                la otra, así que sobre papel hace falta la segunda o esa palabra desaparece. -->
           <img
@@ -45,7 +47,6 @@ import { TemaStore } from '../estado/tema-store';
             width="81"
             height="70"
           />
-          <span class="lema">Una segunda opinión antes de comprar tu próximo juego</span>
         </a>
         <button
           #cerrar
@@ -88,6 +89,24 @@ import { TemaStore } from '../estado/tema-store';
                   matrixParams: 'ignored'
                 }"
                 ariaCurrentWhenActive="page"
+                data-testid="nav-inicio"
+                [attr.title]="barra.expandida() ? null : 'Inicio'"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3.5 10.5 12 4l8.5 6.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z" />
+                  <path d="M9.5 20v-6h5v6" />
+                </svg>
+                <span class="etiqueta">Inicio</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="item"
+                routerLink="/explorar"
+                routerLinkActive="activo"
+                ariaCurrentWhenActive="page"
+                [class.activo]="enUnaFicha()"
+                [attr.aria-current]="enUnaFicha() ? 'page' : null"
                 data-testid="nav-explorar"
                 [attr.title]="barra.expandida() ? null : 'Explorar'"
               >
@@ -120,6 +139,27 @@ import { TemaStore } from '../estado/tema-store';
             <li>
               <a
                 class="item"
+                routerLink="/nia"
+                routerLinkActive="activo"
+                ariaCurrentWhenActive="page"
+                data-testid="nav-nia"
+                [attr.title]="barra.expandida() ? null : 'Nia'"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
+                </svg>
+                <span class="etiqueta">Nia</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="grupo">
+          <p class="rotulo-seccion">Tu actividad</p>
+          <ul>
+            <li>
+              <a
+                class="item"
                 routerLink="/perfil"
                 routerLinkActive="activo"
                 ariaCurrentWhenActive="page"
@@ -138,12 +178,44 @@ import { TemaStore } from '../estado/tema-store';
                 }
               </a>
             </li>
+            <li>
+              <a
+                class="item"
+                routerLink="/historial"
+                routerLinkActive="activo"
+                ariaCurrentWhenActive="page"
+                data-testid="nav-historial"
+                [attr.title]="barra.expandida() ? null : 'Historial'"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 5v4h4" />
+                  <path d="M12 8v4.3l3 1.8" />
+                </svg>
+                <span class="etiqueta">Historial</span>
+              </a>
+            </li>
           </ul>
         </div>
 
         <div class="grupo">
           <p class="rotulo-seccion">Transparencia</p>
           <ul>
+            <li>
+              <a
+                class="item"
+                routerLink="/panorama"
+                routerLinkActive="activo"
+                ariaCurrentWhenActive="page"
+                data-testid="nav-panorama"
+                [attr.title]="barra.expandida() ? null : 'Panorama'"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 19V5" /><path d="M4 19h16" />
+                  <path d="M8 19v-6m4 6V8m4 11v-4" />
+                </svg>
+                <span class="etiqueta">Panorama</span>
+              </a>
+            </li>
             <li>
               <a
                 class="item"
@@ -199,12 +271,14 @@ import { TemaStore } from '../estado/tema-store';
       background: var(--superficie-barra);
       border-inline-end: 1px solid var(--linea);
     }
+    /* Todo el riel tiene que caber sin scroll propio en una pantalla de portátil (674 px
+       de alto visible): con ocho ítems, tres rótulos y el interruptor, el aire va justo. */
     .riel {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-24);
+      gap: var(--espacio-16);
       height: 100%;
-      padding: var(--espacio-24) var(--espacio-16);
+      padding: var(--espacio-16);
       overflow-y: auto;
     }
     .cima {
@@ -244,11 +318,6 @@ import { TemaStore } from '../estado/tema-store';
       filter: drop-shadow(0 0 calc(6px * var(--halo-radio)) rgb(var(--neon-canal) / calc(0.65 * var(--halo-alfa))))
         brightness(1.15);
     }
-    .lema {
-      color: var(--texto-meta);
-      font-size: var(--texto-caption);
-      line-height: var(--interlineado-largo);
-    }
     .icono {
       display: grid;
       place-items: center;
@@ -281,7 +350,7 @@ import { TemaStore } from '../estado/tema-store';
     .grupos {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-24);
+      gap: var(--espacio-16);
       flex: 1;
     }
     .grupo ul {
@@ -386,7 +455,6 @@ import { TemaStore } from '../estado/tema-store';
         width: 40px;
         height: 35px;
       }
-      :host(.corta) .lema,
       :host(.corta) .cuenta {
         display: none;
       }
@@ -442,6 +510,18 @@ export class BarraLateral {
   protected readonly perfil = inject(PerfilStore);
 
   private readonly botonCerrar = viewChild<ElementRef<HTMLButtonElement>>('cerrar');
+  private readonly router = inject(Router);
+
+  /** La ficha de un juego no tiene entrada propia en el menú: se llega desde el catálogo,
+   * así que es Explorar lo que queda marcado mientras está abierta. */
+  protected readonly enUnaFicha = toSignal(
+    this.router.events.pipe(
+      filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
+      map((evento) => evento.urlAfterRedirects.startsWith('/juego/')),
+      startWith(this.router.url.startsWith('/juego/')),
+    ),
+    { initialValue: this.router.url.startsWith('/juego/') },
+  );
 
   constructor() {
     // Al abrir el cajón el foco entra en él; si no, el tabulador seguiría en la página.

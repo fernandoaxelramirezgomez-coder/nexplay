@@ -13,6 +13,9 @@ import {
 
 import { MensajeChat } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
+import { sinMarkdown } from '../dominio/textos-nia';
+import { CatalogoStore } from '../estado/catalogo-store';
+import { HistorialStore } from '../estado/historial-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { UsuarioStore } from '../estado/usuario-store';
 
@@ -22,23 +25,39 @@ const MAXIMO_MENSAJES = 10;
 
 const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué dice la crítica?'];
 
+/** Lo primero que se ve cuando la conversación está vacía: antes había un hueco. */
+/** No repite el rótulo de arriba ("Pregúntale a Nia"): dice qué sabe contestar, que es
+ * lo que el rótulo no dice. */
+const BIENVENIDA_CHAT =
+  'Puedo contarte por qué quedó en esa banda, qué motivos aparecen en las reseñas, qué ' +
+  'dijo la crítica y cuánto cuesta. Lo que no hago es decirte si comprarlo.';
+
 /** Chat de la ficha. El backend le pasa a Nia los datos reales de este juego; la
  * conversación vive solo en pantalla y no se guarda. */
 @Component({
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()">
+    <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()" [class.alto]="llenaAlto()">
       @if (muestraTitulo()) {
         <header class="cabecera">
           <img class="avatar" src="nia/chat.png" alt="" width="200" height="233" data-testid="nia-avatar" />
           <h2 class="titulo">Pregúntale a Nia</h2>
         </header>
       }
-      <p class="meta intro">
-        Responde con los datos de este juego: su banda, los motivos de las reseñas, la crítica y el precio. No
-        recomienda comprar ni no comprar.
-      </p>
+      @if (muestraIntro()) {
+        <p class="meta intro">
+          Responde con los datos de este juego: su banda, los motivos de las reseñas, la crítica y el precio. No
+          recomienda comprar ni no comprar.
+        </p>
+      }
+
+      @if (!mensajes().length) {
+        <p class="globo-nia bienvenida" data-testid="nia-bienvenida">
+          <span class="quien">Nia</span>
+          {{ bienvenida }}
+        </p>
+      }
 
       @if (mensajes().length) {
         <ol class="conversacion" #conversacion data-testid="conversacion">
@@ -51,23 +70,41 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
           @if (esperando()) {
             <li class="mensaje" data-rol="nia">
               <span class="quien meta mono">Nia</span>
-              <p class="texto meta" data-testid="nia-escribiendo">Escribiendo…</p>
+              <p class="texto meta" data-testid="nia-escribiendo">
+                <span class="puntos" aria-hidden="true"><span></span><span></span><span></span></span>
+                {{ progreso() }}
+              </p>
             </li>
           }
         </ol>
-      } @else {
+      }
+
+      @if (pendientes().length) {
         <div class="sugerencias">
-          @for (sugerencia of sugerencias; track sugerencia) {
-            <button type="button" class="chip" data-testid="sugerencia-nia" (click)="preguntar(sugerencia)">
+          @for (sugerencia of pendientes(); track sugerencia) {
+            <button
+              type="button"
+              class="chip"
+              data-testid="sugerencia-nia"
+              [disabled]="esperando()"
+              (click)="preguntar(sugerencia)"
+            >
               {{ sugerencia }}
             </button>
           }
         </div>
       }
 
-      @if (modoDemostracion()) {
-        <p class="aviso-demo meta" data-testid="nia-modo-demo">{{ avisoModo() }}</p>
-      }
+      <p class="modo meta" data-testid="nia-modo" [attr.data-modo]="modo()">
+        <span class="punto" aria-hidden="true"></span>
+        @if (modo() === 'demostracion') {
+          Modo demostración: respuestas automáticas sin IA.
+        } @else if (modo() === 'openai') {
+          Respuesta generada con IA a partir de los datos de este juego.
+        } @else {
+          Nia responde solo con los datos de este juego.
+        }
+      </p>
 
       <label class="escribir">
         <span class="solo-lector">Escribe tu pregunta para Nia</span>
@@ -146,6 +183,22 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
     }
+    .bienvenida {
+      margin: 0;
+    }
+    /* Con alto propio, la conversación es lo que crece y el campo queda al final. El
+       host es flex column (chat/nia-pagina.ts), así que la sección llena lo que haya. */
+    .nia.alto {
+      flex: 1;
+      min-height: 0;
+    }
+    .nia.alto .conversacion {
+      flex: 1;
+      max-height: none;
+    }
+    .nia.alto .escribir {
+      margin-top: auto;
+    }
     .conversacion {
       list-style: none;
       margin: 0;
@@ -153,7 +206,7 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       display: flex;
       flex-direction: column;
       gap: var(--espacio-8);
-      max-height: min(60vh, 460px);
+      max-height: min(72vh, 620px);
       overflow-y: auto;
     }
     .mensaje {
@@ -179,12 +232,75 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       flex-wrap: wrap;
       gap: var(--espacio-8);
     }
-    .aviso-demo {
-      margin: 0;
+    /* Aquí los chips se pulsan para preguntar: llevan filo y superficie para que se lean
+       como botones y no como el texto de al lado. */
+    .sugerencias .chip {
       padding: var(--espacio-8) var(--espacio-12);
-      border: 1px dashed var(--borde-control);
-      border-radius: var(--radio-tarjeta);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      background: var(--superficie-lienzo);
+      font-family: var(--fuente-texto);
+    }
+    .sugerencias .chip:hover:not([disabled]) {
+      border-color: var(--neon);
+      color: var(--texto);
+    }
+    .sugerencias .chip::after {
+      content: none;
+    }
+    .sugerencias .chip[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    /* El modo se ve siempre, no solo cuando responde por reglas: saber quién contesta es
+       parte de la respuesta, y el punto verde tiene que decir que contestó una IA. */
+    .modo {
+      display: flex;
+      align-items: baseline;
+      gap: var(--espacio-8);
+      margin: 0;
       line-height: var(--interlineado-largo);
+    }
+    .modo .punto {
+      width: 8px;
+      height: 8px;
+      flex: none;
+      border-radius: 50%;
+      background: var(--borde-control);
+    }
+    .modo[data-modo='openai'] .punto {
+      background: var(--banda-bajo);
+    }
+    .modo[data-modo='demostracion'] .punto {
+      background: var(--banda-medio);
+    }
+    /* Tres puntos que laten mientras Nia responde. La regla global de
+       prefers-reduced-motion los deja quietos. */
+    .puntos {
+      display: inline-flex;
+      gap: 3px;
+    }
+    .puntos span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--texto-meta);
+      animation: latir 1.2s ease-in-out infinite;
+    }
+    .puntos span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    .puntos span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+    @keyframes latir {
+      0%,
+      100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 1;
+      }
     }
     .escribir {
       display: flex;
@@ -210,10 +326,6 @@ const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué
       align-items: center;
       gap: var(--espacio-12);
     }
-    .boton-cta[disabled] {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
     .error:empty {
       display: none;
     }
@@ -226,27 +338,49 @@ export class Nia {
   readonly appid = input.required<number>();
   /** La burbuja flotante ya pone el rótulo en su cabecera: ahí sobra repetirlo. */
   readonly muestraTitulo = input(true);
+  /** La página de Nia ya explica arriba con qué responde: repetirlo aquí es la misma
+   * frase dos veces, una debajo de la otra. */
+  readonly muestraIntro = input(true);
+  /** En su propia página el chat ocupa todo el panel: la conversación crece y el campo de
+   * escribir se queda abajo, como en cualquier chat. */
+  readonly llenaAlto = input(false);
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
   private readonly perfil = inject(PerfilStore);
+  private readonly catalogo = inject(CatalogoStore);
+  private readonly historial = inject(HistorialStore);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
 
   protected readonly maximo = MAXIMO_TEXTO;
   protected readonly sugerencias = SUGERENCIAS;
+  protected readonly bienvenida = BIENVENIDA_CHAT;
+  /** Las que todavía no se preguntaron en esta conversación: una sugerencia ya usada solo
+   * repetiría la misma respuesta. Cuando no queda ninguna, la fila desaparece. */
+  protected readonly pendientes = computed(() => {
+    const preguntadas = new Set(
+      this.mensajes()
+        .filter((mensaje) => mensaje.rol === 'usuario')
+        .map((mensaje) => mensaje.contenido.trim()),
+    );
+    return SUGERENCIAS.filter((sugerencia) => !preguntadas.has(sugerencia));
+  });
   protected readonly texto = signal('');
   protected readonly esperando = signal(false);
   protected readonly error = signal('');
   protected readonly mensajes = signal<MensajeChat[]>([]);
-  protected readonly avisoModo = signal('');
-  protected readonly modoDemostracion = computed(() => !!this.avisoModo());
+  /** '' hasta la primera respuesta: entonces se sabe si contestó el modelo o las reglas. */
+  protected readonly modo = signal<'' | 'openai' | 'demostracion'>('');
+  /** Mientras espera, el texto cambia: a los cuatro segundos deja de ser "escribiendo". */
+  protected readonly progreso = signal('Escribiendo…');
+  private relojProgreso?: ReturnType<typeof setTimeout>;
 
   constructor() {
     // Al cambiar de juego, la conversación empieza de cero: el contexto es otro.
     effect(() => {
       this.appid();
       this.mensajes.set([]);
-      this.avisoModo.set('');
+      this.modo.set('');
       this.error.set('');
     });
 
@@ -269,9 +403,17 @@ export class Nia {
 
     const mensajes = [...this.mensajes(), { rol: 'usuario' as const, contenido }];
     this.mensajes.set(mensajes);
+    this.historial.registrar({
+      tipo: 'nia',
+      appid: this.appid(),
+      titulo: this.catalogo.porAppid().get(this.appid())?.nombre ?? `Juego ${this.appid()}`,
+    });
     this.texto.set('');
     this.error.set('');
     this.esperando.set(true);
+    this.progreso.set('Escribiendo…');
+    clearTimeout(this.relojProgreso);
+    this.relojProgreso = setTimeout(() => this.progreso.set('Sigue leyendo los datos del juego…'), 4000);
 
     this.api
       .preguntarANia({
@@ -282,12 +424,17 @@ export class Nia {
       })
       .subscribe({
         next: (respuesta) => {
-          this.mensajes.update((actuales) => [...actuales, { rol: 'nia', contenido: respuesta.respuesta }]);
-          this.avisoModo.set(respuesta.modo === 'demostracion' ? (respuesta.aviso ?? 'Modo demostración.') : '');
+          this.mensajes.update((actuales) => [
+            ...actuales,
+            { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },
+          ]);
+          this.modo.set(respuesta.modo);
           this.esperando.set(false);
+          clearTimeout(this.relojProgreso);
         },
         error: (error: HttpErrorResponse) => {
           this.esperando.set(false);
+          clearTimeout(this.relojProgreso);
           this.error.set(
             error.status === 429
               ? (error.error?.detail ?? 'Nia está recibiendo muchas preguntas. Espera un momento.')

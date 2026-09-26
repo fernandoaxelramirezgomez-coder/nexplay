@@ -66,10 +66,23 @@
   }
 
   <div class="acciones">
-    <button type="button" class="boton-cta" data-testid="crear-perfil" [disabled]="guardando()" (click)="crear()">
+    <button
+      type="button"
+      class="boton-cta"
+      data-testid="crear-perfil"
+      [disabled]="guardando() || !completo()"
+      (click)="crear()"
+    >
       {{ guardando() ? 'Creando…' : perfil.hayPerfil() ? 'Actualizar perfil' : 'Crear perfil' }}
     </button>
-    <a class="boton-fantasma" routerLink="/">Saltar y explorar juegos</a>
+    @if (!completo()) {
+      <p class="meta falta" data-testid="perfil-incompleto">
+        Responde las cuatro preguntas de arriba para crear tu perfil. Los géneros son opcionales.
+      </p>
+    } @else if (guardado()) {
+      <p class="meta guardado" role="status" data-testid="perfil-guardado">Perfil guardado.</p>
+    }
+    <a class="boton-fantasma" routerLink="/explorar">Saltar y explorar juegos</a>
     @if (perfil.hayPerfil()) {
       <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
     }

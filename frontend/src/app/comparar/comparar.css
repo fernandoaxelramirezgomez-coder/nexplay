@@ -11,13 +11,16 @@
 }
 
 /* Las filas se declaran aquí y cada columna las hereda con subgrid, así la segunda
-   opinión, los motivos, los factores y la ficha técnica empiezan a la misma altura:
-   portada, nombre, veredicto, opinión, motivos, factores, datos, afinidad y acción. */
+   opinión, los motivos y los factores empiezan a la misma altura: nombre, opinión,
+   motivos, factores y afinidad. El resto —banda, precio, crítica y fecha— ya está en la
+   tabla de arriba, que es donde se compara de un vistazo. */
 .columnas {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 1fr);
-  grid-template-rows: repeat(9, auto);
+  /* 240 y no 280: con cuatro juegos, 280 sumaba 1168 px y desbordaba los 1152 del
+     contenido. Con 240 caben los cuatro sin sacar barra de desplazamiento. */
+  grid-auto-columns: minmax(240px, 1fr);
+  grid-template-rows: repeat(5, auto);
   gap: var(--espacio-16);
   align-items: stretch;
 }
@@ -27,6 +30,19 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--espacio-16);
+}
+
+/* La ranura ocupa la columna que falta: sin ella, una sola tarjeta se estira a todo el
+   ancho y la tabla deja su valor a media pantalla. */
+.ranura {
+  align-self: start;
+  margin: 0;
+  padding: var(--espacio-24) var(--espacio-16);
+  border: 1px dashed var(--borde-control);
+  border-radius: var(--radio-tarjeta);
+  color: var(--texto-meta);
+  font-size: var(--texto-body-sm);
+  line-height: var(--interlineado-largo);
 }
 
 /* La posición solo tiene sentido cuando las columnas se desplazan. */

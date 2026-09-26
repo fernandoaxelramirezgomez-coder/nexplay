@@ -46,45 +46,43 @@ import { Opcion } from '../dominio/opciones-perfil';
     .ayuda {
       margin: 0;
     }
+    /* En rejilla y no en fila: con flex-wrap, "Muchos (más de 15 al año)" se quedaba
+       solo en un segundo renglón y el grupo parecía cortado. Columnas de ancho igual que
+       se acomodan solas. */
     .opciones {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0 var(--espacio-24);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+      gap: var(--espacio-8);
     }
-    /* Sin recuadro, pero sigue siendo un formulario: el padding mantiene el área
-       clicable de 44px de alto aunque no se vea el borde. */
+    /* Son respuestas que se pulsan: llevan filo y superficie, como cualquier botón. */
     .opcion {
-      position: relative;
-      padding: 10px 0 12px;
-      color: var(--texto-meta);
-      cursor: pointer;
-      transition: color var(--duracion-rapida) var(--curva);
-    }
-    /* La barra del elegido va en ::after, como en los chips, para no mover el texto. */
-    .opcion::after {
-      content: '';
-      position: absolute;
-      inset-inline: 0;
-      bottom: 2px;
-      height: 2px;
-      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding: var(--espacio-8) var(--espacio-12);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-tarjeta);
       background: transparent;
-      transition: background var(--duracion-rapida) var(--curva);
+      color: var(--texto-meta);
+      font-size: var(--texto-body-sm);
+      cursor: pointer;
+      transition:
+        color var(--duracion-rapida) var(--curva),
+        border-color var(--duracion-rapida) var(--curva),
+        background var(--duracion-rapida) var(--curva);
     }
     .opcion:hover {
+      border-color: var(--neon);
       color: var(--texto);
     }
-    .opcion:hover::after {
-      background: var(--borde-control);
-    }
     .opcion.elegida {
-      color: var(--neon);
-    }
-    .opcion.elegida::after {
-      background: var(--neon);
+      border-color: var(--neon);
+      background: var(--acento-sistema);
+      color: var(--texto);
     }
     .opcion.elegida span::before {
       content: '✓ ';
+      color: var(--neon);
     }
     .opcion:has(input:focus-visible) {
       outline: 2px solid var(--foco);
@@ -97,7 +95,7 @@ export class TarjetasOpcion<T> {
   readonly etiqueta = input.required<string>();
   readonly ayuda = input('');
   readonly opciones = input.required<Opcion<T>[]>();
-  readonly valor = input.required<T>();
+  readonly valor = input.required<T | null>();
 
   readonly valorCambio = output<T>();
 }

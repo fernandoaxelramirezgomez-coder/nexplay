@@ -193,10 +193,11 @@ b {
   text-decoration: underline;
 }
 
+/* Deshabilitado: con 0.55 el relleno del CTA seguía pareciendo pulsable. */
 .boton-cta[disabled],
 .boton-fantasma[disabled],
 .boton-texto[disabled] {
-  opacity: 0.55;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -284,6 +285,22 @@ b {
   border: 1px solid var(--linea);
   border-radius: var(--radio-tarjeta);
   padding: var(--espacio-24);
+}
+
+/* Panel de vidrio: la variante de .superficie para lo que flota sobre el lienzo o sobre
+   una portada. No se usa para una tarjeta cualquiera apoyada en la página: ahí no hay
+   jerarquía que marcar y la transparencia solo le quitaría contraste al texto. */
+.panel-vidrio {
+  background: var(--vidrio);
+  border: 1px solid var(--vidrio-borde);
+  border-radius: var(--radio-burbuja);
+  box-shadow: var(--sombra-suave);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .panel-vidrio {
+    backdrop-filter: var(--vidrio-desenfoque);
+  }
 }
 
 /* Globo de Nia: lo comparten la bienvenida del catálogo y la reacción de la ficha, para

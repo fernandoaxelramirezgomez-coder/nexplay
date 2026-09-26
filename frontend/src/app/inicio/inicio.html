@@ -1,0 +1,38 @@
+<div class="inicio" data-testid="inicio">
+  <section class="hero" aria-labelledby="titulo-principal">
+    <div class="hero-mensaje">
+      <p class="sobrelinea mono">Evidencia antes de comprar</p>
+      <h1 class="titular" id="titulo-principal">
+        Descubre qué podría frustrarte en las primeras dos horas
+      </h1>
+      <p class="entrada">
+        NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus
+        motivos frecuentes y el contexto que puede importar para ti.
+      </p>
+      <app-buscador #buscador [juegos]="catalogo.juegos()" [texto]="texto()" (textoCambio)="texto.set($event)" />
+      <p class="aclaracion mono">
+        Una señal comparativa basada en reseñas, no una predicción de lo que sentirás.
+      </p>
+      <a class="boton-fantasma ver-catalogo" routerLink="/explorar" data-testid="inicio-explorar">
+        Ver los {{ catalogo.juegos().length }} juegos del catálogo
+      </a>
+    </div>
+
+    <app-carrusel-ejemplo [pausado]="buscador.panelDesplegado()" />
+  </section>
+
+  <app-accesos />
+
+  <app-fuentes-datos />
+
+  <section class="muestra">
+    <a class="boton-cta" routerLink="/panorama" data-testid="inicio-panorama">
+      Ver el panorama completo del catálogo
+    </a>
+    <p class="meta">
+      Diez lecturas de los 123 juegos y de las reseñas que los sostienen: cuántas horas
+      llevaba jugadas quien escribió cada reseña, cómo se reparte el riesgo por género y qué
+      dice la crítica.
+    </p>
+  </section>
+</div>

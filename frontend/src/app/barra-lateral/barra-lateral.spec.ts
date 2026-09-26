@@ -12,8 +12,12 @@ class Pagina {}
 
 const RUTAS = [
   { path: '', component: Pagina },
+  { path: 'explorar', component: Pagina },
   { path: 'comparar', component: Pagina },
+  { path: 'nia', component: Pagina },
   { path: 'perfil', component: Pagina },
+  { path: 'historial', component: Pagina },
+  { path: 'panorama', component: Pagina },
   { path: 'como-funciona', component: Pagina },
 ];
 
@@ -37,15 +41,24 @@ describe('BarraLateral', () => {
     vi.unstubAllGlobals();
   });
 
-  it('agrupa las cuatro secciones bajo sus rótulos', async () => {
+  it('agrupa las ocho secciones bajo sus rótulos', async () => {
     const { fixture, html } = crear();
     await fixture.whenStable();
 
     const rotulos = [...html.querySelectorAll('.grupo .rotulo-seccion')].map((p) => p.textContent?.trim());
-    expect(rotulos).toEqual(['Principal', 'Transparencia']);
+    expect(rotulos).toEqual(['Principal', 'Tu actividad', 'Transparencia']);
 
     const enlaces = [...html.querySelectorAll('nav a.item')].map((a) => a.getAttribute('data-testid'));
-    expect(enlaces).toEqual(['nav-explorar', 'nav-comparar', 'nav-perfil', 'nav-como-funciona']);
+    expect(enlaces).toEqual([
+      'nav-inicio',
+      'nav-explorar',
+      'nav-comparar',
+      'nav-nia',
+      'nav-perfil',
+      'nav-historial',
+      'nav-panorama',
+      'nav-como-funciona',
+    ]);
   });
 
   it('marca con aria-current la sección abierta', async () => {
@@ -54,6 +67,7 @@ describe('BarraLateral', () => {
     await fixture.whenStable();
 
     expect(html.querySelector('[data-testid="nav-perfil"]')?.getAttribute('aria-current')).toBe('page');
+    expect(html.querySelector('[data-testid="nav-inicio"]')?.getAttribute('aria-current')).toBeNull();
     expect(html.querySelector('[data-testid="nav-explorar"]')?.getAttribute('aria-current')).toBeNull();
   });
 

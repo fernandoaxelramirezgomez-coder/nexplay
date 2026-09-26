@@ -1,4 +1,14 @@
-import { COMPRAS, FRICCION, formularioDesde, HORAS, VALORES_POR_DEFECTO } from './opciones-perfil';
+import {
+  COMPRAS,
+  FRICCION,
+  HORAS,
+  VALORES_VACIOS,
+  ValoresPerfil,
+  estaCompleto,
+  formularioDesde,
+} from './opciones-perfil';
+
+const DECLARADO: ValoresPerfil = { compras: 4, horas: 6, friccion: 3, plataforma: 'pc', generos: [] };
 
 describe('opciones-perfil', () => {
   it('mantiene los rangos que valida la API', () => {
@@ -7,8 +17,19 @@ describe('opciones-perfil', () => {
     expect(FRICCION.map((o) => o.valor)).toEqual([1, 2, 3, 4, 5]);
   });
 
+  it('el formulario empieza sin nada elegido', () => {
+    expect(VALORES_VACIOS).toEqual({ compras: null, horas: null, friccion: null, plataforma: null, generos: [] });
+    expect(estaCompleto(VALORES_VACIOS)).toBe(false);
+  });
+
+  it('está completo con las cuatro respuestas, aunque no haya géneros', () => {
+    expect(estaCompleto(DECLARADO)).toBe(true);
+    expect(estaCompleto({ ...DECLARADO, plataforma: null })).toBe(false);
+    expect(estaCompleto({ ...DECLARADO, friccion: null })).toBe(false);
+  });
+
   it('arma el FormularioAlta con los géneros en tags_preferidos', () => {
-    expect(formularioDesde({ ...VALORES_POR_DEFECTO, generos: ['Acción', 'Rol'] })).toEqual({
+    expect(formularioDesde({ ...DECLARADO, generos: ['Acción', 'Rol'] })).toEqual({
       compras_al_anio: 4,
       horas_por_semana: 6,
       tolerancia_friccion: 3,
@@ -16,5 +37,10 @@ describe('opciones-perfil', () => {
       tags_rechazados: [],
       plataforma: 'pc',
     });
+  });
+
+  it('se niega a armar un formulario a medias en vez de inventar valores', () => {
+    expect(() => formularioDesde(VALORES_VACIOS)).toThrow();
+    expect(() => formularioDesde({ ...DECLARADO, horas: null })).toThrow();
   });
 });

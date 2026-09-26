@@ -28,7 +28,7 @@ const MAXIMO_SUGERENCIAS = 6;
     <div class="flotante" [class.abierto]="abierto()" (document:keydown.escape)="cerrar()">
       @if (abierto()) {
         <div
-          class="panel superficie"
+          class="panel panel-vidrio"
           role="dialog"
           aria-modal="false"
           aria-labelledby="nia-flotante-titulo"
@@ -105,8 +105,8 @@ const MAXIMO_SUGERENCIAS = 6;
        de la barra del navegador en móvil. */
     .flotante {
       position: fixed;
-      right: max(var(--espacio-24), env(safe-area-inset-right));
-      bottom: max(var(--espacio-24), env(safe-area-inset-bottom));
+      right: max(var(--espacio-16), env(safe-area-inset-right));
+      bottom: max(var(--espacio-16), env(safe-area-inset-bottom));
       z-index: 20;
       display: flex;
       flex-direction: column;
@@ -116,8 +116,8 @@ const MAXIMO_SUGERENCIAS = 6;
     /* La burbuja es la cara de Nia dentro de un anillo neón que respira despacio: se
        nota que está ahí sin reclamar atención. Al abrirse, el anillo se queda encendido. */
     .burbuja {
-      width: 80px;
-      height: 80px;
+      width: 64px;
+      height: 64px;
       padding: 3px;
       border: 2px solid var(--neon);
       border-radius: 50%;

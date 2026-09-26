@@ -14,7 +14,7 @@ import { TarjetaJuego } from './tarjeta-juego';
           <span class="banda" [attr.data-banda]="estante().banda">Riesgo general · {{ estante().banda }}</span>
           <span class="conteo mono" data-testid="estante-conteo">({{ estante().juegos.length }})</span>
         </h2>
-        @if (estante().juegos.length) {
+        @if (estante().juegos.length > 1) {
           <div class="controles">
             <button type="button" [attr.aria-label]="'Ver juegos anteriores de riesgo ' + estante().banda" (click)="desplazar(-1)">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -81,8 +81,10 @@ import { TarjetaJuego } from './tarjeta-juego';
       color: var(--texto-meta);
       font-size: var(--texto-body-sm);
     }
+    /* Junto al conteo, no pegadas al borde derecho: ahí es donde se posa la burbuja de
+       Nia y las flechas quedaban debajo de ella a media página. */
     .controles {
-      margin-inline-start: auto;
+      margin-inline-end: auto;
       display: flex;
       gap: var(--espacio-8);
     }

@@ -4,46 +4,32 @@ import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
-import { Portada } from '../compartido/portada';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
-import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { factoresVisibles } from '../dominio/factores';
 import { porcentaje, textoMetacritic, textoPrecio } from '../dominio/formato';
 import { segundaOpinion } from '../dominio/segunda-opinion';
-import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { FactoresModelo } from '../ficha/factores-modelo';
 
 const MOTIVOS_VISIBLES = 3;
 
-/** Una columna de la comparación. Sus secciones son filas de un subgrid, así la
+/** Una columna de la comparación. El nombre, la banda, el precio, la crítica y la fecha
+ * viven arriba, en las cápsulas y en la tabla; aquí queda lo que hay que leer entero y no
+ * cabe en una celda: la segunda opinión, los motivos y los factores.
+ *
+ * (documentación anterior) Una columna de la comparación. Sus secciones son filas de un subgrid, así la
  * segunda opinión, los motivos, los factores y la ficha técnica empiezan a la misma
  * altura en todas las columnas. */
 @Component({
   selector: 'app-columna-comparar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Portada, Skeleton, FactoresModelo],
+  imports: [RouterLink, Skeleton, FactoresModelo],
   template: `
     <article class="columna" data-testid="columna-comparar" [attr.data-appid]="juego().appid">
-      <app-portada [src]="juego().portada_url" [prioritaria]="true" radio="0" />
-
       <h2 class="nombre">
         <a class="toque-amplio" [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
       </h2>
-
-      <div class="fila-veredicto">
-        @if (prediccion(); as prediccion) {
-          <p class="veredicto" [attr.data-banda]="prediccion.nivel">
-            <span class="rotulo mono">{{ rotulo }}</span>
-            <span class="titular">Riesgo <span class="palabra">{{ prediccion.nivel }}</span></span>
-          </p>
-        } @else if (error()) {
-          <p class="meta">No se pudo calcular el riesgo.</p>
-        } @else {
-          <app-skeleton alto="44px" radio="var(--radio-boton)" />
-        }
-      </div>
 
       <section class="bloque">
         <h3 class="titulo-bloque meta">Segunda opinión</h3>
@@ -74,6 +60,12 @@ const MOTIVOS_VISIBLES = 3;
               </li>
             }
           </ul>
+          <p class="meta cuantas" data-testid="columna-motivos-n">
+            Sobre {{ clasificadas() }} {{ clasificadas() === 1 ? 'reseña clasificada' : 'reseñas clasificadas' }}.
+            @if (clasificadas() < 10) {
+              Con tan pocas, tómalo como una pista.
+            }
+          </p>
         } @else {
           <p class="meta">Sin motivos: muy pocas reseñas de arrepentimiento temprano.</p>
         }
@@ -92,12 +84,6 @@ const MOTIVOS_VISIBLES = 3;
         }
       </section>
 
-      <dl class="datos mono">
-        <div><dt class="meta">Crítica</dt><dd>{{ metacritic() }}</dd></div>
-        <div><dt class="meta">Precio</dt><dd>{{ precio() }}</dd></div>
-        <div><dt class="meta">Lanzamiento</dt><dd>{{ juego().fecha_lanzamiento ?? 'Sin fecha' }}</dd></div>
-      </dl>
-
       @if (muestraAfinidad()) {
         <p class="meta mono afinidad" data-testid="columna-afinidad">
           @if (generosAfines().length) {
@@ -108,11 +94,6 @@ const MOTIVOS_VISIBLES = 3;
         </p>
       }
 
-      <div class="fila-accion">
-        <button type="button" class="boton-fantasma" data-testid="quitar-comparar" (click)="comparar.quitar(juego().appid)">
-          Quitar
-        </button>
-      </div>
     </article>
   `,
   styles: `
@@ -192,6 +173,10 @@ const MOTIVOS_VISIBLES = 3;
       font-size: var(--texto-body-sm);
       line-height: var(--interlineado-largo);
     }
+    .cuantas {
+      margin: var(--espacio-8) 0 0;
+      line-height: var(--interlineado-largo);
+    }
     .motivos {
       list-style: none;
       margin: 0;
@@ -260,7 +245,6 @@ export class ColumnaComparar {
 
   private readonly api = inject(NexplayApi);
   private readonly perfil = inject(PerfilStore);
-  protected readonly comparar = inject(CompararStore);
 
   private readonly prediccionRecurso = rxResource({
     params: () => {
@@ -276,8 +260,11 @@ export class ColumnaComparar {
   });
 
   protected readonly prediccion = this.prediccionRecurso.value;
-  protected readonly error = computed(() => this.prediccionRecurso.error());
-  protected readonly rotulo = ROTULO_RIESGO;
+
+  protected readonly clasificadas = computed(() => {
+    const datos = this.explicacionRecurso.value();
+    return datos ? Math.round(datos.n_casos * datos.pct_clasificados) : 0;
+  });
 
   protected readonly motivos = computed(
     () => this.explicacionRecurso.value()?.motivos.slice(0, MOTIVOS_VISIBLES) ?? [],
@@ -288,7 +275,13 @@ export class ColumnaComparar {
     if (!prediccion || this.explicacionRecurso.isLoading()) {
       return [];
     }
-    return segundaOpinion(prediccion.nivel, this.explicacionRecurso.value()?.motivos ?? [], this.juego().metacritic);
+    return segundaOpinion(
+      prediccion.nivel,
+      this.explicacionRecurso.value()?.motivos ?? [],
+      this.juego().metacritic,
+      this.factores().some((factor) => factor.etiqueta === 'nota de Metacritic'),
+      this.clasificadas(),
+    );
   });
 
   protected readonly factores = computed(() => {
