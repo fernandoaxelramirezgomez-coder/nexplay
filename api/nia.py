@@ -88,8 +88,10 @@ Reglas que no puedes romper:
 - Usa siempre "arrepentimiento temprano", nunca "abandono".
 - Es una señal proxy construida con reseñas de Steam donde alguien jugó menos de 120
   minutos y calificó negativo. No sabes si alguien se arrepintió de verdad. Eso se explica
-  **solo en tu primera respuesta de la conversación**, o si te lo preguntan: si ya hay
-  respuestas tuyas más arriba, di "esa señal" o "el arrepentimiento temprano" y sigue.
+  **la primera vez que hables de la banda o del arrepentimiento temprano en esta
+  conversación**, o si te lo preguntan; después, di "esa señal" y sigue. Si la pregunta es
+  de otra cosa —el precio, la crítica, los géneros—, respóndela y ya: no metas la banda ni
+  el aviso donde nadie los pidió.
 - Si quien pregunta dice que juega poco, o cuántas horas juega, usa esa cifra para decirle
   en cuántas sesiones llegaría a las dos horas de la ventana de reembolso, en vez de
   repetir que la ventana son 120 minutos.
@@ -246,19 +248,20 @@ def _demostracion(datos: dict, pregunta: str) -> str:
     # La banda es del juego (modelo de título): no hay una versión "para tu perfil".
     rotulo = "Para cualquier perfil"
 
+    # Cada rama responde lo que se preguntó y nada más: meter la banda en la respuesta del
+    # precio obliga a explicar la señal proxy donde nadie la pidió.
     if any(palabra in pregunta for palabra in ("precio", "cuesta", "caro", "barato", "oferta")):
         factor = _factor_de_precio(datos)
-        aparte = f" {factor}" if factor else ""
-        return f"{nombre} {_texto_precio(datos)}. {rotulo}, su riesgo es {banda}.{aparte}"
+        return f"{nombre} {_texto_precio(datos)}." + (f" {factor}" if factor else "")
     if any(palabra in pregunta for palabra in ("crítica", "critica", "metacritic", "nota", "reseñas de prensa")):
-        return f"En {nombre}, {_texto_critica(datos)}. {rotulo}, su riesgo es {banda}."
+        return f"En {nombre}, {_texto_critica(datos)}."
     if any(palabra in pregunta for palabra in ("banda", "por qué", "porque", "riesgo", "estimación", "estimacion")):
         return f"{rotulo}, {nombre} {_FRASES_BANDA.get(banda, '')}. {_explicacion_de_la_banda(datos)}"
     if any(palabra in pregunta for palabra in ("motivo", "queja", "problema", "bug", "rendimiento")):
         return f"En {nombre}, {_texto_motivos(datos)}. {rotulo}, su riesgo es {banda}."
     if any(palabra in pregunta for palabra in ("género", "genero", "tipo de juego", "de qué trata")):
         generos = ", ".join(datos["generos"]) or "sin géneros registrados"
-        return f"{nombre} está clasificado en Steam como: {generos}. {rotulo}, su riesgo es {banda}."
+        return f"{nombre} está clasificado en Steam como: {generos}."
 
     motivos = _texto_motivos(datos, senal_ya_nombrada=True)
     motivos = f"En las reseñas con esa señal, {motivos}" if datos["motivos"] else motivos[0].upper() + motivos[1:]
@@ -274,11 +277,14 @@ def _referencias_del_catalogo() -> dict:
     global _REFERENCIAS
     if _REFERENCIAS is None:
         juegos = catalogo.buscar()
-        precios = sorted(j.precio_final for j in juegos if j.precio_final)
+        precios = [j.precio_final for j in juegos if j.precio_final]
         notas = [j.metacritic for j in juegos if j.metacritic is not None]
         _REFERENCIAS = {
             "juegos": len(juegos),
-            "precio_mediano": precios[len(precios) // 2] if precios else None,
+            # Promedio y no mediana: la ficha dice "cuesta más que el promedio del
+            # catálogo" en sus factores, y dos medidas distintas para lo mismo hacen que
+            # Nia y la ficha parezcan contradecirse cuando dicen lo mismo.
+            "precio_promedio": round(sum(precios) / len(precios)) if precios else None,
             # Un decimal, el mismo que muestra la ficha (85.5): con el entero, Nia decía
             # 86 y la ficha 85.5 para el mismo promedio.
             "metacritic_promedio": round(sum(notas) / len(notas), 1) if notas else None,
@@ -338,10 +344,11 @@ def _texto_comparacion(datos: dict, ref: dict) -> str:
     """Dónde cae este juego dentro del catálogo, en palabras y sin adjetivos de valor."""
     partes = []
     if datos["es_gratis"]:
-        partes.append("es gratuito, y el precio mediano del catálogo es"
-                      f" {ref['precio_mediano']:.0f} MXN")
-    elif datos["precio"] is not None and ref["precio_mediano"]:
-        partes.append(f"su precio está {_donde(datos['precio'], ref['precio_mediano'])} la mediana del catálogo")
+        partes.append("es gratuito, y el precio promedio del catálogo es"
+                      f" {ref['precio_promedio']:.0f} MXN")
+    elif datos["precio"] is not None and ref["precio_promedio"]:
+        donde = _donde(datos["precio"], ref["precio_promedio"], "igual al")
+        partes.append(f"su precio está {donde} promedio del catálogo")
     if datos["metacritic"] is None:
         partes.append("no tiene nota de Metacritic, como otros del catálogo")
     elif ref["metacritic_promedio"]:
@@ -383,8 +390,8 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
     ref = _referencias_del_catalogo()
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
     lineas.append(
-        f"Catálogo ({ref['juegos']} juegos, para comparar): precio mediano"
-        f" {ref['precio_mediano']:.0f} MXN; Metacritic promedio {ref['metacritic_promedio']}"
+        f"Catálogo ({ref['juegos']} juegos, para comparar): precio promedio"
+        f" {ref['precio_promedio']:.0f} MXN; Metacritic promedio {ref['metacritic_promedio']}"
         f" entre los {ref['con_nota']} que tienen nota (es el promedio contra el que se lee"
         f" el factor de la nota); bandas {bandas}"
     )

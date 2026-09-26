@@ -294,6 +294,16 @@ class SolicitudVotoNia(BaseModel):
     )
 
 
+class SolicitudQuitarVotoNia(BaseModel):
+    usuario: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Id anónimo generado por el navegador; va en el cuerpo, no en la URL",
+    )
+
+
 class VotoNia(BaseModel):
     id_respuesta: str
     voto: Optional[Literal[-1, 1]] = Field(None, description="None si esa persona no ha votado esta respuesta")

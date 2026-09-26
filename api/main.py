@@ -28,6 +28,7 @@ from .schemas import (
     SolicitudNia,
     SolicitudPrediccion,
     SolicitudReaccion,
+    SolicitudQuitarVotoNia,
     SolicitudValoracion,
     SolicitudVotoNia,
     VotoNia,
@@ -284,15 +285,27 @@ def _errores_de_voto():
         ) from None
 
 
-@app.put("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
-def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> VotoNia:
-    espera = _LIMITE_COMENTARIOS.revisar(f"voto-nia:{solicitud.usuario}")
+# El voto no comparte el tope con los comentarios: escribir un comentario es publicar y
+# cambiar de opinión sobre un motivo es corregirse, y corregirse dos veces seguidas no es
+# spam. Con el tope de los comentarios, probar los cuatro motivos daba 429.
+_LIMITE_VOTOS_NIA = limites.LimitePorVentana(
+    maximo=int(os.environ.get("NEXPLAY_VOTOS_NIA_POR_MINUTO", "30")), ventana_segundos=60.0
+)
+
+
+def _exigir_cupo_de_voto(usuario: str) -> None:
+    espera = _LIMITE_VOTOS_NIA.revisar(f"voto-nia:{usuario}")
     if espera:
         raise HTTPException(
             status_code=429,
             detail="Demasiados votos seguidos. Espera un momento.",
             headers={"Retry-After": str(max(1, int(espera) + 1))},
         )
+
+
+@app.put("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
+def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> VotoNia:
+    _exigir_cupo_de_voto(solicitud.usuario)
     with _errores_de_voto():
         voto = valoraciones.guardar_voto_nia(id_respuesta, solicitud.usuario, solicitud.voto, solicitud.motivo)
     logger.info("voto a Nia %s motivo=%r", "👍" if solicitud.voto == 1 else "👎", voto["motivo"])
@@ -300,6 +313,9 @@ def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> Vo
 
 
 @app.delete("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
-def quitar_voto_de_nia(id_respuesta: str, usuario: str = _USUARIO) -> VotoNia:
+def quitar_voto_de_nia(id_respuesta: str, solicitud: SolicitudQuitarVotoNia) -> VotoNia:
+    """El usuario va en el cuerpo, como en el PUT: en la URL acabaría escrito en los
+    registros del servidor y en el historial del navegador."""
+    _exigir_cupo_de_voto(solicitud.usuario)
     with _errores_de_voto():
-        return VotoNia(**valoraciones.borrar_voto_nia(id_respuesta, usuario))
+        return VotoNia(**valoraciones.borrar_voto_nia(id_respuesta, solicitud.usuario))

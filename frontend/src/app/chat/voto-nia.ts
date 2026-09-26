@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { VotoNiaValor } from '../api/contrato';
@@ -12,6 +23,10 @@ export const MOTIVOS_VOTO = [
   'muy larga',
   'me recomendó algo',
 ] as const;
+
+/** Cuánto se espera antes de mandar un cambio de motivo. Probar los cuatro chips son
+ * cuatro peticiones que se pisan entre sí; con la espera, solo viaja el último. */
+const ESPERA_MOTIVO_MS = 800;
 
 /** 👍/👎 debajo de una respuesta de Nia. Es privado: nadie más ve el voto, y sirve para
  * comparar cómo contesta antes y después de cambiarle el prompt.
@@ -52,7 +67,7 @@ export const MOTIVOS_VOTO = [
     </div>
 
     @if (voto() === -1) {
-      <div class="motivos" data-testid="voto-nia-motivos">
+      <div class="motivos" #panel data-testid="voto-nia-motivos">
         <span class="meta">¿Qué falló? (opcional)</span>
         @for (motivo of motivos; track motivo) {
           <button
@@ -81,27 +96,28 @@ export const MOTIVOS_VOTO = [
       font-size: var(--texto-caption);
     }
     .pulgar {
-      min-width: 32px;
-      height: 28px;
+      min-width: 40px;
+      height: 32px;
       padding: 0 var(--espacio-8);
-      border: 1px solid transparent;
+      border: 1px solid var(--borde-control);
       border-radius: var(--radio-pildora);
-      background: transparent;
-      font-size: 13px;
+      background: var(--superficie-lienzo);
+      font-size: 16px;
       line-height: 1;
       cursor: pointer;
-      opacity: 0.55;
       transition:
-        opacity var(--duracion-rapida) var(--curva),
-        border-color var(--duracion-rapida) var(--curva);
+        border-color var(--duracion-rapida) var(--curva),
+        background var(--duracion-rapida) var(--curva);
     }
-    .pulgar:hover:not([disabled]),
-    .pulgar[aria-pressed='true'] {
-      opacity: 1;
+    .pulgar:hover:not([disabled]) {
+      border-color: var(--neon);
     }
     .pulgar[aria-pressed='true'] {
       border-color: var(--neon);
       background: var(--acento-sistema);
+    }
+    .pulgar[disabled] {
+      cursor: progress;
     }
     .pulgar:focus-visible {
       outline: 2px solid var(--foco);
@@ -146,29 +162,57 @@ export class VotoNia {
   protected readonly guardando = signal(false);
   private readonly error = signal('');
 
+  /** Lo último que confirmó la API. Si una petición falla, la interfaz vuelve aquí en vez
+   * de quedarse mostrando algo que no se guardó. */
+  private guardado: { voto: VotoNiaValor | null; motivo: string | null } = { voto: null, motivo: null };
+  private reloj?: ReturnType<typeof setTimeout>;
+
+  private readonly panelMotivos = viewChild<ElementRef<HTMLElement>>('panel');
+
   protected readonly aviso = computed(() => this.error() || (this.voto() ? 'Gracias.' : ''));
+
+  constructor() {
+    // Al abrirse, los chips quedaban bajo el borde del hilo y nadie los veía.
+    effect(() => {
+      const panel = this.panelMotivos()?.nativeElement;
+      if (panel) {
+        // Tras pintar, y con ?. porque el DOM de las pruebas no implementa scrollIntoView.
+        requestAnimationFrame(() => panel.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }));
+      }
+    });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.reloj));
+  }
 
   /** El mismo pulgar dos veces quita el voto: es el gesto que ya hace el pulgar de los
    * comentarios, y sin él no habría forma de arrepentirse. */
   protected votar(valor: VotoNiaValor): void {
-    if (this.guardando()) {
-      return;
-    }
     if (this.voto() === valor) {
       this.quitar();
       return;
     }
-    this.guardar(valor, valor === -1 ? this.motivo() : null);
+    this.voto.set(valor);
+    if (valor === 1) {
+      this.motivo.set(null);
+    }
+    this.mandar(valor, valor === -1 ? this.motivo() : null, 0);
   }
 
+  /** Probar los cuatro chips son cuatro peticiones que se pisan: la interfaz marca el
+   * elegido al instante y solo viaja el último, pasada la espera. */
   protected elegirMotivo(motivo: string): void {
     const elegido = this.motivo() === motivo ? null : motivo;
-    this.guardar(-1, elegido);
+    this.motivo.set(elegido);
+    this.mandar(-1, elegido, ESPERA_MOTIVO_MS);
+  }
+
+  private mandar(valor: VotoNiaValor, motivo: string | null, espera: number): void {
+    clearTimeout(this.reloj);
+    this.error.set('');
+    this.reloj = setTimeout(() => this.guardar(valor, motivo), espera);
   }
 
   private guardar(valor: VotoNiaValor, motivo: string | null): void {
     this.guardando.set(true);
-    this.error.set('');
     this.api
       .votarRespuestaDeNia(this.idRespuesta(), {
         usuario: this.usuario.id,
@@ -176,29 +220,35 @@ export class VotoNia {
         ...(motivo ? { motivo } : {}),
       })
       .subscribe({
-        next: (respuesta) => {
-          this.voto.set(respuesta.voto);
-          this.motivo.set(respuesta.motivo);
-          this.guardando.set(false);
-        },
+        next: (respuesta) => this.confirmar(respuesta.voto, respuesta.motivo),
         error: () => this.fallar(),
       });
   }
 
   private quitar(): void {
+    clearTimeout(this.reloj);
+    this.voto.set(null);
+    this.motivo.set(null);
     this.guardando.set(true);
     this.error.set('');
     this.api.quitarVotoDeNia(this.idRespuesta(), this.usuario.id).subscribe({
-      next: () => {
-        this.voto.set(null);
-        this.motivo.set(null);
-        this.guardando.set(false);
-      },
+      next: () => this.confirmar(null, null),
       error: () => this.fallar(),
     });
   }
 
+  private confirmar(voto: VotoNiaValor | null, motivo: string | null): void {
+    this.guardado = { voto, motivo };
+    this.voto.set(voto);
+    this.motivo.set(motivo);
+    this.guardando.set(false);
+  }
+
+  /** Vuelve a lo último que la API confirmó: dejar marcados dos motivos porque uno falló
+   * es peor que no haber marcado ninguno. */
   private fallar(): void {
+    this.voto.set(this.guardado.voto);
+    this.motivo.set(this.guardado.motivo);
     this.guardando.set(false);
     this.error.set('No se pudo guardar tu voto.');
   }

@@ -980,7 +980,7 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     abajo = pagina.get_by_test_id("voto-nia-abajo").first
 
     arriba.click()
-    pagina.wait_for_timeout(300)
+    pagina.wait_for_timeout(1200)  # la interfaz agrupa los cambios con ~800 ms de espera
     if arriba.get_attribute("aria-pressed") != "true":
         problemas.append("el 👍 no queda marcado")
     if pagina.get_by_test_id("voto-nia-motivos").count():
@@ -988,7 +988,7 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
 
     # El mismo pulgar otra vez lo quita.
     arriba.click()
-    pagina.wait_for_timeout(300)
+    pagina.wait_for_timeout(1200)
     if arriba.get_attribute("aria-pressed") != "false":
         problemas.append("pulsar el 👍 dos veces no quita el voto")
 
@@ -998,9 +998,27 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     if motivos.count() != 4:
         problemas.append(f"los motivos del 👎 no son los cuatro de la lista ({motivos.count()})")
     motivos.first.click()
-    pagina.wait_for_timeout(300)
+    pagina.wait_for_timeout(1200)
     if motivos.first.get_attribute("aria-pressed") != "true":
         problemas.append("elegir un motivo no lo deja marcado")
+
+    # Probar varios motivos seguidos no puede dejar dos marcados: es lo que pasaba cuando
+    # cada clic era una petición y una de ellas fallaba.
+    for indice in range(motivos.count()):
+        motivos.nth(indice).click()
+        pagina.wait_for_timeout(150)
+    pagina.wait_for_timeout(1200)
+    marcados = [i for i in range(motivos.count()) if motivos.nth(i).get_attribute("aria-pressed") == "true"]
+    if len(marcados) > 1:
+        problemas.append(f"probar varios motivos deja {len(marcados)} marcados a la vez")
+    if pagina.get_by_test_id("voto-nia").inner_text().count("No se pudo"):
+        problemas.append("cambiar de motivo varias veces seguidas falla")
+
+    # Y los chips tienen que quedar a la vista, no bajo el borde del hilo.
+    caja = pagina.get_by_test_id("voto-nia-motivos").bounding_box()
+    hilo = pagina.get_by_test_id("conversacion").bounding_box()
+    if caja and hilo and caja["y"] + caja["height"] > hilo["y"] + hilo["height"] + 1:
+        problemas.append("los motivos quedan por debajo del borde del hilo")
 
     ruta = destino / "voto-nia.png"
     pagina.get_by_test_id("nia").screenshot(path=ruta)

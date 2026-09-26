@@ -18,6 +18,7 @@ import {
   SolicitudComentario,
   SolicitudNia,
   SolicitudPrediccion,
+  SolicitudQuitarVotoNia,
   SolicitudValoracion,
   SolicitudVotoNia,
   VotoNia,
@@ -104,8 +105,10 @@ export class NexplayApi {
     return this.http.put<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, solicitud);
   }
 
+  /** El usuario va en el cuerpo y no en la consulta: en la URL acabaría escrito en los
+   * registros del servidor y en el historial del navegador. */
   quitarVotoDeNia(idRespuesta: string, usuario: string): Observable<VotoNia> {
-    const params = new HttpParams().set('usuario', usuario);
-    return this.http.delete<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, { params });
+    const cuerpo: SolicitudQuitarVotoNia = { usuario };
+    return this.http.delete<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, { body: cuerpo });
   }
 }

@@ -201,6 +201,11 @@ export interface SolicitudVotoNia {
   motivo?: string;
 }
 
+/** DELETE /nia/valoracion/{id}: el usuario va en el cuerpo, no en la URL. */
+export interface SolicitudQuitarVotoNia {
+  usuario: string;
+}
+
 export interface VotoNia {
   id_respuesta: string;
   voto: VotoNiaValor | null;
