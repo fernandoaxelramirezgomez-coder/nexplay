@@ -13,6 +13,7 @@ import {
 
 import { MensajeChat } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
+import { VotoNia } from './voto-nia';
 import { sinMarkdown } from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { HistorialStore } from '../estado/historial-store';
@@ -22,6 +23,9 @@ import { UsuarioStore } from '../estado/usuario-store';
 const MAXIMO_TEXTO = 500;
 /** La API acepta 10 mensajes; se manda la cola más reciente. */
 const MAXIMO_MENSAJES = 10;
+
+/** Lo mismo que DIAS_DE_RETENCION_NIA en api/valoraciones.py. */
+const DIAS_DE_RETENCION_NIA = 180;
 
 const SUGERENCIAS = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué dice la crítica?'];
 
@@ -37,6 +41,7 @@ const BIENVENIDA_CHAT =
 @Component({
   selector: 'app-nia',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [VotoNia],
   template: `
     <section class="seccion nia" data-testid="nia" [class.destacada]="muestraTitulo()" [class.alto]="llenaAlto()">
       @if (muestraTitulo()) {
@@ -65,6 +70,9 @@ const BIENVENIDA_CHAT =
             <li class="mensaje" [attr.data-rol]="mensaje.rol" [attr.data-testid]="'mensaje-' + mensaje.rol">
               <span class="quien meta mono">{{ mensaje.rol === 'usuario' ? 'Tú' : 'Nia' }}</span>
               <p class="texto">{{ mensaje.contenido }}</p>
+              @if (mensaje.rol === 'nia' && idPorMensaje()[$index]; as idRespuesta) {
+                <app-voto-nia [idRespuesta]="idRespuesta" />
+              }
             </li>
           }
           @if (esperando()) {
@@ -104,6 +112,11 @@ const BIENVENIDA_CHAT =
         } @else {
           Nia responde solo con los datos de este juego.
         }
+      </p>
+
+      <p class="meta privacidad" data-testid="nia-privacidad">
+        No escribas datos personales: se guardan tu pregunta y la respuesta durante
+        {{ diasQueSeGuarda }} días, para poder revisar los votos.
       </p>
 
       <label class="escribir">
@@ -302,6 +315,11 @@ const BIENVENIDA_CHAT =
         opacity: 1;
       }
     }
+    .privacidad {
+      margin: 0;
+      font-size: var(--texto-caption);
+      line-height: var(--interlineado-largo);
+    }
     .escribir {
       display: flex;
       flex-direction: column;
@@ -355,6 +373,9 @@ export class Nia {
   protected readonly maximo = MAXIMO_TEXTO;
   protected readonly sugerencias = SUGERENCIAS;
   protected readonly bienvenida = BIENVENIDA_CHAT;
+  /** El mismo número que aplica api/valoraciones.py (DIAS_DE_RETENCION_NIA): si allá
+   * cambia, aquí también, o el aviso miente. */
+  protected readonly diasQueSeGuarda = DIAS_DE_RETENCION_NIA;
   /** Las que todavía no se preguntaron en esta conversación: una sugerencia ya usada solo
    * repetiría la misma respuesta. Cuando no queda ninguna, la fila desaparece. */
   protected readonly pendientes = computed(() => {
@@ -369,6 +390,9 @@ export class Nia {
   protected readonly esperando = signal(false);
   protected readonly error = signal('');
   protected readonly mensajes = signal<MensajeChat[]>([]);
+  /** El id que la API le puso a cada respuesta, por posición en el hilo. No va dentro del
+   * mensaje: los mensajes se reenvían a la API tal cual y ahí solo caben rol y contenido. */
+  protected readonly idPorMensaje = signal<Record<number, string>>({});
   /** '' hasta la primera respuesta: entonces se sabe si contestó el modelo o las reglas. */
   protected readonly modo = signal<'' | 'openai' | 'demostracion'>('');
   /** Mientras espera, el texto cambia: a los cuatro segundos deja de ser "escribiendo". */
@@ -380,6 +404,7 @@ export class Nia {
     effect(() => {
       this.appid();
       this.mensajes.set([]);
+      this.idPorMensaje.set({});
       this.modo.set('');
       this.error.set('');
     });
@@ -424,6 +449,8 @@ export class Nia {
       })
       .subscribe({
         next: (respuesta) => {
+          const posicion = this.mensajes().length;
+          this.idPorMensaje.update((ids) => ({ ...ids, [posicion]: respuesta.id }));
           this.mensajes.update((actuales) => [
             ...actuales,
             { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },

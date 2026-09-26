@@ -961,6 +961,54 @@ def _ejemplo_actual(pagina: Page) -> str | None:
     return pagina.get_by_test_id("hero-ejemplo").get_attribute("data-appid")
 
 
+def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
+    """El 👍/👎 de cada respuesta y el aviso de qué se guarda (fase 5b)."""
+    problemas = []
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
+    pagina.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+
+    aviso = " ".join(pagina.get_by_test_id("nia-privacidad").inner_text().split())
+    if "datos personales" not in aviso or "180" not in aviso:
+        problemas.append(f"el chat no avisa qué se guarda ni por cuánto tiempo ('{aviso[:80]}')")
+
+    if pagina.get_by_test_id("voto-nia").count():
+        problemas.append("el voto aparece antes de que Nia haya respondido")
+
+    pagina.get_by_test_id("sugerencia-nia").first.click()
+    pagina.get_by_test_id("voto-nia").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    arriba = pagina.get_by_test_id("voto-nia-arriba").first
+    abajo = pagina.get_by_test_id("voto-nia-abajo").first
+
+    arriba.click()
+    pagina.wait_for_timeout(300)
+    if arriba.get_attribute("aria-pressed") != "true":
+        problemas.append("el 👍 no queda marcado")
+    if pagina.get_by_test_id("voto-nia-motivos").count():
+        problemas.append("con 👍 aparecen los motivos, que solo tienen sentido con 👎")
+
+    # El mismo pulgar otra vez lo quita.
+    arriba.click()
+    pagina.wait_for_timeout(300)
+    if arriba.get_attribute("aria-pressed") != "false":
+        problemas.append("pulsar el 👍 dos veces no quita el voto")
+
+    abajo.click()
+    pagina.get_by_test_id("voto-nia-motivos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    motivos = pagina.get_by_test_id("voto-nia-motivo")
+    if motivos.count() != 4:
+        problemas.append(f"los motivos del 👎 no son los cuatro de la lista ({motivos.count()})")
+    motivos.first.click()
+    pagina.wait_for_timeout(300)
+    if motivos.first.get_attribute("aria-pressed") != "true":
+        problemas.append("elegir un motivo no lo deja marcado")
+
+    ruta = destino / "voto-nia.png"
+    pagina.get_by_test_id("nia").screenshot(path=ruta)
+    if not problemas:
+        print(f"voto:     👍/👎 por respuesta, motivos solo con 👎 y aviso de retención ({ruta.relative_to(_RAIZ)})")
+    return problemas
+
+
 def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
     """El ejemplo del inicio: curados de las tres bandas, flechas, pausa y rotación."""
     problemas = []
@@ -1799,6 +1847,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_como_funciona(pagina, url, destino)
         + _angular_estrellas(pagina, url, destino)
         + _angular_panel_nia(pagina, url, destino)
+        + _angular_voto_nia(pagina, url, destino)
         + _angular_carrusel(pagina, url, destino)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
@@ -1813,11 +1862,17 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
 # clave con crédito en .env, cada corrida gastaría consultas de OpenAI, y lo que se
 # verifica aquí es la interfaz (que el chat muestre la respuesta y su aviso de modo),
 # no lo que responde el modelo. Las pruebas con OpenAI real se hacen a mano.
+_ID_RESPUESTA_FALSA = "00000000-0000-4000-8000-000000000000"
 _NIA_FALSA = json.dumps({
     "respuesta": "Respuesta de prueba del script de capturas: no se consultó ningún modelo.",
     "modo": "demostracion",
     "modelo": None,
     "aviso": "Respuesta simulada por herramientas/capturar_ui.py; la API no recibió la pregunta.",
+    # Con id se puede recorrer el voto sin gastar una consulta. El PUT del voto también se
+    # intercepta: esta respuesta no existe en la base de la API y daría 404, y lo que se
+    # revisa aquí es la interfaz. El almacén de verdad lo prueba verificar_nia.py.
+    "id": _ID_RESPUESTA_FALSA,
+    "version_prompt": "reglas",
 })
 
 
@@ -1843,8 +1898,24 @@ def _sin_consultas_a_nia(contexto) -> None:
         _NIA_INTERCEPTADAS.append(ruta.request.url)
         ruta.fulfill(status=200, content_type="application/json", body=_NIA_FALSA)
 
+    def responder_voto(ruta) -> None:
+        """El voto de una respuesta que solo existió en el navegador: se contesta con lo
+        que se mandó, que es lo que haría la API si la respuesta fuera suya."""
+        if ruta.request.method == "DELETE":
+            cuerpo = {"id_respuesta": _ID_RESPUESTA_FALSA, "voto": None, "motivo": None}
+        else:
+            enviado = ruta.request.post_data_json or {}
+            motivo = enviado.get("motivo")
+            cuerpo = {
+                "id_respuesta": _ID_RESPUESTA_FALSA,
+                "voto": enviado.get("voto"),
+                "motivo": motivo if enviado.get("voto") == -1 else None,
+            }
+        ruta.fulfill(status=200, content_type="application/json", body=json.dumps(cuerpo))
+
     contexto.on("request", anotar)
     contexto.route("**/nia", responder)
+    contexto.route("**/nia/valoracion/**", responder_voto)
 
 
 def capturar(url: str, api: str) -> int:

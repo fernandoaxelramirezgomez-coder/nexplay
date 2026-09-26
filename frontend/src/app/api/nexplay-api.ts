@@ -19,6 +19,8 @@ import {
   SolicitudNia,
   SolicitudPrediccion,
   SolicitudValoracion,
+  SolicitudVotoNia,
+  VotoNia,
 } from './contrato';
 
 /** Único punto de contacto con la API. */
@@ -95,5 +97,15 @@ export class NexplayApi {
 
   preguntarANia(solicitud: SolicitudNia): Observable<RespuestaNia> {
     return this.http.post<RespuestaNia>(`${this.base}/nia`, solicitud);
+  }
+
+  /** Crea o cambia el voto de esta persona para esa respuesta de Nia. */
+  votarRespuestaDeNia(idRespuesta: string, solicitud: SolicitudVotoNia): Observable<VotoNia> {
+    return this.http.put<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, solicitud);
+  }
+
+  quitarVotoDeNia(idRespuesta: string, usuario: string): Observable<VotoNia> {
+    const params = new HttpParams().set('usuario', usuario);
+    return this.http.delete<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, { params });
   }
 }

@@ -29,6 +29,8 @@ from .schemas import (
     SolicitudPrediccion,
     SolicitudReaccion,
     SolicitudValoracion,
+    SolicitudVotoNia,
+    VotoNia,
 )
 
 app = FastAPI(
@@ -261,6 +263,43 @@ def preguntar_a_nia(solicitud: SolicitudNia, peticion: Request) -> RespuestaNia:
             headers={"Retry-After": str(max(1, int(espera) + 1))},
         )
 
-    respuesta = nia.responder(solicitud.appid, solicitud.mensajes, solicitud.perfil)
+    respuesta = nia.responder(solicitud.appid, solicitud.mensajes, solicitud.usuario, solicitud.perfil)
     logger.info("respuesta de Nia appid=%s modo=%s", solicitud.appid, respuesta["modo"])
     return RespuestaNia(**respuesta)
+
+
+@contextmanager
+def _errores_de_voto():
+    """404 cuando se vota una respuesta que ya no está: o nunca existió o venció su
+    retención de {dias} días."""
+    try:
+        yield
+    except valoraciones.RespuestaNiaInexistente:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "esa respuesta ya no se puede valorar: las preguntas y respuestas se guardan"
+                f" {valoraciones.DIAS_DE_RETENCION_NIA} días"
+            ),
+        ) from None
+
+
+@app.put("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
+def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> VotoNia:
+    espera = _LIMITE_COMENTARIOS.revisar(f"voto-nia:{solicitud.usuario}")
+    if espera:
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados votos seguidos. Espera un momento.",
+            headers={"Retry-After": str(max(1, int(espera) + 1))},
+        )
+    with _errores_de_voto():
+        voto = valoraciones.guardar_voto_nia(id_respuesta, solicitud.usuario, solicitud.voto, solicitud.motivo)
+    logger.info("voto a Nia %s motivo=%r", "👍" if solicitud.voto == 1 else "👎", voto["motivo"])
+    return VotoNia(**voto)
+
+
+@app.delete("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
+def quitar_voto_de_nia(id_respuesta: str, usuario: str = _USUARIO) -> VotoNia:
+    with _errores_de_voto():
+        return VotoNia(**valoraciones.borrar_voto_nia(id_respuesta, usuario))

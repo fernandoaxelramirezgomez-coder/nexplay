@@ -10,6 +10,10 @@ preparar_entorno.py no la reconstruye ni la pisa.
   cuáles son suyos. Cada quien edita y borra los propios; ese mismo id sirve para el
   límite de frecuencia y para ubicar una fila desde moderar_comentarios.py.
 - Las reacciones son un pulgar arriba por persona y comentario: una fila o ninguna.
+- Los votos a Nia son 👍/👎 por persona y respuesta, con un motivo opcional cuando es 👎.
+  La respuesta se guarda al producirla, con su modo, su modelo y la versión del prompt,
+  porque un voto sin saber a qué se refería no sirve de nada; todo eso se borra a los
+  DIAS_DE_RETENCION_NIA días.
 
 El id de usuario es anónimo y lo genera el navegador: identifica, no autentica.
 """
@@ -82,6 +86,36 @@ def _crear_esquema() -> None:
                    comentario_id INTEGER NOT NULL,
                    usuario       TEXT    NOT NULL,
                    PRIMARY KEY (comentario_id, usuario)
+               )"""
+        )
+
+        # Las respuestas de Nia se guardan al producirlas y no al votarlas: así el voto
+        # sigue sirviendo después de reiniciar la API —pasa en cada cambio de código— y se
+        # puede saber qué proporción de respuestas recibe voto, que dice tanto como el
+        # voto. A cambio se guarda también lo que nadie votó, y por eso hay retención.
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS respuestas_nia (
+                   id             TEXT    PRIMARY KEY,
+                   usuario        TEXT    NOT NULL,
+                   appid          INTEGER,
+                   pregunta       TEXT    NOT NULL,
+                   respuesta      TEXT    NOT NULL,
+                   modo           TEXT    NOT NULL,
+                   modelo         TEXT,
+                   version_prompt TEXT    NOT NULL,
+                   creado         TEXT    NOT NULL
+               )"""
+        )
+        con.execute("CREATE INDEX IF NOT EXISTS idx_respuestas_nia_creado ON respuestas_nia (creado)")
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS valoraciones_nia (
+                   usuario      TEXT    NOT NULL,
+                   id_respuesta TEXT    NOT NULL REFERENCES respuestas_nia (id),
+                   voto         INTEGER NOT NULL CHECK (voto IN (-1, 1)),
+                   motivo       TEXT,
+                   creado       TEXT    NOT NULL,
+                   actualizado  TEXT    NOT NULL,
+                   PRIMARY KEY (usuario, id_respuesta)
                )"""
         )
         con.commit()
@@ -269,6 +303,135 @@ def alternar_reaccion(appid: int, id_comentario: int, usuario: str) -> dict:
     finally:
         con.close()
     return {"comentario_id": id_comentario, "reacciones": total, "reaccione_mia": not quitadas}
+
+
+# Cuánto se conservan la pregunta, la respuesta y su voto. Seis meses alcanzan para
+# comparar dos o tres versiones del prompt, que es para lo que se guardan. El barrido corre
+# en cada escritura: una retención que nadie ejecuta no es una retención.
+DIAS_DE_RETENCION_NIA = 180
+
+MOTIVOS_VOTO_NIA = (
+    "no respondió lo que pregunté",
+    "dato incorrecto",
+    "muy larga",
+    "me recomendó algo",
+)
+
+
+class RespuestaNiaInexistente(Exception):
+    """No hay respuesta de Nia con ese id: o nunca existió o ya venció su retención."""
+
+
+def _barrer_vencidas(con: sqlite3.Connection) -> int:
+    """Borra lo que pasó de la retención, y con ello los votos que apuntaban ahí."""
+    limite = f"-{DIAS_DE_RETENCION_NIA} days"
+    con.execute(
+        "DELETE FROM valoraciones_nia WHERE id_respuesta IN"
+        " (SELECT id FROM respuestas_nia WHERE creado < date('now', ?))",
+        (limite,),
+    )
+    return con.execute("DELETE FROM respuestas_nia WHERE creado < date('now', ?)", (limite,)).rowcount
+
+
+def registrar_respuesta_nia(
+    id_respuesta: str,
+    usuario: str,
+    appid: int | None,
+    pregunta: str,
+    respuesta: str,
+    modo: str,
+    modelo: str | None,
+    version_prompt: str,
+) -> None:
+    """Deja constancia de lo que Nia contestó, para que su voto tenga a qué referirse."""
+    con = _conectar()
+    try:
+        vencidas = _barrer_vencidas(con)
+        con.execute(
+            """INSERT OR REPLACE INTO respuestas_nia
+                   (id, usuario, appid, pregunta, respuesta, modo, modelo, version_prompt, creado)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (id_respuesta, usuario, appid, pregunta, respuesta, modo, modelo, version_prompt, _ahora()),
+        )
+        con.commit()
+    finally:
+        con.close()
+    if vencidas:
+        logger.info("retención de Nia: %s respuestas de más de %s días borradas", vencidas, DIAS_DE_RETENCION_NIA)
+
+
+def _exigir_respuesta(con: sqlite3.Connection, id_respuesta: str) -> None:
+    if con.execute("SELECT 1 FROM respuestas_nia WHERE id = ?", (id_respuesta,)).fetchone() is None:
+        raise RespuestaNiaInexistente(id_respuesta)
+
+
+def voto_nia(id_respuesta: str, usuario: str) -> dict:
+    """El voto de esa persona para esa respuesta, o ninguno."""
+    con = _conectar()
+    try:
+        fila = con.execute(
+            "SELECT voto, motivo FROM valoraciones_nia WHERE id_respuesta = ? AND usuario = ?",
+            (id_respuesta, usuario),
+        ).fetchone()
+    finally:
+        con.close()
+    return {
+        "id_respuesta": id_respuesta,
+        "voto": fila[0] if fila else None,
+        "motivo": fila[1] if fila else None,
+    }
+
+
+def guardar_voto_nia(id_respuesta: str, usuario: str, voto: int, motivo: str | None = None) -> dict:
+    """Crea o cambia el voto. El motivo solo acompaña al 👎: con 👍 no hay nada que
+    explicar y guardarlo sería ruido."""
+    if motivo is not None and (voto != -1 or motivo not in MOTIVOS_VOTO_NIA):
+        motivo = None
+    ahora = _ahora()
+    con = _conectar()
+    try:
+        _exigir_respuesta(con, id_respuesta)
+        con.execute(
+            """INSERT INTO valoraciones_nia (usuario, id_respuesta, voto, motivo, creado, actualizado)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT (usuario, id_respuesta) DO UPDATE SET
+                   voto = excluded.voto,
+                   motivo = excluded.motivo,
+                   actualizado = excluded.actualizado""",
+            (usuario, id_respuesta, voto, motivo, ahora, ahora),
+        )
+        con.commit()
+    finally:
+        con.close()
+    return voto_nia(id_respuesta, usuario)
+
+
+def borrar_voto_nia(id_respuesta: str, usuario: str) -> dict:
+    con = _conectar()
+    try:
+        _exigir_respuesta(con, id_respuesta)
+        con.execute(
+            "DELETE FROM valoraciones_nia WHERE id_respuesta = ? AND usuario = ?", (id_respuesta, usuario)
+        )
+        con.commit()
+    finally:
+        con.close()
+    return voto_nia(id_respuesta, usuario)
+
+
+def votos_nia_para_exportar() -> list[tuple]:
+    """Con identidad y con el texto: solo para exportar_valoraciones.py y para la consulta
+    de docs/evidencia, nunca para la API."""
+    con = _conectar()
+    try:
+        return con.execute(
+            """SELECT v.id_respuesta, v.usuario, v.voto, v.motivo, r.appid, r.pregunta, r.respuesta,
+                      r.modo, r.modelo, r.version_prompt, r.creado, v.actualizado
+               FROM valoraciones_nia v JOIN respuestas_nia r ON r.id = v.id_respuesta
+               ORDER BY r.creado"""
+        ).fetchall()
+    finally:
+        con.close()
 
 
 def comentarios_para_moderar(appid: int | None = None) -> list[tuple]:

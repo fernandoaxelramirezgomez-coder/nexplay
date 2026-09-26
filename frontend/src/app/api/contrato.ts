@@ -184,6 +184,27 @@ export interface RespuestaNia {
   modo: 'openai' | 'demostracion';
   modelo: string | null;
   aviso: string | null;
+  /** Identifica esta respuesta para poder votarla. */
+  id: string;
+  /** Qué prompt la produjo; 'reglas' en modo demostración. No se muestra. */
+  version_prompt: string;
+}
+
+/** 1 es 👍 y -1 es 👎. */
+export type VotoNiaValor = 1 | -1;
+
+/** PUT /nia/valoracion/{id} */
+export interface SolicitudVotoNia {
+  usuario: string;
+  voto: VotoNiaValor;
+  /** Solo acompaña al 👎, y solo uno de MOTIVOS_VOTO_NIA. */
+  motivo?: string;
+}
+
+export interface VotoNia {
+  id_respuesta: string;
+  voto: VotoNiaValor | null;
+  motivo: string | null;
 }
 
 /** GET /panorama: la muestra de reseñas detrás del catálogo. Es descriptivo —sale de

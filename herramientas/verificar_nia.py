@@ -1,24 +1,37 @@
-"""Comprueba que Nia explique la banda con las variables del modelo y no con las reseñas.
+"""Comprueba lo que Nia dice y cómo se guardan los votos a sus respuestas.
 
 La banda la pone el modelo con datos del juego; las reseñas solo dicen de qué se queja la
 gente. Nia confundía las dos cosas porque su contexto no traía los factores, así que este
 script revisa lo que se le manda (api/nia.py, _contexto_para_prompt) y lo que responde el
 modo demostración, que es el mismo camino sin gastar una llamada.
 
+También revisa el almacén de los votos (fase 5b) contra una base temporal, sin tocar la
+de verdad: registrar una respuesta, votarla, cambiar el voto, quitarlo, votar un id que no
+existe y comprobar que la retención borra lo vencido y respeta lo reciente.
+
 Uso:
-  python verificar_nia.py            revisa contexto y respuestas por reglas; sale 1 si algo falla
+  python verificar_nia.py            revisa contexto, respuestas por reglas y votos; sale 1 si algo falla
   python verificar_nia.py --openai   además manda las dos preguntas al modelo configurado
                                      e imprime la respuesta (eso sí consume cuota)
 """
 
 import argparse
+import os
+import sqlite3
 import sys
+import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Corre desde herramientas/, así que la raíz no está en sys.path y `api` no se encontraría.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from api import catalogo, nia  # noqa: E402
+# Antes de importar la API: api.valoraciones fija la ruta de su base al importarse, y este
+# script escribe votos de prueba. Con esto nunca toca la base de verdad.
+_BASE_DE_PRUEBA = Path(tempfile.mkdtemp(prefix="nexplay-verificar-nia-")) / "valoraciones.db"
+os.environ["NEXPLAY_VALORACIONES_DB"] = str(_BASE_DE_PRUEBA)
+
+from api import catalogo, nia, valoraciones  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.
 _PREGUNTAS = [
@@ -161,6 +174,73 @@ def _preguntar_de_verdad(juego) -> list[str]:
     return problemas
 
 
+def _revisar_votos() -> list[str]:
+    """El almacén de los votos, contra la base temporal que se fijó al importar."""
+    temporal = _BASE_DE_PRUEBA
+    if valoraciones._DB_PATH != temporal:
+        return [f"la prueba escribiría en {valoraciones._DB_PATH} en vez de la base temporal"]
+
+    problemas = []
+    usuario, otro = "pruebalocal01", "pruebalocal02"
+    valoraciones.registrar_respuesta_nia("r1", usuario, 1145360, "¿por qué?", "porque sí", "demostracion", None, "reglas")
+
+    voto = valoraciones.guardar_voto_nia("r1", usuario, -1, "muy larga")
+    if (voto["voto"], voto["motivo"]) != (-1, "muy larga"):
+        problemas.append(f"el 👎 con motivo no se guardó como se mandó ({voto})")
+
+    # El motivo acompaña al 👎: con 👍 no hay nada que explicar.
+    voto = valoraciones.guardar_voto_nia("r1", usuario, 1, "muy larga")
+    if (voto["voto"], voto["motivo"]) != (1, None):
+        problemas.append(f"cambiar a 👍 no limpia el motivo ({voto})")
+
+    # Un motivo que no está en la lista no entra.
+    voto = valoraciones.guardar_voto_nia("r1", usuario, -1, "porque no me gusta su tono")
+    if voto["motivo"] is not None:
+        problemas.append(f"se guardó un motivo fuera de la lista ({voto})")
+
+    # Un voto por persona y respuesta: el de otra no pisa el propio.
+    valoraciones.guardar_voto_nia("r1", otro, 1)
+    if valoraciones.voto_nia("r1", usuario)["voto"] != -1:
+        problemas.append("el voto de otra persona pisó el propio")
+
+    if valoraciones.borrar_voto_nia("r1", usuario)["voto"] is not None:
+        problemas.append("quitar el voto no lo quita")
+
+    try:
+        valoraciones.guardar_voto_nia("no-existe", usuario, 1)
+        problemas.append("votar una respuesta inexistente no falla")
+    except valoraciones.RespuestaNiaInexistente:
+        pass
+
+    # Retención: lo vencido se va con sus votos, lo reciente se queda.
+    vieja = (datetime.now(timezone.utc) - timedelta(days=valoraciones.DIAS_DE_RETENCION_NIA + 1)).isoformat(timespec="seconds")
+    valoraciones.registrar_respuesta_nia("r2", usuario, None, "vieja", "vieja", "demostracion", None, "reglas")
+    valoraciones.guardar_voto_nia("r2", usuario, 1)
+    con = sqlite3.connect(temporal)
+    con.execute("UPDATE respuestas_nia SET creado = ? WHERE id = 'r2'", (vieja,))
+    con.commit()
+    con.close()
+
+    valoraciones.registrar_respuesta_nia("r3", usuario, None, "nueva", "nueva", "demostracion", None, "reglas")
+    con = sqlite3.connect(temporal)
+    quedan = {fila[0] for fila in con.execute("SELECT id FROM respuestas_nia")}
+    votos = con.execute("SELECT COUNT(*) FROM valoraciones_nia WHERE id_respuesta = 'r2'").fetchone()[0]
+    con.close()
+    if "r2" in quedan:
+        problemas.append(f"la retención de {valoraciones.DIAS_DE_RETENCION_NIA} días no borró la respuesta vencida")
+    if votos:
+        problemas.append("la retención dejó votos huérfanos de una respuesta borrada")
+    if {"r1", "r3"} - quedan:
+        problemas.append(f"la retención se llevó respuestas recientes ({sorted(quedan)})")
+
+    if not problemas:
+        print(
+            f"votos:    un voto por persona y respuesta, el motivo solo con 👎, y la retención de"
+            f" {valoraciones.DIAS_DE_RETENCION_NIA} días borra lo vencido con sus votos"
+        )
+    return problemas
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--openai", action="store_true", help="manda las dos preguntas al modelo configurado")
@@ -168,6 +248,7 @@ def main() -> int:
 
     juegos = _uno_por_banda()
     problemas = _mismas_frases_que_la_ficha()
+    problemas += _revisar_votos()
     for juego in juegos:
         problemas += _revisar_contexto(juego)
         problemas += _revisar_respuestas(juego)

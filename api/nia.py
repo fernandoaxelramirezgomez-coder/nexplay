@@ -11,11 +11,13 @@ es una señal proxy, se usan bandas y nunca probabilidades ni scores, y no se re
 comprar ni no comprar.
 """
 
+import hashlib
 import logging
 import re
 import unicodedata
+import uuid
 
-from . import catalogo, scoring
+from . import catalogo, scoring, valoraciones
 from .config import configuracion
 from .schemas import MensajeChat, PerfilJugador
 
@@ -117,6 +119,15 @@ Reglas que no puedes romper:
   para comparar." Después sigue con lo que sí sabes del juego del contexto. No inventes
   nada de ese otro juego.
 """
+
+
+# Qué prompt produjo una respuesta, para poder comparar los votos de antes y después de
+# cambiarlo. Sale del texto mismo: una etiqueta a mano se queda vieja sin que nadie lo
+# note, y entonces los votos de dos prompts distintos se suman como si fueran uno.
+VERSION_PROMPT = hashlib.sha256(_SISTEMA.encode("utf-8")).hexdigest()[:8]
+
+# En modo demostración el prompt no interviene: atribuirle el voto sería falso.
+VERSION_REGLAS = "reglas"
 
 
 def contexto(appid: int) -> dict:
@@ -460,7 +471,30 @@ def _preguntar_a_openai(datos: dict, mensajes: list[MensajeChat], mencionados: l
     return (respuesta.choices[0].message.content or "").strip()
 
 
-def responder(appid: int, mensajes: list[MensajeChat], _perfil: PerfilJugador | None) -> dict:
+def _con_constancia(salida: dict, appid: int, usuario: str, pregunta: str) -> dict:
+    """Le pone id a la respuesta y la deja anotada, para que su voto tenga a qué apuntar.
+
+    Si la base de valoraciones falla, la respuesta se entrega igual y solo se pierde la
+    posibilidad de votarla: no contestar por no poder anotar sería el peor intercambio."""
+    salida["id"] = str(uuid.uuid4())
+    salida["version_prompt"] = VERSION_PROMPT if salida["modo"] == "openai" else VERSION_REGLAS
+    try:
+        valoraciones.registrar_respuesta_nia(
+            id_respuesta=salida["id"],
+            usuario=usuario,
+            appid=appid,
+            pregunta=pregunta,
+            respuesta=salida["respuesta"],
+            modo=salida["modo"],
+            modelo=salida["modelo"],
+            version_prompt=salida["version_prompt"],
+        )
+    except Exception as exc:
+        logger.warning("no se pudo anotar la respuesta de Nia (%s): no se podrá votar", type(exc).__name__)
+    return salida
+
+
+def responder(appid: int, mensajes: list[MensajeChat], usuario: str, _perfil: PerfilJugador | None = None) -> dict:
     """El perfil llega porque /nia lo recibe desde siempre, pero no entra al contexto: el
     riesgo es del título. Lo que la persona cuente de sus horas lo lee Nia en el hilo."""
     datos = contexto(appid)
@@ -468,17 +502,23 @@ def responder(appid: int, mensajes: list[MensajeChat], _perfil: PerfilJugador | 
 
     if not configuracion.hay_openai:
         logger.info("sin clave de OpenAI configurada; appid=%s responde en modo demostración", appid)
-        return {
-            "respuesta": _demostracion(datos, ultima),
-            "modo": "demostracion",
-            "modelo": None,
-            "aviso": "Modo demostración: respuesta armada con reglas sobre los datos del juego, sin modelo de lenguaje.",
-        }
+        return _con_constancia(
+            {
+                "respuesta": _demostracion(datos, ultima),
+                "modo": "demostracion",
+                "modelo": None,
+                "aviso": "Modo demostración: respuesta armada con reglas sobre los datos del juego, sin modelo de lenguaje.",
+            },
+            appid, usuario, ultima,
+        )
 
     try:
         texto = _preguntar_a_openai(datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid))
         if texto:
-            return {"respuesta": texto, "modo": "openai", "modelo": configuracion.nexplay_modelo_nia, "aviso": None}
+            return _con_constancia(
+                {"respuesta": texto, "modo": "openai", "modelo": configuracion.nexplay_modelo_nia, "aviso": None},
+                appid, usuario, ultima,
+            )
         logger.warning("OpenAI devolvió una respuesta vacía para appid=%s; se usa el modo demostración", appid)
     except Exception as exc:  # falla de red, clave inválida, modelo inexistente, sin paquete
         # El mensaje real, no solo el tipo: sin él no se puede saber por qué cayó. Se le
@@ -488,9 +528,12 @@ def responder(appid: int, mensajes: list[MensajeChat], _perfil: PerfilJugador | 
             appid, type(exc).__name__, _sin_claves(str(exc)),
         )
 
-    return {
-        "respuesta": _demostracion(datos, ultima),
-        "modo": "demostracion",
-        "modelo": None,
-        "aviso": "No se pudo usar el modelo configurado; esta respuesta se armó con reglas sobre los datos del juego.",
-    }
+    return _con_constancia(
+        {
+            "respuesta": _demostracion(datos, ultima),
+            "modo": "demostracion",
+            "modelo": None,
+            "aviso": "No se pudo usar el modelo configurado; esta respuesta se armó con reglas sobre los datos del juego.",
+        },
+        appid, usuario, ultima,
+    )

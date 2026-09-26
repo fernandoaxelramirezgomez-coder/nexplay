@@ -272,6 +272,32 @@ class RespuestaNia(BaseModel):
     modo: Literal["openai", "demostracion"]
     modelo: Optional[str] = Field(None, description="Modelo usado; None en modo demostración")
     aviso: Optional[str] = Field(None, description="Qué mostrar cuando la respuesta no vino del modelo")
+    id: str = Field(..., description="Identifica esta respuesta para poder votarla")
+    version_prompt: str = Field(
+        ..., description="Qué prompt la produjo: hash del texto del sistema, o 'reglas' en modo demostración"
+    )
+
+
+class SolicitudVotoNia(BaseModel):
+    usuario: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Id anónimo generado por el navegador; identifica, no autentica",
+    )
+    voto: Literal[-1, 1] = Field(..., description="1 es 👍 y -1 es 👎; cualquier otro valor da 422")
+    motivo: Optional[str] = Field(
+        None,
+        max_length=60,
+        description="Solo acompaña al 👎, y solo uno de los motivos de la lista; con 👍 se ignora",
+    )
+
+
+class VotoNia(BaseModel):
+    id_respuesta: str
+    voto: Optional[Literal[-1, 1]] = Field(None, description="None si esa persona no ha votado esta respuesta")
+    motivo: Optional[str] = None
 
 
 class ExplicacionJuego(BaseModel):
