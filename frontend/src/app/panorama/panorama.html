@@ -3,7 +3,7 @@
     <h1>Panorama del catálogo</h1>
     <p class="lectura entrada">
       Cómo se reparten los {{ catalogo.juegos().length }} juegos de Steam que sirve NexPlay y qué hay en las
-      reseñas que sostienen cada banda. Filtra por género o por banda y todas las gráficas se recalculan.
+      reseñas que sostienen cada nivel de riesgo. Filtra por género o por riesgo y todas las gráficas se recalculan.
     </p>
   </header>
 
@@ -22,7 +22,7 @@
           }
         </select>
       </label>
-      <div class="filtro" role="group" aria-label="Filtrar por banda de riesgo">
+      <div class="filtro" role="group" aria-label="Filtrar por riesgo de arrepentimiento">
         <span class="etiqueta">{{ rotulo }}</span>
         <div class="bandas">
           <button type="button" class="chip" [attr.aria-pressed]="!banda()" (click)="banda.set('')">Todas</button>
@@ -53,9 +53,9 @@
         <h2 id="titulo-catalogo">Lo que se ve del catálogo</h2>
 
         <section class="grafica" aria-labelledby="t-bandas" data-testid="panorama-bandas">
-          <h3 class="rotulo-seccion" id="t-bandas">Riesgo general</h3>
+          <h3 class="rotulo-seccion" id="t-bandas">{{ rotulo }}</h3>
           <p class="meta explica">
-            Las bandas son tercios de la distribución de riesgo del catálogo: siempre hay juegos en las tres.
+            Los tres niveles son tercios del catálogo: siempre hay juegos en los tres.
           </p>
           <app-grafica-barras [segmentos]="reparto()" idPrueba="barras-bandas" />
         </section>
@@ -70,10 +70,10 @@
         </section>
 
         <section class="grafica" aria-labelledby="t-precio" data-testid="panorama-precio">
-          <h3 class="rotulo-seccion" id="t-precio">Precio mediano por banda</h3>
+          <h3 class="rotulo-seccion" id="t-precio">Precio mediano por nivel de riesgo</h3>
           <p class="meta explica">
             El precio es una de las variables del modelo. Solo cuenta los juegos de pago con precio conocido:
-            meter los gratuitos como cero movería la mediana de la banda donde más hay.
+            meter los gratuitos como cero movería la mediana del nivel donde más hay.
           </p>
           <app-grafica-barras [segmentos]="precios()" idPrueba="barras-precio" />
         </section>
@@ -88,10 +88,10 @@
         </section>
 
         <section class="grafica" aria-labelledby="t-gratis" data-testid="panorama-gratis">
-          <h3 class="rotulo-seccion" id="t-gratis">Juegos gratuitos por banda</h3>
+          <h3 class="rotulo-seccion" id="t-gratis">Juegos gratuitos por nivel de riesgo</h3>
           <p class="meta explica">
             Si un juego es gratis o no también entra al modelo, y en este catálogo los gratuitos no se reparten
-            parejo entre las tres bandas.
+            parejo entre los tres niveles.
           </p>
           <app-grafica-barras [segmentos]="gratuitos()" [maximo]="1" idPrueba="barras-gratis" />
         </section>

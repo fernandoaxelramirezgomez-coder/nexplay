@@ -1,6 +1,6 @@
 """Comprueba lo que Nia dice y cómo se guardan los votos a sus respuestas.
 
-La banda la pone el modelo con datos del juego; las reseñas solo dicen de qué se queja la
+El riesgo lo pone el modelo con datos del juego; las reseñas solo dicen de qué se queja la
 gente. Nia confundía las dos cosas porque su contexto no traía los factores, así que este
 script revisa lo que se le manda (api/nia.py, _contexto_para_prompt) y lo que responde el
 modo demostración, que es el mismo camino sin gastar una llamada.
@@ -50,7 +50,7 @@ _PROHIBIDO_AL_EXPLICAR_LA_BANDA = (
 )
 
 # Vocabulario del proyecto: nunca, en ninguna respuesta.
-_PROHIBIDO_SIEMPRE = ("abandono", "insatisfacción general", "vale la pena", "te recomiendo")
+_PROHIBIDO_SIEMPRE = ("abandono", "insatisfacción general", "vale la pena", "te recomiendo", "banda")
 
 
 _FACTORES_TS = Path(__file__).resolve().parents[1] / "frontend" / "src" / "app" / "dominio" / "factores.ts"
@@ -146,10 +146,10 @@ def _revisar_respuestas(juego) -> list[str]:
             if prohibido in bajo:
                 problemas.append(f"{juego.nombre}: la respuesta dice {prohibido!r}")
         if "riesgo" in pregunta.lower() or "por qué" in pregunta.lower():
-            if "la pone el modelo con datos del juego" not in respuesta:
-                problemas.append(f"{juego.nombre}: al explicar la banda no dice que la pone el modelo")
-            if "Las reseñas explican los motivos, no la banda" not in respuesta:
-                problemas.append(f"{juego.nombre}: al explicar la banda no descarta que salga de las reseñas")
+            if "lo pone el modelo con datos del juego" not in respuesta:
+                problemas.append(f"{juego.nombre}: al explicar el riesgo no dice que lo pone el modelo")
+            if "Las reseñas explican los motivos, no el riesgo" not in respuesta:
+                problemas.append(f"{juego.nombre}: al explicar el riesgo no descarta que salga de las reseñas")
             for prohibido in _PROHIBIDO_AL_EXPLICAR_LA_BANDA:
                 if prohibido in bajo:
                     problemas.append(f"{juego.nombre}: explica la banda con las reseñas ({prohibido!r})")
@@ -251,7 +251,9 @@ _RECORRIDO = [
 ]
 
 # Nada de esto puede salir de Nia, conteste el modelo o las reglas.
-_NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar")
+# "banda" también: desde la revisión del usuario final el nivel se llama riesgo de
+# arrepentimiento, y "banda" era la palabra que nadie entendía.
+_NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar", "banda")
 
 
 def _revisar_recorrido(con_openai: bool) -> list[str]:

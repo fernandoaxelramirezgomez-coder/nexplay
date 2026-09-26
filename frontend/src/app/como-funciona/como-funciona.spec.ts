@@ -21,7 +21,7 @@ describe('ComoFunciona', () => {
     const titulos = [...html.querySelectorAll('[data-testid="paso"] h2')].map((h) => h.textContent?.trim());
     expect(titulos).toEqual([
       'Buscar un juego',
-      'Ver su banda y sus motivos',
+      'Ver su riesgo y sus motivos',
       'Crear tu perfil (opcional)',
       'Preguntarle a Nia',
     ]);

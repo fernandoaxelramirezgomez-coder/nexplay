@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 
 import { JuegoCatalogo } from '../api/contrato';
 import { PildoraBanda } from '../compartido/pildora-banda';
+import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { textoMetacritic, textoPrecio } from '../dominio/formato';
 import { MotivosStore } from '../estado/motivos-store';
 
@@ -104,7 +105,7 @@ export class TablaComparar {
   readonly juegos = input.required<JuegoCatalogo[]>();
 
   private readonly motivos = inject(MotivosStore);
-  protected readonly rotulo = 'Riesgo general';
+  protected readonly rotulo = ROTULO_RIESGO;
   protected readonly precio = textoPrecio;
   protected readonly critica = textoMetacritic;
 

@@ -56,7 +56,7 @@ export class Panorama {
 
   protected readonly reparto = computed<Segmento[]>(() =>
     repartoDeBandas(this.corte()).map((tajada) => ({
-      etiqueta: `${ROTULO_RIESGO} ${tajada.banda}`,
+      etiqueta: `Riesgo ${tajada.banda}`,
       valor: tajada.cuantos,
       cifra: `${tajada.cuantos} · ${porcentaje(tajada.fraccion)}`,
       banda: tajada.banda,
@@ -76,7 +76,7 @@ export class Panorama {
 
   protected readonly precios = computed<Segmento[]>(() =>
     precioPorBanda(this.corte()).map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       valor: fila.mediana ?? 0,
       cifra:
         fila.mediana === null
@@ -89,21 +89,21 @@ export class Panorama {
 
   protected readonly sinCritica = computed<Segmento[]>(() =>
     sinCriticaPorBanda(this.corte()).map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       valor: fila.fraccion,
       cifra: `${fila.cuantos} de ${fila.total}`,
       banda: fila.banda,
-      detalle: `${fila.cuantos} de ${fila.total} juegos de esa banda no tienen nota de Metacritic`,
+      detalle: `${fila.cuantos} de ${fila.total} juegos con ese riesgo no tienen nota de Metacritic`,
     })),
   );
 
   protected readonly gratuitos = computed<Segmento[]>(() =>
     gratuitosPorBanda(this.corte()).map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       valor: fila.fraccion,
       cifra: `${fila.cuantos} de ${fila.total}`,
       banda: fila.banda,
-      detalle: `${fila.cuantos} de ${fila.total} juegos de esa banda son gratuitos`,
+      detalle: `${fila.cuantos} de ${fila.total} juegos con ese riesgo son gratuitos`,
     })),
   );
 
@@ -146,7 +146,7 @@ export class Panorama {
   protected readonly motivoPorBanda = computed(() => {
     const tonos = new Map(this.leyendaMotivos().map(({ etiqueta, tono }) => [etiqueta, tono]));
     return this.porBandaMotivo().map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       banda: fila.banda,
       total: fila.conMotivo,
       tajadas: fila.motivos.map((motivo) => ({

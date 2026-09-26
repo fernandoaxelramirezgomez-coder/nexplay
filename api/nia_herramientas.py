@@ -35,7 +35,7 @@ def _resumen_de_juego(juego: JuegoCatalogo) -> dict:
     return {
         "appid": juego.appid,
         "nombre": juego.nombre,
-        "banda": juego.banda_riesgo.value,
+        "riesgo": juego.banda_riesgo.value,
         "precio": "gratis" if juego.es_gratis else juego.precio_final,
         "metacritic": juego.metacritic,
         "generos": juego.generos,
@@ -55,15 +55,15 @@ def _clave_de_orden(orden: str):
 def buscar_juegos(
     texto: str = "",
     genero: str = "",
-    banda: str = "",
+    riesgo: str = "",
     precio_max: float | None = None,
     solo_gratis: bool = False,
     con_nota: bool | None = None,
     orden: str = "nombre",
 ) -> dict:
     """Juegos del catálogo que cumplen los filtros, hasta MAXIMO_RESULTADOS."""
-    riesgo = NivelRiesgo(banda) if banda in ("bajo", "medio", "alto") else None
-    juegos = catalogo.buscar(q=texto, genero=genero, riesgo=riesgo)
+    nivel = NivelRiesgo(riesgo) if riesgo in ("bajo", "medio", "alto") else None
+    juegos = catalogo.buscar(q=texto, genero=genero, riesgo=nivel)
     if solo_gratis:
         juegos = [j for j in juegos if j.es_gratis]
     if precio_max is not None:
@@ -81,18 +81,18 @@ def buscar_juegos(
         "hay_mas": max(0, len(juegos) - len(mostrados)),
         "orden": orden,
         # La ruta que ve la misma lista completa, para que la respuesta pueda ofrecerla.
-        "ver_todos": _enlace_a_explorar(texto, genero, banda),
+        "ver_todos": _enlace_a_explorar(texto, genero, riesgo),
     }
 
 
-def _enlace_a_explorar(texto: str, genero: str, banda: str) -> str:
+def _enlace_a_explorar(texto: str, genero: str, riesgo: str) -> str:
     filtros = {}
     if texto.strip():
         filtros["q"] = texto.strip()
     if genero.strip():
         filtros["genero"] = genero.strip()
-    if banda in ("bajo", "medio", "alto"):
-        filtros["riesgo"] = banda
+    if riesgo in ("bajo", "medio", "alto"):
+        filtros["riesgo"] = riesgo
     return "/explorar" + ("?" + urlencode(filtros) if filtros else "")
 
 
@@ -122,7 +122,7 @@ def resolver_juego(nombre: str) -> dict:
 
 
 def ficha_juego(appid: int) -> dict:
-    """Lo mismo que Nia ve de un juego abierto: banda, factores del modelo, motivos con su
+    """Lo mismo que Nia ve de un juego abierto: riesgo, factores del modelo, motivos con su
     n, crítica y precio."""
     try:
         datos = nia.contexto(int(appid))
@@ -132,7 +132,7 @@ def ficha_juego(appid: int) -> dict:
         "encontrado": True,
         "appid": int(appid),
         "nombre": datos["nombre"],
-        "banda": datos["banda"],
+        "riesgo": datos["banda"],
         "factores": [f"{f['lectura']} → {f['efecto']} el riesgo estimado" for f in datos["factores"]],
         "generos": datos["generos"],
         "metacritic": datos["metacritic"],
@@ -174,8 +174,8 @@ Se entrenó con el corte data-v1 (83 juegos, 123,972 reseñas), validado con Gro
 agrupando por appid para que generalice a juegos que no vio, y optimizado a PR-AUC porque
 la clase está desbalanceada. En los 40 títulos que nunca vio sacó PR-AUC 0.0356 contra
 0.0234 de un clasificador trivial: hay señal, y es modesta.
-Las bandas (bajo, medio, alto) reparten el catálogo en tres: comparan un juego con los
-demás y no son una probabilidad."""
+El riesgo de arrepentimiento (bajo, medio, alto) reparte el catálogo en tres niveles:
+compara un juego con los demás y no es una probabilidad. Es del juego, no de quien pregunta."""
 
 
 def metodologia() -> dict:
@@ -190,7 +190,7 @@ ESQUEMAS = [
         "function": {
             "name": "buscar_juegos",
             "description": (
-                "Busca juegos del catálogo de NexPlay por nombre, género, banda de riesgo y precio."
+                "Busca juegos del catálogo de NexPlay por nombre, género, riesgo de arrepentimiento y precio."
                 " Devuelve como máximo 8, en orden alfabético salvo que se pida otro."
             ),
             "parameters": {
@@ -198,7 +198,7 @@ ESQUEMAS = [
                 "properties": {
                     "texto": {"type": "string", "description": "Parte del nombre"},
                     "genero": {"type": "string", "description": "Género de Steam exacto, por ejemplo 'Acción'"},
-                    "banda": {"type": "string", "enum": ["bajo", "medio", "alto"]},
+                    "riesgo": {"type": "string", "enum": ["bajo", "medio", "alto"], "description": "Riesgo de arrepentimiento"},
                     "precio_max": {"type": "number", "description": "Precio máximo en MXN"},
                     "solo_gratis": {"type": "boolean"},
                     "con_nota": {"type": "boolean", "description": "true: solo con nota de Metacritic; false: solo sin ella"},
@@ -227,7 +227,7 @@ ESQUEMAS = [
         "type": "function",
         "function": {
             "name": "ficha_juego",
-            "description": "Los datos de un juego: banda, factores del modelo, motivos de las reseñas, crítica y precio.",
+            "description": "Los datos de un juego: riesgo de arrepentimiento, factores del modelo, motivos de las reseñas, crítica y precio.",
             "parameters": {
                 "type": "object",
                 "properties": {"appid": {"type": "integer"}},

@@ -12,11 +12,11 @@ export interface Paso {
 export const PASOS: readonly Paso[] = [
   {
     titulo: 'Buscar un juego',
-    texto: 'El catálogo reúne juegos de Steam ordenados en tres estantes, de menor a mayor riesgo general.',
+    texto: 'El catálogo reúne juegos de Steam ordenados en tres estantes, de menor a mayor riesgo de arrepentimiento.',
     enlace: { ruta: '/explorar', texto: 'Ir al catálogo' },
   },
   {
-    titulo: 'Ver su banda y sus motivos',
+    titulo: 'Ver su riesgo y sus motivos',
     texto:
       'La ficha muestra si el juego tiende a generar más o menos arrepentimiento temprano que el resto del catálogo, y los motivos que más aparecen en esas reseñas.',
     enlace: { ruta: '/panorama', texto: 'Ver cómo se reparte el catálogo' },
@@ -30,7 +30,7 @@ export const PASOS: readonly Paso[] = [
   {
     titulo: 'Preguntarle a Nia',
     texto:
-      'Nia responde con los datos del juego que tenga a la vista: su banda, los motivos, la crítica y el precio. Tiene su propia página, está en cada ficha y asoma como burbuja en el catálogo.',
+      'Nia responde con los datos del juego que tenga a la vista: su riesgo de arrepentimiento, los motivos, la crítica y el precio. Tiene su propia página, está en cada ficha y asoma como burbuja en el catálogo.',
     enlace: { ruta: '/nia', texto: 'Hablar con Nia' },
   },
 ];
@@ -96,9 +96,6 @@ export const PASOS: readonly Paso[] = [
       gap: var(--espacio-12);
       text-align: center;
       padding: var(--espacio-24) 0 0;
-    }
-    .hero h1 {
-      font-size: clamp(var(--texto-heading-sm), 3.5vw, var(--texto-heading));
     }
     .entrada {
       margin: 0;

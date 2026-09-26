@@ -31,7 +31,7 @@ const MAXIMO_MENSAJES = 10;
 /** Lo mismo que DIAS_DE_RETENCION_NIA en api/valoraciones.py. */
 const DIAS_DE_RETENCION_NIA = 180;
 
-const SUGERENCIAS_JUEGO = ['¿Por qué tiene esa banda?', '¿Cuánto cuesta?', '¿Qué dice la crítica?'];
+const SUGERENCIAS_JUEGO = ['¿Por qué tiene ese riesgo?', '¿Cuánto cuesta?', '¿Qué dice la crítica?'];
 
 /** Sin juego elegido, las preguntas de arranque son del catálogo entero. */
 const SUGERENCIAS_CATALOGO = [
@@ -44,11 +44,11 @@ const SUGERENCIAS_CATALOGO = [
 /** No repite el rótulo de arriba ("Pregúntale a Nia"): dice qué sabe contestar, que es
  * lo que el rótulo no dice. */
 const BIENVENIDA_CHAT =
-  'Puedo contarte por qué quedó en esa banda, qué motivos aparecen en las reseñas, qué ' +
+  'Puedo contarte por qué tiene ese riesgo, qué motivos aparecen en las reseñas, qué ' +
   'dijo la crítica y cuánto cuesta. Lo que no hago es decirte si comprarlo.';
 
 const BIENVENIDA_CATALOGO =
-  'Puedo filtrar los juegos del catálogo por género, banda de riesgo y precio, leer la ' +
+  'Puedo filtrar los juegos del catálogo por género, riesgo de arrepentimiento y precio, leer la ' +
   'ficha de cualquiera y contarte de dónde salen los datos. Lo que no hago es elegir por ti.';
 
 /** El chat de Nia, con un juego fijado o sobre el catálogo entero.
@@ -70,7 +70,7 @@ const BIENVENIDA_CATALOGO =
       }
       @if (muestraIntro()) {
         <p class="meta intro">
-          Responde con los datos de este juego: su banda, los motivos de las reseñas, la crítica y el precio. No
+          Responde con los datos de este juego: su riesgo, los motivos de las reseñas, la crítica y el precio. No
           recomienda comprar ni no comprar.
         </p>
       }

@@ -50,11 +50,11 @@
       <section class="veredicto" [attr.data-banda]="prediccion()!.nivel" data-testid="ficha-veredicto">
         <p class="titular">
           @for (segmento of titular(); track $index) {@if (segmento.clave) {<span class="palabra">{{ segmento.texto }}</span>} @else {<ng-container>{{ segmento.texto }}</ng-container>}}<app-nota-info
-            etiqueta="Qué significa esta banda"
+            etiqueta="Qué significa el riesgo de arrepentimiento"
             idPrueba="veredicto-info"
           >
-            La banda reparte los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo en tres grupos según su
-            señal de arrepentimiento temprano: compara este juego con los demás y no es una probabilidad.
+            {{ explicacionRiesgo }} Reparte los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo en tres
+            niveles: compara este juego con los demás y no es una probabilidad.
           </app-nota-info>
         </p>
         @if (prediccion()!.nota_plataforma; as nota) {

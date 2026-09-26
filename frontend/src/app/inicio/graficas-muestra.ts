@@ -5,7 +5,6 @@ import { GraficaApilada } from '../compartido/graficas/grafica-apilada';
 import { GraficaBarras } from '../compartido/graficas/grafica-barras';
 import { GraficaColumnas } from '../compartido/graficas/grafica-columnas';
 import { Segmento } from '../compartido/graficas/segmento';
-import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { numero, porcentaje, porcentajeFino } from '../dominio/formato';
 import { CONSENSO_STEAM, consensoPorBanda, positivosEnBandaAlta, senalPorBanda } from '../dominio/panorama';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -32,10 +31,10 @@ import { PanoramaStore } from '../estado/panorama-store';
         </section>
 
         <section class="grafica" aria-labelledby="titulo-senal" data-testid="grafica-senal">
-          <h3 class="rotulo-seccion" id="titulo-senal">Cuántas reseñas con esa señal tiene cada banda</h3>
+          <h3 class="rotulo-seccion" id="titulo-senal">Cuántas reseñas con esa señal tiene cada nivel de riesgo</h3>
           <p class="meta explica">
-            La banda la pone el modelo con datos del juego (precio, gratuidad, descuento y cobertura de
-            crítica) y sin mirar estas reseñas. Aun así, la banda alta tiene {{ vecesMas() }} veces más
+            El riesgo lo pone el modelo con datos del juego (precio, gratuidad, descuento y cobertura de
+            crítica) y sin mirar estas reseñas. Aun así, el riesgo alto tiene {{ vecesMas() }} veces más
             reseñas con señal que la baja.
           </p>
           <app-grafica-barras [segmentos]="senal()" [maximo]="topeSenal()" idPrueba="barras-senal" />
@@ -117,7 +116,7 @@ export class GraficasMuestra {
 
   protected readonly senal = computed<Segmento[]>(() =>
     this.porBanda().map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       valor: fila.prevalencia,
       cifra: porcentajeFino(fila.prevalencia),
       banda: fila.banda,
@@ -137,7 +136,7 @@ export class GraficasMuestra {
 
   protected readonly consenso = computed(() =>
     consensoPorBanda(this.corte(), this.panorama.porAppid()).map((fila) => ({
-      etiqueta: `${ROTULO_RIESGO} ${fila.banda}`,
+      etiqueta: `Riesgo ${fila.banda}`,
       banda: fila.banda,
       total: fila.total,
       tajadas: fila.tajadas,

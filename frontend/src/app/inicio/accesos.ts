@@ -14,13 +14,13 @@ const ACCESOS: readonly Acceso[] = [
     ruta: '/explorar',
     emoji: '🎮',
     titulo: 'Explorar',
-    texto: '123 juegos de Steam repartidos en tres estantes, de menor a mayor riesgo general.',
+    texto: '123 juegos de Steam repartidos en tres estantes, de menor a mayor riesgo de arrepentimiento.',
   },
   {
     ruta: '/comparar',
     emoji: '⚖️',
     titulo: 'Comparar',
-    texto: 'Hasta cuatro juegos lado a lado: banda, motivos, factores y ficha técnica.',
+    texto: 'Hasta cuatro juegos lado a lado: riesgo, motivos, factores y ficha técnica.',
   },
   {
     ruta: '/nia',

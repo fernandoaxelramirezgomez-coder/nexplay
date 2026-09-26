@@ -26,7 +26,6 @@
   margin: 0;
   font-size: clamp(var(--texto-subheading), 2.4vw, var(--texto-heading-sm));
   line-height: 1.1;
-  letter-spacing: -0.035em;
 }
 
 .exploracion .meta {

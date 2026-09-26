@@ -1,16 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { NivelRiesgo } from '../api/contrato';
-import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
+import { EXPLICACION_RIESGO, ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 
-/** Banda de riesgo: relleno del color de banda con texto oscuro (el blanco encima no
- * pasa AA) y un filo de la tinta de la banda, que en el tema claro es lo que separa el
- * relleno del papel. El rótulo es uno solo: la banda es del juego, no del perfil. */
+/** El nivel de riesgo de arrepentimiento: relleno del color del nivel con texto oscuro
+ * (el blanco encima no pasa AA) y un filo de su tinta, que en el tema claro es lo que
+ * separa el relleno del papel. El rótulo es uno solo: el riesgo es del juego, no del
+ * perfil. Al pasar el cursor, la explicación de una línea. */
 @Component({
   selector: 'app-pildora-banda',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="pildora" [attr.data-banda]="banda()" data-testid="pildora-banda"
-    >{{ compacta() ? corta() : rotulo + ' · ' + banda() }}</span
+  template: `<span
+    class="pildora"
+    [attr.data-banda]="banda()"
+    [attr.title]="explicacion"
+    data-testid="pildora-banda"
+    >{{ compacta() ? corta() : rotulo + ': ' + banda() }}</span
   >`,
   styles: `
     .pildora {
@@ -39,10 +44,11 @@ import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 export class PildoraBanda {
   readonly banda = input.required<NivelRiesgo>();
   /** Solo el nivel, con mayúscula: para una celda o una fila de resultados, donde repetir
-   * "Riesgo general" en cada línea estira todo y no agrega nada. */
+   * "Riesgo de arrepentimiento" en cada línea estira todo y no agrega nada. */
   readonly compacta = input(false);
 
   protected readonly rotulo = ROTULO_RIESGO;
+  protected readonly explicacion = EXPLICACION_RIESGO;
   protected readonly corta = computed(() => {
     const banda = this.banda();
     return banda.charAt(0).toUpperCase() + banda.slice(1);

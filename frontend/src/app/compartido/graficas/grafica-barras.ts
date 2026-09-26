@@ -33,7 +33,10 @@ import { Segmento } from './segmento';
     }
     .fila {
       display: grid;
-      grid-template-columns: var(--ancho-etiqueta, 11rem) 1fr 4.5rem;
+      /* 7rem para el valor: a 16 px en mono, "100% de 123" mide ~106 px. Fijo y no
+         max-content, porque cada fila es su propia rejilla y las barras tienen que terminar
+         todas en el mismo borde. */
+      grid-template-columns: var(--ancho-etiqueta, 11rem) 1fr 7rem;
       align-items: center;
       gap: var(--espacio-12);
       font-size: var(--texto-body-sm);
@@ -75,7 +78,7 @@ import { Segmento } from './segmento';
     }
     @media (max-width: 520px) {
       .fila {
-        grid-template-columns: 1fr 4.5rem;
+        grid-template-columns: 1fr 7rem;
       }
       .pista {
         grid-column: 1 / -1;

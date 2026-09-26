@@ -24,7 +24,7 @@ const MAXIMO_SUGERENCIAS = 12;
         <div>
           <h1>Habla con Nia</h1>
           <p class="lectura entrada">
-            Responde con los datos del catálogo: qué juegos hay y con qué banda, los motivos que más
+            Responde con los datos del catálogo: qué juegos hay y con qué riesgo, los motivos que más
             aparecen en sus reseñas, la crítica y el precio. Puedes fijar un juego o preguntar por
             todos. No recomienda comprar ni no comprar.
           </p>

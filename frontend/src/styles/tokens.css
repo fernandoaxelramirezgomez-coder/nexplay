@@ -44,7 +44,10 @@
   --cta-texto: #0e0f2d;
   --foco: #22e0ff;
 
-  /* Tipografía */
+  /* Tipografía. Chakra Petch para títulos y rótulos: tiene carácter de juego y se sigue
+     leyendo en mayúsculas grandes. Inter para leer. Las tres se cargan como paquetes
+     @fontsource desde angular.json, sin CDN: la app corre sin conexión. */
+  --fuente-display: 'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --fuente-texto: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --fuente-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --peso-tenue: 300; /* subtítulos y descriptores: la voz baja */
@@ -55,7 +58,9 @@
   --tracking: -0.014em;
   --tracking-display: -0.02em;
 
-  --texto-caption: 14px;
+  /* 16 es el piso: nada de lectura por debajo, ni en notas ni en rótulos. Antes valía 14
+     y lo usaban 22 componentes. */
+  --texto-caption: 16px;
   --texto-body-sm: 16px;
   --texto-body: 20px;
   --texto-subheading: 24px;
@@ -68,6 +73,8 @@
      respirar a Á, É, Í, Ó, Ú y Ñ en un titular de dos líneas. */
   --interlineado-display: 1.05;
   --interlineado-largo: 1.5;
+  --titulo-degradado: linear-gradient(180deg, #ffffff 0%, #d6fbff 54%, #8eeeff 100%);
+  --titulo-brillo: drop-shadow(0 10px 30px rgb(34 211 238 / 0.18));
   --medida-lectura: 65ch;
 
   /* Espacio y ritmo (unidad de 4px) */
@@ -170,6 +177,9 @@
 
   /* El acento deja de ser un cian que emite luz y pasa a ser uno que se lee sobre papel.
      El hover va más oscuro, no más claro: aclararlo lo borraría. */
+  /* Un degradado claro sobre papel no se lee: en claro el título es tinta sólida. */
+  --titulo-degradado: linear-gradient(180deg, var(--texto), var(--texto));
+  --titulo-brillo: none;
   --neon: #0b6f8c;
   --neon-hover: #07566e;
   --neon-tenue: rgb(11 111 140 / 0.1);

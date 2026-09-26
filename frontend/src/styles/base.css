@@ -35,8 +35,31 @@ h2 {
   line-height: var(--interlineado-display);
 }
 
+/* El título de cada vista: grande, en mayúsculas y con el degradado metálico de la
+   referencia, para que no se confunda con el texto. Se mide contra el ancho del
+   contenido (cqw) y no de la ventana, porque la barra lateral le quita ancho. Con 40 px a
+   390, "Panorama del catálogo" y "Cómo funciona NexPlay" caben en dos líneas. */
 h1 {
-  font-size: var(--texto-heading);
+  font-family: var(--fuente-display);
+  font-size: clamp(40px, 6.6cqw, 76px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  background: var(--titulo-degradado);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: var(--titulo-brillo);
+}
+
+/* En colores forzados el texto recortado sobre un fondo desaparecería. */
+@media (forced-colors: active) {
+  h1 {
+    background: none;
+    color: CanvasText;
+    filter: none;
+  }
 }
 
 h2 {
@@ -77,12 +100,12 @@ b {
    "RIESGO GENERAL" del veredicto. */
 .rotulo-seccion {
   margin: 0;
-  color: var(--texto-meta);
-  font-family: var(--fuente-mono);
-  font-size: var(--texto-caption);
-  font-weight: var(--peso-regular);
+  color: var(--texto);
+  font-family: var(--fuente-display);
+  font-size: 18px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 /* Estructura en mono: fechas, géneros, conteos, porcentajes. */

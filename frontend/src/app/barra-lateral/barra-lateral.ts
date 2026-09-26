@@ -350,8 +350,16 @@ import { TemaStore } from '../estado/tema-store';
     .grupos {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-16);
+      /* 12 y no 16: con los rótulos a 16 px, la barra ya no cabía en 674 px de alto. */
+      gap: var(--espacio-12);
       flex: 1;
+    }
+    /* El rótulo de sección general es un título; aquí agrupa ítems del menú y no puede
+       pesar más que ellos. */
+    .grupos .rotulo-seccion {
+      color: var(--texto-meta);
+      font-size: var(--texto-caption);
+      letter-spacing: 0.12em;
     }
     .grupo ul {
       list-style: none;

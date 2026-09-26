@@ -16,11 +16,10 @@
 > - **Tareas largas** (descarga de datos, capturas de las tres resoluciones) en segundo
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
-> Estado: plan guardado el 2026-09-25. Fase en curso: **6A, esperando el visto bueno del
-> mockup** (`docs/plan/mockups/6a-identidad.html`). Decisiones pendientes para arrancar la
-> 6A: la fuente de títulos (recomendada Chakra Petch) y el nombre de la banda
-> (recomendado «Señal de arrepentimiento»). Las capturas del mockup no se versionan; salen
-> con `python docs/plan/mockups/capturar_mockup.py`.
+> Estado: plan guardado el 2026-09-25. Fase en curso: **6A**. Hechos los puntos 2
+> (tipografía) y 6 (nombre del riesgo). **Pendientes de la confirmación del dueño sobre el
+> mockup**: 1 (fondos), 3 (logo), 4 (botones) y 5 (menú). Las capturas del mockup no se
+> versionan; salen con `python docs/plan/mockups/capturar_mockup.py`.
 
 ---
 
@@ -66,7 +65,7 @@ texto y el fondo le pareció el mismo en todas partes.
    Nia, panorama, comparar). Que se vean bien en PC, iPad y teléfono (1440, 1024, 390).
    Sin imágenes con derechos: genera los fondos con CSS/SVG (gradientes, estrellas,
    nebulosas, partículas) o arte propio. Guarda cada uno como asset y documenta su origen.
-- [ ] 2. Tipografía nueva: una fuente display con carácter para títulos (gamer/futurista,
+- [x] 2. Tipografía nueva: una fuente display con carácter para títulos (gamer/futurista,
    legible) y una de lectura clara para el cuerpo. Títulos de vista con el tratamiento
    de omoggle (grande, mayúsculas, degradado). Cuerpo nunca menor a 16 px; nada de
    "letras chiquitas" en descripciones ni notas.
@@ -78,7 +77,7 @@ texto y el fondo le pareció el mismo en todas partes.
 - [ ] 5. Etiquetas de las vistas (ítems del menú y encabezados): revisar nombres y estilo para
    que se entiendan sin contexto; icono + nombre + una línea de subtítulo en el menú
    expandido.
-- [ ] 6. Renombrar "banda" y "Riesgo general". El usuario no sabe qué es "banda". Propón tres
+- [x] 6. Renombrar "banda" y "Riesgo general". El usuario no sabe qué es "banda". Propón tres
    nombres cortos (p. ej. "Riesgo de arrepentirte: bajo/medio/alto", "Señal de
    arrepentimiento") con una explicación de una línea al pasar el cursor. Cambia el
    vocabulario en todo el sitio y en el prompt de Nia de una sola vez.
@@ -222,11 +221,11 @@ detente en su ALTO con el mockup de la identidad visual.
 
 ## Notas de ejecución
 
-- **Punto de partida medido antes de la 6A** (2026-09-25): las fuentes Inter y JetBrains
-  Mono se nombran en `frontend/src/styles/tokens.css` pero no se cargan en ningún lado
-  —no hay `@font-face` ni enlace—, así que cada navegador pinta con su fuente de
-  sistema. `--texto-caption` vale 14 px y lo usan 22 componentes; el carrusel del inicio
-  tiene textos de 10 y 11 px.
+- **Punto de partida medido antes de la 6A** (2026-09-25): `--texto-caption` vale 14 px y
+  lo usan 22 componentes; el carrusel del inicio tiene textos de 10 y 11 px.
+  *Corrección:* una primera versión de esta nota decía que Inter y JetBrains Mono no se
+  cargaban. Era falso: se cargan como paquetes `@fontsource` desde el arreglo `styles` de
+  `frontend/angular.json`, y la búsqueda solo había mirado `src/styles/` e `index.html`.
 - **La referencia**: omoggle.com se pinta en el cliente, así que se leyó su CSS. De ahí
   sale: fondo casi negro con una rejilla cian/morada a ~5 %, brillos por color al 40 %
   (morado, azul, cian, dorado), títulos en degradado blanco → cian claro a peso 900 con
@@ -245,3 +244,41 @@ detente en su ALTO con el mockup de la identidad visual.
   como ya lo hace la burbuja de Nia; en teléfono, el espaciado de 0.14 em parte «Preguntar
   a Nia» en dos líneas y conviene bajarlo; la ⓘ no puede escribirse como carácter (Inter
   no tiene U+24D8), va dibujada, como ya se hace en `compartido/nota-info.ts`.
+- **Decisiones del dueño para la 6A** (2026-09-25): títulos en **Chakra Petch**, instalada
+  por `@fontsource` como Inter y JetBrains Mono, con «Panorama del catálogo» y «Cómo
+  funciona NexPlay» en dos líneas como máximo a 390 px. La banda se llama **«Riesgo de
+  arrepentimiento: bajo / medio / alto»**, con el tooltip «Qué tan seguido un juego deja
+  reseñas negativas en sus primeras dos horas. Es del juego, no de ti.»; en Cómo funciona
+  y en la metodología se mantiene «señal proxy» como término técnico. Todo texto sube a
+  16 px mínimo en esta fase. **Fondos, colores y menú: pendientes de su confirmación.**
+- **6A, puntos 2 y 6 hechos** (2026-09-25):
+  - Chakra Petch 600/700 instalada por `@fontsource` como las otras (en `angular.json`).
+    Todos los `h1` de vista en mayúsculas con el degradado; en claro, tinta sólida.
+    `--texto-caption` pasó de 14 a 16 px y el carrusel dejó sus 10 y 11 px: ninguna de las
+    nueve vistas tiene texto bajo 16 px. «Panorama del catálogo» y «Cómo funciona
+    NexPlay» ocupan dos líneas a 390 px, con el tamaño completo de 40 px.
+  - Quedan para la 6B, porque su texto cambia ahí: el título-frase de Explorar (punto 11) y
+    el del inicio (punto 7), que hoy conservan su tamaño propio, y el nombre del juego en
+    la ficha, que con nombres largos ocupa tres líneas a 390 px.
+  - El nivel se llama «Riesgo de arrepentimiento: bajo / medio / alto» en las nueve vistas
+    y en el prompt de Nia, con la explicación de una línea al pasar el cursor por la
+    píldora. «Señal proxy» sigue en Cómo funciona y en la metodología. En el backend, las
+    herramientas de Nia devuelven `riesgo` en vez de `banda`, para que el modelo no tenga
+    la palabra delante; los identificadores del contrato (`banda_riesgo`) no cambian.
+  - El recorrido de capturas comprueba ahora, en cada corrida, el piso de 16 px y la
+    ausencia de «banda» y «Riesgo general» en las nueve vistas, y los dos títulos a 390.
+  - El texto más grande movió tres cosas, ya corregidas: la barra volvió a caber en 674 px
+    de alto (los rótulos de grupo quedan tenues y a 12 px entre grupos), la columna del
+    valor de las gráficas pasó a 7 rem porque «60% de 10» ya no cabía, y el control de la
+    burbuja mide ahora el centro de la parte visible de cada control, con muestreo cada
+    40 px y no cada 120: antes contaba como tapada la franja de una tarjeta a medio salir
+    de la pantalla y, a la vez, podía no ver un botón entero entre dos muestras.
+  - Dos defectos que salieron al revisar las capturas y ya están cubiertos por el
+    recorrido: en el carrusel del inicio, la píldora «Riesgo de arrepentimiento: bajo» se
+    cortaba contra el borde de la tarjeta (ahora va debajo del nombre; el recorrido busca
+    píldoras recortadas en las nueve vistas), y la burbuja de Nia sí tapaba la píldora
+    «Comparar» de la tarjeta cortada de cada estante al bajar por Explorar. Esto último era
+    el punto 9 del bloque 1, que se había dado por hecho: el muestreo cada 120 px lo
+    escondía. En escritorio los estantes terminan ahora 64 px antes del borde, en la
+    columna de la burbuja; comprobado a 1024, 1280, 1440 y 1920. Si en la 6F la burbuja
+    crece (punto 35), esa reserva tiene que crecer con ella.

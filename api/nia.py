@@ -7,7 +7,8 @@ siempre en qué modo salió, para que nadie confunda una cosa con la otra.
 
 Reglas de vocabulario de NexPlay que van en el prompt y que el modo demostración
 respeta por construcción: se habla de "arrepentimiento temprano" (nunca "abandono"),
-es una señal proxy, se usan bandas y nunca probabilidades ni scores, y no se recomienda
+es una señal proxy, se habla de riesgo de arrepentimiento bajo, medio o alto y nunca de
+probabilidades ni scores, y no se recomienda
 comprar ni no comprar.
 """
 
@@ -94,20 +95,22 @@ Reglas que no puedes romper:
 - Usa siempre "arrepentimiento temprano", nunca "abandono".
 - Es una señal proxy construida con reseñas de Steam donde alguien jugó menos de 120
   minutos y calificó negativo. No sabes si alguien se arrepintió de verdad. Eso se explica
-  **la primera vez que hables de la banda o del arrepentimiento temprano en esta
-  conversación**, o si te lo preguntan; después, di "esa señal" y sigue. Si la pregunta es
-  de otra cosa —el precio, la crítica, los géneros—, respóndela y ya: no metas la banda ni
+  **la primera vez que hables del riesgo de arrepentimiento en esta conversación**, o si
+  te lo preguntan; después, di "esa señal" y sigue. Si la pregunta es
+  de otra cosa —el precio, la crítica, los géneros—, respóndela y ya: no metas el riesgo ni
   el aviso donde nadie los pidió.
 - Si quien pregunta dice que juega poco, o cuántas horas juega, usa esa cifra para decirle
   en cuántas sesiones llegaría a las dos horas de la ventana de reembolso, en vez de
   repetir que la ventana son 120 minutos.
-- Habla de bandas (bajo, medio, alto). Nunca des probabilidades, porcentajes de riesgo
+- Habla del riesgo de arrepentimiento: bajo, medio o alto. Nunca digas "banda": quien usa
+  NexPlay no sabe qué es. Nunca des probabilidades, porcentajes de riesgo
   ni scores numéricos del modelo. Los porcentajes de los motivos sí puedes citarlos, y
   cuando cites uno di sobre cuántas reseñas clasificadas está calculado.
-- La banda la asigna el modelo con datos del juego (precio, gratuidad, descuento, nota y
-  cobertura de crítica). Las reseñas explican los motivos, no la banda. Nunca digas que la
-  banda sale de las reseñas.
-- Para explicar por qué un juego quedó en su banda, usa las líneas de "Qué mueve esta
+- El riesgo de arrepentimiento lo asigna el modelo con datos del juego (precio, gratuidad,
+  descuento, nota y cobertura de crítica). Las reseñas explican los motivos, no el riesgo.
+  Nunca digas que el riesgo sale de las reseñas. Es del juego, igual para cualquiera: no
+  digas que es el riesgo de quien pregunta.
+- Para explicar por qué un juego tiene ese riesgo, usa las líneas de "Qué mueve esta
   estimación" del contexto, con esas mismas palabras y sin inventar otras variables.
 - El precio aparece en dos lugares distintos y no hay que confundirlos: como variable del
   modelo (en "Qué mueve esta estimación") y como motivo en las reseñas (en "Motivos").
@@ -127,7 +130,7 @@ Reglas que no puedes romper:
 - Las opiniones y los comentarios que la gente escribe en NexPlay no son datos del
   catálogo y no los tienes: no hables de ellos.
 - Cuando venga al caso, nombra las fortalezas y las debilidades del juego, siempre salidas
-  de los datos: la nota de la crítica o su ausencia, la banda, el precio frente al
+  de los datos: la nota de la crítica o su ausencia, el riesgo, el precio frente al
   catálogo y los motivos más mencionados. No opines por tu cuenta ni inventes otras.
 - Para decir en qué se destaca o en qué se queda corto frente a otros juegos, usa solo las
   cifras de la línea "Catálogo" del contexto. Nunca inventes datos de otro juego.
@@ -252,8 +255,8 @@ def _factor_de_precio(datos: dict) -> str | None:
 def _explicacion_de_la_banda(datos: dict) -> str:
     """De dónde sale la banda: de las variables del juego, nunca de las reseñas."""
     return (
-        f"Esa banda la pone el modelo con datos del juego: {_texto_factores(datos)}. "
-        "Las reseñas explican los motivos, no la banda."
+        f"Ese riesgo lo pone el modelo con datos del juego: {_texto_factores(datos)}. "
+        "Las reseñas explican los motivos, no el riesgo."
     )
 
 
@@ -370,14 +373,14 @@ def _texto_comparacion(datos: dict, ref: dict) -> str:
     elif ref["metacritic_promedio"]:
         donde = _donde(datos["metacritic"], ref["metacritic_promedio"], "igual al")
         partes.append(f"su nota está {donde} promedio de los que sí tienen")
-    partes.append(f"su banda es {datos['banda']}")
+    partes.append(f"su riesgo de arrepentimiento es {datos['banda']}")
     return "; ".join(partes)
 
 
 def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> str:
     lineas = [
         f"Juego: {datos['nombre']}",
-        f"Banda de riesgo del juego (la misma para cualquier perfil): {datos['banda']}",
+        f"Riesgo de arrepentimiento del juego (el mismo para cualquier perfil): {datos['banda']}",
         f"Géneros: {', '.join(datos['generos']) or 'sin datos'}",
         f"Crítica: {_texto_critica(datos)}",
         f"Precio: {_texto_precio(datos)}",
@@ -400,8 +403,8 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
     else:
         lineas.append("- sin variables destacadas para este juego")
     lineas.append(
-        "Estas variables son las que producen la banda. Los motivos de las reseñas dicen de"
-        " qué se queja la gente, no por qué el modelo puso esa banda."
+        "Estas variables son las que producen el riesgo. Los motivos de las reseñas dicen de"
+        " qué se queja la gente, no por qué el modelo puso ese riesgo."
     )
     ref = _referencias_del_catalogo()
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
@@ -409,7 +412,7 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
         f"Catálogo ({ref['juegos']} juegos, para comparar): precio promedio"
         f" {ref['precio_promedio']:.0f} MXN; Metacritic promedio {ref['metacritic_promedio']}"
         f" entre los {ref['con_nota']} que tienen nota (es el promedio contra el que se lee"
-        f" el factor de la nota); bandas {bandas}"
+        f" el factor de la nota); riesgo de arrepentimiento {bandas}"
     )
     lineas.append(f"Este juego frente al catálogo: {_texto_comparacion(datos, ref)}")
     if mencionados:
@@ -556,7 +559,7 @@ def _contexto_del_catalogo() -> str:
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
     return (
         f"No hay ningún juego abierto: quien pregunta habla del catálogo entero, que son"
-        f" {ref['juegos']} juegos de Steam repartidos en {bandas}. El precio promedio es"
+        f" {ref['juegos']} juegos de Steam, por riesgo de arrepentimiento: {bandas}. El precio promedio es"
         f" {ref['precio_promedio']:.0f} MXN y el Metacritic promedio {ref['metacritic_promedio']}"
         f" entre los {ref['con_nota']} que tienen nota. Para cualquier dato concreto, usa las"
         " herramientas: no sabes de memoria qué juegos hay."
@@ -613,13 +616,13 @@ def _demostracion_de_catalogo(pregunta: str) -> tuple[str, list[int]]:
 
     if not (genero or banda or gratis or precio_max):
         return (
-            "Puedo filtrar el catálogo por género, por banda de riesgo y por precio, contarte de dónde salen"
+            "Puedo filtrar el catálogo por género, por riesgo de arrepentimiento y por precio, contarte de dónde salen"
             " los datos o leer la ficha de un juego concreto. Dime por cuál de esas empiezo.",
             [],
         )
 
     encontrados = herramientas.buscar_juegos(
-        genero=genero, banda=banda, solo_gratis=gratis, precio_max=precio_max
+        genero=genero, riesgo=banda, solo_gratis=gratis, precio_max=precio_max
     )
     if not encontrados["juegos"]:
         return ("En el catálogo no hay ningún juego que cumpla eso.", [])

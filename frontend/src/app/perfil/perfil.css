@@ -14,10 +14,6 @@
   padding: var(--espacio-24) 0 0;
 }
 
-.hero h1 {
-  font-size: clamp(var(--texto-heading-sm), 3.5vw, var(--texto-heading));
-}
-
 .hero .entrada {
   max-width: var(--medida-lectura);
 }

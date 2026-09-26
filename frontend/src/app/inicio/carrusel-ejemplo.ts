@@ -264,17 +264,23 @@ const MS_ROTACION = 7000;
       flex-direction: column;
     }
 
+    /* La píldora va debajo del nombre y no a su lado: con "Riesgo de arrepentimiento:
+       medio" no cabían los dos en la tarjeta, la píldora se cortaba contra el borde y el
+       rótulo de arriba se partía en tres líneas. */
     .vistazo-cabecera {
       display: flex;
-      gap: var(--espacio-12);
+      flex-direction: column;
       align-items: flex-start;
-      justify-content: space-between;
+      gap: var(--espacio-8);
     }
 
+    /* 16 px como todo lo demás: a 10 no se leía, y era lo primero de la tarjeta. */
     .vistazo-sobrelinea {
       margin: 0 0 var(--espacio-4);
       color: var(--neon);
-      font-size: 10px;
+      font-family: var(--fuente-display);
+      font-size: var(--texto-caption);
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -346,13 +352,6 @@ const MS_ROTACION = 7000;
       .vistazo-cuerpo {
         padding: var(--espacio-16);
       }
-      .vistazo-cabecera {
-        display: block;
-      }
-      .vistazo-cabecera app-pildora-banda {
-        display: block;
-        margin-top: var(--espacio-8);
-      }
       .vistazo h2 {
         font-size: 18px;
       }
@@ -361,7 +360,7 @@ const MS_ROTACION = 7000;
         margin: var(--espacio-12) 0;
       }
       .vistazo-lista li {
-        font-size: 11px;
+        font-size: var(--texto-caption);
       }
       .vistazo-lista li:nth-child(3) {
         display: none;

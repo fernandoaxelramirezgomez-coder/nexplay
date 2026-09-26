@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
 
+import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { Estante as EstanteDatos } from '../dominio/estantes';
 import { TarjetaJuego } from './tarjeta-juego';
 
@@ -11,7 +12,7 @@ import { TarjetaJuego } from './tarjeta-juego';
     <section class="estante" [attr.data-testid]="'estante-' + estante().banda" [attr.aria-labelledby]="idTitulo()">
       <header class="cabecera">
         <h2 class="titulo" [id]="idTitulo()">
-          <span class="banda" [attr.data-banda]="estante().banda">Riesgo general · {{ estante().banda }}</span>
+          <span class="banda" [attr.data-banda]="estante().banda">{{ rotulo }}: {{ estante().banda }}</span>
           <span class="conteo mono" data-testid="estante-conteo">({{ estante().juegos.length }})</span>
         </h2>
         @if (estante().juegos.length > 1) {
@@ -37,7 +38,7 @@ import { TarjetaJuego } from './tarjeta-juego';
           }
         </ul>
       } @else {
-        <p class="meta">Ningún juego de esta banda coincide con la búsqueda.</p>
+        <p class="meta">Ningún juego con este riesgo coincide con la búsqueda.</p>
       }
     </section>
   `,
@@ -124,6 +125,15 @@ import { TarjetaJuego } from './tarjeta-juego';
     .fila > li {
       scroll-snap-align: start;
     }
+    /* La fila termina antes de la columna de la burbuja de Nia (64 px más su margen): la
+       tarjeta que queda cortada contra el borde tenía su píldora "Comparar" justo debajo,
+       y al bajar por el catálogo cada estante la pasaba por ahí. En teléfono la fila es
+       de una tarjeta y media y no llega a esa esquina. */
+    @media (min-width: 641px) {
+      .fila {
+        margin-inline-end: 64px;
+      }
+    }
     @media (max-width: 640px) {
       .fila {
         grid-auto-columns: 78vw;
@@ -140,6 +150,8 @@ export class Estante {
   readonly prioritario = input(false);
 
   private readonly fila = viewChild<ElementRef<HTMLElement>>('fila');
+
+  protected readonly rotulo = ROTULO_RIESGO;
 
   protected idTitulo(): string {
     return `estante-${this.estante().banda}-titulo`;

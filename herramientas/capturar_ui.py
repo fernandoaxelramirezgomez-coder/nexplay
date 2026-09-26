@@ -575,7 +575,7 @@ def _angular_perfil(pagina: Page, url: str, destino: Path, api: str) -> list[str
     # Modelo de título: con o sin perfil, la banda es la misma y el rótulo también. El
     # rótulo vive en la píldora del encabezado; el veredicto es la línea de riesgo.
     rotulo = " ".join(pagina.get_by_test_id("pildora-banda").first.inner_text().lower().split())
-    if not rotulo.startswith("riesgo general"):
+    if not rotulo.startswith("riesgo de arrepentimiento"):
         problemas.append(f"con perfil declarado, la banda cambió de rótulo: '{rotulo}'")
     veredicto = " ".join(pagina.get_by_test_id("ficha-veredicto").inner_text().lower().split())
     if "arrepentimiento temprano" not in veredicto:
@@ -810,7 +810,9 @@ def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
     pagina.get_by_test_id("tarjeta-juego").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
     altura = pagina.evaluate("() => document.documentElement.scrollHeight")
     tapados = []
-    for y in range(0, max(1, altura - _VIEWPORT["height"]), 120):
+    # De 40 en 40: con saltos de 120 px, un botón de 32 px podía pasar entero entre dos
+    # muestras y el control aprobaba por suerte.
+    for y in range(0, max(1, altura - _VIEWPORT["height"]), 40):
         pagina.evaluate("y => window.scrollTo(0, y)", y)
         pagina.wait_for_timeout(80)
         tapados += pagina.evaluate(_JS_BAJO_LA_BURBUJA)
@@ -1612,16 +1614,34 @@ nombres => {
 # Botones y enlaces que quedan debajo de la burbuja de Nia. Un enlace grande puede
 # solaparse por una esquina sin estorbar; lo que importa son los controles chicos, así que
 # se miran solo los que caben casi enteros dentro de ella.
+# Un control está tapado si el centro de lo que se VE de él cae bajo la burbuja: ahí es
+# donde cae un toque. Lo que se ve es su caja recortada por los contenedores con scroll
+# que lo contienen (un estante horizontal corta la tarjeta que se sale de la pantalla).
+# Antes se medía la caja entera, y la píldora de una tarjeta a medio salir, que nadie puede
+# pulsar ahí, contaba como tapada por los 6 px de franja que asomaban.
 _JS_BAJO_LA_BURBUJA = """
 () => {
     const burbuja = document.querySelector('.burbuja')?.getBoundingClientRect();
     if (!burbuja) return [];
+    const visible = (elemento) => {
+        let r = elemento.getBoundingClientRect();
+        let [izq, arr, der, aba] = [r.left, r.top, r.right, r.bottom];
+        for (let a = elemento.parentElement; a && a !== document.body; a = a.parentElement) {
+            const c = getComputedStyle(a);
+            if (c.overflowX !== 'visible' || c.overflowY !== 'visible') {
+                const ra = a.getBoundingClientRect();
+                izq = Math.max(izq, ra.left); arr = Math.max(arr, ra.top);
+                der = Math.min(der, ra.right); aba = Math.min(aba, ra.bottom);
+            }
+        }
+        return der > izq && aba > arr ? { x: (izq + der) / 2, y: (arr + aba) / 2 } : null;
+    };
     return [...document.querySelectorAll('button, a')]
         .filter(elemento => !elemento.closest('.flotante'))
-        .map(elemento => ({ elemento, caja: elemento.getBoundingClientRect() }))
-        .filter(({ caja }) => caja.width && caja.width < 260 && caja.height < 120 &&
-                caja.right > burbuja.left && caja.left < burbuja.right &&
-                caja.bottom > burbuja.top && caja.top < burbuja.bottom)
+        .map(elemento => ({ elemento, caja: elemento.getBoundingClientRect(), centro: visible(elemento) }))
+        .filter(({ caja, centro }) => centro && caja.width < 260 && caja.height < 120 &&
+                centro.x > burbuja.left && centro.x < burbuja.right &&
+                centro.y > burbuja.top && centro.y < burbuja.bottom)
         .map(({ elemento }) => elemento.getAttribute('aria-label') || elemento.textContent.trim().slice(0, 40));
 }
 """
@@ -1709,6 +1729,103 @@ def _contenido_estrecho(pagina: Page, ancho: int) -> str | None:
         return "no tiene .contenido que medir"
     minimo = round(ancho * 0.85)
     return None if medido >= minimo else f"aprieta el contenido en {medido} px de {ancho} (mínimo {minimo})"
+
+
+# El texto visible de una página, con el tamaño al que se pinta. Se salta lo que no se
+# ve (sin caja, oculto) y lo que es solo para lector de pantalla, que mide 1 px a propósito.
+_JS_TEXTOS_VISIBLES = """() => {
+  const fuera = [];
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) {
+    const nodo = w.currentNode, texto = nodo.textContent.trim(), el = nodo.parentElement;
+    if (!texto || !el || el.closest('.solo-lector, [aria-hidden="true"], script, style')) continue;
+    const c = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (c.display === 'none' || c.visibility === 'hidden' || r.width === 0 || r.height === 0) continue;
+    fuera.push({ texto: texto.slice(0, 60), px: parseFloat(c.fontSize) });
+  }
+  for (const e of document.querySelectorAll('[aria-label],[title],[placeholder]'))
+    for (const a of ['aria-label', 'title', 'placeholder']) {
+      const v = e.getAttribute(a);
+      if (v) fuera.push({ texto: v.slice(0, 60), px: null });
+    }
+  return fuera;
+}"""
+
+_JS_PILDORAS_CORTADAS = """() => [...document.querySelectorAll('[data-testid="pildora-banda"]')]
+  .filter((p) => p.getBoundingClientRect().width > 0)
+  .filter((p) => {
+    const r = p.getBoundingClientRect();
+    if (p.scrollWidth > p.clientWidth + 1) return true;
+    for (let a = p.parentElement; a && a !== document.body; a = a.parentElement) {
+      const c = getComputedStyle(a);
+      if (c.overflowX === 'visible') continue;
+      const ra = a.getBoundingClientRect();
+      // Un estante con scroll horizontal corta tarjetas a propósito: ahí no cuenta.
+      if (a.scrollWidth > a.clientWidth + 1 && c.overflowX !== 'hidden') return false;
+      return r.right > ra.right + 1 || r.left < ra.left - 1;
+    }
+    return false;
+  })
+  .map((p) => p.textContent.trim())"""
+
+_VOCABULARIO_RETIRADO = re.compile(r"\bbanda\b|riesgo general", re.IGNORECASE)
+_PISO_DE_LETRA = 16
+
+
+def _angular_letra_y_vocabulario(pagina: Page, url: str) -> list[str]:
+    """Fase 6A: nada de lectura bajo 16 px, nada de "banda" ni "Riesgo general" a la vista
+    (el nivel se llama riesgo de arrepentimiento), y los títulos largos de vista en dos
+    líneas como máximo a 390 px."""
+    problemas = []
+    base = url.rstrip("/")
+    rutas = ["/", "/explorar", f"/juego/{_APPID_FICHA}", "/comparar", "/nia", "/perfil", "/historial",
+             "/panorama", "/como-funciona"]
+    minimas = []
+    for ruta in rutas:
+        _abrir(pagina, f"{base}{ruta}")
+        pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.wait_for_timeout(1500)
+        textos = pagina.evaluate(_JS_TEXTOS_VISIBLES)
+        con_tamano = [t for t in textos if t["px"] is not None]
+        if con_tamano:
+            menor = min(con_tamano, key=lambda t: t["px"])
+            minimas.append((ruta, menor["px"]))
+            if menor["px"] < _PISO_DE_LETRA:
+                problemas.append(f"{ruta}: hay texto a {menor['px']} px («{menor['texto']}»); el piso es {_PISO_DE_LETRA}")
+        # El nombre nuevo es más largo y la píldora no parte línea: si su contenedor la
+        # recorta, el desborde de la página no lo ve. Se compara con el ancestro que recorta.
+        cortadas = pagina.evaluate(_JS_PILDORAS_CORTADAS)
+        for cortada in cortadas[:2]:
+            problemas.append(f"{ruta}: la píldora «{cortada}» queda cortada por su contenedor")
+        retirados = sorted({t["texto"] for t in textos if _VOCABULARIO_RETIRADO.search(t["texto"])})
+        for texto in retirados[:3]:
+            problemas.append(f"{ruta}: todavía dice «{texto}»; el nivel se llama riesgo de arrepentimiento")
+    if minimas and not problemas:
+        peor = min(minimas, key=lambda m: m[1])
+        print(f"letra:    las 9 vistas sin texto bajo {_PISO_DE_LETRA} px (la más chica, {peor[1]:g} px en {peor[0]}) "
+              "y sin «banda» ni «Riesgo general»")
+
+    navegador = pagina.context.browser
+    if navegador is not None:
+        contexto = navegador.new_context(viewport={"width": 390, "height": 844}, reduced_motion="reduce")
+        _sin_consultas_a_nia(contexto)
+        try:
+            telefono = contexto.new_page()
+            for ruta in ("/panorama", "/como-funciona"):
+                _abrir(telefono, f"{base}{ruta}")
+                telefono.locator("h1").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+                telefono.wait_for_timeout(800)
+                lineas = telefono.evaluate(
+                    "() => { const h = document.querySelector('h1'); const c = getComputedStyle(h);"
+                    " return Math.round(h.getBoundingClientRect().height / parseFloat(c.lineHeight)); }"
+                )
+                if lineas > 2:
+                    problemas.append(f"a 390 px el título de {ruta} ocupa {lineas} líneas; el máximo son 2")
+            if not any("a 390 px el título" in p for p in problemas):
+                print("títulos: «Panorama del catálogo» y «Cómo funciona NexPlay» caben en dos líneas a 390 px")
+        finally:
+            contexto.close()
+    return problemas
 
 
 def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
@@ -1907,6 +2024,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)
         + _angular_barra_y_tema(pagina, url, destino)
+        + _angular_letra_y_vocabulario(pagina, url)
     )
 
 
