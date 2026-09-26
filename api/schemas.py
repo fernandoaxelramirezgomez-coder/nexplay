@@ -371,6 +371,9 @@ class JuegoPanorama(BaseModel):
     casos_senal: int = Field(..., description="De esas, las que cumplen playtime < 120 min y voto negativo")
     prevalencia: float = Field(..., ge=0, le=1)
     resenas_en_steam: Optional[int] = Field(None, description="Las que Steam reporta en total para el juego")
+    positivas_en_steam: Optional[int] = Field(
+        None, description="De esas, las positivas: el sentimiento de los jugadores. Descriptivo, no entra al modelo"
+    )
     consenso: Optional[str] = Field(None, description="Resumen de Steam, p. ej. 'Very Positive'")
     motivo_principal: Optional[str] = Field(None, description="None si el juego no llega al mínimo de casos")
     horas_al_recomendar: Optional[float] = Field(

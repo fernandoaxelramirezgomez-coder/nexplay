@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 import { JuegoCatalogo } from '../api/contrato';
 import { PildoraBanda } from '../compartido/pildora-banda';
 import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
-import { textoMetacritic, textoPrecio } from '../dominio/formato';
+import { lineaCritica, sentimientoSteam } from '../dominio/critica';
+import { textoPrecio } from '../dominio/formato';
+import { PanoramaStore } from '../estado/panorama-store';
 import { MotivosStore } from '../estado/motivos-store';
 
 /** La comparación de un vistazo: una fila por dato y una columna por juego, para leer en
@@ -49,7 +51,7 @@ import { MotivosStore } from '../estado/motivos-store';
           <tr data-testid="fila-critica">
             <th scope="row">Crítica</th>
             @for (juego of juegos(); track juego.appid) {
-              <td class="mono">{{ critica(juego.metacritic) }}</td>
+              <td class="critica" [class.sin-critica]="juego.metacritic === null">{{ critica(juego) }}</td>
             }
           </tr>
           <tr data-testid="fila-lanzamiento">
@@ -63,8 +65,19 @@ import { MotivosStore } from '../estado/motivos-store';
     </div>
   `,
   styles: `
+    /* En panel: sobre la nebulosa, el texto va en superficie. */
     .marco {
       overflow-x: auto;
+      border: 1px solid var(--borde);
+      border-radius: var(--radio-tarjeta);
+      background: var(--superficie);
+    }
+    .critica {
+      font-family: var(--fuente-mono);
+      line-height: 1.4;
+    }
+    .sin-critica {
+      color: var(--texto);
     }
     table {
       width: 100%;
@@ -105,9 +118,14 @@ export class TablaComparar {
   readonly juegos = input.required<JuegoCatalogo[]>();
 
   private readonly motivos = inject(MotivosStore);
+  private readonly panorama = inject(PanoramaStore);
   protected readonly rotulo = ROTULO_RIESGO;
   protected readonly precio = textoPrecio;
-  protected readonly critica = textoMetacritic;
+
+  /** «Metacritic 82 · Steam 94 % positivas (87,051 reseñas)», o sin Metacritic, lo dice. */
+  protected critica(juego: JuegoCatalogo): string {
+    return lineaCritica(juego, sentimientoSteam(this.panorama.porAppid().get(juego.appid)));
+  }
 
   constructor() {
     // El motivo principal se pide una vez por juego y queda en caché del store.

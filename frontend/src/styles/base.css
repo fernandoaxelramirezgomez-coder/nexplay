@@ -113,6 +113,7 @@ b {
    en su punto más claro bajaba a 3.9:1. Sobre la superficie de la etiqueta pasa siempre. */
 .sobrelinea {
   display: inline-block;
+  align-self: flex-start;
   margin: 0 0 var(--espacio-12);
   padding: 4px var(--espacio-12);
   border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie));

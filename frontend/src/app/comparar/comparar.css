@@ -7,12 +7,80 @@
 .encabezado {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-8);
+  gap: var(--espacio-12);
+}
+
+.titulo-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espacio-12) var(--espacio-24);
+}
+
+/* El conteo y la nota van en superficie: sobre la nebulosa, el texto va en panel. */
+.conteo {
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-pildora);
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.nota-comparar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 62ch;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+  border-radius: var(--radio-tarjeta);
+  background:
+    linear-gradient(90deg, rgb(var(--accion-canal) / 0.14), transparent 70%),
+    var(--superficie);
+}
+
+.nota-comparar .insignia {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--accion-tinta);
+  background: rgb(var(--accion-canal) / 0.16);
+}
+
+.nota-comparar svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.nota-comparar p {
+  margin: 0;
+}
+
+.nota-comparar strong {
+  display: block;
+  font-family: var(--fuente-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nota-comparar span {
+  color: var(--texto-meta);
+  line-height: 1.4;
 }
 
 /* Las filas se declaran aquí y cada columna las hereda con subgrid, así la segunda
    opinión, los motivos y los factores empiezan a la misma altura: nombre, opinión,
-   motivos, factores y afinidad. El resto —banda, precio, crítica y fecha— ya está en la
+   motivos, factores, crítica y público, y afinidad. El resto —banda, precio, crítica y fecha— ya está en la
    tabla de arriba, que es donde se compara de un vistazo. */
 .columnas {
   display: grid;
@@ -20,7 +88,7 @@
   /* 240 y no 280: con cuatro juegos, 280 sumaba 1168 px y desbordaba los 1152 del
      contenido. Con 240 caben los cuatro sin sacar barra de desplazamiento. */
   grid-auto-columns: minmax(240px, 1fr);
-  grid-template-rows: repeat(5, auto);
+  grid-template-rows: repeat(6, auto);
   gap: var(--espacio-16);
   align-items: stretch;
 }

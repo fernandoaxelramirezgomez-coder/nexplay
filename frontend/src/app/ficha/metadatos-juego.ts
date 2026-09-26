@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
 import { JuegoCatalogo } from '../api/contrato';
+import { CriticaPublico } from '../compartido/critica-publico';
 import { NotaInfo } from '../compartido/nota-info';
-import { textoMetacritic, textoPrecio } from '../dominio/formato';
+import { lineaCritica, sentimientoSteam } from '../dominio/critica';
+import { textoPrecio } from '../dominio/formato';
 import { PanoramaStore } from '../estado/panorama-store';
 
 @Component({
   selector: 'app-metadatos-juego',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NotaInfo],
+  imports: [NotaInfo, CriticaPublico],
   template: `
     <section class="bloque" data-testid="metadatos">
       <header class="bloque-cabecera">
@@ -19,7 +21,7 @@ import { PanoramaStore } from '../estado/panorama-store';
       </header>
       <dl class="datos">
         <dt class="meta">Crítica</dt>
-        <dd class="mono">{{ metacritic() }}</dd>
+        <dd class="critica" data-testid="ficha-critica">{{ metacritic() }}</dd>
         <dt class="meta">Géneros</dt>
         <dd class="generos">
           @for (genero of juego().generos; track genero) {
@@ -43,6 +45,11 @@ import { PanoramaStore } from '../estado/panorama-store';
           <dd class="mono" data-testid="horas-tipicas">{{ horas }}</dd>
         }
       </dl>
+      <!-- Sin Metacritic, la ficha técnica suma qué dicen los jugadores en Steam. Lo de
+           NexPlay no va aquí: la ficha ya tiene «Tu opinión» y «Comentarios». -->
+      @if (juego().metacritic === null) {
+        <app-critica-publico [juego]="juego()" [incrustado]="true" />
+      }
     </section>
   `,
   styles: `
@@ -54,6 +61,9 @@ import { PanoramaStore } from '../estado/panorama-store';
     }
     dd {
       margin: 0;
+    }
+    .critica {
+      line-height: 1.4;
     }
     .generos {
       display: flex;
@@ -79,7 +89,13 @@ export class MetadatosJuego {
 
   private readonly panorama = inject(PanoramaStore);
 
-  protected readonly metacritic = computed(() => textoMetacritic(this.juego().metacritic));
+  /** «Metacritic 82 · Steam 94 % positivas (87,051 reseñas)». Sin Metacritic basta decirlo:
+   * lo de Steam va debajo, en «Crítica y público», con su advertencia. */
+  protected readonly metacritic = computed(() =>
+    this.juego().metacritic === null
+      ? lineaCritica(this.juego(), null)
+      : lineaCritica(this.juego(), sentimientoSteam(this.panorama.porAppid().get(this.juego().appid))),
+  );
 
   protected readonly horasTipicas = computed(() => {
     const horas = this.panorama.porAppid().get(this.juego().appid)?.horas_al_recomendar;

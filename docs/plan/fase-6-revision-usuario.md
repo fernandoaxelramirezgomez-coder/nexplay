@@ -17,8 +17,9 @@
 >   plano, siguiendo con lo demás, y se reporta cuando terminen.
 >
 > Estado: plan guardado el 2026-09-25. **6A** (puntos 1 a 6), **6B** (7 a 16) y **6C** (17 a
-> 23) hechas el 2026-09-26; lo siguiente es el mockup de la **6D** (Comparar). Pulido
-> anotado: P1, P2, P4 y P5 pendientes (P3 se hizo en la 6C), al final de estas notas. Las capturas no se versionan: las de la app salen
+> 23) hechas el 2026-09-26 y subidas (`abed851`). **6D** hecha (24 y 25); el 26 está
+> evaluado y decidido (IGDB), con la corrida de cobertura esperando `TWITCH_CLIENT_ID` y
+> `TWITCH_CLIENT_SECRET` en `.env`. Pulido: P1, P2 y P4 a P8 pendientes. Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
@@ -139,8 +140,8 @@ cuenta de que estaba activo, no entendió "tolerancia a la fricción" y le parec
 ═══════════════════════════════════════════════════════════════
 FASE 6D — Comparar
 ═══════════════════════════════════════════════════════════════
-- [ ] 24. Nota al inicio: "Compara hasta 4 juegos lado a lado", visible antes de elegir.
-- [ ] 25. Juegos sin Metacritic: completar con el sentimiento de las reseñas de Steam que ya
+- [x] 24. Nota al inicio: "Compara hasta 4 juegos lado a lado", visible antes de elegir.
+- [x] 25. Juegos sin Metacritic: completar con el sentimiento de las reseñas de Steam que ya
     tenemos (porcentaje positivo y resumen de Steam), con la nota "Sin crítica
     especializada; esto viene de N reseñas de jugadores". Si hay comentarios del público
     en NexPlay, mostrarlos ahí con la misma advertencia.
@@ -410,6 +411,11 @@ detente en su ALTO con el mockup de la identidad visual.
     el riesgo se calcula con reseñas de Steam.»
   - [ ] P4. El recorrido no debe pisar el perfil guardado del navegador: que use uno propio.
   - [ ] P5. El indicador «Tráiler · sin sonido» solo se muestra con el cursor sobre el video.
+  - [ ] P6. Razón de género en las sugerencias, más corta: «Rol · 39 de 123 juegos».
+  - [ ] P7. La barra de guardar dice «Cambios sin guardar» cuando lo del formulario difiere
+    de lo guardado.
+  - [ ] P8. El precio en las razones de las sugerencias, con el mismo formato que el resto
+    («$283.00 MXN»).
 - **Mockup 6C** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
   oscuro: 0 contrastes que no pasan (154 textos y filos por tema), sin desborde, letra
   mínima 16 px. Lo que salió de revisar los datos antes de dibujar:
@@ -461,3 +467,46 @@ detente en su ALTO con el mockup de la identidad visual.
     todas las marcadas (solo si hay alguna consola). A la API sigue viajando una plataforma:
     PC si está marcada y, si no, la primera.
   - El perfil guardado pasa a `nexplay.perfil.v4`; los v3 se migran al leerlos.
+- **Mockup 6D** (2026-09-26): medido por la propia página en 1440, 1024 y 390, claro y
+  oscuro: 0 contrastes que no pasan, sin desborde, letra mínima 16 px. Datos: 33 juegos del
+  catálogo no tienen Metacritic; el total de reseñas de Steam y las positivas ya están en
+  `resumen_resenas` (p. ej. Black Myth: Wukong, 94 % de 87,051; WILD HEARTS™, 54 % de
+  5,182, «Variadas»). Punto 26, evaluado sin integrar: OpenCritic (crítica propia; por
+  RapidAPI, plan gratis de 25 búsquedas y 200 consultas al día; Ultra 19 USD y Mega 50 USD
+  al mes; las condiciones de atribución y de guardar datos se leen con la cuenta), IGDB
+  (`aggregated_rating`, gratis no comercial, 4 consultas por segundo) y RAWG (su crítica es
+  la misma nota de Metacritic y sus términos prohíben guardar los datos). Recomendado:
+  OpenCritic, con una corrida previa que solo mida cobertura sobre los 33.
+- **Decisiones del dueño sobre el mockup 6D** (2026-09-26): el porcentaje positivo de Steam
+  nunca usa los colores del riesgo; la fuente adicional es IGDB (`aggregated_rating`), con
+  una corrida de cobertura previa sobre los 33 juegos sin Metacritic: con la mitad o más se
+  integra rotulada como fuente secundaria y fuera del modelo, si no se queda solo Steam; el
+  bloque «Crítica y público» también en la ficha técnica de los juegos sin Metacritic; con
+  Metacritic y Steam a la vez se muestran los dos («Metacritic 82 · Steam 94 % positivas
+  (87,051 reseñas)»).
+- **6D hecha** (2026-09-26):
+  - **API**: `/panorama` suma `positivas_en_steam` por juego (de `resumen_resenas`, leída
+    en solo lectura; 122 de 123 la tienen). Descriptivo, no entra al modelo.
+  - **Comparar (24)**: la nota «Compara hasta 4 juegos lado a lado», con una línea de qué
+    se compara, va arriba siempre, con y sin juegos; el conteo, a su lado en una pastilla.
+    La tabla va en un panel.
+  - **Sin Metacritic (25)**: la fila de crítica de la tabla dice «Sin crítica especializada ·
+    Steam 94 % positivas (87,051 reseñas)» o, con Metacritic, «Metacritic 96 · Steam 84 %
+    positivas (647,245 reseñas)». Cada columna suma el bloque «Crítica y público»
+    (`compartido/critica-publico.ts`): el porcentaje y el resumen de Steam en español, la
+    advertencia «Sin crítica especializada; esto viene de N reseñas de jugadores» y, si hay,
+    lo de NexPlay (promedio de estrellas, valoraciones, el último comentario) con la
+    advertencia que cuenta valoraciones y comentarios por separado. El porcentaje y su barra
+    van en el azul de la opinión; el recorrido comprueba que no coinciden con ningún color
+    del riesgo.
+  - **Ficha técnica**: la fila de crítica usa la misma línea. En los juegos sin Metacritic
+    dice «Sin crítica especializada» y el bloque va dentro de la ficha técnica, sin caja
+    propia: como bloque aparte en la columna, le quitaba tanto alto a Nia que su chat
+    quedaba casi sin espacio. Lo de NexPlay no se repite ahí: la ficha ya tiene «Tu
+    opinión» y «Comentarios».
+  - **IGDB (26)**: `herramientas/cobertura_igdb.py` lee `TWITCH_CLIENT_ID` y
+    `TWITCH_CLIENT_SECRET` (con pydantic_settings, sin imprimirlas), busca por appid de Steam
+    los juegos sin Metacritic y cuenta cuántos tienen `aggregated_rating`; el umbral es 17 de
+    33. Con `--guardar` y si pasa, escribe `datos/critica_igdb.json` (archivo nuevo; la base
+    no se toca). Primera corrida: faltan las dos variables, así que no se consultó IGDB. La
+    integración en la API y en el bloque se hace solo si pasa.

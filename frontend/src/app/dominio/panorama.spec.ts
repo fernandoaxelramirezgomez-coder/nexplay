@@ -26,6 +26,7 @@ function fila(appid: number, cambios: Partial<JuegoPanorama> = {}): JuegoPanoram
     casos_senal: 1,
     prevalencia: 0.01,
     resenas_en_steam: 1000,
+    positivas_en_steam: 900,
     consenso: 'Very Positive',
     motivo_principal: 'rendimiento',
     horas_al_recomendar: 20,

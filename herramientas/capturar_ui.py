@@ -25,6 +25,7 @@ Uso:
 
 import argparse
 import json
+import math
 import re
 import sys
 import urllib.request
@@ -898,6 +899,92 @@ def _angular_comparar(pagina: Page, url: str, destino: Path) -> list[str]:
         print("vacío:    al quitar el último juego, /comparar explica cómo elegir otros")
     except TiempoAgotado:
         problemas.append("al quitar todos los juegos, /comparar no muestra el estado vacío")
+    return problemas
+
+
+def _linea_steam(fila: dict) -> str:
+    """Replica dominio/critica.ts: «Steam 94 % positivas (87,051 reseñas)». Redondea como
+    Math.round de JavaScript (Python redondea al par)."""
+    porcentaje = math.floor(100 * fila["positivas_en_steam"] / fila["resenas_en_steam"] + 0.5)
+    return f"Steam {porcentaje} % positivas ({fila['resenas_en_steam']:,} reseñas)"
+
+
+def _angular_6d(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Fase 6D: la nota de Comparar siempre a la vista, la crítica con Metacritic y Steam
+    (o sin Metacritic, lo dice), el bloque «Crítica y público» con su advertencia y sin
+    colores de riesgo, y el mismo bloque en la ficha técnica de los juegos sin Metacritic."""
+    problemas = []
+    base = url.rstrip("/")
+    catalogo = {j["appid"]: j for j in _catalogo_api(api)}
+    with urllib.request.urlopen(f"{api}/panorama", timeout=10) as respuesta:
+        panorama = {f["appid"]: f for f in json.load(respuesta)["por_juego"]}
+    sin, con = 2358720, 271590  # Black Myth: Wukong (sin Metacritic) y GTA V (con)
+    if catalogo[sin]["metacritic"] is not None or catalogo[con]["metacritic"] is None:
+        return ["los juegos de prueba de la 6D cambiaron de Metacritic en la API"]
+
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/comparar")
+        otra.get_by_test_id("comparar-nota").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        vacia = " ".join(otra.get_by_test_id("comparar-nota").inner_text().split())
+        _abrir(otra, f"{base}/comparar?appids={sin},{con}")
+        otra.get_by_test_id("tabla-comparar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.get_by_test_id("critica-publico").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(800)
+        llena = otra.get_by_test_id("comparar-nota").count()
+        # inner_text devuelve el texto ya en mayúsculas (text-transform): se compara sin ellas.
+        if "compara hasta 4 juegos lado a lado" not in vacia.lower() or not llena:
+            problemas.append("la nota «Compara hasta 4 juegos lado a lado» no se ve antes y después de elegir")
+        celdas = [" ".join(c.split()) for c in otra.locator("[data-testid=fila-critica] td").all_inner_texts()]
+        esperadas = [
+            f"Sin crítica especializada · {_linea_steam(panorama[sin])}",
+            f"Metacritic {catalogo[con]['metacritic']} · {_linea_steam(panorama[con])}",
+        ]
+        if celdas != esperadas:
+            problemas.append(f"la fila de crítica no dice lo acordado ({celdas} en vez de {esperadas})")
+        advertencia = " ".join(otra.locator(f"[data-testid=columna-comparar][data-appid='{sin}'] [data-testid=critica-advertencia]").inner_text().split())
+        esperada = f"Sin crítica especializada; esto viene de {panorama[sin]['resenas_en_steam']:,} reseñas de jugadores."
+        if advertencia != esperada:
+            problemas.append(f"el bloque «Crítica y público» no trae la advertencia ('{advertencia}')")
+        # El porcentaje de Steam nunca va en los colores del riesgo.
+        colores = otra.evaluate("""() => {
+            const probar = (valor) => { const d = document.createElement('div'); d.style.color = valor; document.body.appendChild(d);
+                const c = getComputedStyle(d).color; d.remove(); return c; };
+            const riesgo = ['bajo', 'medio', 'alto'].flatMap(n => [probar(`var(--banda-${n})`), probar(`var(--banda-${n}-texto)`)]);
+            const usados = [...document.querySelectorAll('[data-testid=critica-publico] .barra span')].map(b => getComputedStyle(b).backgroundColor)
+                .concat([...document.querySelectorAll('[data-testid=critica-porcentaje]')].map(p => getComputedStyle(p).color));
+            return usados.filter(c => riesgo.includes(c));
+        }""")
+        if colores:
+            problemas.append(f"el porcentaje de Steam usa colores del riesgo ({colores})")
+        otra.get_by_test_id("comparar-columnas").screenshot(path=destino / "comparar-critica.png")
+        if not any("crítica" in p or "Steam" in p or "nota «Compara" in p for p in problemas):
+            print(f"comparar: la nota se ve antes y después de elegir; crítica «{celdas[0]}» y «{celdas[1]}»; "
+                  f"el bloque trae la advertencia y ningún color de riesgo ({(destino / 'comparar-critica.png').relative_to(_RAIZ)})")
+
+        # Ficha técnica: sin Metacritic, el bloque; con Metacritic, la línea doble.
+        _abrir(otra, f"{base}/juego/{sin}")
+        otra.get_by_test_id("metadatos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.get_by_test_id("metadatos").get_by_test_id("critica-publico").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        fila_sin = " ".join(otra.get_by_test_id("ficha-critica").inner_text().split())
+        otra.get_by_test_id("metadatos").screenshot(path=destino / "ficha-tecnica-sin-metacritic.png")
+        _abrir(otra, f"{base}/juego/{con}")
+        otra.get_by_test_id("metadatos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(800)
+        fila_con = " ".join(otra.get_by_test_id("ficha-critica").inner_text().split())
+        bloque_con = otra.get_by_test_id("metadatos").get_by_test_id("critica-publico").count()
+        esperada_con = f"Metacritic {catalogo[con]['metacritic']} · {_linea_steam(panorama[con])}"
+        if fila_sin != "Sin crítica especializada" or fila_con != esperada_con or bloque_con:
+            problemas.append(f"la ficha técnica no quedó como se acordó ('{fila_sin}', '{fila_con}', bloque con Metacritic: {bloque_con})")
+        else:
+            print(f"ficha:    sin Metacritic, la ficha técnica suma «Crítica y público»; con Metacritic dice «{fila_con}» "
+                  f"({(destino / 'ficha-tecnica-sin-metacritic.png').relative_to(_RAIZ)})")
+    except TiempoAgotado as error:
+        problemas.append(f"la 6D no terminó de cargar: {str(error).splitlines()[0]}")
+    finally:
+        contexto.close()
     return problemas
 
 
@@ -2736,6 +2823,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_perfil(pagina, url, destino, api)
         + _angular_6c(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
+        + _angular_6d(pagina, url, destino, api)
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)
         + _angular_barra_y_tema(pagina, url, destino)

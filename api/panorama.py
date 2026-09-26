@@ -103,6 +103,7 @@ def _calcular() -> PanoramaCatalogo:
             tramos.append(TramoPlaytime(tramo=etiqueta, cuantas=cuantas, fraccion=_proporcion(cuantas, total)))
 
         en_steam = dict(con.execute("SELECT appid, total_resenas FROM resumen_resenas"))
+        positivas_steam = dict(con.execute("SELECT appid, total_positivas FROM resumen_resenas"))
         consenso = dict(con.execute("SELECT appid, descripcion_score FROM resumen_resenas"))
         por_appid = con.execute(
             """
@@ -148,6 +149,7 @@ def _calcular() -> PanoramaCatalogo:
                 casos_senal=casos_juego or 0,
                 prevalencia=_proporcion(casos_juego, resenas),
                 resenas_en_steam=en_steam.get(appid),
+                positivas_en_steam=positivas_steam.get(appid),
                 consenso=consenso.get(appid),
                 motivo_principal=principal,
                 horas_al_recomendar=horas_al_recomendar.get(appid),

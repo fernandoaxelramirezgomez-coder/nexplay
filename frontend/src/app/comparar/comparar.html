@@ -1,9 +1,22 @@
 <div class="comparar" data-testid="comparar">
   <header class="encabezado">
-    <h1>Comparar</h1>
-    <p class="meta mono" data-testid="comparar-conteo">
-      {{ comparar.cantidad() }} de {{ maximo }} juegos en comparación
-    </p>
+    <p class="sobrelinea mono">Comparar</p>
+    <div class="titulo-fila">
+      <h1>Comparar</h1>
+      <p class="conteo mono" data-testid="comparar-conteo">
+        {{ comparar.cantidad() }} de {{ maximo }} juegos en comparación
+      </p>
+    </div>
+    <!-- Siempre, antes y después de elegir: qué hace esta vista. -->
+    <div class="nota-comparar" data-testid="comparar-nota">
+      <span class="insignia" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 3v18" /></svg>
+      </span>
+      <p>
+        <strong>Compara hasta 4 juegos lado a lado</strong>
+        <span>Su riesgo de arrepentimiento, los motivos de las reseñas, la crítica y el precio, en la misma fila.</span>
+      </p>
+    </div>
   </header>
 
   @if (catalogo.cargando()) {
@@ -19,7 +32,7 @@
         cualquier tarjeta del catálogo.
       </p>
       <app-capsulas-comparar />
-      <a class="boton-fantasma" routerLink="/explorar">Ir al catálogo</a>
+      <a class="compacto" data-tono="explorar" routerLink="/explorar">Ir al catálogo →</a>
     </section>
   } @else {
     <app-capsulas-comparar />

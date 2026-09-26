@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { JuegoCatalogo } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
+import { CriticaPublico } from '../compartido/critica-publico';
 import { Skeleton } from '../compartido/skeleton';
 import { generosEnComun } from '../dominio/afinidad';
 import { factoresVisibles } from '../dominio/factores';
@@ -24,7 +25,7 @@ const MOTIVOS_VISIBLES = 3;
 @Component({
   selector: 'app-columna-comparar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Skeleton, FactoresModelo],
+  imports: [RouterLink, Skeleton, FactoresModelo, CriticaPublico],
   template: `
     <article class="columna" data-testid="columna-comparar" [attr.data-appid]="juego().appid">
       <h2 class="nombre">
@@ -83,6 +84,13 @@ const MOTIVOS_VISIBLES = 3;
           <p class="meta">Sin factores que mostrar.</p>
         }
       </section>
+
+      <app-critica-publico
+        [juego]="juego()"
+        [promedio]="promedioMetacritic()"
+        [conNexplay]="true"
+        [angosto]="true"
+      />
 
       @if (muestraAfinidad()) {
         <p class="meta mono afinidad" data-testid="columna-afinidad">

@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup 6D · Comparar</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1152px; margin: 0 auto; padding: 72px 24px 24px; container: contenido / inline-size; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .nota-mockup a { color: var(--enlace); }
+  .escena {
+    padding: 40px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .contenido { max-width: 1152px; margin: 0 auto; container: contenido / inline-size; display: flex; flex-direction: column; gap: 24px; }
+  .muestra { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .pildora { display: inline-block; padding: 1px 11px; border: 1px solid var(--filo-banda); border-radius: var(--radio-pildora); color: var(--texto-sobre-banda); font-size: 16px; white-space: nowrap; }
+  .pildora[data-banda='bajo'] { background: var(--banda-bajo); --filo-banda: var(--banda-bajo-texto); }
+  .pildora[data-banda='medio'] { background: var(--banda-medio); --filo-banda: var(--banda-medio-texto); }
+  .pildora[data-banda='alto'] { background: var(--banda-alto); --filo-banda: var(--banda-alto-texto); }
+  .sobrelinea { display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie); color: var(--neon); font-size: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* 24: la nota al inicio, siempre, antes de elegir. */
+  .cabecera { display: flex; flex-direction: column; gap: 12px; }
+  .cabecera-fila { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+  .nota-comparar {
+    display: flex; align-items: center; gap: 14px; max-width: 62ch; padding: 14px 18px; border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie));
+    background: linear-gradient(90deg, rgb(var(--accion-canal) / 0.14), transparent 70%), var(--superficie);
+  }
+  .nota-comparar .insignia { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--accion-tinta); background: rgb(var(--accion-canal) / 0.16); }
+  .nota-comparar strong { display: block; font-family: var(--fuente-display); font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .nota-comparar span { color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .conteo { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); font-family: var(--fuente-mono); font-size: 16px; color: var(--texto); }
+  .capsulas { display: flex; flex-wrap: wrap; gap: 8px; }
+  .capsula { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 6px 4px 4px; border-radius: 999px; border: 1px solid var(--borde-control); background: var(--superficie); font-size: 16px; }
+  .capsula img { width: 56px; height: 32px; object-fit: cover; border-radius: 999px; }
+  .capsula .x { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--texto-2); }
+
+  /* La tabla, en un panel: la fila de crítica es la que cambia. */
+  .tabla-panel { overflow-x: auto; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  table.tabla { width: 100%; border-collapse: collapse; font-size: 16px; min-width: 640px; }
+  .tabla th, .tabla td { padding: 12px 14px; text-align: start; vertical-align: top; border-bottom: 1px solid var(--borde); }
+  .tabla thead th { font-weight: 700; }
+  .tabla tbody th { color: var(--texto-2); font-weight: 400; white-space: nowrap; }
+  .mono { font-family: var(--fuente-mono); }
+  .sin-critica { display: flex; flex-direction: column; gap: 4px; }
+  .sin-critica .que { color: var(--texto-2); }
+  .sin-critica .steam { font-family: var(--fuente-mono); }
+
+  /* Columnas: el bloque «Crítica y público», del azul de la opinión. */
+  .columnas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .columna { display: flex; flex-direction: column; gap: 14px; }
+  .columna > h2 { margin: 0; font-size: 22px; font-weight: 700; }
+  .bloque-mock { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 20px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--info); }
+  .bloque-mock header { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+  .bloque-mock .insignia { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--info); background: rgb(var(--canal-info) / 0.14); }
+  .bloque-mock h3 { margin: 0; font-family: var(--fuente-display); font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--info); }
+  .bloque-mock .sub { grid-column: 2; color: var(--texto-2); font-size: 16px; }
+  .nota-metacritic { font-family: var(--fuente-mono); font-size: 18px; }
+  .nota-metacritic small { display: block; margin-top: 4px; font-family: var(--fuente-texto); font-size: 16px; color: var(--texto-2); }
+  .sentimiento { display: flex; flex-direction: column; gap: 8px; }
+  .sentimiento .cifra { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .sentimiento .cifra strong { font-family: var(--fuente-mono); font-size: 26px; }
+  .sentimiento .cifra span { color: var(--texto); font-size: 16px; }
+  .barra-steam { height: 10px; border-radius: 999px; background: var(--superficie-2); overflow: hidden; }
+  .barra-steam span { display: block; height: 100%; border-radius: 999px; background: var(--info); }
+  .advertencia { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie-2); color: var(--texto); font-size: 16px; line-height: 1.4; }
+  .advertencia svg.i { width: 18px; height: 18px; margin-top: 2px; color: var(--info); }
+  .nexplay { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--borde); }
+  .nexplay .titulo-np { font-weight: 700; font-size: 16px; }
+  .nexplay .estrellas { font-family: var(--fuente-mono); font-size: 16px; color: var(--texto); }
+  .comentario { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--fondo); font-size: 16px; line-height: 1.45; }
+  :root[data-tema='claro'] .comentario { background: var(--superficie-2); }
+  .comentario cite { display: block; margin-top: 4px; font-style: normal; font-family: var(--fuente-mono); color: var(--texto-2); font-size: 16px; }
+  .ranura { padding: 18px; border-radius: 16px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.45; }
+
+  /* Vacío */
+  .vacio { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; padding: 22px 24px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .vacio p { margin: 0; font-size: 18px; line-height: 1.5; max-width: 60ch; }
+
+  /* 26: evaluación */
+  .tabla-eval { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; min-width: 760px; }
+  .tabla-eval th, .tabla-eval td { padding: 12px 14px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla-eval thead th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla-eval td:first-child { font-weight: 700; white-space: nowrap; }
+  .recomendada { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--accion-tinta); color: var(--texto); font-size: 16px; font-weight: 400; }
+  .tabla-puntos { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla-puntos th, .tabla-puntos td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla-puntos th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla-puntos td:first-child { font-family: var(--fuente-mono); white-space: nowrap; }
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 900px) {
+    .columnas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+    .columnas > * { flex: 0 0 min(86%, 360px); scroll-snap-align: start; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-comparar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-publico" viewBox="0 0 24 24"><path d="M17 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup 6D</h1>
+  <p>Comparar: la nota de qué hace la vista antes de elegir, los juegos sin Metacritic con el sentimiento de sus reseñas de Steam y lo que se dice en NexPlay, y la evaluación de una fuente de crítica adicional. Estilos y tokens reales de la app; lo punteado es nota del mockup.</p>
+</header>
+
+<section class="escena" data-vista="comparar" id="comparar">
+  <div class="contenido">
+    <p class="rotulo-mockup">24 y 25 · Comparar con tres juegos</p>
+    <div class="muestra">
+      <header class="cabecera">
+        <p class="sobrelinea mono">Comparar</p>
+        <div class="cabecera-fila">
+          <h1>Comparar</h1>
+          <span class="conteo">3 de 4 juegos</span>
+        </div>
+        <div class="nota-comparar" data-testid="comparar-nota">
+          <span class="insignia" aria-hidden="true"><svg class="i"><use href="#i-comparar"/></svg></span>
+          <div><strong>Compara hasta 4 juegos lado a lado</strong><span>Su riesgo de arrepentimiento, los motivos de las reseñas, la crítica y el precio, en la misma fila.</span></div>
+        </div>
+      </header>
+
+      <div class="capsulas">
+        <span class="capsula"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/2358720/header.jpg" alt=""/>Black Myth: Wukong<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+        <span class="capsula"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/1938010/header.jpg" alt=""/>WILD HEARTS™<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+        <span class="capsula"><img crossorigin="anonymous" src="https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg" alt=""/>Grand Theft Auto V Legacy<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+        <button class="compacto" type="button">+ Agregar juego</button>
+      </div>
+
+      <div class="tabla-panel">
+        <table class="tabla">
+          <thead><tr><th><span class="solo-lector">Dato</span></th><th>Black Myth: Wukong</th><th>WILD HEARTS™</th><th>Grand Theft Auto V Legacy</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Riesgo de arrepentimiento</th><td><span class="pildora" data-banda="alto">Alto</span></td><td><span class="pildora" data-banda="alto">Alto</span></td><td><span class="pildora" data-banda="bajo">Bajo</span></td></tr>
+            <tr><th scope="row">Motivo principal</th><td>dificultad</td><td>rendimiento</td><td>rendimiento</td></tr>
+            <tr><th scope="row">Precio</th><td class="mono">$999.00 MXN</td><td class="mono">$1,599.00 MXN</td><td class="mono">Precio no disponible</td></tr>
+            <tr><th scope="row">Crítica</th>
+              <td><div class="sin-critica"><span class="que">Sin crítica especializada</span><span class="steam">Steam: 94% positivas</span></div></td>
+              <td><div class="sin-critica"><span class="que">Sin crítica especializada</span><span class="steam">Steam: 54% positivas</span></div></td>
+              <td class="mono">Metacritic 96</td></tr>
+            <tr><th scope="row">Lanzamiento</th><td class="mono">19 AGO 2024</td><td class="mono">16 FEB 2023</td><td class="mono">13 ABR 2015</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="columnas">
+        <article class="columna">
+          <h2>Black Myth: Wukong</h2>
+          <section class="bloque-mock">
+            <header><span class="insignia"><svg class="i"><use href="#i-publico"/></svg></span><h3>Crítica y público</h3><p class="sub">Qué dicen de él, además del riesgo.</p></header>
+            <div class="sentimiento">
+              <p class="cifra"><strong>94%</strong><span>de reseñas positivas en Steam · Muy positivas</span></p>
+              <div class="barra-steam" aria-hidden="true"><span style="width:94%"></span></div>
+            </div>
+            <p class="advertencia"><svg class="i"><use href="#i-info"/></svg><span>Sin crítica especializada; esto viene de 87,051 reseñas de jugadores.</span></p>
+          </section>
+        </article>
+        <article class="columna">
+          <h2>WILD HEARTS™</h2>
+          <section class="bloque-mock">
+            <header><span class="insignia"><svg class="i"><use href="#i-publico"/></svg></span><h3>Crítica y público</h3><p class="sub">Qué dicen de él, además del riesgo.</p></header>
+            <div class="sentimiento">
+              <p class="cifra"><strong>54%</strong><span>de reseñas positivas en Steam · Variadas</span></p>
+              <div class="barra-steam" aria-hidden="true"><span style="width:54%"></span></div>
+            </div>
+            <p class="advertencia"><svg class="i"><use href="#i-info"/></svg><span>Sin crítica especializada; esto viene de 5,182 reseñas de jugadores.</span></p>
+            <div class="nexplay">
+              <p class="titulo-np">En NexPlay</p>
+              <p class="estrellas">2.0 ★ · 1 valoración · 1 comentario</p>
+              <blockquote class="comentario">«Se ve increíble, pero en mi PC tarda en estabilizarse.»<cite>Anónimo · hace 2 días</cite></blockquote>
+              <p class="advertencia"><svg class="i"><use href="#i-info"/></svg><span>Sin crítica especializada; esto viene de 1 persona en NexPlay.</span></p>
+            </div>
+          </section>
+        </article>
+        <article class="columna">
+          <h2>Grand Theft Auto V Legacy</h2>
+          <section class="bloque-mock">
+            <header><span class="insignia"><svg class="i"><use href="#i-publico"/></svg></span><h3>Crítica y público</h3><p class="sub">Qué dicen de él, además del riesgo.</p></header>
+            <p class="nota-metacritic">Metacritic 96<small>Crítica especializada. El promedio del catálogo es 85.5.</small></p>
+          </section>
+        </article>
+      </div>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Nota (24):</strong> «Compara hasta 4 juegos lado a lado» va arriba siempre, con y sin juegos elegidos; el conteo pasa a su lado.</li>
+        <li><strong>Sin Metacritic (25):</strong> la fila de crítica dice «Sin crítica especializada» y el porcentaje positivo de Steam. En la columna, el bloque «Crítica y público» lo muestra con el resumen de Steam en español y la nota «Sin crítica especializada; esto viene de N reseñas de jugadores». Si en NexPlay hay valoraciones o comentarios de ese juego, van debajo con la misma advertencia. Con Metacritic, el bloque solo da la nota y el promedio del catálogo.</li>
+        <li><strong>De dónde sale:</strong> el total de reseñas de Steam y cuántas son positivas ya están en la base (<code>resumen_resenas</code>, de la ingesta); <code>/panorama</code> suma <code>positivas_en_steam</code> por juego, leyendo la base sin tocarla. Son 33 juegos del catálogo sin Metacritic. Nada de esto entra al modelo: el factor «nota de Metacritic» sigue igual.</li>
+        <li><strong>Color:</strong> el azul de la opinión, como en la ficha. El verde, el ámbar y el rosa siguen reservados para el riesgo, así que la barra de Steam no los usa aunque el porcentaje sea alto o bajo.</li>
+      </ul>
+    </div>
+
+    <p class="rotulo-mockup">24 · Sin juegos elegidos: la nota se ve antes de elegir</p>
+    <div class="muestra">
+      <div class="nota-comparar">
+        <span class="insignia" aria-hidden="true"><svg class="i"><use href="#i-comparar"/></svg></span>
+        <div><strong>Compara hasta 4 juegos lado a lado</strong><span>Su riesgo de arrepentimiento, los motivos de las reseñas, la crítica y el precio, en la misma fila.</span></div>
+      </div>
+      <div class="vacio">
+        <p>Todavía no elegiste juegos. Agrégalos aquí con «+ Agregar juego» o con el botón «Comparar» de cualquier tarjeta del catálogo.</p>
+        <div class="capsulas"><button class="compacto" type="button">+ Agregar juego</button><a class="compacto" data-tono="explorar" href="#">Ir al catálogo →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="fuente">
+  <div class="contenido">
+    <p class="rotulo-mockup">26 · Fuente adicional de crítica: propuesta, sin integrar</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla-eval">
+        <thead><tr><th>Fuente</th><th>Qué da</th><th>Licencia y límites</th><th>Costo</th></tr></thead>
+        <tbody>
+          <tr><td>OpenCritic<br/><span class="recomendada">Recomendada</span></td><td>Crítica propia, independiente de Metacritic: «Top Critic Average», porcentaje de críticos que lo recomiendan y número de reseñas. Cubre bien los lanzamientos grandes recientes, que son buena parte de los 33 sin Metacritic en Steam (Black Myth: Wukong, HELLDIVERS™ 2, Battlefield™ 2042…).</td><td>API oficial por RapidAPI. Plan Basic: 25 búsquedas y 200 consultas al día, 4 por segundo. Las condiciones de atribución y de guardar los datos están en RapidAPI y hay que leerlas con la cuenta antes de integrar.</td><td>Basic gratis. Ultra, 19 USD al mes; Mega, 50 USD al mes. Para 33 juegos alcanza el gratis: 33 búsquedas en dos días y 33 consultas.</td></tr>
+          <tr><td>IGDB (Twitch)</td><td><code>aggregated_rating</code>: promedio de críticas externas. Se busca por appid de Steam.</td><td>Gratis para uso no comercial, con cuenta de desarrollador de Twitch; lo comercial pide acuerdo. 4 consultas por segundo.</td><td>Gratis (no comercial).</td></tr>
+          <tr><td>RAWG</td><td>Su campo de crítica es la misma nota de Metacritic: no suma una fuente nueva.</td><td>20,000 consultas al mes gratis, con enlace a RAWG en cada página. Sus términos prohíben copiar o guardar los datos.</td><td>Gratis; planes de pago arriba.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Recomendación:</strong> OpenCritic. Es crítica de verdad y distinta de Metacritic, y el plan gratis basta para los 33 juegos. IGDB queda de respaldo si las condiciones de OpenCritic no dejan guardar los datos.</li>
+        <li><strong>Antes de integrar:</strong> con tu cuenta y tu clave de RapidAPI (la clave va en <code>.env</code>, que yo no leo), una corrida de prueba que solo cuenta cuántos de los 33 tienen nota en OpenCritic, sin mostrar nada en la app. Con esa cobertura decides si vale la pena.</li>
+        <li><strong>Si se integra:</strong> va como fuente secundaria y rotulada («OpenCritic 84 · Top Critic Average»), al lado de «Sin crítica especializada», nunca en el modelo ni en el factor de crítica, igual que la regla de no mezclar Metacritic con el entrenamiento.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="resumen">
+  <div class="contenido">
+    <p class="rotulo-mockup">Qué cambia por punto</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla-puntos">
+        <thead><tr><th>Punto</th><th>Qué se hace</th></tr></thead>
+        <tbody>
+          <tr><td>24</td><td>«Compara hasta 4 juegos lado a lado» arriba, siempre, también sin juegos elegidos.</td></tr>
+          <tr><td>25</td><td>Sin Metacritic: el porcentaje positivo y el resumen de Steam, con «Sin crítica especializada; esto viene de N reseñas de jugadores»; debajo, lo de NexPlay con la misma advertencia.</td></tr>
+          <tr><td>26</td><td>Evaluación de OpenCritic, IGDB y RAWG; se recomienda OpenCritic y se integra solo con tu visto bueno y tras medir la cobertura.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>

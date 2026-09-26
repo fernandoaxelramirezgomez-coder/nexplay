@@ -245,6 +245,8 @@ export interface JuegoPanorama {
   casos_senal: number;
   prevalencia: number;
   resenas_en_steam: number | null;
+  /** De esas, las positivas; con resenas_en_steam da el porcentaje de Steam. */
+  positivas_en_steam: number | null;
   /** Resumen de Steam, en inglés: 'Very Positive', 'Mixed'… */
   consenso: string | null;
   /** null si el juego no llega al mínimo de casos para nombrar uno. */
