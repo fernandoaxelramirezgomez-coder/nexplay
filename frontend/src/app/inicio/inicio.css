@@ -37,6 +37,51 @@
   line-height: var(--interlineado-largo);
 }
 
+/* Lo que ofrecemos: cuadritos de dos palabras, cada uno con su icono y su color. En panel,
+   para que el texto no quede directo sobre la nebulosa. */
+.ofrecemos {
+  list-style: none;
+  margin: var(--espacio-24) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-8) 10px;
+}
+
+.oferta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie));
+  border-radius: var(--radio-boton);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: var(--texto-body-sm);
+  font-weight: 600;
+}
+
+.icono-oferta {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--tono);
+  background: rgb(var(--tono-canal) / 0.16);
+}
+
+.icono-oferta svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* La acción principal, en una tarjeta grande: icono, título enorme, una línea y el
    buscador con su botón. */
 .accion-principal {
@@ -163,6 +208,11 @@
   }
 
   .entrada {
+    order: 3;
+    margin: 0;
+  }
+
+  .ofrecemos {
     order: 3;
     margin: 0;
   }

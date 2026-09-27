@@ -2,7 +2,7 @@
   <section class="hero" aria-labelledby="titulo-principal">
     <div class="hero-mensaje">
       <div class="titulos-hero">
-        <p class="sobrelinea mono">Evidencia antes de comprar</p>
+        <p class="sobrelinea mono">🎮 Segunda opinión</p>
         <h1 class="titular" id="titulo-principal">
           Descubre qué podría frustrarte en las primeras dos horas
         </h1>
@@ -11,6 +11,36 @@
         NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus
         motivos frecuentes y el contexto que puede importar para ti.
       </p>
+      <ul class="ofrecemos" aria-label="Lo que ofrece NexPlay" data-testid="inicio-ofrecemos">
+        @for (oferta of ofertas(); track oferta.id) {
+          <li class="oferta" [attr.data-tono]="oferta.tono" data-testid="oferta">
+            <span class="icono-oferta" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                @switch (oferta.id) {
+                  @case ('gratis') {
+                    <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+                    <circle cx="7.5" cy="7.5" r="1.5" />
+                  }
+                  @case ('sin-registro') {
+                    <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 7.9-1" />
+                  }
+                  @case ('un-minuto') {
+                    <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9 2h6" />
+                  }
+                  @case ('juegos') {
+                    <rect x="2" y="6" width="20" height="12" rx="4" /><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" />
+                  }
+                }
+              </svg>
+            </span>
+            @if (oferta.lectura) {
+              <span aria-hidden="true">{{ oferta.texto }}</span><span class="solo-lector">{{ oferta.lectura }}</span>
+            } @else {
+              {{ oferta.texto }}
+            }
+          </li>
+        }
+      </ul>
     </div>
 
     <app-carrusel-ejemplo [pausado]="buscador.panelDesplegado()" />

@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { Buscador } from '../catalogo/buscador';
 import { destinoDeBusqueda } from '../dominio/busqueda';
+import { ofertasDelInicio } from '../dominio/ofertas-inicio';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CarruselEjemplo } from './carrusel-ejemplo';
 import { ComoLoSabemos } from './como-lo-sabemos';
@@ -23,6 +24,8 @@ export class Inicio {
   private readonly router = inject(Router);
 
   protected readonly texto = signal('');
+  /** Lo que ofrecemos, en cuadritos bajo la descripción; el número de juegos es el del catálogo. */
+  protected readonly ofertas = computed(() => ofertasDelInicio(this.catalogo.juegos().length));
 
   protected buscar(evento: Event): void {
     evento.preventDefault();
