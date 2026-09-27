@@ -55,7 +55,8 @@ describe('ComoFunciona', () => {
     const html = fixture.nativeElement as HTMLElement;
     expect(html.querySelectorAll('[data-testid="fuente"]')).toHaveLength(3);
     expect(html.querySelector('#titulo-fuentes')?.textContent).toContain('Fuentes');
-    expect(html.querySelector('[data-testid="fuente-descarga"]')).toBeNull();
+    const antes = [...html.querySelectorAll('[data-testid="fuente-descarga"]')].map((d) => d.textContent?.trim());
+    expect(antes.every((fecha) => !fecha)).toBe(true);
 
     panorama.set({
       resenas_descargadas: 184367,
@@ -68,13 +69,14 @@ describe('ComoFunciona', () => {
     juegos.set([juegoDePrueba({ appid: 1, metacritic: 80 }), juegoDePrueba({ appid: 2, metacritic: null })]);
     await fixture.whenStable();
     const fechas = [...html.querySelectorAll('[data-testid="fuente-descarga"]')].map((d) => d.textContent?.trim());
-    expect(fechas).toEqual(['del 14 al 21 sep 2026', 'del 14 al 21 sep 2026', 'con appdetails, del 14 al 21 sep 2026']);
+    // Metacritic llega con los datos de Steam: lleva su misma fecha.
+    expect(fechas).toEqual(['del 14 al 21 sep 2026', 'del 14 al 21 sep 2026', 'del 14 al 21 sep 2026']);
     const texto = html.querySelector('[data-testid="fuentes"]')?.textContent ?? '';
     expect(texto).toContain('184,367 reseñas');
-    expect(texto).toContain('1 de los 2 juegos tienen nota');
-    const servicios = html.querySelector('[data-testid="fuente-servicios"]')?.textContent ?? '';
+    expect(texto).toContain('1 de 2 juegos');
+    const servicios = [...html.querySelectorAll('[data-testid="fuente-servicios"]')].map((s) => s.textContent).join(' ');
     expect(servicios).toContain('OpenAI');
-    expect(servicios).toContain('Open Font License');
+    expect(servicios).toContain('SIL OFL');
   });
 
   it('la metodología vive aquí, con el vocabulario del proyecto', async () => {

@@ -18,11 +18,10 @@ export type ClaveOrigen = 'appreviews' | 'appdetails' | 'metacritic';
 export interface Origen {
   clave: ClaveOrigen;
   quien: string;
-  api: string;
-  /** La línea corta del inicio. */
-  que: string;
-  /** Qué se toma, para la sección Fuentes. */
-  toma: string;
+  /** De qué parte de la fuente: «reseñas», «datos del juego». */
+  sobre: string;
+  /** Qué se toma, en una línea: el panel de fuentes es para leer de un vistazo. */
+  da: string;
   enlace: string;
   textoEnlace: string;
 }
@@ -33,27 +32,24 @@ export const ORIGENES: readonly Origen[] = [
   {
     clave: 'appreviews',
     quien: 'Steam',
-    api: 'appreviews',
-    que: 'Las reseñas, su voto y las horas que llevaba jugadas quien escribió cada una.',
-    toma: 'El voto, las horas jugadas al escribir y el texto de cada reseña, que es de donde salen los motivos.',
+    sobre: 'reseñas',
+    da: 'El voto, las horas jugadas y el texto de cada reseña.',
     enlace: 'https://partner.steamgames.com/doc/store/getreviews',
-    textoEnlace: 'Documentación de Steam',
+    textoEnlace: 'Documentación',
   },
   {
     clave: 'appdetails',
     quien: 'Steam',
-    api: 'appdetails',
-    que: 'Precio, géneros, fecha de lanzamiento, descripción y tráileres de cada juego.',
-    toma: 'Precio en México, gratuidad, descuento, géneros, fecha de lanzamiento, descripción y tráileres.',
+    sobre: 'datos del juego',
+    da: 'Precio en México, géneros, lanzamiento y tráileres.',
     enlace: 'https://store.steampowered.com/api/appdetails?appids=1938010&cc=mx&l=spanish',
-    textoEnlace: 'Ver una respuesta de ejemplo',
+    textoEnlace: 'Ejemplo',
   },
   {
     clave: 'metacritic',
     quien: 'Metacritic',
-    api: 'nota de la crítica',
-    que: 'La calificación de la crítica; llega a través de appdetails de Steam.',
-    toma: 'La nota de la crítica especializada, que Steam publica dentro de appdetails.',
+    sobre: 'crítica',
+    da: 'La nota de la crítica, que llega con los datos de Steam.',
     enlace: 'https://www.metacritic.com/',
     textoEnlace: 'metacritic.com',
   },
@@ -61,7 +57,7 @@ export const ORIGENES: readonly Origen[] = [
 
 export interface Servicio {
   quien: string;
-  para: string;
+  /** Lo que hace, en una frase que sigue al nombre. */
   que: string;
   enlace: string;
   textoEnlace: string;
@@ -72,17 +68,15 @@ export interface Servicio {
 export const SERVICIOS: readonly Servicio[] = [
   {
     quien: 'OpenAI',
-    para: 'Nia',
     que:
-      'Redacta las respuestas de Nia. Recibe tu pregunta, la conversación y los datos del juego o del catálogo; recibe la lista de sugerencias ya calculada, no tus respuestas del perfil. No entra al riesgo, y sin clave configurada Nia responde con reglas sobre los mismos datos.',
+      'redacta las respuestas de Nia con tu pregunta y los datos del juego; tus respuestas del perfil no salen del navegador y el riesgo no pasa por ella.',
     enlace: 'https://openai.com/api/',
-    textoEnlace: 'openai.com/api',
+    textoEnlace: 'openai.com',
   },
   {
-    quien: 'Chakra Petch, Inter y JetBrains Mono',
-    para: 'Tipografías',
-    que: 'Con licencia SIL Open Font License 1.1. Van dentro de la app: no se piden a otro servidor.',
+    quien: 'Tipografías',
+    que: 'Chakra Petch, Inter y JetBrains Mono, con licencia SIL OFL, van dentro de la app.',
     enlace: 'https://openfontlicense.org/',
-    textoEnlace: 'openfontlicense.org',
+    textoEnlace: 'SIL OFL',
   },
 ];
