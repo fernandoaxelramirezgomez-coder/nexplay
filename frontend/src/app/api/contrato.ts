@@ -204,6 +204,8 @@ export interface RespuestaNia {
   pide_juego?: boolean;
   /** Pidieron sugerencias sin perfil: el chat invita a crearlo. */
   pide_perfil?: boolean;
+  /** La pregunta no encaja con el catálogo: solo entonces el chat dice sus avisos. */
+  fuera_de_tema?: boolean;
   /** Qué prompt la produjo; 'reglas' en modo demostración. No se muestra. */
   version_prompt: string;
 }

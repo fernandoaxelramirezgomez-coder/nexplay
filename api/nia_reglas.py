@@ -108,7 +108,10 @@ def _primera_oracion(texto: str) -> str:
 
 
 def _resultado(texto: str, **extra) -> dict:
-    return {"texto": texto, "juegos": [], "sugerencias": [], "pide_juego": False, "pide_perfil": False, **extra}
+    return {
+        "texto": texto, "juegos": [], "sugerencias": [], "pide_juego": False, "pide_perfil": False,
+        "fuera_de_tema": False, **extra,
+    }
 
 
 # ── Intenciones ───────────────────────────────────────────────────────────────
@@ -531,14 +534,18 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
 
 
 def _no_se(datos: dict | None) -> dict:
+    """Lo que no encaja con nada del catálogo: el chat enseña ahí sus avisos (solo datos del
+    catálogo, sin decir si comprar, qué se guarda), y no antes."""
     if datos is not None:
         return _resultado(
             f"Eso no lo sé con los datos que tengo 🙈 De {datos['nombre']} te cuento su riesgo, sus reseñas, la "
-            "crítica o el precio. ¿Por cuál empiezo?"
+            "crítica o el precio. ¿Por cuál empiezo?",
+            fuera_de_tema=True,
         )
     return _resultado(
         "Eso no lo sé con estos datos 🙈 Puedo filtrar el catálogo por género, precio o riesgo, o contarte de un "
-        "juego. ¿Qué se te antoja?"
+        "juego. ¿Qué se te antoja?",
+        fuera_de_tema=True,
     )
 
 
@@ -573,6 +580,17 @@ def responder(
     if previas and nia.pulir(resultado["texto"]) == previas[-1]:
         resultado = _resultado("Ya te lo conté arriba 🙂 ¿Te lo resumo o vemos otra cosa?")
     return resultado
+
+
+def es_fuera_de_tema(
+    datos: dict | None,
+    appid: int | None,
+    mensajes: list[MensajeChat],
+    sugerencias: list[SugerenciaNia],
+) -> bool:
+    """Si la pregunta no encaja con nada del catálogo. Con IA también se decide aquí, con
+    las mismas reglas del modo demostración: no llama a ningún modelo."""
+    return bool(responder(datos, appid, mensajes, sugerencias).get("fuera_de_tema"))
 
 
 def _nombrado_sin_ficha(original: str) -> dict | None:

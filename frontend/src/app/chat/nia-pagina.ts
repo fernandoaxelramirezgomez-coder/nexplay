@@ -20,14 +20,19 @@ const MAXIMO_SUGERENCIAS = 12;
   template: `
     <div class="nia-pagina" data-testid="nia-pagina">
       <header class="cabecera">
-        <img class="avatar" src="nia/chat.png" alt="" width="200" height="233" />
-        <div>
+        <!-- Nia flota y saluda; mientras responde, se pone a pensar («…»). -->
+        <div class="mascota" [class.pensando]="pensando()" aria-hidden="true" data-testid="nia-mascota-pagina">
+          <img
+            class="avatar"
+            [src]="pensando() ? 'nia/ficha-medio.png' : 'nia/chat.png'"
+            alt=""
+            width="200"
+            height="233"
+          />
+        </div>
+        <div class="titulos">
           <h1>Habla con Nia</h1>
-          <p class="lectura entrada">
-            Responde con los datos del catálogo: qué juegos hay y con qué riesgo, los motivos que más
-            aparecen en sus reseñas, la crítica y el precio. Puedes fijar un juego o preguntar por
-            todos. No recomienda comprar ni no comprar.
-          </p>
+          <p class="entrada">Pregúntale por cualquiera de los {{ catalogo.juegos().length }} juegos.</p>
         </div>
       </header>
 
@@ -39,9 +44,6 @@ const MAXIMO_SUGERENCIAS = 12;
               <span class="nombre">{{ juego.nombre }}</span>
             </a>
             <app-pildora-banda [banda]="juego.banda_riesgo" />
-            <p class="meta">
-              Nia responde con los datos de este juego. Suéltalo para volver a hablar de todo el catálogo.
-            </p>
             <div class="acciones">
               <a class="boton-texto" [routerLink]="['/juego', juego.appid]">Ver su ficha completa →</a>
               <button type="button" class="boton-texto" data-testid="nia-cambiar" (click)="soltar()">
@@ -51,12 +53,8 @@ const MAXIMO_SUGERENCIAS = 12;
           </aside>
         } @else {
           <aside class="elegir panel-vidrio" data-testid="nia-elegir">
-            <p class="meta">
-              Estás hablando de los {{ catalogo.juegos()?.length ?? 0 }} juegos del catálogo. Si quieres
-              centrarte en uno, elígelo aquí.
-            </p>
           <label class="buscar">
-            <span class="etiqueta">¿De qué juego quieres hablar?</span>
+            <span class="etiqueta">Elige un juego <span class="opcional">(opcional)</span></span>
             <input
               type="search"
               autocomplete="off"
@@ -92,6 +90,7 @@ const MAXIMO_SUGERENCIAS = 12;
             [muestraIntro]="false"
             [llenaAlto]="true"
             (juegoFijado)="elegir($event)"
+            (pensando)="pensando.set($event)"
           />
         </div>
       </div>
@@ -108,10 +107,53 @@ const MAXIMO_SUGERENCIAS = 12;
       align-items: center;
       gap: var(--espacio-24);
     }
-    .avatar {
-      width: 96px;
-      height: auto;
+    .titulos {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-8);
+    }
+    .entrada {
+      margin: 0;
+      color: var(--texto-meta);
+      font-size: var(--texto-body);
+    }
+    /* Nia flota despacio sobre un halo de su violeta; mientras responde cambia a la cara
+       que piensa y se mece. Con movimiento reducido, la regla global la deja quieta. */
+    .mascota {
+      display: grid;
       flex: none;
+      place-items: end center;
+      width: 116px;
+      height: 116px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 60%, rgb(var(--canal-nia) / 0.35), transparent 68%);
+    }
+    .avatar {
+      width: 104px;
+      height: auto;
+      animation: flotar-nia 3.2s ease-in-out infinite;
+      transform-origin: 50% 100%;
+    }
+    .pensando .avatar {
+      animation: pensar-nia 1.4s ease-in-out infinite;
+    }
+    @keyframes flotar-nia {
+      0%,
+      100% {
+        transform: translateY(0) rotate(0);
+      }
+      50% {
+        transform: translateY(-6px) rotate(-2deg);
+      }
+    }
+    @keyframes pensar-nia {
+      0%,
+      100% {
+        transform: rotate(-4deg);
+      }
+      50% {
+        transform: rotate(4deg);
+      }
     }
     /* El juego a la izquierda y la conversación a la derecha: así el chat tiene el ancho
        que necesita y el juego del que se habla no se pierde al desplazarse. */
@@ -213,6 +255,11 @@ const MAXIMO_SUGERENCIAS = 12;
       display: block;
       margin-bottom: var(--espacio-8);
       font-size: var(--texto-body-sm);
+      font-weight: 600;
+    }
+    .opcional {
+      color: var(--texto-meta);
+      font-weight: 400;
     }
     .buscar input {
       width: 100%;
@@ -254,10 +301,17 @@ const MAXIMO_SUGERENCIAS = 12;
     }
     @media (max-width: 640px) {
       .cabecera {
-        gap: var(--espacio-16);
+        gap: var(--espacio-12);
+      }
+      .mascota {
+        width: 80px;
+        height: 80px;
       }
       .avatar {
-        width: 64px;
+        width: 72px;
+      }
+      .entrada {
+        font-size: var(--texto-body-sm);
       }
     }
   `,
@@ -270,6 +324,8 @@ export class NiaPagina {
   private readonly router = inject(Router);
 
   protected readonly texto = signal('');
+  /** Nia está respondiendo: su mascota se pone a pensar. */
+  protected readonly pensando = signal(false);
 
   /** El juego de la URL, cuando el catálogo ya llegó: se lee de las dos fuentes a la vez
    * para que aterrizar en /nia?appid= antes de que cargue el catálogo también funcione. */

@@ -62,6 +62,8 @@ interface Extra {
   pidePerfil?: boolean;
   /** La pregunta pedía comparar: si hay dos o más tarjetas, se ofrece abrirlas en Comparar. */
   comparar?: boolean;
+  /** La pregunta no encajaba con el catálogo: solo ahí Nia dice sus avisos. */
+  fueraDeTema?: boolean;
 }
 
 /** El chat de Nia, con un juego fijado o sobre el catálogo entero.
@@ -90,10 +92,7 @@ interface Extra {
            Fuera de ahí no es una caja (display: contents). -->
       <div class="cuerpo-chat" #cuerpo>
       @if (muestraIntro()) {
-        <p class="meta intro">
-          Responde con los datos de este juego: su riesgo, los motivos de las reseñas, la crítica y el precio. No
-          recomienda comprar ni no comprar.
-        </p>
+        <p class="meta intro">Pregúntale por su riesgo, sus reseñas, la crítica o el precio.</p>
       }
 
       @if (fijadoEnElChat(); as juego) {
@@ -125,6 +124,12 @@ interface Extra {
               <p class="pasos meta" data-testid="nia-pasos">{{ extra!.pasos!.join(' · ') }}</p>
             }
             <p class="texto">{{ mensaje.contenido }}</p>
+            @if (extra?.fueraDeTema) {
+              <p class="aviso-tema" data-testid="nia-aviso-tema">
+                Solo hablo de los juegos del catálogo y no te digo si comprarlos o no. No escribas datos
+                personales: tus preguntas se guardan {{ diasQueSeGuarda }} días.
+              </p>
+            }
             @if (extra?.pideJuego && !extra?.resuelto) {
               <app-elegir-juego-chat (elegido)="fijarJuego($event, $index)" />
             }
@@ -206,21 +211,6 @@ interface Extra {
         </div>
       }
 
-      <p class="modo meta" data-testid="nia-modo" [attr.data-modo]="modo()">
-        <span class="punto" aria-hidden="true"></span>
-        @if (modo() === 'demostracion') {
-          Modo demostración: respuestas automáticas sin IA.
-        } @else if (modo() === 'openai') {
-          Respuesta generada con IA a partir de los datos del catálogo.
-        } @else {
-          Nia responde solo con los datos del catálogo.
-        }
-      </p>
-
-      <p class="meta privacidad" data-testid="nia-privacidad">
-        No escribas datos personales: se guardan tu pregunta y la respuesta durante
-        {{ diasQueSeGuarda }} días, para poder revisar los votos.
-      </p>
       </div>
 
       <label class="escribir">
@@ -249,6 +239,11 @@ interface Extra {
           {{ esperando() ? 'Preguntando…' : 'Preguntar' }}
         </button>
         <span class="meta mono">{{ texto().length }}/{{ maximo }}</span>
+        @if (modo()) {
+          <span class="modo" data-testid="nia-modo" [attr.data-modo]="modo()">
+            {{ modo() === 'openai' ? 'Con IA' : 'Sin IA · demostración' }}
+          </span>
+        }
       </div>
 
       <p class="meta error" role="status" aria-live="polite">{{ error() }}</p>
@@ -467,25 +462,28 @@ interface Extra {
     }
     /* El modo se ve siempre, no solo cuando responde por reglas: saber quién contesta es
        parte de la respuesta, y el punto verde tiene que decir que contestó una IA. */
+    /* Con IA o sin ella, en una etiqueta junto al contador: no es un aviso, es de dónde
+       sale la respuesta. */
     .modo {
-      display: flex;
-      align-items: baseline;
-      gap: var(--espacio-8);
-      margin: 0;
+      margin-left: auto;
+      padding: 2px 10px;
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      color: var(--texto-meta);
+      font-size: var(--texto-caption);
+      white-space: nowrap;
+    }
+    /* Los avisos, solo cuando la pregunta se salió del tema: dentro del globo de Nia, con
+       el azul de información y no con los colores del riesgo. */
+    .aviso-tema {
+      margin: var(--espacio-8) 0 0;
+      padding: var(--espacio-8) var(--espacio-12);
+      border-inline-start: 3px solid var(--info);
+      border-radius: 0 8px 8px 0;
+      background: color-mix(in srgb, var(--info) 10%, transparent);
+      color: var(--texto);
+      font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
-    }
-    .modo .punto {
-      width: 8px;
-      height: 8px;
-      flex: none;
-      border-radius: 50%;
-      background: var(--borde-control);
-    }
-    .modo[data-modo='openai'] .punto {
-      background: var(--banda-bajo);
-    }
-    .modo[data-modo='demostracion'] .punto {
-      background: var(--banda-medio);
     }
     /* Tres puntos que laten mientras Nia responde. La regla global de
        prefers-reduced-motion los deja quietos. */
@@ -515,11 +513,6 @@ interface Extra {
         opacity: 1;
       }
     }
-    .privacidad {
-      margin: 0;
-      font-size: var(--texto-caption);
-      line-height: var(--interlineado-largo);
-    }
     .escribir {
       display: flex;
       flex-direction: column;
@@ -540,10 +533,13 @@ interface Extra {
     textarea:focus {
       border-color: var(--neon);
     }
+    /* Con wrap: en el teléfono la etiqueta del modo baja de renglón en vez de ensanchar
+       el chat. */
     .acciones {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--espacio-12);
+      gap: var(--espacio-8) var(--espacio-12);
     }
     .error:empty {
       display: none;
@@ -573,8 +569,7 @@ export class Nia {
   readonly appid = input<number | null>(null);
   /** La burbuja flotante ya pone el rótulo en su cabecera: ahí sobra repetirlo. */
   readonly muestraTitulo = input(true);
-  /** La página de Nia ya explica arriba con qué responde: repetirlo aquí es la misma
-   * frase dos veces, una debajo de la otra. */
+  /** La línea de arriba del chat (la ficha la lleva; la página de Nia, no). */
   readonly muestraIntro = input(true);
   /** En su propia página el chat ocupa todo el panel: la conversación crece y el campo de
    * escribir se queda abajo, como en cualquier chat. */
@@ -586,6 +581,8 @@ export class Nia {
 
   /** Se eligió un juego desde el buscador del chat: quien lo monta puede reflejarlo. */
   readonly juegoFijado = output<JuegoCatalogo>();
+  /** Nia está respondiendo: la página de Nia pone su mascota a pensar. */
+  readonly pensando = output<boolean>();
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
@@ -682,6 +679,7 @@ export class Nia {
   );
 
   constructor() {
+    effect(() => this.pensando.emit(this.esperando()));
     // Al cambiar el juego de la entrada, la conversación empieza de cero: el contexto es
     // otro. Si quien lo monta solo refleja el que se eligió dentro del chat, no se borra.
     effect(() => {
@@ -850,6 +848,7 @@ export class Nia {
         pideJuego: respuesta.pide_juego ?? false,
         pidePerfil: respuesta.pide_perfil ?? false,
         comparar: /compar|\bvs\b|diferencia/i.test(pregunta),
+        fueraDeTema: respuesta.fuera_de_tema ?? false,
       },
     );
     this.modo.set(respuesta.modo);

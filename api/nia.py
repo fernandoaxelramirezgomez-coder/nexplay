@@ -761,6 +761,7 @@ def responder(
                     "sugerencias": salida["sugerencias"],
                     "pide_juego": salida["pide_juego"],
                     "pide_perfil": salida["pide_perfil"],
+                    "fuera_de_tema": reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias),
                 },
                 appid, usuario, ultima,
             )
@@ -808,6 +809,7 @@ def _de_reglas(
             "sugerencias": resultado["sugerencias"],
             "pide_juego": resultado["pide_juego"],
             "pide_perfil": resultado["pide_perfil"],
+            "fuera_de_tema": resultado.get("fuera_de_tema", False),
         },
         appid, usuario, ultima,
     )

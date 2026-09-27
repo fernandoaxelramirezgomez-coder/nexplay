@@ -311,6 +311,10 @@ class RespuestaNia(BaseModel):
     )
     pide_juego: bool = Field(False, description="La pregunta es de un juego y no hay ninguno fijado: el chat abre el buscador")
     pide_perfil: bool = Field(False, description="Pidieron sugerencias sin perfil: el chat invita a crearlo")
+    fuera_de_tema: bool = Field(
+        False,
+        description="La pregunta no encaja con nada del catálogo: el chat muestra ahí sus avisos, y no antes",
+    )
     version_prompt: str = Field(
         ..., description="Qué prompt la produjo: hash del texto del sistema, o 'reglas' en modo demostración"
     )

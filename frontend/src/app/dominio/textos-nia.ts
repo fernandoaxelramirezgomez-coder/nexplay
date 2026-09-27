@@ -20,10 +20,8 @@ export function sinMarkdown(texto: string): string {
     .trim();
 }
 
-/** El saludo del chat sin juego: el de la página de Nia. */
-export const SALUDO_CHAT_CATALOGO =
-  '¡Hola! Soy Nia 👋 Leo los datos de los juegos del catálogo como lo haría alguien que reseña ' +
-  'juegos. ¿Buscas algo en particular o ya tienes uno en mente?';
+/** El saludo del chat sin juego: el de la página de Nia. Corto: el dueño pidió menos texto. */
+export const SALUDO_CHAT_CATALOGO = '¡Hola! Soy Nia 👋 ¿Buscas algo en particular o ya tienes un juego en mente?';
 
 /** Lo primero que dice la burbuja al abrirse. */
 export const SALUDO_BURBUJA = '¡Hola! ¿Qué juego estás viendo? 👀';

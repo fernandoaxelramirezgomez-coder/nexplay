@@ -372,3 +372,35 @@ diferencia de otros sitios, y mostrar nuestras herramientas: que diga por qué e
     panel avisa «(puedes elegir varios)».
   - Probado: Acción y Rol → 91 de 123, la página se queda en su lugar, teclear tampoco
     la mueve, la ficha abre arriba y atrás vuelve a donde estaba.
+
+### Habla con Nia (pedido del dueño, 2026-09-26)
+
+«Hay demasiado texto, sintetízalo y mejora el diseño; quita las advertencias y que si el
+usuario se desvía del tema diga esas advertencias, no antes; que pueda o no seleccionar un
+texto que pueda preguntar; y anima a Nia.»
+
+- **Menos texto:**
+  - arriba solo el título y «Pregúntale por cualquiera de los 123 juegos.»;
+  - el panel dice «Elige un juego (opcional)», sin las frases de antes;
+  - el saludo va en una línea;
+  - la intro del chat de la ficha también va en una línea y sin advertencia.
+- **Las advertencias solo fuera de tema:**
+  - salen «Nia responde solo con los datos del catálogo» y «No escribas datos
+    personales…» fijos;
+  - la API marca `fuera_de_tema` cuando la pregunta no encaja con nada del catálogo. La
+    marca sale de las reglas del modo demostración, también con IA, sin llamar a ningún
+    modelo;
+  - solo entonces Nia dice, dentro de su respuesta: «Solo hablo de los juegos del
+    catálogo y no te digo si comprarlos o no. No escribas datos personales: tus preguntas
+    se guardan 180 días.»
+  - De las 25 preguntas de la 6F, la regla marca solo la 22 («¿qué juego me ayuda a
+    estudiar la naturaleza?»). Las 25 pasan en demostración, con la API de prueba en
+    :8010 sin clave y su base en el scratchpad.
+- **Si la respuesta es con IA o sin ella:** ahora es una etiqueta junto al contador («Con
+  IA» / «Sin IA · demostración»), no un aviso.
+- **Preguntas para tocar:** se quedan las fichas de arranque («¿Qué juegos de acción
+  tienen riesgo bajo?», «¿Hay algo gratis?», «¿De dónde salen los datos?»). Son
+  opcionales: se puede escribir directo.
+- **Nia animada:** flota sobre un halo violeta. Mientras responde cambia a su cara de
+  pensar («…») y se mece; al terminar vuelve a saludar. Con «reducir movimiento» queda
+  quieta.

@@ -1628,9 +1628,9 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
     _abrir(pagina, f"{url.rstrip('/')}/juego/{_APPID_FICHA}")
     pagina.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
 
-    aviso = " ".join(pagina.get_by_test_id("nia-privacidad").inner_text().split())
-    if "datos personales" not in aviso or "180" not in aviso:
-        problemas.append(f"el chat no avisa qué se guarda ni por cuánto tiempo ('{aviso[:80]}')")
+    # Sin avisos de entrada: salen dentro de la respuesta que se sale del tema (abajo).
+    if pagina.get_by_test_id("nia-aviso-tema").count() or pagina.get_by_test_id("nia-privacidad").count():
+        problemas.append("el chat muestra sus avisos antes de que una pregunta se salga del tema")
 
     if pagina.get_by_test_id("voto-nia").count():
         problemas.append("el voto aparece antes de que Nia haya respondido")
@@ -1683,8 +1683,22 @@ def _angular_voto_nia(pagina: Page, url: str, destino: Path) -> list[str]:
 
     ruta = destino / "voto-nia.png"
     pagina.get_by_test_id("nia").screenshot(path=ruta)
+
+    # Una pregunta del catálogo no trae avisos; una que se sale del tema, sí: dentro de la
+    # respuesta, con qué se guarda y por cuánto tiempo.
+    if pagina.get_by_test_id("nia-aviso-tema").count():
+        problemas.append("una pregunta del catálogo trae los avisos de fuera de tema")
+    pagina.evaluate(_JS_ESCRIBIR_Y_ENVIAR, "¿Qué clima hace hoy?")
+    try:
+        pagina.get_by_test_id("nia-aviso-tema").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        aviso = " ".join(pagina.get_by_test_id("nia-aviso-tema").first.inner_text().split())
+        if "datos personales" not in aviso or "180" not in aviso:
+            problemas.append(f"el aviso de fuera de tema no dice qué se guarda ni por cuánto ('{aviso[:80]}')")
+    except TiempoAgotado:
+        problemas.append("una pregunta fuera de tema no trae los avisos")
     if not problemas:
-        print(f"voto:     👍/👎 por respuesta, motivos solo con 👎 y aviso de retención ({ruta.relative_to(_RAIZ)})")
+        print(f"voto:     👍/👎 por respuesta y motivos solo con 👎; los avisos (retención de 180 días) solo "
+              f"cuando la pregunta se sale del tema ({ruta.relative_to(_RAIZ)})")
     return problemas
 
 
@@ -3314,12 +3328,18 @@ _NIA_CUERPOS: list[dict] = []
 
 
 def _respuesta_falsa(cuerpo: dict) -> str:
-    """La respuesta fija, salvo en los dos casos que la interfaz pinta distinto: una pregunta
-    de un juego sin juego fijado (pide el juego) y «¿Qué me recomiendas?» con sugerencias."""
+    """La respuesta fija, salvo en los casos que la interfaz pinta distinto: una pregunta de
+    un juego sin juego fijado (pide el juego), una fuera de tema (trae los avisos) y «¿Qué
+    me recomiendas?» con sugerencias."""
     respuesta = json.loads(_NIA_FALSA)
     pregunta = next((m["contenido"] for m in reversed(cuerpo.get("mensajes", [])) if m.get("rol") == "usuario"), "")
     if "appid" not in cuerpo and "ese riesgo" in pregunta.lower():
         respuesta.update(respuesta="¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.", pide_juego=True)
+    elif "clima" in pregunta.lower():
+        respuesta.update(
+            respuesta="Eso no lo sé con estos datos 🙈 Puedo filtrar el catálogo por género, precio o riesgo. ¿Qué se te antoja?",
+            fuera_de_tema=True,
+        )
     elif "recomiendas" in pregunta.lower():
         sugeridas = [s["appid"] for s in cuerpo.get("sugerencias", [])][:3]
         respuesta.update(
