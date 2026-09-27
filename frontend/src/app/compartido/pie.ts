@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -10,7 +10,8 @@ import { PanoramaStore } from '../estado/panorama-store';
 /** El pie de todas las vistas: de dónde salen los datos y cuándo se bajaron, en una línea,
  * y «Ver metodología», que despliega ahí mismo la metodología y las fuentes. Es el lugar
  * de lo que antes eran Panorama y Cómo funciona: sus rutas llevan a /#metodologia, y con
- * ese ancla el panel se abre solo. Todo va en panel: el pie queda sobre la nebulosa. */
+ * ese ancla el panel se abre solo. En el catálogo va sin «Ver metodología». Todo va en
+ * panel: el pie queda sobre la nebulosa. */
 @Component({
   selector: 'app-pie',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,24 +22,28 @@ import { PanoramaStore } from '../estado/panorama-store';
         <p class="texto" data-testid="pie-linea">
           Fuentes: Steam (appreviews y appdetails) y Metacritic{{ descarga() ? ', descargadas ' + descarga() : '' }}.
         </p>
-        <button
-          type="button"
-          class="compacto"
-          data-tono="neutro"
-          data-testid="pie-ver-metodologia"
-          aria-controls="metodologia"
-          [attr.aria-expanded]="abierto()"
-          (click)="alternar()"
-        >
-          {{ abierto() ? 'Ocultar metodología ▴' : 'Ver metodología ▾' }}
-        </button>
-      </div>
-      <div class="panel-metodologia" id="metodologia" #panel data-testid="pie-panel" [hidden]="!abierto()">
-        @if (abierto()) {
-          <app-metodologia [enmarcada]="false" />
-          <app-fuentes />
+        @if (conMetodologia()) {
+          <button
+            type="button"
+            class="compacto"
+            data-tono="neutro"
+            data-testid="pie-ver-metodologia"
+            aria-controls="metodologia"
+            [attr.aria-expanded]="abierto()"
+            (click)="alternar()"
+          >
+            {{ abierto() ? 'Ocultar metodología ▴' : 'Ver metodología ▾' }}
+          </button>
         }
       </div>
+      @if (conMetodologia()) {
+        <div class="panel-metodologia" id="metodologia" #panel data-testid="pie-panel" [hidden]="!abierto()">
+          @if (abierto()) {
+            <app-metodologia [enmarcada]="false" />
+            <app-fuentes />
+          }
+        </div>
+      }
     </div>
   `,
   styles: `
@@ -79,6 +84,9 @@ export class Pie {
   private readonly panorama = inject(PanoramaStore);
   private readonly router = inject(Router);
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
+
+  /** Sin él, el pie es solo la línea de fuentes (el catálogo). */
+  readonly conMetodologia = input(true);
 
   protected readonly abierto = signal(false);
 

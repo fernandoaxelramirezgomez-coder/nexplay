@@ -137,7 +137,7 @@ export class ElegirJuegoChat {
   protected readonly texto = signal('');
 
   protected readonly resultados = computed(() =>
-    filtrarJuegos(this.catalogo.juegos(), { texto: this.texto(), genero: '' }).slice(0, MAXIMO_RESULTADOS),
+    filtrarJuegos(this.catalogo.juegos(), { texto: this.texto(), generos: [] }).slice(0, MAXIMO_RESULTADOS),
   );
 
   constructor() {

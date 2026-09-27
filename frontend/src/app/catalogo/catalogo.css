@@ -9,8 +9,36 @@
   padding-top: var(--espacio-8);
 }
 
+/* Debajo de los tráileres, pasada la nave 📚: la pregunta centrada, el buscador al centro
+   y los géneros. Al llegar con la nave, se detiene con aire arriba (y bajo la barra fija
+   en el teléfono). */
+.busqueda-catalogo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-16);
+  scroll-margin-top: var(--espacio-24);
+}
+
+.titulo-busqueda {
+  text-align: center;
+  font-size: clamp(var(--texto-subheading), 2.4vw, var(--texto-heading-sm));
+}
+
+.titulo-busqueda:focus {
+  outline: none;
+}
+
 .buscador-explorar {
   display: block;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+@media (max-width: 900px) {
+  .busqueda-catalogo {
+    scroll-margin-top: calc(var(--alto-barra-movil) + var(--espacio-16));
+  }
 }
 
 .exploracion-cabecera {
@@ -21,10 +49,12 @@
   justify-content: space-between;
 }
 
-/* El título de la vista toma el tratamiento de base.css, como los demás: aquí solo se
-   acota el ancho para que parta en dos líneas parejas. */
+/* El título de la vista toma el tratamiento de base.css, en un renglón y más chico que
+   en las otras vistas: en dos renglones, la nave 📚 no entraba en la primera pantalla de
+   una portátil (1366×768, 1280×800, 1024×768). */
 .exploracion h1 {
-  max-width: 18ch;
+  max-width: none;
+  font-size: clamp(36px, 4.6cqw, 58px);
 }
 
 .exploracion {

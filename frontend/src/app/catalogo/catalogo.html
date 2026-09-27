@@ -3,7 +3,7 @@
     <header class="exploracion-cabecera">
       <div>
         <p class="sobrelinea mono">Catálogo</p>
-        <h1 id="titulo-exploracion">Explora por riesgo</h1>
+        <h1 id="titulo-exploracion">Encuentra tu próximo juego</h1>
       </div>
       @if (!catalogo.cargando() && !catalogo.error()) {
         <p class="meta mono" data-testid="catalogo-conteo">
@@ -17,18 +17,32 @@
       }
     </header>
     <app-trailers />
-    <app-buscador
-      class="buscador-explorar"
-      [juegos]="catalogo.juegos()"
-      [texto]="texto()"
-      [sugerir]="false"
-      (textoCambio)="cambiarTexto($event)"
+    <app-separador-nave
+      emoji="📚"
+      etiqueta="Bajar a la búsqueda y los géneros"
+      testid="catalogo-nave"
+      [destino]="busqueda"
+      [foco]="tituloBusqueda"
     />
-    <app-filtros-catalogo
-      [genero]="generoActivo()"
-      [generos]="catalogo.generos()"
-      (generoCambio)="cambiarGenero($event)"
-    />
+    <div class="busqueda-catalogo" #busqueda data-testid="catalogo-busqueda">
+      <h2 class="titulo-busqueda" id="titulo-busqueda" tabindex="-1" #tituloBusqueda>
+        ¿Qué juego estás pensando comprar?
+      </h2>
+      <app-buscador
+        class="buscador-explorar"
+        etiqueta=""
+        [juegos]="catalogo.juegos()"
+        [texto]="texto()"
+        [sugerir]="false"
+        (textoCambio)="cambiarTexto($event)"
+      />
+      <app-filtros-catalogo
+        [elegidos]="generosActivos()"
+        [generos]="catalogo.generos()"
+        [juegos]="catalogo.juegos()"
+        (elegidosCambio)="cambiarGeneros($event)"
+      />
+    </div>
   </section>
 
   @if (catalogo.error()) {

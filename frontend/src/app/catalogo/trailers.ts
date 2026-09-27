@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { PildoraBanda } from '../compartido/pildora-banda';
 import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
-import { elegirTrailers, TRAILERS_POR_NIVEL } from '../dominio/trailers';
+import { elegirTrailers } from '../dominio/trailers';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
 
@@ -12,7 +12,7 @@ import { PanoramaStore } from '../estado/panorama-store';
  * reseñados en Steam. El escenario reproduce uno, mudo; al terminar pasa al siguiente.
  *
  * Deja de pasar solo en cuanto la persona muestra interés: mientras el cursor o el foco
- * están encima, y para siempre desde que toca un tráiler, las flechas o un control. Cada
+ * están encima, y para siempre desde que toca un tráiler o un control. Cada
  * tráiler arranca mudo: solo suena el que alguien activó (lo hace la portada ancha, que
  * reinicia el sonido con cada video). */
 @Component({
@@ -39,7 +39,7 @@ import { PanoramaStore } from '../estado/panorama-store';
             [respaldo]="juego.portada_url"
             [video]="juego.video_url"
             [enBucle]="!avanzaSolo()"
-            (terminado)="siguiente(false)"
+            (terminado)="siguiente()"
             (interaccion)="tomado.set(true)"
           />
           <div class="velo" data-fondo-peor="#404350">
@@ -74,19 +74,11 @@ import { PanoramaStore } from '../estado/panorama-store';
           }
         </ol>
 
-        <div class="pie">
-          <p class="estado" aria-live="polite">
-            Tráiler {{ indice() + 1 }} de {{ trailers().length }} · {{ porNivel }} por nivel, los más reseñados en Steam
-          </p>
-          <div class="flechas">
-            <button type="button" aria-label="Tráiler anterior" data-testid="trailer-anterior" (click)="mover(-1)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
-            </button>
-            <button type="button" aria-label="Tráiler siguiente" data-testid="trailer-siguiente" (click)="mover(1)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
-            </button>
-          </div>
-        </div>
+        <!-- Qué tráiler se ve, solo para el lector de pantalla: la barra visible con el
+             contador y las flechas no se veía bien, y la lista ya deja elegir cualquiera. -->
+        <p class="solo-lector" aria-live="polite">
+          Tráiler {{ indice() + 1 }} de {{ trailers().length }}: {{ actual()?.nombre }}
+        </p>
       </section>
     } @else if (panorama.cargando() || catalogo.cargando()) {
       <app-skeleton alto="320px" />
@@ -156,16 +148,18 @@ import { PanoramaStore } from '../estado/panorama-store';
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-8);
+      gap: 6px;
       min-width: 0;
     }
+    /* Compacta: la lista es la que decide el alto de los tráileres a lo ancho, y con
+       miniaturas de 112 px empujaba la nave 📚 fuera de la primera pantalla. */
     .lista button {
       width: 100%;
       display: grid;
-      grid-template-columns: 112px minmax(0, 1fr);
+      grid-template-columns: 96px minmax(0, 1fr);
       align-items: center;
       gap: var(--espacio-12);
-      padding: 6px;
+      padding: 5px;
       border: 1px solid var(--borde);
       border-radius: 12px;
       background: var(--superficie);
@@ -182,7 +176,7 @@ import { PanoramaStore } from '../estado/panorama-store';
       box-shadow: inset 0 0 0 1px var(--neon);
     }
     .lista img {
-      width: 112px;
+      width: 96px;
       height: auto;
       aspect-ratio: 460 / 215;
       object-fit: cover;
@@ -222,52 +216,18 @@ import { PanoramaStore } from '../estado/panorama-store';
     .punto[data-banda='alto'] {
       background: var(--banda-alto);
     }
-    /* El estado y las flechas en un panel: sobre la nebulosa el texto va en superficie. */
-    .pie {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--espacio-12);
-      padding: var(--espacio-8) var(--espacio-8) var(--espacio-8) var(--espacio-16);
-      border: 1px solid var(--borde);
-      border-radius: var(--radio-pildora);
-      background: var(--superficie);
-    }
-    .estado {
-      color: var(--texto-meta);
-    }
-    .flechas {
-      display: flex;
-      flex: none;
-      gap: var(--espacio-8);
-    }
-    .flechas button {
-      display: grid;
-      place-items: center;
-      width: 44px;
-      height: 44px;
-      border: 1px solid var(--borde-control);
-      border-radius: 50%;
-      background: var(--superficie-2);
-      color: var(--texto);
-      cursor: pointer;
-    }
-    .flechas button:hover {
-      border-color: var(--neon);
-    }
-    .flechas svg {
-      width: 20px;
-      height: 20px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-    }
     /* Angosto (tableta y teléfono): el escenario arriba y la lista como una tira que se
        desliza. A 1024 px la columna de la lista ya no daba para el nombre y el nivel. */
     @container contenido (max-width: 780px) {
       .trailers {
         grid-template-columns: 1fr;
+      }
+      /* En una columna el escenario no pasa del alto que deja ver la nave 📚 en la
+         primera pantalla: a 1024×768 medía 405 px y la nave quedaba abajo. En el teléfono
+         manda el 16:9 (56.25 % del ancho), que ya es menor. */
+      .escenario ::ng-deep .marco.carrusel {
+        aspect-ratio: auto;
+        height: max(180px, min(56.25cqw, calc(100svh - 470px)));
       }
       .lista {
         flex-direction: row;
@@ -288,9 +248,6 @@ import { PanoramaStore } from '../estado/panorama-store';
       .motivo {
         display: none;
       }
-      .pie {
-        border-radius: var(--radio-tarjeta);
-      }
     }
   `,
 })
@@ -298,7 +255,6 @@ export class Trailers {
   protected readonly catalogo = inject(CatalogoStore);
   protected readonly panorama = inject(PanoramaStore);
 
-  protected readonly porNivel = TRAILERS_POR_NIVEL === 2 ? 'dos' : String(TRAILERS_POR_NIVEL);
 
   protected readonly trailers = computed(() =>
     this.panorama.datos() ? elegirTrailers(this.catalogo.juegos(), this.panorama.porAppid()) : [],
@@ -310,7 +266,7 @@ export class Trailers {
   /** Cursor encima (solo ratón: un toque es elegir, no pasar por encima). */
   protected readonly encima = signal(false);
   protected readonly conFoco = signal(false);
-  /** La persona eligió un tráiler, usó las flechas o tocó un control: ya no avanza solo. */
+  /** La persona eligió un tráiler o tocó un control: ya no avanza solo. */
   protected readonly tomado = signal(false);
 
   private readonly menosMovimiento =
@@ -344,19 +300,14 @@ export class Trailers {
     this.indice.set(i);
   }
 
-  protected mover(paso: 1 | -1): void {
-    this.tomado.set(true);
-    this.siguiente(true, paso);
-  }
-
-  /** Al terminar un tráiler se avanza solo si nadie tomó el control; las flechas siempre. */
-  protected siguiente(aPedido: boolean, paso: 1 | -1 = 1): void {
-    if (!aPedido && !this.avanzaSolo()) {
+  /** Al terminar un tráiler se avanza solo si nadie tomó el control. */
+  protected siguiente(): void {
+    if (!this.avanzaSolo()) {
       return;
     }
     const total = this.trailers().length;
     if (total) {
-      this.indice.set((this.indice() + paso + total) % total);
+      this.indice.set((this.indice() + 1) % total);
     }
   }
 }

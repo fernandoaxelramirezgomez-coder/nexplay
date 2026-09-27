@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
@@ -42,13 +43,18 @@ export class App {
     });
   }
 
+  /** La dirección real desde el primer momento: el router dice «/» hasta terminar la
+   * primera navegación (cada vista se carga aparte), y mientras tanto el pie mostraba
+   * «Ver metodología» en Explorar y la vista tomaba los colores del inicio. */
+  private readonly rutaInicial = inject(Location).path() || '/';
+
   private readonly ruta = toSignal(
     this.router.events.pipe(
       filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
       map((evento) => evento.urlAfterRedirects),
-      startWith(this.router.url),
+      startWith(this.rutaInicial),
     ),
-    { initialValue: this.router.url },
+    { initialValue: this.rutaInicial },
   );
 
   /** Ni en la ficha ni en la página de Nia: en las dos ya hay una conversación abierta y
@@ -62,6 +68,11 @@ export class App {
    * por vista, como pide la paleta. La ficha es de Explorar: el menú ya la marca ahí y los
    * tres tienen que coincidir. Historial y Cómo funciona comparten el gris-azul. */
   protected readonly vista = computed(() => vistaDe(this.ruta()));
+
+  /** En el catálogo el pie queda en la línea de fuentes, sin «Ver metodología»: lo pidió el
+   * dueño. La ficha, que también es de Explorar, sí lo lleva, porque lo abre desde sus
+   * factores. */
+  protected readonly pieConMetodologia = computed(() => this.ruta().split(/[?#]/)[0] !== '/explorar');
 
 }
 

@@ -299,7 +299,7 @@ export class Buscador {
     }
     // Buscando "the", primero "The Sims" y después "Together": el que empieza palabra es
     // casi siempre el que se está buscando.
-    return filtrarJuegos(this.juegos(), { texto, genero: '' })
+    return filtrarJuegos(this.juegos(), { texto, generos: [] })
       .filter((juego) => !fuera.has(juego.appid))
       .map((juego) => ({ juego, desde: posicionDeLaCoincidencia(juego.nombre, texto) }))
       .sort((a, b) => Number(!empiezaPalabra(a)) - Number(!empiezaPalabra(b)) || a.desde - b.desde)

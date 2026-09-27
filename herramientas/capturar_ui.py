@@ -1179,8 +1179,12 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
             texto = " ".join(linea.inner_text().split())
             if texto != esperada_pie:
                 problemas.append(f"{ruta}: el pie dice «{texto}» y no «{esperada_pie}»")
+            # En el catálogo el pie va sin «Ver metodología»; en el resto, con él.
+            con_boton = otra.locator("footer [data-testid=pie-ver-metodologia]").count() > 0
+            if con_boton == (ruta == "/explorar"):
+                problemas.append(f"{ruta}: el pie {'trae' if con_boton else 'no trae'} «Ver metodología»")
         if len(problemas) == n_antes:
-            print(f"pie:      «{esperada_pie}» en las cinco vistas y la ficha")
+            print(f"pie:      «{esperada_pie}» en las cinco vistas y la ficha; «Ver metodología» en todas menos /explorar")
     except TiempoAgotado as error:
         problemas.append(f"la reorganización no terminó de cargar: {str(error).splitlines()[0]}")
     finally:
@@ -2305,7 +2309,7 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     pagina.get_by_test_id("trailers").get_by_test_id("portada-silenciar").click()
     pagina.wait_for_timeout(300)
     con_sonido = not trailer_video.evaluate("v => v.muted")
-    pagina.get_by_test_id("trailer-siguiente").click()
+    pagina.get_by_test_id("trailer-opcion").nth(5).click()
     _esperar_video(pagina)
     siguiente_mudo = trailer_video.evaluate("v => v.muted")
     if not con_sonido or not siguiente_mudo:
@@ -2313,6 +2317,50 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     if not any("tráiler" in p for p in problemas):
         print(f"tráileres: {len(nombres)}, dos por nivel; arrancan mudos y pasan solos; se quedan con el cursor "
               f"encima y dejan de pasar al tocar uno; solo suena el activado ({(destino / 'trailers.png').relative_to(_RAIZ)})")
+
+    # La nave 📚 separa los tráileres de la búsqueda y, al tocarla, baja hasta ella. Clic
+    # forzado: flota sin parar y Playwright espera a que se quede quieta.
+    pagina.evaluate("() => window.scrollTo(0, 0)")
+    pagina.get_by_test_id("catalogo-nave").click(force=True)
+    try:
+        pagina.wait_for_function(
+            "() => { const r = document.querySelector(\"[data-testid='catalogo-busqueda']\").getBoundingClientRect();"
+            " return r.top >= 0 && r.top < 120; }",
+            timeout=_TIMEOUT_MS,
+        )
+        print("explorar: la nave 📚 baja a «¿Qué juego estás pensando comprar?» y los géneros")
+    except TiempoAgotado:
+        problemas.append("la nave 📚 no baja a la búsqueda de Explorar")
+
+    # Los géneros: se eligen varios (basta con tener uno) y elegirlos no sube la página. Se
+    # mide dónde queda el botón en pantalla y no scrollY: con un filtro, el contador de
+    # arriba ocupa un renglón más y el navegador corre scrollY para que nada se mueva.
+    elegir = ("Acción", "Rol")
+    esperado = sum(1 for j in catalogo.values() if set(j["generos"]) & set(elegir))
+    boton = pagina.locator(f"[data-testid=filtro-genero][data-genero='{elegir[0]}']")
+    # La bajada de la nave es suave: se mide con la página ya quieta.
+    pagina.wait_for_function(
+        "() => { const y = scrollY, quieta = window.__ultimoY === y; window.__ultimoY = y; return quieta; }",
+        polling=250, timeout=_TIMEOUT_MS,
+    )
+    antes = round(boton.bounding_box()["y"])
+    for genero in elegir:
+        pagina.locator(f"[data-testid=filtro-genero][data-genero='{genero}']").click()
+    pagina.wait_for_timeout(600)
+    despues = round(boton.bounding_box()["y"])
+    prendidos = pagina.locator("[data-testid=filtro-genero][aria-pressed=true]").evaluate_all(
+        "bs => bs.map(b => b.dataset.genero)"
+    )
+    conteo = " ".join(pagina.get_by_test_id("catalogo-conteo").inner_text().split())
+    if prendidos != list(elegir) or f"{esperado} de {len(catalogo)}" not in conteo:
+        problemas.append(f"elegir {' y '.join(elegir)} deja {prendidos} y «{conteo}» (se esperaban {esperado})")
+    elif abs(despues - antes) > 2:
+        problemas.append(f"elegir un género mueve los géneros en pantalla de {antes} a {despues} px")
+    else:
+        print(f"géneros:  {' y '.join(elegir)} a la vez → {conteo}; los géneros no se mueven en pantalla (y = {antes} px)")
+    # «Todos» deja el catálogo entero para lo que sigue.
+    pagina.locator("[data-testid=filtro-genero][data-genero='']").click()
+    pagina.wait_for_timeout(400)
 
     # Tarjetas: filo del riesgo y resplandor de la portada, siempre visible.
     pagina.get_by_test_id("estante-bajo").scroll_into_view_if_needed()

@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { SeparadorNave } from '../compartido/separador-nave';
 import { DIFERENCIA, HERRAMIENTAS, destacadaDelInicio } from '../dominio/herramientas-inicio';
 import { CatalogoStore } from '../estado/catalogo-store';
 
@@ -11,19 +12,17 @@ import { CatalogoStore } from '../estado/catalogo-store';
 @Component({
   selector: 'app-por-que-elegir',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, SeparadorNave],
   template: `
-    <div class="separador">
-      <button
-        type="button"
-        class="nave"
-        aria-label="Bajar a «¿Por qué elegir NexPlay?»"
-        data-testid="por-que-nave"
-        (click)="bajar()"
-      >
-        <span class="emoji" aria-hidden="true">🚀</span>
-      </button>
-    </div>
+    <!-- El cohete del emoji mira arriba a la derecha: girado 135° apunta hacia abajo. -->
+    <app-separador-nave
+      emoji="🚀"
+      [giro]="135"
+      etiqueta="Bajar a «¿Por qué elegir NexPlay?»"
+      testid="por-que-nave"
+      [destino]="seccion"
+      [foco]="titulo"
+    />
     <section class="por-que" #seccion aria-labelledby="titulo-por-que" data-testid="inicio-por-que">
       <h2 id="titulo-por-que" tabindex="-1" #titulo>¿Por qué elegir NexPlay?</h2>
       <p class="diferencia">{{ diferencia }}</p>
@@ -78,72 +77,6 @@ import { CatalogoStore } from '../estado/catalogo-store';
       display: flex;
       flex-direction: column;
       gap: var(--espacio-24);
-    }
-    /* La nave en medio de una línea que se desvanece a los lados: separa la sección del
-       encabezado y avisa que hay más abajo. */
-    .separador {
-      display: flex;
-      align-items: center;
-      gap: var(--espacio-16);
-      margin-top: var(--espacio-24);
-    }
-    .separador::before,
-    .separador::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-    }
-    .separador::before {
-      background: linear-gradient(to right, transparent, var(--linea));
-    }
-    .separador::after {
-      background: linear-gradient(to left, transparent, var(--linea));
-    }
-    .nave {
-      display: grid;
-      place-items: center;
-      width: 64px;
-      height: 64px;
-      padding: 0;
-      border: 1px solid color-mix(in srgb, var(--neon) 45%, var(--linea));
-      border-radius: 50%;
-      background: var(--superficie);
-      cursor: pointer;
-      box-shadow: 0 0 24px rgb(var(--accion-canal) / 0.18);
-      animation: flotar 2.4s var(--curva) infinite;
-      transition:
-        border-color var(--duracion-rapida) var(--curva),
-        box-shadow var(--duracion-rapida) var(--curva);
-    }
-    .nave:hover,
-    .nave:focus-visible {
-      animation-play-state: paused;
-    }
-    .nave:hover {
-      border-color: var(--neon);
-      box-shadow: 0 0 32px rgb(var(--accion-canal) / 0.35);
-    }
-    .nave:focus-visible {
-      outline: 2px solid var(--foco);
-      outline-offset: 3px;
-    }
-    /* El cohete del emoji mira arriba a la derecha: girado 135° apunta hacia abajo. */
-    .emoji {
-      display: block;
-      font-size: 32px;
-      line-height: 1;
-      transform: rotate(135deg);
-    }
-    /* Baja y sube sin parar, como invitando a seguir hacia abajo. Se detiene con el cursor
-       encima o con el foco, y con movimiento reducido la regla global ni lo mueve. */
-    @keyframes flotar {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(6px);
-      }
     }
     .por-que {
       display: flex;
@@ -311,16 +244,4 @@ export class PorQueElegir {
   protected readonly diferencia = DIFERENCIA;
   protected readonly herramientas = HERRAMIENTAS;
   protected readonly destacada = computed(() => destacadaDelInicio(this.catalogo.juegos().length));
-
-  private readonly seccion = viewChild.required<ElementRef<HTMLElement>>('seccion');
-  private readonly titulo = viewChild.required<ElementRef<HTMLElement>>('titulo');
-
-  /** Baja a la sección y le pasa el foco al título, para que un lector de pantalla también
-   * llegue. Con movimiento reducido baja de golpe. Con ?. porque el DOM de las pruebas no
-   * implementa scrollIntoView. */
-  protected bajar(): void {
-    const suave = !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    this.seccion().nativeElement.scrollIntoView?.({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
-    this.titulo().nativeElement.focus({ preventScroll: true });
-  }
 }

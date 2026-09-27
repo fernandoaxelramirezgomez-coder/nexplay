@@ -325,3 +325,50 @@ diferencia de otros sitios, y mostrar nuestras herramientas: que diga por qué e
     - 372 palabras en el Inicio;
     - alto de 2,565 px a 1440, 3,443 a 1024 y 4,555 a 390;
     - sin desborde ni errores de consola.
+
+### Explorar (pedidos del dueño, 2026-09-26)
+
+- **Título:** «Encuentra tu próximo juego». Primero se probó «Explora por riesgo»; el dueño
+  dijo que el de antes, «Explora por género y nivel de riesgo», eran muchas palabras.
+- **Tráileres:** sale la barra «Tráiler N de 6 · dos por nivel…» con sus flechas, porque
+  «no se ve bien» y la lista ya deja elegir cualquiera. Qué tráiler se ve se sigue
+  anunciando, solo para el lector de pantalla.
+- **Separación:** una nave 📚 debajo de los tráileres, igual que el 🚀 del Inicio. Al
+  tocarla baja a «¿Qué juego estás pensando comprar?», que ahora es un título centrado,
+  con el buscador al centro y los géneros debajo.
+  - Los dos usan el componente compartido `compartido/separador-nave.ts`.
+- **Géneros:** van en un panel «Filtra por género», en una rejilla de tarjetas iguales.
+  - Cada tarjeta lleva su emoji (Acción 💥, Aventura 🗺️, Carreras 🏎️, Rol 🧙…) y cuántos
+    juegos tiene. Eso vive en `dominio/generos.ts`, con pruebas.
+  - El elegido se rellena con el color de la vista, no uno por género: los colores del
+    riesgo ya están en cada tarjeta.
+  - En el teléfono, una tira que se desliza.
+- **Pie:** en `/explorar` va sin «Ver metodología», solo con la línea de fuentes. La
+  ficha lo conserva porque lo abre desde sus factores.
+- **Recorrido:**
+  - los tráileres eligen el siguiente en la lista, sin flechas;
+  - la nave 📚 baja a la búsqueda;
+  - el pie trae «Ver metodología» en todas las vistas menos `/explorar`.
+- **La nave 📚 en la primera pantalla** (pedido del dueño): el título va en un renglón y
+  un poco más chico que en las otras vistas; la lista de tráileres, más compacta
+  (miniaturas de 96 px); y en tableta el video no pasa del alto que deja ver la nave.
+  - Medido: la nave termina a 674 px de 900 (1440), 644 de 768 (1366), 625 de 800 (1280),
+    742 de 768 (1024) y 721 de 844 (390).
+- **Dos arreglos que salieron en el recorrido:**
+  - El « juegos» oculto de cada género se posicionaba respecto a la página y la tira del
+    teléfono no lo recortaba, así que la página se desplazaba 1,900 px a lo ancho. Ahora
+    cada tarjeta lo contiene (`position: relative`).
+  - El armazón empezaba con la ruta del router, que dice «/» hasta terminar la primera
+    navegación, y el pie de Explorar alcanzaba a mostrar «Ver metodología». Ahora parte
+    de la dirección real (`Location.path()`).
+- **Géneros sin salto y de a varios** (pedido del dueño: «eligiendo el género te
+  scrollea arriba, eso no debe pasar, y te debe dejar seleccionar más de un género»).
+  - **El salto:** lo causaba `scrollPositionRestoration: 'enabled'`, que sube en cada
+    navegación, y cada filtro del catálogo (cada género y cada tecla) es una navegación.
+    Ahora `desplazamiento.ts` sube al principio solo al cambiar de pantalla. Atrás y
+    adelante devuelven la posición guardada, y las anclas las sigue bajando el router.
+  - **Varios géneros:** `?genero=Acción,Rol`. Basta con tener uno de los elegidos, así
+    que Acción + Rol trae los de acción y los de rol. «Todos» limpia la selección y el
+    panel avisa «(puedes elegir varios)».
+  - Probado: Acción y Rol → 91 de 123, la página se queda en su lugar, teclear tampoco
+    la mueve, la ficha abre arriba y atrás vuelve a donde estaba.

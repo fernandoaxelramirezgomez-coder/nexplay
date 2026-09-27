@@ -289,7 +289,7 @@ export class NiaPagina {
    * juegos abierta al entrar es una columna infinita al lado de la conversación. */
   protected readonly sugerencias = computed(() => {
     const texto = this.texto().trim();
-    return texto ? filtrarJuegos(this.catalogo.juegos(), { texto, genero: '' }).slice(0, MAXIMO_SUGERENCIAS) : [];
+    return texto ? filtrarJuegos(this.catalogo.juegos(), { texto, generos: [] }).slice(0, MAXIMO_SUGERENCIAS) : [];
   });
 
   protected elegir(juego: JuegoCatalogo): void {

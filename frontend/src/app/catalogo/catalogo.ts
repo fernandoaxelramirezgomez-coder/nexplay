@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { SeparadorNave } from '../compartido/separador-nave';
 import { Skeleton } from '../compartido/skeleton';
 import { agruparEnEstantes, ORDEN_BANDAS } from '../dominio/estantes';
-import { filtrarJuegos } from '../dominio/filtros';
+import { filtrarJuegos, generosDeUrl, generosParaUrl } from '../dominio/filtros';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
 import { Buscador } from './buscador';
@@ -14,7 +15,7 @@ import { Trailers } from './trailers';
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Buscador, Estante, FiltrosCatalogo, Skeleton, Trailers],
+  imports: [Buscador, Estante, FiltrosCatalogo, SeparadorNave, Skeleton, Trailers],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })
@@ -29,10 +30,11 @@ export class Catalogo {
 
   protected readonly bandas = ORDEN_BANDAS;
   protected readonly texto = linkedSignal(() => this.q() ?? '');
-  protected readonly generoActivo = computed(() => this.genero() ?? '');
+  /** ?genero=Acción,Rol: se puede elegir más de uno. */
+  protected readonly generosActivos = computed(() => generosDeUrl(this.genero()));
 
   protected readonly filtrados = computed(() =>
-    filtrarJuegos(this.catalogo.juegos(), { texto: this.texto(), genero: this.generoActivo() }),
+    filtrarJuegos(this.catalogo.juegos(), { texto: this.texto(), generos: this.generosActivos() }),
   );
   protected readonly estantes = computed(() => agruparEnEstantes(this.filtrados()));
   /** Sin filtro se muestran las tres bandas, aunque alguna venga vacía: es el reparto del
@@ -40,14 +42,14 @@ export class Catalogo {
   protected readonly estantesVisibles = computed(() =>
     this.hayFiltro() ? this.estantes().filter((estante) => estante.juegos.length) : this.estantes(),
   );
-  protected readonly hayFiltro = computed(() => !!this.texto().trim() || !!this.generoActivo());
+  protected readonly hayFiltro = computed(() => !!this.texto().trim() || this.generosActivos().length > 0);
   protected cambiarTexto(texto: string): void {
     this.texto.set(texto);
     this.actualizarUrl({ q: texto.trim() || null });
   }
 
-  protected cambiarGenero(genero: string): void {
-    this.actualizarUrl({ genero: genero || null });
+  protected cambiarGeneros(generos: string[]): void {
+    this.actualizarUrl({ genero: generosParaUrl(generos) });
   }
 
   private actualizarUrl(queryParams: Record<string, string | null>): void {
