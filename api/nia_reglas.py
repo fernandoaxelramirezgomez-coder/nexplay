@@ -578,3 +578,37 @@ def responder(
 def _nombrado_sin_ficha(original: str) -> dict | None:
     juegos = _nombrados(original)
     return _ficha_corta(juegos[0]) if len(juegos) == 1 else None
+
+
+# La cara de Nia según el nivel del juego; el mismo emoji acompaña la mascota del carrusel.
+_EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
+
+
+def opinion_corta(appid: int) -> dict:
+    """Lo que Nia opina de un juego en una frase, para el carrusel del Inicio: su nivel de
+    riesgo con las mismas palabras del chat, y lo que más pesa para quien lo mira.
+
+    En riesgo bajo pesa la crítica; en alto, la queja más repetida en sus reseñas con
+    señal; en medio, la queja si la hay. Cierra invitando a seguir en el chat."""
+    datos = nia.contexto(appid)
+    nombre, banda = datos["nombre"], datos["banda"]
+    frase = nia._FRASES_BANDA[banda]
+    detalle = ""
+    motivo = datos["motivos"][0].motivo if datos["motivos"] else None
+    if banda == "bajo" and datos["metacritic"] is not None:
+        detalle = f", y la crítica le da {datos['metacritic']}"
+    elif motivo:
+        detalle = f"; en sus reseñas negativas lo que más sale es {motivo}"
+    elif datos["metacritic"] is not None:
+        detalle = f", y la crítica le da {datos['metacritic']}"
+    respuesta = (
+        f"{nombre} tiene riesgo {banda} {_EMOJI_DEL_NIVEL[banda]} {frase[0].upper()}{frase[1:]}{detalle}. "
+        "¿Te cuento más?"
+    )
+    return {
+        "appid": appid,
+        "nombre": nombre,
+        "nivel": banda,
+        "pregunta": f"¿Qué opinas de {nombre}?",
+        "respuesta": nia.pulir(respuesta),
+    }

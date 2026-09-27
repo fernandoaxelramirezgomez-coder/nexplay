@@ -1771,30 +1771,57 @@ def _angular_nia_catalogo(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
-def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
-    """El ejemplo del inicio: curados de las tres bandas, flechas, pausa y rotación."""
+def _angular_carrusel(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """«Análisis crítico con nuestra asistente Nia» en el inicio: los curados de los tres niveles, cada uno con la cara de
+    Nia de su nivel, tu pregunta y su opinión, que nombra el mismo riesgo que /catalogo.
+    Flechas, pausa y rotación como siempre, y ninguna consulta al chat (POST /nia)."""
     problemas = []
+    juegos = _catalogo_api(api)
+    niveles = {j["appid"]: j["banda_riesgo"] for j in juegos}
+    nombres = {j["appid"]: j["nombre"] for j in juegos}
+    pedidas_antes = len(_NIA_PEDIDAS)
     _abrir(pagina, url)
     carrusel = pagina.get_by_test_id("hero-carrusel")
     carrusel.wait_for(state="visible", timeout=_TIMEOUT_MS)
-    if pagina.locator("[data-testid='hero-ejemplo'] .vistazo-lista li").count() != 3:
-        problemas.append("la tarjeta del ejemplo perdió sus tres bullets")
+    pagina.get_by_test_id("hero-ejemplo").get_by_test_id("hero-respuesta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    etiqueta = pagina.get_by_test_id("hero-etiqueta").inner_text()
+    if "Análisis crítico con nuestra asistente Nia" not in etiqueta:
+        problemas.append(f"el carrusel perdió su título: {etiqueta!r}")
 
-    # Una vuelta completa con la flecha: qué juegos y qué bandas hay.
+    # Una vuelta completa con la flecha: qué juegos, qué niveles y qué dice Nia de cada uno.
     pagina.get_by_test_id("hero-siguiente").focus()  # el foco también lo pausa
     vistos: dict[str, str] = {}
     for _ in range(6):
         appid = _ejemplo_actual(pagina)
-        banda = pagina.locator("[data-testid='hero-ejemplo'] [data-testid='pildora-banda']").get_attribute("data-banda")
+        diapositiva = pagina.get_by_test_id("hero-ejemplo")
+        nivel = niveles.get(int(appid))
+        banda = diapositiva.get_by_test_id("pildora-banda").get_attribute("data-banda")
         vistos.setdefault(appid, banda)
+        mascota = diapositiva.get_by_test_id("hero-mascota").get_attribute("src") or ""
+        pregunta = diapositiva.get_by_test_id("hero-pregunta").inner_text()
+        respuesta = diapositiva.get_by_test_id("hero-respuesta")
+        texto = respuesta.inner_text() if respuesta.count() else ""
+        if banda != nivel:
+            problemas.append(f"carrusel {appid}: la píldora dice {banda} y /catalogo {nivel}")
+        if not mascota.endswith(f"nia/ficha-{nivel}.png"):
+            problemas.append(f"carrusel {appid}: la mascota es {mascota!r}, no la de riesgo {nivel}")
+        if nombres.get(int(appid), "?") not in pregunta:
+            problemas.append(f"carrusel {appid}: la pregunta no nombra el juego: {pregunta!r}")
+        if f"riesgo {nivel}" not in texto:
+            problemas.append(f"carrusel {appid}: la opinión de Nia no dice «riesgo {nivel}»: {texto!r}")
+        ficha = diapositiva.get_by_test_id("hero-ficha").get_attribute("href")
+        seguir = diapositiva.get_by_test_id("hero-seguir-nia").get_attribute("href")
+        if ficha != f"/juego/{appid}" or seguir != f"/nia?appid={appid}":
+            problemas.append(f"carrusel {appid}: enlaces {ficha!r} y {seguir!r}")
         pagina.get_by_test_id("hero-siguiente").click()
         pagina.wait_for_function(
             "anterior => document.querySelector(\"[data-testid='hero-ejemplo']\")?.dataset.appid !== anterior",
             arg=appid, timeout=_TIMEOUT_MS,
         )
     if set(vistos.values()) != {"bajo", "medio", "alto"}:
-        problemas.append(f"el carrusel no cubre las tres bandas: {vistos}")
-    print(f"carrusel: {len(vistos)} ejemplos curados, bandas {sorted(set(vistos.values()))}")
+        problemas.append(f"el carrusel no cubre los tres niveles: {vistos}")
+    print(f"carrusel: {len(vistos)} opiniones de Nia, niveles {sorted(set(vistos.values()))}, "
+          "cada una con su mascota y el riesgo de /catalogo")
 
     antes = _ejemplo_actual(pagina)
     pagina.get_by_test_id("hero-anterior").click()
@@ -1808,7 +1835,7 @@ def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
     print(f"carrusel: flechas en ambos sentidos ({ruta.relative_to(_RAIZ)})")
 
     # Pausa con el ratón encima: pasados 8 s sigue el mismo.
-    pagina.locator("[data-testid='hero-ejemplo'] .vistazo-cuerpo").hover()
+    pagina.get_by_test_id("hero-ejemplo").get_by_test_id("hero-respuesta").hover()
     quieto = _ejemplo_actual(pagina)
     pagina.wait_for_timeout(8500)
     if _ejemplo_actual(pagina) != quieto:
@@ -1843,6 +1870,10 @@ def _angular_carrusel(pagina: Page, url: str, destino: Path) -> list[str]:
                 print("carrusel: con prefers-reduced-motion no rota solo")
         finally:
             contexto.close()
+    if len(_NIA_PEDIDAS) != pedidas_antes:
+        problemas.append(f"el carrusel consultó al chat {len(_NIA_PEDIDAS) - pedidas_antes} veces")
+    else:
+        print("carrusel: ninguna consulta al chat (POST /nia); las opiniones salen de GET /nia/opiniones")
     return problemas
 
 
@@ -3165,7 +3196,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_voto_nia(pagina, url, destino)
         + _angular_nia_catalogo(pagina, url, destino)
         + _angular_campo_nia(pagina, url)
-        + _angular_carrusel(pagina, url, destino)
+        + _angular_carrusel(pagina, url, destino, api)
         + _angular_hilo(pagina, url, destino)
         + _angular_perfil(pagina, url, destino, api)
         + _angular_6c(pagina, url, destino, api)

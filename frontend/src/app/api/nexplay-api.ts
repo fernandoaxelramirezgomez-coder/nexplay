@@ -9,6 +9,7 @@ import {
   FiltrosCatalogo,
   FormularioAlta,
   JuegoCatalogo,
+  OpinionNia,
   PanoramaCatalogo,
   PerfilJugador,
   PrediccionRiesgo,
@@ -98,6 +99,12 @@ export class NexplayApi {
 
   preguntarANia(solicitud: SolicitudNia): Observable<RespuestaNia> {
     return this.http.post<RespuestaNia>(`${this.base}/nia`, solicitud);
+  }
+
+  /** Las opiniones cortas del carrusel del inicio (hasta 6 juegos): reglas, sin modelo. */
+  opinionesDeNia(appids: readonly number[]): Observable<OpinionNia[]> {
+    const params = new HttpParams().set('appids', appids.join(','));
+    return this.http.get<OpinionNia[]>(`${this.base}/nia/opiniones`, { params });
   }
 
   /** Crea o cambia el voto de esta persona para esa respuesta de Nia. */

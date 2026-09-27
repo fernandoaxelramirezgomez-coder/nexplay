@@ -316,6 +316,17 @@ class RespuestaNia(BaseModel):
     )
 
 
+class OpinionNia(BaseModel):
+    """La opinión corta de Nia sobre un juego, para el carrusel del Inicio. Sale de las
+    reglas del chat con los datos del catálogo: no llama a ningún modelo ni se guarda."""
+
+    appid: int
+    nombre: str
+    nivel: NivelRiesgo
+    pregunta: str
+    respuesta: str
+
+
 class SolicitudVotoNia(BaseModel):
     usuario: str = Field(
         ...,

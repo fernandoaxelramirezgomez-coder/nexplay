@@ -208,6 +208,16 @@ export interface RespuestaNia {
   version_prompt: string;
 }
 
+/** GET /nia/opiniones: lo que Nia opina de un juego en una frase, armado con las reglas del
+ * chat sobre los datos del catálogo. No pasa por el modelo de lenguaje ni se guarda. */
+export interface OpinionNia {
+  appid: number;
+  nombre: string;
+  nivel: NivelRiesgo;
+  pregunta: string;
+  respuesta: string;
+}
+
 /** 1 es 👍 y -1 es 👎. */
 export type VotoNiaValor = 1 | -1;
 

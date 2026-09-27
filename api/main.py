@@ -18,6 +18,7 @@ from .schemas import (
     JuegoCatalogo,
     NivelFriccion,
     NivelRiesgo,
+    OpinionNia,
     PanoramaCatalogo,
     PerfilJugador,
     PrediccionRiesgo,
@@ -244,6 +245,23 @@ def reaccionar(
 
     with _errores_de_comentario():
         return ReaccionComentario(**valoraciones.alternar_reaccion(appid, id_comentario, solicitud.usuario))
+
+
+@app.get("/nia/opiniones", response_model=list[OpinionNia])
+def opiniones_de_nia(
+    appids: str = Query(
+        ...,
+        pattern=r"^\d{1,9}(,\d{1,9}){0,5}$",
+        description="Hasta 6 appids separados por coma",
+    ),
+) -> list[OpinionNia]:
+    """La opinión corta de Nia sobre cada juego pedido, para el carrusel del Inicio. Sale de
+    las reglas del chat con los datos del catálogo: sin modelo de lenguaje y sin guardar
+    nada. Un appid que no está en el catálogo se omite."""
+    pedidos = [int(appid) for appid in appids.split(",")]
+    return [
+        OpinionNia(**nia.reglas.opinion_corta(appid)) for appid in pedidos if catalogo.obtener(appid) is not None
+    ]
 
 
 # Nia consulta un modelo de pago: el tope por ventana es un límite de costo.
