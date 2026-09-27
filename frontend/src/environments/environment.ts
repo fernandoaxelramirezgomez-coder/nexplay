@@ -1,4 +1,4 @@
-// La URL pública de la API la define el despliegue (ver README, sección de despliegue).
+// URL pública de la API en Render, sin «/» al final. Si el servicio cambia, se reemplaza aquí.
 export const environment = {
-  apiUrl: 'http://localhost:8000',
+  apiUrl: 'https://nexplay-api-345o.onrender.com',
 };
