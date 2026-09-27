@@ -53,14 +53,29 @@ import { PanoramaStore } from '../estado/panorama-store';
     </section>
   `,
   styles: `
+    /* Un dato por renglón, con una línea fina entre ellos: se lee como una tabla. */
     .datos {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: var(--espacio-8) var(--espacio-24);
+      column-gap: var(--espacio-24);
       margin: 0;
     }
+    /* 10 px y no 12: la ficha técnica comparte la columna fija con el chat, y con más alto
+       el botón de preguntar se salía de una pantalla de portátil (674 px). */
+    dt,
     dd {
       margin: 0;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--borde);
+    }
+    dt:first-of-type,
+    dd:first-of-type {
+      padding-top: 0;
+    }
+    dt:last-of-type,
+    dd:last-of-type {
+      padding-bottom: 0;
+      border-bottom: 0;
     }
     .critica {
       line-height: 1.4;

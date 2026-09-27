@@ -45,7 +45,7 @@ const NOTA_METACRITIC = 'nota de Metacritic';
   `,
   styles: `
     .leyenda {
-      margin: 0 0 var(--espacio-12);
+      margin: 0 0 var(--espacio-16);
     }
     .marca[data-direccion='aumenta'] {
       color: var(--banda-alto-texto);
@@ -59,7 +59,7 @@ const NOTA_METACRITIC = 'nota de Metacritic';
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-12);
+      gap: var(--espacio-16);
     }
     .factor {
       display: grid;
@@ -81,7 +81,7 @@ const NOTA_METACRITIC = 'nota de Metacritic';
     }
     .detalle {
       margin: 0;
-      line-height: 1.4;
+      line-height: 1.45;
     }
   `,
 })

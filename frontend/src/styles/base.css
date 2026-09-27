@@ -424,9 +424,11 @@ b {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-16);
+  /* El relleno y el aire interno son variables: la ficha los sube (se veía apretada) sin
+     tocar las columnas de Comparar, que también usan .bloque. */
+  gap: var(--bloque-hueco, var(--espacio-16));
   min-width: 0;
-  padding: 22px var(--espacio-24) var(--espacio-24);
+  padding: var(--bloque-relleno, 22px var(--espacio-24) var(--espacio-24));
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
   background: var(--superficie);
@@ -521,7 +523,7 @@ b {
 
 @media (max-width: 640px) {
   .bloque {
-    padding: 18px var(--espacio-16) 20px;
+    padding: var(--bloque-relleno-movil, 18px var(--espacio-16) 20px);
   }
   .bloque-titulo {
     font-size: 18px;
