@@ -120,7 +120,8 @@ export class Pie {
    * para verlo. */
   private abrir(bloque: ScrollLogicalPosition): void {
     this.abierto.set(true);
-    // Tras pintar el contenido: antes, el panel mide cero y no hay adónde bajar.
-    setTimeout(() => this.panel()?.nativeElement.scrollIntoView({ block: bloque }), 0);
+    // Tras pintar el contenido: antes, el panel mide cero y no hay adónde bajar. Con ?.
+    // porque el DOM de las pruebas no implementa scrollIntoView.
+    setTimeout(() => this.panel()?.nativeElement.scrollIntoView?.({ block: bloque }), 0);
   }
 }
