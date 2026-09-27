@@ -128,6 +128,18 @@ logger.info(
 )
 
 
+def ficha_del_modelo() -> dict:
+    """Con qué se entrenó el modelo servido: versión, corte de datos, juegos y reseñas. Sale
+    del artefacto ya cargado; lo lee el Inicio para decir con cuántos juegos que no vio se
+    probó. Los artefactos viejos sin estos campos devuelven None."""
+    return {
+        "version": _VERSION_MODELO,
+        "datos": _ARTEFACTO.get("datos_tag"),
+        "juegos_entrenamiento": _ARTEFACTO.get("juegos_entrenamiento"),
+        "resenas_entrenamiento": _ARTEFACTO.get("filas_entrenamiento"),
+    }
+
+
 def _atributos_juego(appid: int) -> dict:
     con = sqlite3.connect(_DB_PATH)
     try:

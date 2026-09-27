@@ -129,8 +129,9 @@
           }
           <a
             class="boton-texto toque-amplio como-calculamos"
-            routerLink="/como-funciona"
-            fragment="titulo-metodologia"
+            [routerLink]="[]"
+            fragment="metodologia"
+            queryParamsHandling="preserve"
             data-testid="factores-como-calculamos"
             >Cómo calculamos esta estimación →</a
           >

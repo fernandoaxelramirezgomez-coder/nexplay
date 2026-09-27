@@ -1,0 +1,22 @@
+===== catálogo (123)
+nivel  juegos   reseñas  con señal   señal
+bajo       43    64,896        664  1.02%
+medio      37    55,796        730  1.31%
+alto       43    63,675      2,732  4.29%
+cociente alto/bajo: 4.19×  (intervalo 95 % por juegos: 2.66× a 6.44×)
+
+===== data-v1 (83)
+nivel  juegos   reseñas  con señal   señal
+bajo       30    45,198        298  0.66%
+medio      23    34,698        386  1.11%
+alto       30    44,076      2,030  4.61%
+cociente alto/bajo: 6.99×  (intervalo 95 % por juegos: 4.15× a 11.13×)
+
+===== externos (40)
+nivel  juegos   reseñas  con señal   señal
+bajo       13    19,698        366  1.86%
+medio      14    21,098        344  1.63%
+alto       13    19,599        702  3.58%
+cociente alto/bajo: 1.93×  (intervalo 95 % por juegos: 0.87× a 3.50×)
+
+En los 40 que el modelo nunca vio el cociente es 1.93×: menor que 2×.

@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
@@ -32,20 +33,19 @@ export const routes: Routes = [
     title: 'NexPlay · Tu perfil',
     loadComponent: () => import('./perfil/perfil').then((m) => m.Perfil),
   },
+  // Las tres vistas que salieron del menú en la reorganización a cinco: sus enlaces viejos
+  // llevan a donde vive ahora su contenido, con el ancla que lo abre.
   {
     path: 'historial',
-    title: 'NexPlay · Tu historial',
-    loadComponent: () => import('./historial/historial').then((m) => m.Historial),
+    redirectTo: () => inject(Router).createUrlTree(['/perfil'], { fragment: 'actividad' }),
   },
   {
     path: 'panorama',
-    title: 'NexPlay · Panorama',
-    loadComponent: () => import('./panorama/panorama').then((m) => m.Panorama),
+    redirectTo: () => inject(Router).createUrlTree(['/'], { fragment: 'metodologia' }),
   },
   {
     path: 'como-funciona',
-    title: 'NexPlay · Cómo funciona',
-    loadComponent: () => import('./como-funciona/como-funciona').then((m) => m.ComoFunciona),
+    redirectTo: () => inject(Router).createUrlTree(['/'], { fragment: 'metodologia' }),
   },
   { path: '**', redirectTo: '' },
 ];

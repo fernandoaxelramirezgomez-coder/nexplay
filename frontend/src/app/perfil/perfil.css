@@ -214,3 +214,34 @@
     flex: 1;
   }
 }
+
+/* «Tu actividad»: lo que antes era Historial, plegado al final. En panel, como todo lo que
+   lleva texto sobre la nebulosa. */
+.actividad {
+  scroll-margin-top: var(--espacio-16);
+  padding: 14px 18px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+}
+
+.actividad summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espacio-4) var(--espacio-8);
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+
+.actividad .titulo-actividad {
+  font-family: var(--fuente-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.actividad[open] summary {
+  margin-bottom: var(--espacio-16);
+}

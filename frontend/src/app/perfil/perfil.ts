@@ -1,5 +1,18 @@
-import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { Plataforma } from '../api/contrato';
@@ -18,7 +31,9 @@ import {
   preguntasPendientes,
 } from '../dominio/opciones-perfil';
 import { CatalogoStore } from '../estado/catalogo-store';
+import { HistorialStore } from '../estado/historial-store';
 import { PerfilStore } from '../estado/perfil-store';
+import { Historial } from '../historial/historial';
 import { SelectorGeneros } from './selector-generos';
 import { SugerenciasPerfil } from './sugerencias-perfil';
 import { TarjetasOpcion } from './tarjetas-opcion';
@@ -26,7 +41,7 @@ import { TarjetasOpcion } from './tarjetas-opcion';
 @Component({
   selector: 'app-perfil',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TarjetasOpcion, SelectorGeneros, SugerenciasPerfil],
+  imports: [RouterLink, TarjetasOpcion, SelectorGeneros, SugerenciasPerfil, Historial],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
@@ -35,6 +50,22 @@ export class Perfil {
   private readonly inyector = inject(Injector);
   protected readonly perfil = inject(PerfilStore);
   protected readonly catalogo = inject(CatalogoStore);
+  private readonly historial = inject(HistorialStore);
+  private readonly seccionActividad = viewChild<ElementRef<HTMLDetailsElement>>('actividad');
+
+  /** «Tu actividad» va plegada; /historial (y /perfil#actividad) llegan con ella abierta. */
+  protected readonly actividadAbierta = toSignal(
+    inject(ActivatedRoute).fragment.pipe(map((fragmento) => fragmento === 'actividad')),
+    { initialValue: false },
+  );
+
+  protected readonly resumenActividad = computed(() => {
+    const cuantas = this.historial.entradas().length;
+    if (!cuantas) {
+      return 'todavía nada';
+    }
+    return `${cuantas} ${cuantas === 1 ? 'cosa vista' : 'cosas vistas'}`;
+  });
 
   protected readonly compras = COMPRAS;
   protected readonly horas = HORAS;
@@ -74,6 +105,16 @@ export class Perfil {
     const falta = pendientes.length <= 2 ? `falta: ${pendientes.join(' y ')}` : `faltan ${pendientes.length}`;
     return `${this.respondidas()} de ${TOTAL_PREGUNTAS} respondidas · ${falta}`;
   });
+
+  constructor() {
+    // Llegando por /historial o #actividad, la sección se abre y sube a la vista.
+    effect(() => {
+      const seccion = this.seccionActividad()?.nativeElement;
+      if (this.actividadAbierta() && seccion) {
+        setTimeout(() => seccion.scrollIntoView({ block: 'start' }), 0);
+      }
+    });
+  }
 
   protected estado(respondida: boolean): string {
     return respondida ? '✓ Respondida' : 'Falta responder';

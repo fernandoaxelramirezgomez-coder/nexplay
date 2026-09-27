@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { PildoraBanda } from '../compartido/pildora-banda';
@@ -17,9 +17,11 @@ const ROTULO: Record<TipoEntrada, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, PildoraBanda],
   template: `
-    <div class="historial" data-testid="historial">
+    <div class="historial" data-testid="historial" [class.incrustado]="incrustado()">
       <header class="cabecera">
-        <h1>Tu historial</h1>
+        @if (!incrustado()) {
+          <h1>Tu historial</h1>
+        }
         <p class="lectura entrada">
           Las fichas que abriste, lo que comparaste y lo que le preguntaste a Nia.
           <strong>Vive solo en este navegador</strong>: no viaja a ningún servidor y nadie más lo ve.
@@ -71,6 +73,10 @@ const ROTULO: Record<TipoEntrada, string> = {
       display: flex;
       flex-direction: column;
       gap: var(--espacio-24);
+    }
+    /* Dentro de Tu perfil es una sección, no una página: su texto va a tamaño de lectura. */
+    .incrustado .entrada {
+      font-size: var(--texto-body-sm);
     }
     .cabecera {
       display: flex;
@@ -124,6 +130,9 @@ const ROTULO: Record<TipoEntrada, string> = {
   `,
 })
 export class Historial {
+  /** Dentro de Tu perfil («Tu actividad») el título lo pone la sección: aquí sobra. */
+  readonly incrustado = input(false);
+
   protected readonly historial = inject(HistorialStore);
   protected readonly maximo = MAXIMO_HISTORIAL;
   protected readonly confirmando = signal(false);

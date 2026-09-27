@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
-      // anchorScrolling: el enlace del pie lleva a la metodología dentro de /como-funciona.
+      // anchorScrolling: los enlaces con ancla (#metodologia, #actividad) bajan a su sección.
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
       withViewTransitions({
         // Solo al cambiar de pantalla: los filtros del catálogo cambian la URL en cada

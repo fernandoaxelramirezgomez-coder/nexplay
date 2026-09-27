@@ -46,24 +46,15 @@ describe('BarraLateral', () => {
     vi.unstubAllGlobals();
   });
 
-  it('agrupa las ocho secciones en tres listas con nombre para el lector de pantalla', async () => {
+  it('las cinco vistas de la exposición, en su orden y en una sola lista con nombre', async () => {
     const { fixture, html } = crear();
     await fixture.whenStable();
 
     const grupos = [...html.querySelectorAll('.grupos ul')].map((ul) => ul.getAttribute('aria-label'));
-    expect(grupos).toEqual(['Principal', 'Tu actividad', 'Transparencia']);
+    expect(grupos).toEqual(['Principal']);
 
     const enlaces = [...html.querySelectorAll('nav a.item')].map((a) => a.getAttribute('data-testid'));
-    expect(enlaces).toEqual([
-      'nav-inicio',
-      'nav-explorar',
-      'nav-comparar',
-      'nav-nia',
-      'nav-perfil',
-      'nav-historial',
-      'nav-panorama',
-      'nav-como-funciona',
-    ]);
+    expect(enlaces).toEqual(['nav-inicio', 'nav-explorar', 'nav-nia', 'nav-comparar', 'nav-perfil']);
   });
 
   it('cada sección dice qué hay ahí, en una línea bajo su nombre', async () => {
@@ -71,16 +62,7 @@ describe('BarraLateral', () => {
     await fixture.whenStable();
 
     const subtitulos = [...html.querySelectorAll('nav a.item .sub')].map((s) => s.textContent?.trim());
-    expect(subtitulos).toEqual([
-      'Qué es NexPlay',
-      'El catálogo',
-      'Hasta 4 lado a lado',
-      'Tu asistente',
-      'Cómo juegas tú',
-      'Lo que ya viste',
-      'Los datos en gráficas',
-      'Método y fuentes',
-    ]);
+    expect(subtitulos).toEqual(['Qué es NexPlay', 'El catálogo', 'Tu asistente', 'Hasta 4 lado a lado', 'Cómo juegas tú']);
 
     juegos.set([{}, {}, {}]);
     await fixture.whenStable();

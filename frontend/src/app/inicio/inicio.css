@@ -1,5 +1,6 @@
-/* El inicio: el titular, la acción principal (buscar), el carrusel de ejemplo, los
-   accesos y de dónde salen los datos. */
+/* El inicio: el titular, la acción principal (buscar), el carrusel de ejemplo, la
+   invitación al perfil, lo que encontramos y cómo lo sabemos. La metodología vive en el
+   panel del pie. */
 .inicio {
   display: flex;
   flex-direction: column;
@@ -174,12 +175,12 @@
     order: 5;
   }
 
-  app-accesos {
-    order: 5;
+  app-hallazgos {
+    order: 6;
   }
 
-  app-fuentes-datos {
-    order: 6;
+  app-como-lo-sabemos {
+    order: 7;
   }
 
   .icono-grande {

@@ -384,6 +384,16 @@ class DescargasMuestra(BaseModel):
     appreviews: VentanaMuestra = Field(..., description="Las reseñas")
 
 
+class FichaModelo(BaseModel):
+    """Con qué se entrenó el modelo servido. El Inicio cuenta cuántos juegos del catálogo
+    quedaron fuera del entrenamiento: con esos se probó."""
+
+    version: str
+    datos: Optional[str] = Field(None, description="Tag del release de entrenamiento, p. ej. data-v1")
+    juegos_entrenamiento: Optional[int] = None
+    resenas_entrenamiento: Optional[int] = None
+
+
 class CalidadMuestra(BaseModel):
     """Qué tan buena es la muestra de reseñas, en proporciones sobre el total descargado."""
 
@@ -433,6 +443,7 @@ class PanoramaCatalogo(BaseModel):
     cobertura: float = Field(..., ge=0, le=1, description="descargadas / las que Steam reporta")
     ventana: VentanaMuestra
     descargas: DescargasMuestra
+    modelo: FichaModelo
     casos_senal: int
     prevalencia: float = Field(..., ge=0, le=1)
     playtime_al_resenar: list[TramoPlaytime]

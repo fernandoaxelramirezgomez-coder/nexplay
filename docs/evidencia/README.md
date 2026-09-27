@@ -43,6 +43,9 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   entre los 83 de data-v1 (descriptiva: el modelo ya los vio) y los 40 externos. Responde
   si la banda alta es solo «no tiene nota de Metacritic», con la advertencia de que «alto
   con nota» son 10 juegos en todo el catálogo.
+- `senal-por-nivel.md`, `senal_por_nivel.py` y `senal-por-nivel.txt`: cuántas veces más
+  señal hay en riesgo alto que en bajo, en los 123, en los 83 de entrenamiento y en los 40 que
+  el modelo no vio (4.19×, 6.99× y 1.93×), y por qué la tarjeta del Inicio dice lo que dice.
 - `valoraciones-nia.md` y `valoraciones_nia.py`: los votos 👍/👎 a las respuestas de Nia,
   agrupados por modo y por versión del prompt (el hash de su texto), con la cobertura —qué
   proporción de respuestas recibe voto— y el reparto de motivos del 👎. Incluye qué se

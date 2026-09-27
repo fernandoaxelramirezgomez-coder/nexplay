@@ -151,4 +151,13 @@
   </div>
 
   <app-sugerencias-perfil [valores]="valores()" />
+
+  <!-- Lo que antes era Historial: plegado, al final; /historial lleva aquí y lo abre. -->
+  <details class="actividad" id="actividad" #actividad data-testid="perfil-actividad" [open]="actividadAbierta()">
+    <summary>
+      <span class="titulo-actividad">Tu actividad</span>
+      <span class="meta">· {{ resumenActividad() }}</span>
+    </summary>
+    <app-historial [incrustado]="true" />
+  </details>
 </div>

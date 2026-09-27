@@ -276,6 +276,14 @@ export interface PanoramaCatalogo {
   ventana: { desde: string; hasta: string };
   /** Cuándo se descargó cada fuente (UTC, YYYY-MM-DD). La ventana es cuándo se escribieron. */
   descargas: { appdetails: { desde: string; hasta: string }; appreviews: { desde: string; hasta: string } };
+  /** Con qué se entrenó el modelo servido: los juegos del catálogo que no están aquí son
+   * los que nunca vio. */
+  modelo: {
+    version: string;
+    datos: string | null;
+    juegos_entrenamiento: number | null;
+    resenas_entrenamiento: number | null;
+  };
   casos_senal: number;
   prevalencia: number;
   playtime_al_resenar: TramoPlaytime[];

@@ -18,6 +18,7 @@ from . import scoring
 from .schemas import (
     CalidadMuestra,
     DescargasMuestra,
+    FichaModelo,
     JuegoPanorama,
     MotivoInsatisfaccion,
     PanoramaCatalogo,
@@ -50,6 +51,7 @@ _VACIO = PanoramaCatalogo(
         appdetails=VentanaMuestra(desde="", hasta=""),
         appreviews=VentanaMuestra(desde="", hasta=""),
     ),
+    modelo=FichaModelo(**scoring.ficha_del_modelo()),
     casos_senal=0,
     prevalencia=0.0,
     playtime_al_resenar=[],
@@ -186,6 +188,7 @@ def _calcular() -> PanoramaCatalogo:
             appdetails=VentanaMuestra(desde=descargas["juegos"][0] or "", hasta=descargas["juegos"][1] or ""),
             appreviews=VentanaMuestra(desde=descargas["resenas"][0] or "", hasta=descargas["resenas"][1] or ""),
         ),
+        modelo=FichaModelo(**scoring.ficha_del_modelo()),
         casos_senal=casos or 0,
         prevalencia=_proporcion(casos, total),
         playtime_al_resenar=tramos,

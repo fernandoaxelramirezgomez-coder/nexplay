@@ -85,18 +85,26 @@ export function conclusionGeneros(juegos: readonly JuegoCatalogo[], minimo: numb
   return `${lista(arriba)} ${verbo} más juegos en riesgo alto (${alto}${DURO}%); ${lista(abajo)}, menos (${bajo}${DURO}%).`;
 }
 
-/** Cómo se compara la mediana de riesgo alto con la de bajo, en palabras y sin redondear
- * hacia arriba: 3.2 veces es "más del triple", no "el triple". */
-function comparacion(razon: number): string {
+/** Cuántas veces es una cifra de otra, en palabras y sin redondear hacia arriba: 3.2 veces
+ * es "más del triple", no "el triple". La usan Panorama y el Inicio. */
+export function cuantasVeces(razon: number): string {
   const tramos: [boolean, string][] = [
-    [Math.abs(razon - 2) < 0.05, 'el doble de'],
-    [Math.abs(razon - 3) < 0.05, 'el triple de'],
-    [razon > 2 && razon < 3, 'más del doble de'],
-    [razon > 3 && razon < 4, 'más del triple de'],
-    [razon >= 0.95 && razon <= 1.05, 'casi igual a'],
-    [razon < 0.95, 'menor que'],
+    [Math.abs(razon - 2) < 0.05, 'el doble'],
+    [Math.abs(razon - 3) < 0.05, 'el triple'],
+    [razon > 2 && razon < 3, 'más del doble'],
+    [razon > 3 && razon < 4, 'más del triple'],
+    [razon >= 0.95 && razon <= 1.05, 'casi lo mismo'],
+    [razon < 0.95, 'menos'],
   ];
   return tramos.find(([cumple]) => cumple)?.[1] ?? `${razon.toFixed(1)} veces`;
+}
+
+/** La misma comparación con su preposición, para "…, más del triple de la de bajo". */
+function comparacion(razon: number): string {
+  const veces = cuantasVeces(razon);
+  if (veces === 'casi lo mismo') return 'casi igual a';
+  if (veces === 'menos') return 'menor que';
+  return veces.endsWith('veces') ? veces : `${veces} de`;
 }
 
 export function conclusionPrecio(juegos: readonly JuegoCatalogo[]): string {

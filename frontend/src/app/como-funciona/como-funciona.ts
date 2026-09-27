@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Fuentes } from './fuentes';
+import { Metodologia } from './metodologia';
 
 export type IconoPaso = 'explorar' | 'panorama' | 'perfil' | 'nia';
 
@@ -54,7 +55,7 @@ export const PASOS: readonly Paso[] = [
 @Component({
   selector: 'app-como-funciona',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Fuentes],
+  imports: [RouterLink, Fuentes, Metodologia],
   template: `
     <div class="como-funciona" data-testid="como-funciona">
       <header class="cabecera">
@@ -99,41 +100,7 @@ export const PASOS: readonly Paso[] = [
         }
       </ol>
 
-      <section class="panel metodologia" data-testid="metodologia" aria-labelledby="titulo-metodologia">
-        <h2 class="rotulo-panel" id="titulo-metodologia">Metodología</h2>
-        <ul class="hechos" data-testid="metodologia-hechos">
-          <li>
-            <strong>Una señal, no un sentimiento</strong>
-            <span>Reseña negativa con menos de 2 h jugadas: la ventana de reembolso de Steam.</span>
-          </li>
-          <li>
-            <strong>Probado con juegos que no vio</strong>
-            <span>Se valida agrupando por juego; la métrica es PR-AUC, no la exactitud.</span>
-          </li>
-          <li>
-            <strong>Ordena, no predice</strong>
-            <span>Es un nivel relativo al catálogo, no una probabilidad. Es del juego, no tuyo.</span>
-          </li>
-        </ul>
-        <details class="completa" data-testid="metodologia-completa">
-          <summary>Leer la metodología completa</summary>
-          <p class="lectura">
-            NexPlay estima el riesgo de arrepentimiento temprano al comprar un videojuego, antes de la compra. Es una
-            señal <em>proxy</em>: se construye con reseñas donde el autor jugó poco (menos de 120 minutos, la ventana
-            de reembolso de Steam) y calificó negativo. Steam no pregunta directamente si alguien se arrepintió.
-          </p>
-          <p class="lectura">
-            El modelo se valida con <span class="mono">GroupKFold</span> agrupando por juego, así que el riesgo mide
-            generalización a juegos que el modelo no vio, no memorización. La métrica es PR-AUC: la clase está muy
-            desbalanceada (alrededor del 2.2% de las reseñas), así que la exactitud no sirve.
-          </p>
-          <p class="lectura">
-            El riesgo ordena riesgo relativo; no es una probabilidad calibrada. Por eso se muestra como nivel (bajo,
-            medio o alto) y nunca como porcentaje. El riesgo es del juego y es el mismo para todos: el perfil que
-            declaras no lo cambia.
-          </p>
-        </details>
-      </section>
+      <app-metodologia />
 
       <app-fuentes />
     </div>
@@ -239,64 +206,14 @@ export const PASOS: readonly Paso[] = [
       font-size: var(--texto-body-sm);
       line-height: var(--interlineado-largo);
     }
-    .panel {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 22px var(--espacio-24);
-      border: 1px solid var(--borde);
-      border-radius: var(--radio-tarjeta);
-      background: var(--superficie);
-    }
-    .rotulo-panel {
-      margin: 0;
-      font-family: var(--fuente-display);
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .hechos {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: var(--espacio-12);
-    }
-    .hechos li {
-      display: flex;
-      flex-direction: column;
-      gap: var(--espacio-4);
-      padding: 14px;
-      border-radius: var(--radio-boton);
-      background: var(--superficie-2);
-    }
-    .hechos strong {
-      font-size: 17px;
-    }
-    .hechos span {
-      color: var(--texto-meta);
-      font-size: var(--texto-body-sm);
-      line-height: 1.4;
-    }
-    .completa .lectura {
-      margin: var(--espacio-8) 0 0;
-    }
     @container contenido (max-width: 900px) {
       .pasos {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .hechos {
-        grid-template-columns: 1fr;
       }
     }
     @container contenido (max-width: 560px) {
       .pasos {
         grid-template-columns: 1fr;
-      }
-      .panel {
-        padding: 18px var(--espacio-16) 20px;
       }
     }
   `,

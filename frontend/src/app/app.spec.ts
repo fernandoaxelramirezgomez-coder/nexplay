@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { PanoramaCatalogo } from './api/contrato';
 import { App } from './app';
@@ -26,33 +26,44 @@ describe('App (shell)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('la navegación vive en la barra lateral, con las ocho secciones', async () => {
+  it('la navegación vive en la barra lateral, con las cinco vistas de la exposición', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
     const enlaces = [...html.querySelectorAll('app-barra-lateral nav a.item .nombre')].map((a) => a.textContent?.trim());
-    expect(enlaces).toEqual([
-      'Inicio',
-      'Explorar',
-      'Comparar',
-      'Nia',
-      'Tu perfil',
-      'Historial',
-      'Panorama',
-      'Cómo funciona',
-    ]);
+    expect(enlaces).toEqual(['Inicio', 'Explorar', 'Nia', 'Comparar', 'Tu perfil']);
   });
 
-  it('el pie enlaza a la metodología en vez de repetirla', async () => {
+  it('el pie despliega la metodología y las fuentes ahí mismo, sin cambiar de vista', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
-    const enlace = html.querySelector('footer [data-testid="enlace-metodologia"]');
-    expect(enlace?.getAttribute('href')).toContain('/como-funciona');
+    const boton = html.querySelector<HTMLButtonElement>('footer [data-testid="pie-ver-metodologia"]')!;
+    expect(boton.getAttribute('aria-controls')).toBe('metodologia');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
     expect(html.querySelector('footer [data-testid="metodologia"]')).toBeNull();
+    expect(html.querySelector('footer a[href*="como-funciona"]')).toBeNull();
+
+    boton.click();
+    await fixture.whenStable();
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    expect(html.querySelector('footer #metodologia [data-testid="metodologia"]')).not.toBeNull();
+    expect(html.querySelector('footer #metodologia [data-testid="fuentes"]')).not.toBeNull();
+    expect(html.querySelector('footer [data-testid="metodologia-tercios"]')?.textContent?.trim()).toBe(
+      'Los niveles bajo/medio/alto son tercios del score del modelo.',
+    );
   });
 
-  it('el pie dice de dónde salen los datos y cuándo se bajaron, y enlaza a Fuentes', async () => {
+  it('llegar con #metodologia abre el panel del pie', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    await TestBed.inject(Router).navigateByUrl('/#metodologia');
+    await fixture.whenStable();
+    const boton = (fixture.nativeElement as HTMLElement).querySelector('footer [data-testid="pie-ver-metodologia"]');
+    expect(boton?.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('el pie dice de dónde salen los datos y cuándo se bajaron', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
@@ -67,9 +78,6 @@ describe('App (shell)', () => {
     });
     await fixture.whenStable();
     expect(linea()).toBe('Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas del 13 al 21 sep 2026.');
-    expect(html.querySelector('footer [data-testid="enlace-fuentes"]')?.getAttribute('href')).toBe(
-      '/como-funciona#titulo-fuentes',
-    );
   });
 
   it('con el cajón abierto la página queda inerte y el velo la cierra', async () => {

@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup · Inicio en 5 vistas</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1240px; margin: 0 auto; padding: 72px 24px 24px; }
+  .encabezado-mockup p { margin-top: 12px; max-width: 80ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; margin: 0; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .nota-mockup p { margin: 0; }
+  .nota-mockup p + p, .nota-mockup p + ul { margin-top: 8px; }
+  .escena {
+    padding: 32px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .marco { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .app { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .contenido { container: contenido / inline-size; display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+
+  /* R1: el menú de cinco. */
+  .menu { display: flex; flex-direction: column; gap: 6px; padding: 16px 12px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .menu a { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 2px 12px; padding: 8px 10px; border-radius: 12px; color: var(--texto); text-decoration: none; }
+  .menu a .ico { grid-row: 1 / span 2; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--tono); background: rgb(var(--tono-canal) / 0.14); }
+  .menu a strong { font-family: var(--fuente-display); font-size: 17px; letter-spacing: 0.04em; }
+  .menu a span.sub { color: var(--texto-2); font-size: 16px; }
+  .menu a[aria-current='page'] { border: 1px solid color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie)); background: rgb(var(--tono-canal) / 0.1); }
+
+  /* Encabezado y búsqueda: iguales que hoy. */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+  .sobrelinea { display: inline-block; align-self: flex-start; margin: 0 0 12px; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie)); background: var(--superficie); color: var(--neon); font-size: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(34px, 4.2cqw, 52px); }
+  .entrada { margin: 14px 0 0; padding-inline-start: 16px; border-inline-start: 3px solid var(--accion); color: var(--texto); font-size: 19px; line-height: 1.5; max-width: 52ch; }
+  .carrusel { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .carrusel img { width: 100%; border-radius: 10px; aspect-ratio: 616 / 353; object-fit: cover; }
+  .carrusel .pie-carrusel { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 16px; }
+  .pildora { flex: none; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--f); background: var(--superficie); color: var(--t); font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .pildora[data-banda='bajo'] { --f: var(--banda-bajo-filo); --t: var(--banda-bajo-texto); }
+  .pildora[data-banda='alto'] { --f: var(--banda-alto-filo); --t: var(--banda-alto-texto); }
+  .buscar { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 6px 16px; align-items: center; padding: 20px 22px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accion) var(--mezcla-filo), var(--superficie)); background: var(--superficie); box-shadow: 0 0 36px rgb(var(--accion-canal) / 0.16); }
+  .buscar .ico { grid-row: 1 / span 2; width: 56px; height: 56px; display: grid; place-items: center; border-radius: 14px; color: var(--accion-tinta); background: rgb(var(--accion-canal) / 0.14); }
+  .buscar h2 { margin: 0; font-size: 22px; }
+  .buscar .sub { margin: 0; color: var(--texto-2); font-size: 16px; }
+  .buscar .fila { grid-column: 1 / -1; display: flex; gap: 10px; }
+  .buscar .campo { flex: 1; min-height: 52px; display: flex; align-items: center; padding: 0 16px; border-radius: 12px; border: 1px solid var(--borde-control); background: var(--superficie-2); color: var(--texto-2); font-size: 17px; }
+  .invitacion { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; padding: 18px 20px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--t-perfil) var(--mezcla-filo), var(--superficie)); background: linear-gradient(90deg, rgb(var(--canal-perfil) / 0.14), transparent 65%), var(--superficie); }
+  .invitacion .ico { grid-row: 1 / span 2; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 14px; color: var(--t-perfil); background: rgb(var(--canal-perfil) / 0.14); }
+  .invitacion h2 { margin: 0; font-size: 20px; }
+  .invitacion p { margin: 0; color: var(--texto-2); font-size: 16px; }
+  .invitacion .acciones { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 12px; align-items: center; }
+
+  /* R2.2: qué encontramos. */
+  .seccion-titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .seccion-titulo h2 { margin: 0; font-size: clamp(24px, 2.4vw, 30px); }
+  .hallazgos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .hallazgo { display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; border: 1px solid var(--borde); background: var(--superficie); box-shadow: inset 0 3px 0 var(--accion-tinta); }
+  .hallazgo .cifra { margin: 0; font-family: var(--fuente-display); font-size: clamp(40px, 4.4cqw, 56px); font-weight: 700; line-height: 1; color: var(--accion-tinta); letter-spacing: 0.01em; }
+  .hallazgo .cifra small { font-size: 0.5em; color: var(--texto-2); }
+  .hallazgo .frase { margin: 0; font-size: 18px; line-height: 1.45; }
+  .hallazgo .dato { margin: 0; color: var(--texto-2); font-size: 16px; line-height: 1.45; }
+  .hallazgo .fuente { margin: auto 0 0; padding-top: 10px; border-top: 1px solid var(--borde); color: var(--texto-2); font-size: 16px; }
+
+  /* R2.3: cómo lo sabemos. */
+  .franja { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); overflow: hidden; }
+  .franja div { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; }
+  .franja div + div { border-inline-start: 1px solid var(--borde); }
+  .franja strong { font-family: var(--fuente-mono); font-size: 26px; }
+  .franja span { color: var(--texto-2); font-size: 16px; line-height: 1.35; }
+
+  /* R2.4: pie global con el panel de metodología. */
+  .pie { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .pie .linea { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-size: 16px; }
+  .pie .linea p { margin: 0; }
+  .boton-panel { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--t-neutro) var(--mezcla-filo), var(--superficie)); background: var(--superficie-2); color: var(--texto); font-size: 16px; }
+  .panel { display: flex; flex-direction: column; gap: 16px; padding-top: 14px; border-top: 1px solid var(--borde); }
+  .panel h3 { margin: 0; font-family: var(--fuente-display); font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tercios { margin: 0; padding: 10px 14px; border-radius: 12px; border-inline-start: 3px solid var(--t-neutro); background: var(--superficie-2); font-size: 16px; }
+  .hechos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .hechos li { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 12px; background: var(--superficie-2); }
+  .hechos strong { font-size: 17px; }
+  .hechos span { color: var(--texto-2); font-size: 16px; line-height: 1.4; }
+  .enlace { color: var(--enlace); font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
+  .fuentes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .fuentes li { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; border: 1px solid var(--borde); background: var(--superficie); font-size: 16px; line-height: 1.4; }
+  .fuentes .quien { font-family: var(--fuente-display); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .fuentes .api { color: var(--neon); font-family: var(--fuente-mono); }
+  .fuentes .meta { color: var(--texto-2); }
+
+  /* R3: tu actividad, plegada. */
+  .actividad { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); font-size: 17px; }
+  .actividad .sub { color: var(--texto-2); font-size: 16px; }
+
+  .tabla { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+  .tabla th, .tabla td { padding: 10px 12px; border-bottom: 1px solid var(--borde); text-align: start; vertical-align: top; }
+  .tabla th { font-family: var(--fuente-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tabla td:first-child { font-family: var(--fuente-mono); white-space: nowrap; }
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; }
+    .hallazgos { grid-template-columns: 1fr; }
+    .franja { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .franja div:nth-child(3) { border-inline-start: 0; }
+    .franja div:nth-child(n + 3) { border-top: 1px solid var(--borde); }
+    .hechos { grid-template-columns: 1fr; }
+    .fuentes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .invitacion { grid-template-columns: 52px minmax(0, 1fr); }
+    .invitacion .acciones { grid-column: 1 / -1; grid-row: auto; }
+  }
+  @container contenido (max-width: 520px) {
+    .fuentes { grid-template-columns: 1fr; }
+    .buscar .fila { flex-direction: column; }
+  }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .menu { flex-direction: row; flex-wrap: wrap; }
+    .menu a { grid-template-columns: 36px auto; }
+    .menu a span.sub { display: none; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-inicio" viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M9.5 20v-6h5v6"/></symbol>
+  <symbol id="i-explorar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-nia" viewBox="0 0 24 24"><path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/></symbol>
+  <symbol id="i-comparar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4"/><path d="M6.2 19.2a6 6 0 0 1 11.6 0"/></symbol>
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup · Inicio en 5 vistas</h1>
+  <p>El menú de cinco y el Inicio nuevo de arriba abajo: la búsqueda como hoy, tres hallazgos, cuatro cifras de cómo lo sabemos y el pie con el panel de metodología abierto. Las cifras son las de hoy, calculadas con la API.</p>
+</header>
+
+<section class="escena" data-vista="inicio" id="inicio">
+  <div class="marco">
+    <p class="rotulo-mockup">R1 + R2 · Menú de cinco e Inicio nuevo</p>
+    <div class="app muestra">
+      <nav class="menu muestra-menu" aria-label="Menú">
+        <a href="#" data-tono="inicio" aria-current="page"><span class="ico"><svg class="i"><use href="#i-inicio"/></svg></span><strong>Inicio</strong><span class="sub">Qué es NexPlay</span></a>
+        <a href="#" data-tono="explorar"><span class="ico"><svg class="i"><use href="#i-explorar"/></svg></span><strong>Explorar</strong><span class="sub">Los 123 juegos</span></a>
+        <a href="#" data-tono="nia"><span class="ico"><svg class="i"><use href="#i-nia"/></svg></span><strong>Nia</strong><span class="sub">Tu asistente</span></a>
+        <a href="#" data-tono="comparar"><span class="ico"><svg class="i"><use href="#i-comparar"/></svg></span><strong>Comparar</strong><span class="sub">Hasta 4 lado a lado</span></a>
+        <a href="#" data-tono="perfil"><span class="ico"><svg class="i"><use href="#i-perfil"/></svg></span><strong>Tu perfil</strong><span class="sub">Cómo juegas tú</span></a>
+      </nav>
+
+      <div class="contenido">
+        <div class="hero">
+          <div>
+            <p class="sobrelinea mono">Evidencia antes de comprar</p>
+            <h1>Descubre qué podría frustrarte en las primeras dos horas</h1>
+            <p class="entrada">NexPlay analiza reseñas de Steam para mostrar una señal de arrepentimiento temprano, sus motivos frecuentes y el contexto que puede importar para ti.</p>
+          </div>
+          <div class="carrusel">
+            <img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg" alt="" />
+            <div class="pie-carrusel"><span>Carrusel de ejemplo, igual que hoy</span><span class="pildora" data-banda="bajo">Riesgo bajo</span></div>
+          </div>
+        </div>
+
+        <div class="buscar">
+          <span class="ico"><svg class="i" style="width:28px;height:28px"><use href="#i-buscar"/></svg></span>
+          <h2>Buscar un juego</h2>
+          <p class="sub">Escribe el nombre y mira su riesgo de arrepentimiento antes de comprarlo.</p>
+          <div class="fila"><span class="campo">Busca por nombre…</span><a class="boton-cta" href="#">Buscar un juego →</a></div>
+        </div>
+
+        <aside class="invitacion">
+          <span class="ico"><svg class="i" style="width:26px;height:26px"><use href="#i-perfil"/></svg></span>
+          <h2>Cuéntanos cómo juegas</h2>
+          <p>1 minuto · Verás si cada juego encaja contigo y sugerencias a tu medida.</p>
+          <div class="acciones"><a class="compacto" data-tono="perfil" href="#">Crear mi perfil →</a><a class="enlace" href="#">Ahora no</a></div>
+        </aside>
+
+        <div class="seccion-titulo"><h2>Qué encontramos</h2></div>
+        <div class="hallazgos">
+          <article class="hallazgo">
+            <p class="cifra">4.2×</p>
+            <p class="frase">Los juegos de riesgo alto tienen 4 veces más reseñas de arrepentimiento temprano que los de riesgo bajo (4.29 % vs 1.02 %).</p>
+            <p class="dato">El modelo no vio esas reseñas para asignar el riesgo.</p>
+            <p class="fuente">184,367 reseñas de Steam</p>
+          </article>
+          <article class="hallazgo">
+            <p class="cifra">$580 <small>vs</small> $179</p>
+            <p class="frase">Los de riesgo alto cuestan más del triple que los de riesgo bajo.</p>
+            <p class="dato">Mediana de precio de los juegos de pago: $579.99 contra $179.49.</p>
+            <p class="fuente">Precios de Steam México</p>
+          </article>
+          <article class="hallazgo">
+            <p class="cifra">23 <small>de</small> 43</p>
+            <p class="frase">juegos de riesgo alto tienen reseñas muy o extremadamente positivas en Steam.</p>
+            <p class="dato">La crítica general no ve lo que pasa en las primeras dos horas.</p>
+            <p class="fuente">Resumen de reseñas de Steam</p>
+          </article>
+        </div>
+
+        <div class="seccion-titulo"><h2>Cómo lo sabemos</h2></div>
+        <div class="franja">
+          <div><strong>123</strong><span>juegos de Steam</span></div>
+          <div><strong>184,367</strong><span>reseñas</span></div>
+          <div><strong>4,126</strong><span>con señal de arrepentimiento</span></div>
+          <div><strong>40</strong><span>juegos que el modelo no vio, para probarlo</span></div>
+        </div>
+
+        <footer class="pie" data-vista="neutro" id="metodologia">
+          <div class="linea">
+            <p>Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas del 14 al 21 sep 2026.</p>
+            <span class="boton-panel" aria-expanded="true">Ocultar metodología ▴</span>
+          </div>
+          <div class="panel">
+            <h3>Metodología</h3>
+            <p class="tercios">Los niveles bajo/medio/alto son tercios del score del modelo.</p>
+            <ul class="hechos">
+              <li><strong>Una señal, no un sentimiento</strong><span>Reseña negativa con menos de 2 h jugadas: la ventana de reembolso de Steam.</span></li>
+              <li><strong>Probado con juegos que no vio</strong><span>Se valida agrupando por juego; la métrica es PR-AUC, no la exactitud.</span></li>
+              <li><strong>Ordena, no predice</strong><span>Es un nivel relativo al catálogo, no una probabilidad. Es del juego, no tuyo.</span></li>
+            </ul>
+            <a class="enlace" href="#">Leer la metodología completa</a>
+            <h3>Fuentes</h3>
+            <ul class="fuentes">
+              <li><span class="quien">Steam</span><span class="api">appreviews</span><span>184,367 reseñas en inglés, las más recientes de cada juego.</span><span class="meta">Descarga: del 14 al 21 sep 2026</span></li>
+              <li><span class="quien">Steam</span><span class="api">appdetails</span><span>Precio en México, gratuidad, descuento, géneros, fecha y tráileres.</span><span class="meta">Descarga: del 14 al 21 sep 2026</span></li>
+              <li><span class="quien">Metacritic</span><span class="api">nota de la crítica</span><span>90 de los 123 juegos tienen nota; llega dentro de appdetails.</span><span class="meta">Descarga: con appdetails</span></li>
+              <li><span class="quien">Servicios</span><span class="api">lo que usa la app</span><span>OpenAI redacta las respuestas de Nia. Tipografías con licencia OFL.</span><span class="meta">Detalle, como hoy en Cómo funciona</span></li>
+            </ul>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="perfil" id="perfil">
+  <div class="marco">
+    <p class="rotulo-mockup">R3 · Al final de Tu perfil: «Tu actividad», plegada</p>
+    <div class="actividad muestra"><span><strong>Tu actividad</strong> <span class="sub">· 7 cosas vistas, solo en este navegador</span></span><span class="boton-panel">Ver ▾</span></div>
+    <div class="nota-mockup">
+      <p>Dentro va lo que hoy muestra Historial (fichas abiertas, comparaciones y preguntas a Nia) con su botón «Borrar el historial». Es el mismo componente, sin su título de página. <code>/historial</code> lleva aquí y la abre.</p>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="notas">
+  <div class="marco">
+    <p class="rotulo-mockup">Redirecciones y medidas</p>
+    <div class="nota-mockup" style="padding:0">
+      <table class="tabla">
+        <thead><tr><th>Ruta vieja</th><th>Lleva a</th></tr></thead>
+        <tbody>
+          <tr><td>/panorama</td><td>/#metodologia, con el panel abierto</td></tr>
+          <tr><td>/como-funciona</td><td>/#metodologia, con el panel abierto</td></tr>
+          <tr><td>/historial</td><td>/perfil#actividad, con «Tu actividad» abierta</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota-mockup">
+      <ul>
+        <li><strong>Las cifras</strong> salen de la API al abrir el Inicio. La señal por nivel y el consenso de Steam vienen de <code>/panorama</code>; los niveles y los precios, de <code>/catalogo</code>. «40» son los 123 juegos del catálogo menos los 83 con que se entrenó, un dato que <code>/panorama</code> va a leer del modelo guardado.</li>
+        <li><strong>4.2×</strong> es 4.29 % entre 1.02 % (4.19). La frase de precio dice «más del triple» porque la razón es 3.23.</li>
+        <li><strong>El pie</strong> es el mismo en las cinco vistas. «Ver metodología» abre el panel ahí mismo; aquí se ve abierto.</li>
+        <li><strong>Salen del Inicio</strong> las cuatro tarjetas de «Qué puedes hacer aquí» y el bloque «De dónde salen los datos».</li>
+        <li><strong>Antes</strong> (Inicio de hoy): 2,507 px de alto y 489 palabras a 1440; 4,426 px a 390. El después se mide al terminar.</li>
+      </ul>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>

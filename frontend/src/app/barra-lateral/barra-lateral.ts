@@ -123,6 +123,25 @@ import { TemaStore } from '../estado/tema-store';
           <li>
             <a
               class="item"
+              data-tono="nia"
+              routerLink="/nia"
+              routerLinkActive="activo"
+              ariaCurrentWhenActive="page"
+              data-testid="nav-nia"
+              [attr.title]="barra.expandida() ? null : 'Nia'"
+            >
+              <span class="insignia" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
+                </svg>
+              </span>
+              <span class="etiqueta nombre">Nia</span>
+              <span class="etiqueta sub">Tu asistente</span>
+            </a>
+          </li>
+          <li>
+            <a
+              class="item"
               data-tono="comparar"
               [routerLink]="'/comparar'"
               [queryParams]="parametrosComparar()"
@@ -146,28 +165,6 @@ import { TemaStore } from '../estado/tema-store';
           <li>
             <a
               class="item"
-              data-tono="nia"
-              routerLink="/nia"
-              routerLinkActive="activo"
-              ariaCurrentWhenActive="page"
-              data-testid="nav-nia"
-              [attr.title]="barra.expandida() ? null : 'Nia'"
-            >
-              <span class="insignia" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" />
-                </svg>
-              </span>
-              <span class="etiqueta nombre">Nia</span>
-              <span class="etiqueta sub">Tu asistente</span>
-            </a>
-          </li>
-        </ul>
-
-        <ul aria-label="Tu actividad">
-          <li>
-            <a
-              class="item"
               data-tono="perfil"
               routerLink="/perfil"
               routerLinkActive="activo"
@@ -183,69 +180,6 @@ import { TemaStore } from '../estado/tema-store';
               </span>
               <span class="etiqueta nombre">Tu perfil</span>
               <span class="etiqueta sub">Cómo juegas tú</span>
-            </a>
-          </li>
-          <li>
-            <a
-              class="item"
-              data-tono="neutro"
-              routerLink="/historial"
-              routerLinkActive="activo"
-              ariaCurrentWhenActive="page"
-              data-testid="nav-historial"
-              [attr.title]="barra.expandida() ? null : 'Historial'"
-            >
-              <span class="insignia" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 5v4h4" />
-                  <path d="M12 8v4.3l3 1.8" />
-                </svg>
-              </span>
-              <span class="etiqueta nombre">Historial</span>
-              <span class="etiqueta sub">Lo que ya viste</span>
-            </a>
-          </li>
-        </ul>
-
-        <ul aria-label="Transparencia">
-          <li>
-            <a
-              class="item"
-              data-tono="panorama"
-              routerLink="/panorama"
-              routerLinkActive="activo"
-              ariaCurrentWhenActive="page"
-              data-testid="nav-panorama"
-              [attr.title]="barra.expandida() ? null : 'Panorama'"
-            >
-              <span class="insignia" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 19V5" /><path d="M4 19h16" />
-                  <path d="M8 19v-6m4 6V8m4 11v-4" />
-                </svg>
-              </span>
-              <span class="etiqueta nombre">Panorama</span>
-              <span class="etiqueta sub">Los datos en gráficas</span>
-            </a>
-          </li>
-          <li>
-            <a
-              class="item"
-              data-tono="neutro"
-              routerLink="/como-funciona"
-              routerLinkActive="activo"
-              ariaCurrentWhenActive="page"
-              data-testid="nav-como-funciona"
-              [attr.title]="barra.expandida() ? null : 'Cómo funciona'"
-            >
-              <span class="insignia" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.5-2.8 4" /><path d="M12 17.2h.01" />
-                </svg>
-              </span>
-              <span class="etiqueta nombre">Cómo funciona</span>
-              <span class="etiqueta sub">Método y fuentes</span>
             </a>
           </li>
         </ul>

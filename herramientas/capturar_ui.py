@@ -25,6 +25,7 @@ Uso:
 
 import argparse
 import json
+import statistics
 import math
 import re
 import sys
@@ -1001,148 +1002,183 @@ def _rango_de_fechas(desde: str, hasta: str) -> str:
     return f"el {a_dia} {_MESES[a_mes - 1]} {a_anio}" if a_dia == b_dia else f"del {a_dia} al {b_dia} {_MESES[b_mes - 1]} {b_anio}"
 
 
-def _angular_6e(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    """Fase 6E: Panorama como tablero (cada gráfica con título, conclusión calculada, ⓘ que
-    se abre dentro de la tarjeta y fuente), Cómo funciona en pasos de una frase con el texto
-    largo cerrado, la sección Fuentes con fechas de la API y la línea de fuentes del pie."""
+_RUTAS_DE_LA_APP = ["/", "/explorar", f"/juego/{_APPID_FICHA}", "/nia", "/comparar", "/perfil"]
+_MENU = ["nav-inicio", "nav-explorar", "nav-nia", "nav-comparar", "nav-perfil"]
+
+
+def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
+    """Las cifras del Inicio, contadas aquí con /catalogo y /panorama, no copiadas de la página."""
+    por_juego = {f["appid"]: f for f in panorama["por_juego"]}
+
+    def senal(banda: str) -> float:
+        filas = [por_juego[j["appid"]] for j in catalogo if j["banda_riesgo"] == banda and j["appid"] in por_juego]
+        return sum(f["casos_senal"] for f in filas) / sum(f["resenas"] for f in filas)
+
+    def mediana(banda: str) -> float:
+        return statistics.median(
+            j["precio_final"] for j in catalogo
+            if j["banda_riesgo"] == banda and not j["es_gratis"] and j["precio_final"] is not None
+        )
+
+    altos = [j for j in catalogo if j["banda_riesgo"] == "alto"]
+    positivos = [j for j in altos if (por_juego.get(j["appid"]) or {}).get("consenso") in ("Overwhelmingly Positive", "Very Positive")]
+    alto, bajo = senal("alto"), senal("bajo")
+    no_vistos = len(catalogo) - panorama["modelo"]["juegos_entrenamiento"]
+    return {
+        "senal": f"{alto / bajo:.1f}×",
+        "senal_frase": f"({alto * 100:.2f} % vs {bajo * 100:.2f} %)",
+        "precio": f"${round(mediana('alto')):,} vs ${round(mediana('bajo')):,}",
+        "steam": f"{len(positivos)} de {len(altos)}",
+        "franja": [f"{len(catalogo):,}", f"{panorama['resenas_descargadas']:,}", f"{panorama['casos_senal']:,}", f"{no_vistos:,}"],
+    }
+
+
+def _medir_inicio(navegador, url: str) -> dict:
+    """Alto del documento y palabras del Inicio en los tres anchos, como la medida de antes."""
+    medidas = {}
+    for ancho, alto in ((1440, 900), (1024, 1366), (390, 844)):
+        contexto = navegador.new_context(viewport={"width": ancho, "height": alto}, reduced_motion="reduce")
+        _sin_consultas_a_nia(contexto)
+        contexto.add_init_script("localStorage.setItem('nexplay.tema.v1', 'oscuro')")
+        try:
+            otra = contexto.new_page()
+            _abrir(otra, url)
+            otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            otra.wait_for_timeout(1200)
+            medidas[str(ancho)] = otra.evaluate("""() => {
+                const palabras = (el) => el ? el.innerText.split(/\\s+/).filter(Boolean).length : 0;
+                return {
+                    alto_documento: document.scrollingElement.scrollHeight,
+                    alto_contenido: Math.round(document.querySelector('main.contenido').getBoundingClientRect().height),
+                    palabras_contenido: palabras(document.querySelector('main.contenido')),
+                    palabras_pie: palabras(document.querySelector('footer.pie')),
+                };
+            }""")
+        finally:
+            contexto.close()
+    return medidas
+
+
+def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """La reorganización a cinco vistas: el menú, el Inicio con cifras de la API, el panel de
+    metodología del pie en cualquier vista, las tres redirecciones y «Tu actividad» en Perfil."""
     problemas = []
     base = url.rstrip("/")
     catalogo = _catalogo_api(api)
     with urllib.request.urlopen(f"{api}/panorama", timeout=10) as respuesta:
         panorama = json.load(respuesta)
-    por_juego = {f["appid"]: f for f in panorama["por_juego"]}
-
-    # Lo que las conclusiones tienen que decir, contado aquí y no copiado de la página.
-    altos = [j for j in catalogo if j["banda_riesgo"] == "alto"]
-    positivos = [j for j in altos if (por_juego.get(j["appid"]) or {}).get("consenso") in ("Overwhelmingly Positive", "Very Positive")]
-    esperada_steam = f"{len(positivos)} de los {len(altos)} juegos en riesgo alto"
-    con_nota = [j for j in catalogo if j["metacritic"] is not None]
-    tasas = []
-    for banda in ("bajo", "medio", "alto"):
-        filas = [por_juego[j["appid"]] for j in con_nota if j["banda_riesgo"] == banda and j["appid"] in por_juego]
-        tasas.append(sum(f["casos_senal"] for f in filas) / max(1, sum(f["resenas"] for f in filas)))
-    sube = tasas[0] < tasas[1] < tasas[2]
-    cifras = " → ".join(f"{t * 100:.2f}" for t in tasas) + " %"
-    esperada_nota = f"entre los {len(con_nota)} con nota, la señal {'sigue subiendo por nivel' if sube else 'por nivel es'}: {cifras}"
-    sin_nota = len(catalogo) - len(con_nota)
+    esperado = _cifras_esperadas_del_inicio(catalogo, panorama)
     descargas = panorama["descargas"]
-    rango_juegos = _rango_de_fechas(descargas["appdetails"]["desde"], descargas["appdetails"]["hasta"])
-    rango_resenas = _rango_de_fechas(descargas["appreviews"]["desde"], descargas["appreviews"]["hasta"])
     desde = min(descargas["appdetails"]["desde"], descargas["appreviews"]["desde"])
     hasta = max(descargas["appdetails"]["hasta"], descargas["appreviews"]["hasta"])
     esperada_pie = f"Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas {_rango_de_fechas(desde, hasta)}."
 
     contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
     _sin_consultas_a_nia(contexto)
+    contexto.add_init_script("localStorage.setItem('nexplay.tema.v1', 'oscuro')")
     try:
         otra = contexto.new_page()
-        # Panorama: cifras clave, doce tarjetas completas y las conclusiones acordadas.
-        _abrir(otra, f"{base}/panorama")
-        otra.get_by_test_id("panorama-kpis").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        otra.get_by_test_id("panorama-ficha").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        kpis = {k: " ".join(otra.get_by_test_id(k).inner_text().split()) for k in ("kpi-juegos", "kpi-resenas", "kpi-senal", "kpi-sin-nota")}
-        esperados = {"kpi-juegos": f"{len(catalogo)}", "kpi-resenas": f"{panorama['resenas_descargadas']:,}",
-                     "kpi-senal": f"{panorama['casos_senal']:,}", "kpi-sin-nota": f"{sin_nota}"}
-        for clave, cifra in esperados.items():
-            if not kpis[clave].startswith(cifra + " "):
-                problemas.append(f"la cifra clave {clave} dice «{kpis[clave]}» y la API da {cifra}")
-        tarjetas = otra.evaluate("""() => [...document.querySelectorAll('[data-tarjeta-grafica]')].map(t => ({
-            id: t.getAttribute('data-testid'),
-            titulo: t.querySelector('h3')?.innerText.trim() ?? '',
-            conclusion: t.querySelector('[data-testid=tarjeta-conclusion]')?.innerText.trim() ?? '',
-            fuente: t.querySelector('[data-testid=tarjeta-fuente]')?.innerText.trim() ?? '',
-            info: !!t.querySelector('[data-testid=tarjeta-info][aria-controls]'),
-        }))""")
-        # Las conclusiones llevan espacio duro antes de «%»: se comparan con espacios normales.
-        for t in tarjetas:
-            t["conclusion"] = " ".join(t["conclusion"].split())
-        if len(tarjetas) != 12:
-            problemas.append(f"Panorama tiene {len(tarjetas)} tarjetas de gráfica y no 12")
-        for t in tarjetas:
-            if not (t["titulo"] and t["conclusion"] and t["fuente"].startswith("Fuente:") and t["info"]):
-                problemas.append(f"la tarjeta {t['id']} no trae título, conclusión, ⓘ y fuente ({t})")
-        por_id = {t["id"]: t for t in tarjetas}
-        steam = por_id.get("grafica-consenso", {}).get("conclusion", "")
-        nota = por_id.get("panorama-critica", {}).get("conclusion", "")
-        if esperada_steam not in steam:
-            problemas.append(f"«Qué dice Steam» concluye «{steam}»; con la API tocaba «{esperada_steam}…»")
-        if esperada_nota not in nota or (sin_nota and f"Los {sin_nota} sin nota" not in nota):
-            problemas.append(f"la gráfica sin Metacritic concluye «{nota}»; con la API tocaba «…{esperada_nota}»")
-        if rango_juegos not in por_id.get("panorama-precio", {}).get("fuente", ""):
-            problemas.append("la fuente del precio no trae la fecha de descarga de appdetails")
+        # El menú: cinco entradas, en el orden de la exposición.
+        _abrir(otra, f"{base}/")
+        otra.get_by_test_id("inicio-hallazgos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        menu = otra.locator("app-barra-lateral nav a.item").evaluate_all("as => as.map(a => a.dataset.testid)")
+        if menu != _MENU:
+            problemas.append(f"el menú no son las cinco vistas en orden ({menu})")
 
-        # La ⓘ abre la ayuda dentro de la tarjeta, encima de la gráfica y sin taparla.
-        critica = otra.get_by_test_id("panorama-critica")
-        critica.get_by_test_id("tarjeta-info").click()
-        otra.wait_for_timeout(300)
-        ayuda = critica.get_by_test_id("tarjeta-ayuda")
-        caja_ayuda, caja_cuerpo = ayuda.bounding_box(), critica.get_by_test_id("tarjeta-cuerpo").bounding_box()
-        abierta = critica.get_by_test_id("tarjeta-info").get_attribute("aria-expanded") == "true"
-        if not abierta or not ayuda.is_visible() or not caja_ayuda or not caja_cuerpo or caja_ayuda["y"] + caja_ayuda["height"] > caja_cuerpo["y"] + 1:
-            problemas.append("la ⓘ de «Juegos sin nota de Metacritic» no abre su ayuda dentro de la tarjeta, sin tapar la gráfica")
-        texto_ayuda = " ".join(ayuda.inner_text().split())
-        if "pista, no una conclusión" not in texto_ayuda:
-            problemas.append("la ayuda de la gráfica sin Metacritic no dice que el riesgo alto con nota es una pista")
-        critica.screenshot(path=destino / "panorama-tarjeta-ayuda.png")
-
-        # Años en media tarjeta: el eje queda en tres rótulos de una línea.
-        rotulos = otra.evaluate("""() => [...document.querySelectorAll('[data-testid=columnas-anios] .nombre')]
-            .filter(n => getComputedStyle(n).visibility !== 'hidden')
-            .map(n => ({ texto: n.innerText.trim(), alto: n.getBoundingClientRect().height,
-                         linea: parseFloat(getComputedStyle(n).lineHeight) || 24 }))""")
-        if len(rotulos) != 3 or any(r["alto"] > r["linea"] * 1.5 for r in rotulos):
-            problemas.append(f"el eje de «Cuándo salieron» no quedó en tres rótulos de una línea ({rotulos})")
-
-        # Un filtro cambia la conclusión: se calcula con el corte y no está escrita.
-        antes = por_id.get("panorama-bandas", {}).get("conclusion", "")
-        otra.get_by_test_id("filtro-genero").select_option("Estrategia")
-        otra.wait_for_timeout(500)
-        despues = otra.get_by_test_id("panorama-bandas").get_by_test_id("tarjeta-conclusion").inner_text().strip()
-        if despues == antes:
-            problemas.append(f"al filtrar por Estrategia la conclusión del reparto no cambió («{antes}»)")
-        if not any(p.startswith(("la cifra clave", "Panorama tiene", "la tarjeta", "«Qué dice", "la gráfica sin", "la ⓘ", "la ayuda", "el eje", "al filtrar", "la fuente del precio")) for p in problemas):
-            print(f"panorama: 4 cifras clave, {len(tarjetas)} tarjetas con conclusión, ⓘ y fuente; «{steam}» / «{nota}»; "
-                  f"con Estrategia: «{despues}» ({(destino / 'panorama-tarjeta-ayuda.png').relative_to(_RAIZ)})")
-
-        # Cómo funciona: pasos de una frase, lo largo cerrado y Fuentes con fechas de la API.
+        # El Inicio: las tres cifras y la franja coinciden con lo que se cuenta con la API.
         n_antes = len(problemas)
-        _abrir(otra, f"{base}/como-funciona")
-        otra.get_by_test_id("fuentes").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        otra.wait_for_timeout(800)
-        lineas = [" ".join(t.split()) for t in otra.get_by_test_id("paso-linea").all_inner_texts()]
-        cerrados = otra.evaluate("() => [...document.querySelectorAll('[data-testid=paso-mas], [data-testid=metodologia-completa]')].map(d => d.open)")
-        if len(lineas) != 4 or any(". " in l.rstrip(".") for l in lineas):
-            problemas.append(f"los pasos no quedaron en una frase cada uno ({lineas})")
-        if cerrados != [False] * 5:
-            problemas.append(f"el texto largo de los pasos o de la metodología no empieza cerrado ({cerrados})")
-        if otra.get_by_test_id("metodologia-hechos").locator("li").count() != 3:
-            problemas.append("la metodología no quedó en tres frases")
-        otra.get_by_test_id("paso-mas").first.locator("summary").click()
-        otra.wait_for_timeout(300)
-        if not otra.get_by_test_id("paso-mas").first.locator(".texto").is_visible():
-            problemas.append("«Ver más» del primer paso no abre su texto")
-        fuentes = otra.get_by_test_id("fuente")
-        enlaces = [a for a in fuentes.locator("a").evaluate_all("as => as.map(a => a.href)") if a.startswith("https://")]
-        fechas = [" ".join(t.split()) for t in otra.get_by_test_id("fuente-descarga").all_inner_texts()]
-        servicios = " ".join(otra.get_by_test_id("fuente-servicios").inner_text().split())
-        if fuentes.count() != 3 or len(enlaces) != 3:
-            problemas.append(f"Fuentes tiene {fuentes.count()} tarjetas de datos con {len(enlaces)} enlaces, no 3 y 3")
-        if fechas != [rango_resenas, rango_juegos, f"con appdetails, {rango_juegos}"]:
-            problemas.append(f"las fechas de Fuentes ({fechas}) no son las de /panorama ({rango_resenas}, {rango_juegos})")
-        if "OpenAI" not in servicios or "Open Font License" not in servicios:
-            problemas.append("la tarjeta Servicios no nombra OpenAI y la licencia OFL")
-        otra.get_by_test_id("fuentes").screenshot(path=destino / "como-funciona-fuentes.png")
+        hallazgos = {
+            h["id"]: h for h in otra.get_by_test_id("hallazgo").evaluate_all("""hs => hs.map(h => ({
+                id: h.dataset.hallazgo,
+                cifra: h.querySelector('[data-testid=hallazgo-cifra]').innerText.replace(/\\s+/g, ' ').trim(),
+                frase: h.querySelector('[data-testid=hallazgo-frase]').innerText.replace(/\\s+/g, ' ').trim(),
+                texto: h.innerText.replace(/\\s+/g, ' ').trim(),
+            }))""")
+        }
+        if list(hallazgos) != ["senal", "precio", "steam"]:
+            problemas.append(f"«Qué encontramos» no trae las tres tarjetas en orden ({list(hallazgos)})")
+        else:
+            if hallazgos["senal"]["cifra"] != esperado["senal"] or esperado["senal_frase"] not in hallazgos["senal"]["frase"]:
+                problemas.append(f"la tarjeta de la señal dice «{hallazgos['senal']['cifra']}» y la API da {esperado['senal']} {esperado['senal_frase']}")
+            if "sin leer las reseñas" not in hallazgos["senal"]["texto"]:
+                problemas.append("la tarjeta de la señal no dice que el modelo asigna el riesgo sin leer las reseñas")
+            if hallazgos["precio"]["cifra"] != esperado["precio"]:
+                problemas.append(f"la tarjeta del precio dice «{hallazgos['precio']['cifra']}» y la API da {esperado['precio']}")
+            if hallazgos["steam"]["cifra"] != esperado["steam"]:
+                problemas.append(f"la tarjeta de Steam dice «{hallazgos['steam']['cifra']}» y la API da {esperado['steam']}")
+        franja = [" ".join(t.split()) for t in otra.get_by_test_id("cifra-muestra").locator("dt").all_inner_texts()]
+        if franja != esperado["franja"]:
+            problemas.append(f"«Cómo lo sabemos» dice {franja} y la API da {esperado['franja']}")
+        for quitado in ("inicio-origenes", "cadena-datos", "inicio-fuentes"):
+            if otra.get_by_test_id(quitado).count():
+                problemas.append(f"el Inicio todavía muestra {quitado}")
+        otra.screenshot(path=destino / "inicio-5-vistas.png", full_page=True)
         if len(problemas) == n_antes:
-            print(f"cómo funciona: 4 pasos de una frase con «Ver más» cerrado, metodología en 3 frases; Fuentes con 3 fuentes, "
-                  f"descargas {rango_resenas} y Servicios ({(destino / 'como-funciona-fuentes.png').relative_to(_RAIZ)})")
+            print(f"inicio:   {esperado['senal']} {esperado['senal_frase']} · {esperado['precio']} · {esperado['steam']} · "
+                  f"franja {' · '.join(esperado['franja'])}: igual que /catalogo y /panorama ({(destino / 'inicio-5-vistas.png').relative_to(_RAIZ)})")
 
-        # El pie de cada vista: la línea de fuentes con la fecha y el enlace que baja a Fuentes.
+        # El pie: «Ver metodología» despliega metodología y fuentes sin cambiar de vista.
         n_antes = len(problemas)
-        for ruta in ("/", "/explorar", "/panorama", f"/juego/{_APPID_FICHA}"):
+        boton = otra.locator("footer [data-testid=pie-ver-metodologia]")
+        boton.click()
+        panel = otra.locator("footer #metodologia")
+        panel.get_by_test_id("fuentes").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        tercios = " ".join(panel.get_by_test_id("metodologia-tercios").inner_text().split())
+        enlaces = panel.get_by_test_id("fuente").locator("a").evaluate_all("as => as.map(a => a.href)")
+        if boton.get_attribute("aria-expanded") != "true" or otra.url.rstrip("/") != base:
+            problemas.append(f"«Ver metodología» no abrió el panel en la misma vista ({otra.url})")
+        if tercios != "Los niveles bajo/medio/alto son tercios del score del modelo.":
+            problemas.append(f"el panel no trae la línea de los tercios ('{tercios}')")
+        if len(enlaces) != 3 or not any("getreviews" in e for e in enlaces) or not panel.get_by_test_id("fuente-servicios").count():
+            problemas.append("el panel no trae las tres fuentes enlazadas y Servicios")
+        panel.screenshot(path=destino / "pie-metodologia.png")
+        if len(problemas) == n_antes:
+            print(f"pie:      «Ver metodología» abre metodología, tercios, 3 fuentes y Servicios sin cambiar de vista "
+                  f"({(destino / 'pie-metodologia.png').relative_to(_RAIZ)})")
+
+        # Las tres rutas que salieron del menú llevan a su ancla, abierta y a la vista.
+        n_antes = len(problemas)
+        for vieja, destino_url, prueba in (
+            ("/panorama", "/#metodologia", "pie-ver-metodologia"),
+            ("/como-funciona", "/#metodologia", "pie-ver-metodologia"),
+            ("/historial", "/perfil#actividad", "perfil-actividad"),
+        ):
+            _abrir(otra, f"{base}{vieja}")
+            try:
+                otra.wait_for_url(f"{base}{destino_url}", timeout=_TIMEOUT_MS)
+                otra.wait_for_timeout(900)
+            except TiempoAgotado:
+                problemas.append(f"{vieja} no llevó a {destino_url} ({otra.url})")
+                continue
+            if prueba == "pie-ver-metodologia":
+                abierto = otra.get_by_test_id(prueba).get_attribute("aria-expanded") == "true"
+                caja = otra.locator("footer #metodologia").bounding_box()
+            else:
+                abierto = otra.get_by_test_id(prueba).evaluate("d => d.open")
+                caja = otra.get_by_test_id(prueba).bounding_box()
+            if not abierto or not caja or not -2 <= caja["y"] <= otra.viewport_size["height"] / 2:
+                problemas.append(f"{vieja} llegó a {destino_url} pero la sección no quedó abierta y a la vista ({caja})")
+        otra.get_by_test_id("perfil-actividad").screenshot(path=destino / "perfil-actividad.png")
+        if len(problemas) == n_antes:
+            print("rutas:    /panorama y /como-funciona → /#metodologia con el panel abierto; /historial → /perfil#actividad "
+                  f"con «Tu actividad» abierta ({(destino / 'perfil-actividad.png').relative_to(_RAIZ)})")
+
+        # La ficha: «Cómo calculamos esta estimación» abre el panel sin salir de la ficha.
+        _abrir(otra, f"{base}/juego/{_APPID_FICHA}")
+        otra.get_by_test_id("factores-como-calculamos").click()
+        otra.wait_for_timeout(900)
+        if f"/juego/{_APPID_FICHA}#metodologia" not in otra.url or otra.get_by_test_id("pie-ver-metodologia").get_attribute("aria-expanded") != "true":
+            problemas.append(f"«Cómo calculamos esta estimación» no abre el panel en la ficha ({otra.url})")
+        else:
+            print("ficha:    «Cómo calculamos esta estimación» abre el panel del pie sin salir de la ficha")
+
+        # La línea de fuentes del pie, con su fecha, en las cinco vistas y la ficha.
+        n_antes = len(problemas)
+        for ruta in _RUTAS_DE_LA_APP:
             _abrir(otra, f"{base}{ruta}")
             linea = otra.locator("footer [data-testid=pie-linea]")
             try:
-                linea.wait_for(state="visible", timeout=_TIMEOUT_MS)
                 otra.wait_for_function(
                     "() => document.querySelector('footer [data-testid=pie-linea]')?.innerText.includes('descargadas')",
                     timeout=_TIMEOUT_MS,
@@ -1152,18 +1188,26 @@ def _angular_6e(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
             texto = " ".join(linea.inner_text().split())
             if texto != esperada_pie:
                 problemas.append(f"{ruta}: el pie dice «{texto}» y no «{esperada_pie}»")
-        otra.locator("footer [data-testid=enlace-fuentes]").click()
-        otra.wait_for_timeout(800)
-        titulo = otra.locator("#titulo-fuentes")
-        caja = titulo.bounding_box() if titulo.count() else None
-        if "/como-funciona" not in otra.url or not caja or not 0 <= caja["y"] <= otra.viewport_size["height"]:
-            problemas.append(f"«Ver fuentes →» del pie no deja la sección Fuentes a la vista ({otra.url})")
         if len(problemas) == n_antes:
-            print(f"pie:      «{esperada_pie}» en 4 vistas; «Ver fuentes →» baja a la sección")
+            print(f"pie:      «{esperada_pie}» en las cinco vistas y la ficha")
     except TiempoAgotado as error:
-        problemas.append(f"la 6E no terminó de cargar: {str(error).splitlines()[0]}")
+        problemas.append(f"la reorganización no terminó de cargar: {str(error).splitlines()[0]}")
     finally:
         contexto.close()
+
+    # Alto y palabras del Inicio, contra la medida de antes de reorganizar.
+    medidas = _medir_inicio(pagina.context.browser, f"{base}/")
+    REGISTROS = _RAIZ / "registros"
+    REGISTROS.mkdir(exist_ok=True)
+    (REGISTROS / "inicio-despues.json").write_text(json.dumps(medidas, indent=2))
+    antes_ruta = REGISTROS / "inicio-antes.json"
+    antes = json.loads(antes_ruta.read_text()) if antes_ruta.exists() else {}
+    for ancho, despues in medidas.items():
+        previo = antes.get(ancho)
+        comparado = (
+            f" (antes {previo['alto_documento']:,} px y {previo['palabras_contenido']} palabras)" if previo else ""
+        )
+        print(f"medida:   Inicio a {ancho}: {despues['alto_documento']:,} px y {despues['palabras_contenido']} palabras{comparado}")
     return problemas
 
 
@@ -1407,8 +1451,7 @@ def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
     # En /nia y en la ficha no: ahí ya hay una conversación abierta y la burbuja sería la
     # misma, ofrecida dos veces.
     for ruta_app, donde in (("", "el inicio"), ("/explorar", "el catálogo"), ("/comparar", "comparar"),
-                            ("/perfil", "tu perfil"), ("/historial", "el historial"),
-                            ("/panorama", "panorama"), ("/como-funciona", "cómo funciona")):
+                            ("/perfil", "tu perfil")):
         _abrir(pagina, f"{url.rstrip('/')}{ruta_app}")
         pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
         pagina.wait_for_timeout(400)
@@ -1417,7 +1460,7 @@ def _angular_nia_flotante(pagina: Page, url: str, destino: Path) -> list[str]:
     if faltan:
         problemas.append(f"la burbuja falta en {', '.join(faltan)}")
     else:
-        print("burbuja:  en las siete vistas que la llevan; ni en la ficha ni en /nia")
+        print("burbuja:  en las cuatro vistas que la llevan; ni en la ficha ni en /nia")
     for ruta_app, donde in (("/nia", "la página de Nia"), (f"/juego/{_APPID_FICHA}", "la ficha")):
         _abrir(pagina, f"{url.rstrip('/')}{ruta_app}")
         pagina.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -2138,15 +2181,13 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     base = url.rstrip("/")
     catalogo = {j["appid"]: j for j in _catalogo_api(api)}
 
-    # Inicio: una sola acción principal, las tres fuentes enlazadas y adónde lleva buscar.
+    # Inicio: una sola acción principal y adónde lleva buscar. Las fuentes enlazadas pasaron
+    # al panel del pie (_angular_5_vistas).
     _abrir(pagina, base)
     pagina.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
     principales = pagina.locator(".boton-cta:visible").count()
-    enlaces = pagina.get_by_test_id("inicio-origenes").locator("a").evaluate_all("as => as.map(a => a.href)")
     if principales != 1:
         problemas.append(f"el inicio tiene {principales} acciones principales y no una")
-    if len(enlaces) != 3 or not any("getreviews" in e for e in enlaces) or not any("metacritic" in e for e in enlaces):
-        problemas.append(f"«De dónde salen los datos» no enlaza las tres fuentes ({enlaces})")
     pagina.get_by_test_id("inicio-buscar").screenshot(path=destino / "inicio-buscar.png")
     destinos = []
     for escrito, esperado in (("", "/explorar"), ("terraria", "/juego/105600"), ("terra", "/explorar?q=terra")):
@@ -2162,7 +2203,7 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
         except TiempoAgotado:
             problemas.append(f"«Buscar un juego →» con «{escrito}» no lleva a {esperado} ({pagina.url})")
     if principales == 1 and len(destinos) == 3:
-        print(f"inicio:   una sola acción principal; tres fuentes enlazadas; buscar lleva {', '.join(destinos)}")
+        print(f"inicio:   una sola acción principal; buscar lleva {', '.join(destinos)}")
 
     # Tráileres de Explorar.
     esperados = _trailers_esperados(api)
@@ -2281,38 +2322,25 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
 
 
 def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
-    """La página central: nav, cuatro pasos y la metodología, que el pie ya no repite."""
+    """Lo que era Cómo funciona vive plegado en el pie: el Inicio no lo repite abierto, el
+    panel habla con el vocabulario del proyecto y la ficha enlaza a él sin salir."""
     problemas = []
     base = url.rstrip("/")
     _abrir(pagina, base)
+    pagina.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
     # Nia ya no saluda desde el pie: en el inicio está su tarjeta y la burbuja.
     if pagina.get_by_test_id("nia-mascota").count():
         problemas.append("el saludo grande de Nia sigue en el inicio, duplicando la burbuja")
     if pagina.locator("footer [data-testid='metodologia']").count():
-        problemas.append("el pie sigue repitiendo el texto de la metodología")
-    pagina.locator("footer [data-testid='enlace-metodologia']").click()
-    metodologia = pagina.get_by_test_id("metodologia")
+        problemas.append("el pie abre la metodología sin que nadie la pida")
+    pagina.locator("footer [data-testid='pie-ver-metodologia']").click()
     try:
-        metodologia.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        pagina.locator("footer [data-testid='metodologia']").wait_for(state="visible", timeout=_TIMEOUT_MS)
     except TiempoAgotado:
-        return problemas + ["el enlace del pie no lleva a la metodología"]
-    pagina.wait_for_timeout(600)
-    if not pagina.url.split("#")[0].endswith("/como-funciona"):
-        problemas.append(f"el enlace del pie lleva a {pagina.url}")
-    caja = metodologia.bounding_box()
-    if not caja or caja["y"] > pagina.viewport_size["height"]:
-        problemas.append("el enlace del pie no baja hasta la metodología")
-    if pagina.get_by_test_id("nav-como-funciona").get_attribute("aria-current") != "page":
-        problemas.append("'Cómo funciona' no queda marcado en el nav")
-    pasos = pagina.get_by_test_id("paso").count()
-    if pasos != 4:
-        problemas.append(f"'Cómo funciona' tiene {pasos} pasos, no 4")
-    problemas += _revisar_vocabulario(pagina, "cómo funciona")
-    pagina.evaluate("window.scrollTo(0, 0)")
-    _esperar_quietud(pagina)
-    ruta = destino / "como-funciona.png"
-    pagina.screenshot(path=ruta, full_page=True)
-    print(f"cómo funciona: nav, {pasos} pasos y la metodología; el pie solo enlaza ({ruta.relative_to(_RAIZ)})")
+        return problemas + ["«Ver metodología» no despliega la metodología"]
+    problemas += _revisar_vocabulario(pagina, "panel de metodología")
+    if not any("metodología" in p for p in problemas):
+        print("metodología: plegada en el pie y con el vocabulario del proyecto al abrirla")
 
     # Sin perfil, la ficha ofrece crearlo con una tarjeta de acción del rosa de Tu perfil.
     _abrir(pagina, f"{base}/juego/{_APPID_FICHA}")
@@ -2322,8 +2350,8 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
     except TiempoAgotado:
         return problemas + ["sin perfil, la ficha no muestra el botón 'Crear tu perfil'"]
     enlace = pagina.get_by_test_id("factores-como-calculamos")
-    if not enlace.count() or "/como-funciona" not in (enlace.get_attribute("href") or ""):
-        problemas.append("'Qué mueve esta estimación' no enlaza a /como-funciona")
+    if not enlace.count() or "#metodologia" not in (enlace.get_attribute("href") or ""):
+        problemas.append("'Qué mueve esta estimación' no enlaza al panel de metodología")
     elif not pagina.get_by_test_id("factores").locator("app-factores-modelo").count():
         problemas.append("la sección de factores perdió su contenido al agregar el enlace")
     else:
@@ -2880,12 +2908,11 @@ _PISO_DE_LETRA = 16
 
 def _angular_letra_y_vocabulario(pagina: Page, url: str) -> list[str]:
     """Fase 6A: nada de lectura bajo 16 px, nada de "banda" ni "Riesgo general" a la vista
-    (el nivel se llama riesgo de arrepentimiento), y los títulos largos de vista en dos
-    líneas como máximo a 390 px."""
+    (el nivel se llama riesgo de arrepentimiento). En las cinco vistas y la ficha, con el
+    panel de metodología del pie y «Tu actividad» abiertos, para medir también lo plegado."""
     problemas = []
     base = url.rstrip("/")
-    rutas = ["/", "/explorar", f"/juego/{_APPID_FICHA}", "/comparar", "/nia", "/perfil", "/historial",
-             "/panorama", "/como-funciona"]
+    rutas = ["/#metodologia", "/explorar", f"/juego/{_APPID_FICHA}", "/nia", "/comparar", "/perfil#actividad"]
     minimas = []
     for ruta in rutas:
         _abrir(pagina, f"{base}{ruta}")
@@ -2908,29 +2935,9 @@ def _angular_letra_y_vocabulario(pagina: Page, url: str) -> list[str]:
             problemas.append(f"{ruta}: todavía dice «{texto}»; el nivel se llama riesgo de arrepentimiento")
     if minimas and not problemas:
         peor = min(minimas, key=lambda m: m[1])
-        print(f"letra:    las 9 vistas sin texto bajo {_PISO_DE_LETRA} px (la más chica, {peor[1]:g} px en {peor[0]}) "
+        print(f"letra:    las 5 vistas y la ficha sin texto bajo {_PISO_DE_LETRA} px (la más chica, {peor[1]:g} px en {peor[0]}) "
               "y sin «banda» ni «Riesgo general»")
 
-    navegador = pagina.context.browser
-    if navegador is not None:
-        contexto = navegador.new_context(viewport={"width": 390, "height": 844}, reduced_motion="reduce")
-        _sin_consultas_a_nia(contexto)
-        try:
-            telefono = contexto.new_page()
-            for ruta in ("/panorama", "/como-funciona"):
-                _abrir(telefono, f"{base}{ruta}")
-                telefono.locator("h1").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
-                telefono.wait_for_timeout(800)
-                lineas = telefono.evaluate(
-                    "() => { const h = document.querySelector('h1'); const c = getComputedStyle(h);"
-                    " return Math.round(h.getBoundingClientRect().height / parseFloat(c.lineHeight)); }"
-                )
-                if lineas > 2:
-                    problemas.append(f"a 390 px el título de {ruta} ocupa {lineas} líneas; el máximo son 2")
-            if not any("a 390 px el título" in p for p in problemas):
-                print("títulos: «Panorama del catálogo» y «Cómo funciona NexPlay» caben en dos líneas a 390 px")
-        finally:
-            contexto.close()
     return problemas
 
 
@@ -3055,17 +3062,10 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     carpeta_vistas = destino / "vistas"
     carpeta_vistas.mkdir(parents=True, exist_ok=True)
     textos_con_falla = 0
-    rutas = [
-        "/",
-        "/explorar",
-        f"/juego/{_APPID_FICHA}",
-        "/comparar",
-        "/nia",
-        "/perfil",
-        "/historial",
-        "/panorama",
-        "/como-funciona",
-    ]
+    # Las cinco vistas y la ficha, y además lo que se abre desplegado: el panel de
+    # metodología del pie y «Tu actividad». Cada ancla va después de otra ruta, para que la
+    # navegación sea completa y no solo un cambio de fragmento.
+    rutas = [*_RUTAS_DE_LA_APP, "/#metodologia", "/perfil#actividad"]
     for tema in ("oscuro", "claro"):
         for vista, nombre in (
             (_VIEWPORT, "escritorio"),
@@ -3095,7 +3095,8 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                     problemas += sobre_nebulosa
                     textos_con_falla += len(sobre_nebulosa)
                     _esperar_quietud(otra)
-                    slug = ruta_app.strip("/").split("/")[0] or "inicio"
+                    camino, _, ancla = ruta_app.partition("#")
+                    slug = (camino.strip("/").split("/")[0] or "inicio") + (f"_{ancla}" if ancla else "")
                     otra.screenshot(path=carpeta_vistas / f"{slug}-{tema}-{vista['width']}.png")
                     # Lo contrario del desborde y igual de roto: que el contenido se
                     # apriete en una franja porque algo se quedó con el ancho.
@@ -3103,17 +3104,15 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                         estrecho = _contenido_estrecho(otra, vista["width"])
                         if estrecho:
                             problemas.append(f"tema {tema} en móvil: {ruta_app} {estrecho}")
-                    # El inicio y panorama son las dos que cambian con los datos: se guardan
-                    # enteras para poder revisar las cifras de una corrida a otra.
-                    if nombre == "escritorio" and ruta_app in ("/", "/panorama"):
-                        if ruta_app == "/":
-                            otra.get_by_test_id("cadena-datos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                    # El inicio es la que cambia con los datos: se guarda entera para poder
+                    # revisar las cifras de una corrida a otra.
+                    if nombre == "escritorio" and ruta_app == "/":
+                        otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
                         _recorrer_pagina(otra)
                         _esperar_quietud(otra)
-                        pagina_nombre = "inicio" if ruta_app == "/" else "panorama"
-                        destino_ruta = destino / f"{pagina_nombre}-{tema}.png"
+                        destino_ruta = destino / f"inicio-{tema}.png"
                         otra.screenshot(path=destino_ruta, full_page=True)
-                        print(f"{pagina_nombre}: tema {tema} ({destino_ruta.relative_to(_RAIZ)})")
+                        print(f"inicio:   tema {tema} ({destino_ruta.relative_to(_RAIZ)})")
                 _abrir(otra, f"{base}/explorar")
                 otra.get_by_test_id("shell").wait_for(state="visible", timeout=_TIMEOUT_MS)
                 otra.get_by_test_id("catalogo-conteo").wait_for(state="visible", timeout=_TIMEOUT_MS)
@@ -3145,9 +3144,9 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
             finally:
                 contexto.close()
 
-    print(f"vistas:   9 rutas × 2 temas × 3 anchos en {carpeta_vistas.relative_to(_RAIZ)}")
+    print(f"vistas:   5 vistas, la ficha y 2 paneles × 2 temas × 3 anchos en {carpeta_vistas.relative_to(_RAIZ)}")
     if not textos_con_falla:
-        print("nebulosa: en las 9 vistas, 2 temas y 3 anchos, todo texto da 4.5:1 sobre su fondo; "
+        print("nebulosa: en las 5 vistas, la ficha y los 2 paneles, 2 temas y 3 anchos, todo texto da 4.5:1 sobre su fondo; "
               "sin panel, contra el punto más claro de la nebulosa")
     _abrir(pagina, url)
     return problemas
@@ -3172,7 +3171,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_6c(pagina, url, destino, api)
         + _angular_comparar(pagina, url, destino)
         + _angular_6d(pagina, url, destino, api)
-        + _angular_6e(pagina, url, destino, api)
+        + _angular_5_vistas(pagina, url, destino, api)
         + _angular_6f(pagina, url, destino, api)
         + _angular_nia_flotante(pagina, url, destino)
         + _angular_movimiento(pagina, url)
