@@ -9,6 +9,7 @@ import {
 } from '@angular/router';
 
 import { routes } from './app.routes';
+import { provideDesplazamiento } from './desplazamiento';
 
 function hoja(ruta: ActivatedRouteSnapshot): ActivatedRouteSnapshot {
   return ruta.firstChild ? hoja(ruta.firstChild) : ruta;
@@ -21,7 +22,9 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       // anchorScrolling: los enlaces con ancla (#metodologia, #actividad) bajan a su sección.
-      withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
+      // Subir al principio o volver a la posición guardada lo decide provideDesplazamiento,
+      // para que cambiar un filtro del catálogo no suba la página.
+      withInMemoryScrolling({ scrollPositionRestoration: 'disabled', anchorScrolling: 'enabled' }),
       withViewTransitions({
         // Solo al cambiar de pantalla: los filtros del catálogo cambian la URL en cada
         // tecla y un fundido ahí se sentiría como parpadeo.
@@ -37,6 +40,7 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
+    provideDesplazamiento(),
     provideHttpClient(withFetch()),
   ],
 };
