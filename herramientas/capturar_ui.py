@@ -706,38 +706,29 @@ _PERFIL_V3 = {
 
 
 def _angular_6c(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
-    """Fase 6C, lo que no cabe en el recorrido del perfil: la invitación del inicio, la
-    píldora del menú sin perfil, la migración de los perfiles v3, la burbuja encima de la
-    barra de guardar y las horas típicas de la ficha técnica."""
+    """Fase 6C, lo que no cabe en el recorrido del perfil: el camino al perfil desde el
+    inicio, la píldora del menú sin perfil, la migración de los perfiles v3, la burbuja
+    encima de la barra de guardar y las horas típicas de la ficha técnica."""
     problemas = []
     base = url.rstrip("/")
     navegador = pagina.context.browser
 
-    # Sin perfil: invitación en el inicio, que «Ahora no» quita para siempre; y la píldora
-    # del menú invita a crearlo.
+    # Sin perfil: el inicio ya no trae la invitación (la tarjeta «Encaja contigo» lleva a
+    # /perfil), y la píldora del menú invita a crearlo.
     contexto = navegador.new_context(viewport=_VIEWPORT)
     _sin_consultas_a_nia(contexto)
     try:
         otra = contexto.new_page()
         _abrir(otra, base)
-        invitacion = otra.get_by_test_id("invitacion-perfil")
+        otra.get_by_test_id("inicio-por-que").wait_for(state="visible", timeout=_TIMEOUT_MS)
         pildora = otra.get_by_test_id("perfil-inactivo")
-        try:
-            invitacion.wait_for(state="visible", timeout=_TIMEOUT_MS)
-            invitacion.screenshot(path=destino / "invitacion-perfil.png")
-            otra.get_by_test_id("invitacion-ahora-no").click()
-            otra.wait_for_timeout(300)
-            quitada = not invitacion.count()
-            otra.reload()
-            otra.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
-            otra.wait_for_timeout(500)
-            if not quitada or invitacion.count():
-                problemas.append("«Ahora no» no quita la invitación del inicio, o vuelve al recargar")
-            else:
-                print(f"invitación: sin perfil sale en el inicio; «Ahora no» la quita y no vuelve "
-                      f"({(destino / 'invitacion-perfil.png').relative_to(_RAIZ)})")
-        except TiempoAgotado:
-            problemas.append("sin perfil, el inicio no muestra la invitación a crearlo")
+        encaja = otra.locator("[data-testid='herramienta-inicio'][data-herramienta='perfil']")
+        if otra.get_by_test_id("invitacion-perfil").count():
+            problemas.append("el inicio sigue trayendo la invitación al perfil, que repite «Encaja contigo»")
+        elif not (encaja.get_attribute("href") or "").endswith("/perfil"):
+            problemas.append("sin la invitación, «Encaja contigo» no lleva a /perfil")
+        else:
+            print("invitación: fuera del inicio; «Encaja contigo» lleva a /perfil")
         texto = " ".join(pildora.inner_text().split()) if pildora.count() else ""
         if "Sin perfil" not in texto or not (pildora.get_attribute("href") or "").endswith("/perfil"):
             problemas.append(f"sin perfil, la píldora del menú no invita a crearlo ('{texto}')")
@@ -2212,13 +2203,15 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     base = url.rstrip("/")
     catalogo = {j["appid"]: j for j in _catalogo_api(api)}
 
-    # Inicio: una sola acción principal y adónde lleva buscar. Las fuentes enlazadas pasaron
-    # al panel del pie (_angular_5_vistas).
+    # Inicio: una sola acción principal, el buscador a todo lo ancho arriba de «Qué
+    # encontramos», y adónde lleva buscar. Antes, «¿Por qué elegir NexPlay?», que lleva a
+    # /explorar con el número del catálogo, y las cuatro herramientas con su enlace. Las
+    # fuentes enlazadas pasaron al panel del pie (_angular_5_vistas).
     _abrir(pagina, base)
     pagina.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
-    principales = pagina.locator(".boton-cta:visible").count()
-    if principales != 1:
-        problemas.append(f"el inicio tiene {principales} acciones principales y no una")
+    principales = pagina.locator(".boton-cta:visible")
+    if principales.count() != 1 or "Buscar" not in principales.first.inner_text():
+        problemas.append(f"el inicio tiene {principales.count()} acciones principales y no solo «Buscar →»")
     pagina.get_by_test_id("inicio-buscar").screenshot(path=destino / "inicio-buscar.png")
     destinos = []
     for escrito, esperado in (("", "/explorar"), ("terraria", "/juego/105600"), ("terra", "/explorar?q=terra")):
@@ -2232,9 +2225,45 @@ def _angular_6b(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
             pagina.wait_for_url(f"**{esperado}", timeout=_TIMEOUT_MS)
             destinos.append(f"«{escrito}» → {esperado}")
         except TiempoAgotado:
-            problemas.append(f"«Buscar un juego →» con «{escrito}» no lleva a {esperado} ({pagina.url})")
-    if principales == 1 and len(destinos) == 3:
+            problemas.append(f"«Buscar →» con «{escrito}» no lleva a {esperado} ({pagina.url})")
+    if not problemas:
         print(f"inicio:   una sola acción principal; buscar lleva {', '.join(destinos)}")
+
+    _abrir(pagina, base)
+    seccion = pagina.get_by_test_id("inicio-por-que")
+    seccion.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    seccion.screenshot(path=destino / "inicio-por-que.png")
+    accion = " ".join(pagina.get_by_test_id("por-que-explorar").inner_text().split())
+    if f"Explorar los {len(catalogo)} juegos" not in accion:
+        problemas.append(f"«¿Por qué elegir?» no lleva el número de /catalogo ({len(catalogo)}): {accion!r}")
+    esperados = {"motivos": "/juego/1938010", "nia": "/nia", "comparar": "/comparar", "perfil": "/perfil"}
+    tarjetas = pagina.get_by_test_id("herramienta-inicio")
+    enlaces = {t.get_attribute("data-herramienta"): t.get_attribute("href") for t in tarjetas.all()}
+    if enlaces != esperados:
+        problemas.append(f"las herramientas del inicio no llevan a su vista: {enlaces}")
+
+    # La nave 🚀 separa la sección del encabezado y, al tocarla, baja hasta ella.
+    # El cohete flota sin parar (lo pidió el dueño): un clic forzado, porque Playwright
+    # espera a que el botón se quede quieto y nunca lo hace.
+    pagina.evaluate("() => window.scrollTo(0, 0)")
+    pagina.get_by_test_id("por-que-nave").click(force=True)
+    try:
+        pagina.wait_for_function(
+            "() => { const r = document.querySelector(\"[data-testid='inicio-por-que']\").getBoundingClientRect();"
+            " return r.top >= 0 && r.top < 120; }",
+            timeout=_TIMEOUT_MS,
+        )
+        print("inicio:   la nave 🚀 baja a «¿Por qué elegir NexPlay?»")
+    except TiempoAgotado:
+        problemas.append("la nave no baja a «¿Por qué elegir NexPlay?»")
+    pagina.get_by_test_id("por-que-explorar").click()
+    try:
+        pagina.wait_for_url("**/explorar", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        problemas.append(f"«{accion}» no lleva a /explorar ({pagina.url})")
+    if not problemas:
+        print(f"inicio:   «¿Por qué elegir NexPlay?» lleva a /explorar («{accion}») y tiene {len(enlaces)} "
+              f"herramientas ({', '.join(esperados.values())}) (docs/capturas/angular/inicio-por-que.png)")
 
     # Tráileres de Explorar.
     esperados = _trailers_esperados(api)
@@ -2358,7 +2387,7 @@ def _angular_como_funciona(pagina: Page, url: str, destino: Path) -> list[str]:
     problemas = []
     base = url.rstrip("/")
     _abrir(pagina, base)
-    pagina.get_by_test_id("inicio-buscar").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.get_by_test_id("inicio-por-que").wait_for(state="visible", timeout=_TIMEOUT_MS)
     # Nia ya no saluda desde el pie: en el inicio está su tarjeta y la burbuja.
     if pagina.get_by_test_id("nia-mascota").count():
         problemas.append("el saludo grande de Nia sigue en el inicio, duplicando la burbuja")

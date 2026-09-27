@@ -4,7 +4,6 @@ import {
   DestroyRef,
   computed,
   inject,
-  input,
   signal,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -40,10 +39,10 @@ const MS_ROTACION = 7000;
         aria-labelledby="titulo-carrusel"
         data-vista="nia"
         data-testid="hero-carrusel"
-        [attr.data-pausado]="ejemploPausado()"
-        (mouseenter)="pausadoAqui.set(true)"
-        (mouseleave)="pausadoAqui.set(false)"
-        (focusin)="pausadoAqui.set(true)"
+        [attr.data-pausado]="pausado()"
+        (mouseenter)="pausado.set(true)"
+        (mouseleave)="pausado.set(false)"
+        (focusin)="pausado.set(true)"
         (focusout)="alSalirDelEjemplo($event)"
       >
         <p class="demostracion-titulo" id="titulo-carrusel" data-testid="hero-etiqueta">
@@ -52,7 +51,7 @@ const MS_ROTACION = 7000;
         <!-- Las opiniones van apiladas en la misma celda y solo se ve la activa: así el
              carrusel mide lo que la más larga y no brinca al rotar. Mientras rota sola no
              se anuncia cada cambio; si alguien la detuvo o la movió a mano, sí. -->
-        <div class="pila" [attr.aria-live]="rotaSolo && !ejemploPausado() ? 'off' : 'polite'">
+        <div class="pila" [attr.aria-live]="rotaSolo && !pausado() ? 'off' : 'polite'">
           @for (juego of ejemplos(); track juego.appid; let i = $index) {
             @let activa = i === indiceActivo();
             @let opinion = opiniones().get(juego.appid);
@@ -361,21 +360,15 @@ export class CarruselEjemplo {
   );
   protected readonly escribiendo = this.recursoOpiniones.isLoading;
 
-  /** Quieto mientras alguien usa el buscador: el panel de resultados cae encima del
-   * ejemplo y verlo cambiar debajo mientras se escribe distrae de lo que se busca. */
-  readonly pausado = input(false);
-
-  /** Quieto también con el ratón encima o el foco dentro: nadie lee una opinión que se le
-   * escapa. Junta la pausa de fuera con la de aquí. */
-  protected readonly pausadoAqui = signal(false);
-  protected readonly ejemploPausado = computed(() => this.pausado() || this.pausadoAqui());
+  /** Quieto con el ratón encima o el foco dentro: nadie lee una opinión que se le escapa. */
+  protected readonly pausado = signal(false);
   /** Con prefers-reduced-motion no rota solo; las flechas siguen funcionando. */
   protected readonly rotaSolo = !this.prefiereMenosMovimiento();
 
   constructor() {
     if (this.rotaSolo) {
       const reloj = setInterval(() => {
-        if (!this.ejemploPausado() && this.ejemplos().length > 1) {
+        if (!this.pausado() && this.ejemplos().length > 1) {
           this.moverEjemplo(1);
         }
       }, MS_ROTACION);
@@ -393,7 +386,7 @@ export class CarruselEjemplo {
   protected alSalirDelEjemplo(evento: FocusEvent): void {
     const adonde = evento.relatedTarget as Node | null;
     if (!adonde || !(evento.currentTarget as HTMLElement).contains(adonde)) {
-      this.pausadoAqui.set(false);
+      this.pausado.set(false);
     }
   }
 

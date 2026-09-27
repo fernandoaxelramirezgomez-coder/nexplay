@@ -248,3 +248,80 @@ negocio. Los apartados se ven amontonados.»
   - el botón de búsqueda termina a ~490 px de 900 (1440), ~400 de 1366 (1024) y ~655 de
     844 (390);
   - 0 contrastes que no pasan, sin desborde, letra de 16 px o más.
+
+### «¿Por qué elegir NexPlay?» en lugar de «Buscar un juego» (pedido del dueño, 2026-09-26)
+
+«Donde dice Buscar un juego, cambiarlo por la funcionalidad de nuestro sitio, lo que nos
+diferencia de otros sitios, y mostrar nuestras herramientas: que diga por qué elegir.»
+
+- **Decisión del dueño:** el buscador sale del Inicio; para buscar está Explorar.
+- **Mockup** `docs/plan/mockups/r3-por-que-elegir.html`:
+  - una línea con la diferencia: «Steam te da una nota general; NexPlay mira las primeras
+    dos horas, justo la ventana de reembolso.»;
+  - una tarjeta destacada, «Riesgo en las primeras 2 horas», con la aclaración de señal
+    comparativa y la única acción principal del Inicio, «Explorar los 123 juegos →»;
+  - cuatro herramientas como enlaces enteros, con el color y el icono de su vista:
+    - Por qué se arrepienten (la ficha de WILD HEARTS™);
+    - Nia, tu asistente;
+    - Compara lado a lado;
+    - Encaja contigo.
+- **Medido en el mockup** (1440, 1024 y 390, claro y oscuro):
+  - 0 desbordes y 0 contrastes que no pasan;
+  - letra mínima de 16 px;
+  - la sección tiene 110 palabras y la tarjeta que reemplaza tenía 32, así que el Inicio
+    pasaría de 287 a unas 365.
+- **Punto abierto:** la invitación al perfil queda debajo y repite «Encaja contigo».
+- **Respuesta del dueño:** «sigue con el punto 2 primero y luego vemos cómo queda a ver si
+  lo dejamos así». La invitación sale del Inicio; el largo se revisa viéndolo en la app.
+- **En la app** (sin commit hasta el ALTO):
+  - `dominio/herramientas-inicio.ts`, con pruebas: la destacada, la diferencia y las
+    cuatro herramientas;
+  - `inicio/por-que-elegir.ts`;
+  - salen `inicio/invitacion-perfil.ts` y `dominio/busqueda.ts` (con su prueba), que ya
+    nadie usaba, y la entrada `pausado` del carrusel, que era para el buscador;
+  - el teléfono deja el orden forzado: sin el buscador, el orden natural es el bueno;
+  - «2 horas» con espacio que no se corta;
+  - en el recorrido, `_angular_6b` comprueba una sola acción principal, que lleva a
+    `/explorar` con el número de `/catalogo`, los enlaces de las cuatro herramientas y
+    que ya no hay buscador. `_angular_6c` comprueba que la invitación salió y que
+    «Encaja contigo» lleva a `/perfil`.
+- **Medida en la app:**
+  - la sección tiene 116 palabras;
+  - el Inicio pasa de 287 a 348 palabras;
+  - de alto mide 2,026 px a 1440, 2,921 a 1024 y 3,954 a 390;
+  - sin desborde ni errores de consola en los dos temas.
+- **Ajustes del dueño sobre la app:** «déjalo un poco más abajo, centra el texto y que
+  separe el texto de arriba con una nave de Star Wars apuntando hacia abajo, y que si le
+  dan clic haga scroll hacia esta sección»; después, «¿no estaba el Halcón Milenario?».
+  - No hay emoji del Halcón Milenario (Unicode no tiene naves de Star Wars). Se probó
+    un dibujo en SVG y el dueño prefirió el cohete: «mejor deja el cohete».
+  - Queda 🚀 girado 135° para que apunte hacia abajo, en un botón de 64 px en medio de
+    una línea que se desvanece a los lados. Baja y sube dos veces al cargar (4.8 s) y se
+    queda quieto: una animación infinita distrae y WCAG 2.2.2 pide poder detener lo que
+    se mueve más de 5 s. Con «reducir movimiento» no se mueve.
+  - Al tocarlo, la sección sube hasta 24 px del borde en escritorio y hasta 72 px en el
+    teléfono (debajo de la barra fija), y el foco pasa al título.
+  - El título y la línea de la diferencia van centrados.
+  - El recorrido (`_angular_6b`) comprueba que el clic deja la sección arriba de la
+    pantalla.
+- **El buscador vuelve** (pedido del dueño): «separa más Qué encontramos del texto de
+  arriba… tráete la búsqueda abajo, deja las 4 etiquetas… pon una frase adelantando al
+  usuario». Después precisó: «no, arriba de Qué encontramos, pero que cubra todo el
+  renglón, haz un diseño bonito».
+  - La banda va a todo lo ancho, entre «¿Por qué elegir NexPlay?» y «Qué encontramos», y
+    hace de separación entre las dos.
+  - Lleva la lupa, el título «¿Estás por comprar un juego?» (en la letra de los títulos,
+    con el degradado), «Búscalo y mira su riesgo de arrepentimiento temprano antes de
+    pagar.» y el campo con «Buscar →» a la misma altura.
+  - El fondo tiene un resplandor cian (Inicio) y violeta (Nia).
+  - «Buscar →» vuelve a ser la única acción principal; «Explorar los 123 juegos →» pasa a
+    secundaria.
+  - Vuelven `dominio/busqueda.ts` y su prueba. El recorrido vuelve a probar los tres
+    destinos del buscador.
+  - El cohete flota sin parar, como pidió el dueño, y se detiene con el cursor o el foco.
+    En el recorrido el clic va forzado, porque Playwright espera a que el botón se quede
+    quieto.
+  - Medido:
+    - 372 palabras en el Inicio;
+    - alto de 2,565 px a 1440, 3,443 a 1024 y 4,555 a 390;
+    - sin desborde ni errores de consola.

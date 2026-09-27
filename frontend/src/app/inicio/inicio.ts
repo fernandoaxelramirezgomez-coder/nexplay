@@ -8,14 +8,15 @@ import { CatalogoStore } from '../estado/catalogo-store';
 import { CarruselEjemplo } from './carrusel-ejemplo';
 import { ComoLoSabemos } from './como-lo-sabemos';
 import { Hallazgos } from './hallazgos';
-import { InvitacionPerfil } from './invitacion-perfil';
+import { PorQueElegir } from './por-que-elegir';
 
-/** El inicio: qué es NexPlay, qué encontramos y cómo lo sabemos. El catálogo con sus
- * estantes vive en /explorar; aquí el buscador salta a una ficha o al catálogo. */
+/** El inicio: qué es NexPlay y el buscador, por qué elegirlo, qué encontramos y cómo lo
+ * sabemos. El catálogo con sus estantes vive en /explorar; aquí el buscador salta a una
+ * ficha o al catálogo. */
 @Component({
   selector: 'app-inicio',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Buscador, CarruselEjemplo, InvitacionPerfil, Hallazgos, ComoLoSabemos],
+  imports: [Buscador, CarruselEjemplo, PorQueElegir, Hallazgos, ComoLoSabemos],
   templateUrl: './inicio.html',
   styleUrl: './inicio.css',
 })
