@@ -52,6 +52,8 @@ modelado/      entrenar_baseline.py, entrenar_modelo.py, verificar_bandas.py
 publicacion/   extracto_datos.py y extracto_reproducible.py: lo que va a un release
 herramientas/  preparar_entorno.py (la entrada del proyecto), exportar_valoraciones.py,
                moderar_comentarios.py, capturar_ui.py, recortar_nia.py
+despliegue/    Dockerfile de la API (Render lo construye desde master); el frontend va a
+               Vercel con frontend/vercel.json
 
 modelo/        artefactos entrenados (.pkl), no versionados
 datos/         SQLite: nexplay.db, tablas `juegos` y `resenas` (más `resumen_resenas`
