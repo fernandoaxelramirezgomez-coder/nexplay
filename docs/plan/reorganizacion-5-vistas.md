@@ -404,3 +404,81 @@ texto que pueda preguntar; y anima a Nia.»
 - **Nia animada:** flota sobre un halo violeta. Mientras responde cambia a su cara de
   pensar («…») y se mece; al terminar vuelve a saludar. Con «reducir movimiento» queda
   quieta.
+
+### «Qué encontramos», rediseñado para el negocio (pedido del dueño, 2026-09-26)
+
+«No me gusta y no me dice nada al negocio; quiero que el usuario solo tenga en cuenta la
+información que necesita y aporte a la vista; menos texto y dale espacio.»
+
+- **Mockup** `docs/plan/mockups/r4-antes-de-pagar.html`:
+  - el título «Antes de pagar, esto importa»;
+  - tres cifras grandes con una línea cada una:
+    - 4.2× más señal de arrepentimiento temprano en los de riesgo alto;
+    - 3× más caros son los de riesgo alto: pagar más no te protege;
+    - 53 % de los de riesgo alto tienen reseñas muy positivas: la nota no basta;
+  - al pie del mismo panel, una línea de confianza con «Ver metodología»;
+  - se queda la frase acordada: el riesgo sale de datos del juego, sin leer las reseñas.
+- **Medido:**
+  - 56 palabras, contra 128 de hoy («Qué encontramos» y «Cómo lo sabemos»);
+  - 0 desbordes y 0 contrastes que no pasan en 1440, 1024 y 390, claro y oscuro.
+  - La primera versión tenía la línea de confianza sobre la nebulosa y su enlace no
+    pasaba en claro (3.90:1); ahora va dentro del panel.
+- **Para decidir:** si «Cómo lo sabemos» sale como sección aparte (propuesta) o se queda
+  en una fila debajo.
+- **Cambio del dueño sobre el mockup:** pidió verlo en gráficas dinámicas con los datos
+  reales. Eligió una gráfica de barras con pestañas y un histograma de precios por
+  nivel, con botones para ver uno a la vez.
+  - **En la app** (sin commit hasta el visto bueno):
+    - `inicio/antes-de-pagar.ts`, en lugar de «Qué encontramos» y «Cómo lo sabemos»;
+    - `inicio/histograma-precios.ts`;
+    - el dominio en `dominio/antes-de-pagar.ts`, con pruebas, y `positivosPorBanda` en
+      `dominio/panorama.ts`;
+    - salen `hallazgos.ts`, `como-lo-sabemos.ts` y `dominio/hallazgos-inicio.ts`.
+  - **Pestañas** (bajo · medio · alto):
+    - Señal: 4.2×, con 1.02 % · 1.31 % · 4.29 %;
+    - Precio: 3×, con $179 · $359 · $580;
+    - Reseñas positivas: 53 %, con 93 % · 97 % · 53 %.
+  - **Histograma** (Gratis, <200, 200–400, 400–600, 600–900, 900+):
+    - todos: 7 · 31 · 36 · 12 · 17 · 18;
+    - riesgo alto: 3 · 4 · 14 · 2 · 7 · 12.
+  - **Lo dinámico:**
+    - las barras y las columnas crecen al entrar en pantalla;
+    - al cambiar de pestaña o de nivel se animan;
+    - cada columna da su detalle con el cursor o el foco;
+    - con «reducir movimiento», todo es instantáneo.
+  - El recorrido (`_angular_5_vistas`) compara cada pestaña, el histograma y el filtro
+    «Alto» con la API.
+- ALTO hasta el visto bueno.
+
+### «Fuentes» del panel de metodología (pedido del dueño, 2026-09-26)
+
+«Rediseña esta parte, es mucho texto y se ve encimado» (las cuatro tarjetas de Fuentes y
+la línea del entrenamiento, en el panel «Ver metodología» del pie).
+
+- **Una fila por fuente:** quién y de qué (Steam · reseñas, Steam · datos del juego,
+  Metacritic · crítica), qué da en una línea, cuánto (184,367 reseñas · 123 juegos · 90
+  de 123 juegos), la fecha de descarga y su enlace. Las columnas van alineadas, sin
+  tarjetas dentro del panel. En el teléfono, cada fuente en bloque.
+- **Servicios**, en una línea cada uno. OpenAI: «redacta las respuestas de Nia con tu
+  pregunta y los datos del juego; tus respuestas del perfil no salen del navegador y el
+  riesgo no pasa por ella». Las tipografías, con su licencia SIL OFL.
+- **El entrenamiento**, en una línea: data-v1, 83 juegos y 123,972 reseñas, y los otros
+  40 son la prueba.
+- **El título**, con el mismo estilo que «Metodología».
+- **Medido:** de 221 a 133 palabras y de 673 a 402 px de alto a 1440, sin desborde.
+- **Recorrido:** `_angular_5_vistas`, `_angular_como_funciona` y
+  `_angular_letra_y_vocabulario` corridas solas, 0 problemas.
+- ALTO hasta el visto bueno, junto con las gráficas.
+
+### La ficha, con aire (pedido del dueño, 2026-09-26)
+
+«Mejora el diseño, que no se vea muy apretado» (la ficha de Terraria).
+
+- **Entre bloques:** 28 px en lugar de 20, 32 px entre columnas y más relleno en el
+  veredicto.
+- **Dentro de los bloques:** 28/32 px de relleno y 20 px entre partes. `.bloque` (base.css)
+  toma el relleno y el hueco de variables CSS, que la ficha sube. Comparar, que también
+  usa `.bloque`, queda igual.
+- **Qué mueve esta estimación:** más espacio entre factores.
+- **Ficha técnica:** un dato por renglón, con una línea fina entre ellos.
+- **El chat de Nia en la ficha:** un poco más de relleno.
