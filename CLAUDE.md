@@ -21,8 +21,8 @@ que no vio. Nunca usar `train_test_split` simple: fuga garantizada.
 
 **Datos.** Reseñas ingestadas desde la API `appreviews` de Steam, publicadas en releases
 con tag fijo. **Entrenamiento: 83 títulos** (release data-v1, 123,972 reseñas); el modelo se
-entrena siempre con ese corte. **Catálogo servido: 123 títulos** (data-v2 en
-`frontend-angular`; `master` sirve data-v1). Los 40 títulos que no están en data-v1 son
+entrena siempre con ese corte. **Catálogo servido: 123 títulos** (data-v3: los juegos
+y reseñas de data-v2 más los totales públicos de Steam). Los 40 títulos que no están en data-v1 son
 prueba externa: nunca entran al entrenamiento, a la elección de variables ni a los umbrales.
 
 **Modelo de título.** `conjunto='juego'` (`logreg-juego-`): gratuidad, precio, descuento y

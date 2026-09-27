@@ -7,7 +7,8 @@ los assets de datos de los releases, reconstruye datos/nexplay.db, entrena el
 modelo de produccion y verifica que la API levante con esos artefactos.
 
 Son dos cortes de datos distintos, cada uno con su tag y su sha256:
-- el que sirve la API (SERVIDO_*): el catalogo completo, data-v2;
+- el que sirve la API (SERVIDO_*): el catalogo completo, data-v3 (los mismos
+  123 juegos y reseñas de data-v2, mas los totales publicos de Steam);
 - el de entrenamiento (ENTRENAMIENTO_*): siempre data-v1, los 83 juegos con
   los que se valido el modelo. Los titulos que llegaron despues son prueba
   externa y no entran al entrenamiento (ver entrenar_modelo.py).
@@ -18,9 +19,9 @@ con tag fijo (nunca "latest"), con su SHA-256 verificado antes de tocarlo -
 mismo patron que notebook/nexplay.ipynb.
 
 Ese asset es una copia sanitizada de datos/nexplay.db (ver
-extracto_reproducible.py): mismas tablas 'juegos' y 'resenas' completas,
-salvo la columna steamid de 'resenas', que no usa ni la API ni el
-entrenamiento y no hay razon para redistribuir.
+extracto_reproducible.py): mismas tablas 'juegos', 'resenas' y
+'resumen_resenas' completas, salvo la columna steamid de 'resenas', que no
+usa ni la API ni el entrenamiento y no hay razon para redistribuir.
 
 Requiere que las dependencias ya esten instaladas (ver README.md):
     pip install -r requirements.txt -r requirements-modelo.txt
@@ -52,8 +53,8 @@ MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 GITHUB_REPO = "fernandoaxelramirezgomez-coder/nexplay"
 ASSET_NOMBRE = "nexplay_reproducible.db.xz"
 
-SERVIDO_REF = "data-v2"
-SERVIDO_SHA256 = "9d5a54f6cbb5f361e397eb043989e592cbff1d553c57ef8a41aae41e2c763d72"
+SERVIDO_REF = "data-v3"
+SERVIDO_SHA256 = "44f6704d469a8f59683be8e28429108b7a88a06ee01aecdb21da94d90077dfb8"
 
 ENTRENAMIENTO_REF = "data-v1"
 ENTRENAMIENTO_SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"

@@ -13,9 +13,12 @@ para redistribuirla.
 'juegos' se copia entera: es metadata pública de la tienda de Steam (precio,
 géneros, etc.), sin ningún campo sensible.
 
-Las tablas resumen_resenas y progreso no se copian: son metadata de la
-ingesta (agregados ya derivables de 'resenas', progreso de paginación), no
-las usa ni la API ni el entrenamiento.
+'resumen_resenas' también se copia entera (desde data-v3): son los totales
+públicos que Steam da por juego (reseñas, positivas, negativas y su consenso),
+no derivables de la muestra. api/panorama.py los necesita para arrancar.
+
+'progreso' no se copia: es el estado de paginación de la ingesta y nada fuera
+de ingesta/ lo lee.
 
 Uso:
     python extracto_reproducible.py
@@ -79,6 +82,9 @@ def generar_db_sanitizada() -> None:
         columnas = ", ".join(_COLUMNAS_RESENAS)
         con.execute(f"CREATE TABLE resenas AS SELECT {columnas} FROM origen.resenas")
         con.execute("CREATE INDEX idx_resenas_appid ON resenas(appid)")
+
+        con.execute("CREATE TABLE resumen_resenas AS SELECT * FROM origen.resumen_resenas")
+        con.execute("CREATE UNIQUE INDEX idx_resumen_resenas_appid ON resumen_resenas(appid)")
 
         con.commit()
     finally:

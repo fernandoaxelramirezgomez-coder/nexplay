@@ -19,7 +19,7 @@ COPY --chown=user modelado/ modelado/
 COPY --chown=user herramientas/preparar_entorno.py herramientas/
 COPY --chown=user docs/bandas_referencia.json docs/
 
-# Baja data-v2 y data-v1 con su sha256, entrena y prueba la API. Si una banda difiere, el build falla.
+# Baja data-v3 y data-v1 con su sha256, entrena y prueba la API. Si una banda difiere, el build falla.
 RUN python herramientas/preparar_entorno.py \
  && python modelado/verificar_bandas.py \
  && rm -rf datos/entrenamiento
