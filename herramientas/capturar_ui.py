@@ -1173,26 +1173,43 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
             else:
                 abierto = otra.get_by_test_id(prueba).evaluate("d => d.open")
                 caja = otra.get_by_test_id(prueba).bounding_box()
-            if not abierto or not caja or not -2 <= caja["y"] <= otra.viewport_size["height"] / 2:
+            # A la vista: entera en pantalla, o empezando en la mitad de arriba si es más alta.
+            # Sin el pie (solo va en el inicio), Perfil ya no da para subir «Tu actividad»
+            # hasta arriba, y entera abajo también se lee.
+            alto = otra.viewport_size["height"]
+            a_la_vista = bool(caja) and caja["y"] >= -2 and (caja["y"] + caja["height"] <= alto + 2 or caja["y"] <= alto / 2)
+            if not abierto or not a_la_vista:
                 problemas.append(f"{vieja} llegó a {destino_url} pero la sección no quedó abierta y a la vista ({caja})")
         otra.get_by_test_id("perfil-actividad").screenshot(path=destino / "perfil-actividad.png")
         if len(problemas) == n_antes:
             print("rutas:    /panorama y /como-funciona → /#metodologia con el panel abierto; /historial → /perfil#actividad "
                   f"con «Tu actividad» abierta ({(destino / 'perfil-actividad.png').relative_to(_RAIZ)})")
 
-        # La ficha: «Cómo calculamos esta estimación» abre el panel sin salir de la ficha.
+        # La ficha ya no tiene pie: «Cómo calculamos esta estimación» lleva al inicio con el
+        # panel de metodología abierto.
         _abrir(otra, f"{base}/juego/{_APPID_FICHA}")
         otra.get_by_test_id("factores-como-calculamos").click()
-        otra.wait_for_timeout(900)
-        if f"/juego/{_APPID_FICHA}#metodologia" not in otra.url or otra.get_by_test_id("pie-ver-metodologia").get_attribute("aria-expanded") != "true":
-            problemas.append(f"«Cómo calculamos esta estimación» no abre el panel en la ficha ({otra.url})")
+        try:
+            otra.wait_for_url(f"{base}/#metodologia", timeout=_TIMEOUT_MS)
+            otra.wait_for_timeout(900)
+            abierto = otra.get_by_test_id("pie-ver-metodologia").get_attribute("aria-expanded") == "true"
+        except TiempoAgotado:
+            abierto = False
+        if not abierto:
+            problemas.append(f"«Cómo calculamos esta estimación» no lleva al panel de metodología abierto ({otra.url})")
         else:
-            print("ficha:    «Cómo calculamos esta estimación» abre el panel del pie sin salir de la ficha")
+            print("ficha:    «Cómo calculamos esta estimación» lleva a /#metodologia con el panel abierto")
 
-        # La línea de fuentes del pie, con su fecha, en las cinco vistas y la ficha.
+        # El pie, con la línea de fuentes y «Ver metodología», solo en el inicio: en las otras
+        # vistas y en la ficha no hay pie.
         n_antes = len(problemas)
         for ruta in _RUTAS_DE_LA_APP:
             _abrir(otra, f"{base}{ruta}")
+            if ruta != "/":
+                otra.wait_for_timeout(900)
+                if otra.locator("footer").count():
+                    problemas.append(f"{ruta}: todavía trae el pie, que va solo en el inicio")
+                continue
             linea = otra.locator("footer [data-testid=pie-linea]")
             try:
                 otra.wait_for_function(
@@ -1204,12 +1221,10 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
             texto = " ".join(linea.inner_text().split())
             if texto != esperada_pie:
                 problemas.append(f"{ruta}: el pie dice «{texto}» y no «{esperada_pie}»")
-            # En el catálogo el pie va sin «Ver metodología»; en el resto, con él.
-            con_boton = otra.locator("footer [data-testid=pie-ver-metodologia]").count() > 0
-            if con_boton == (ruta == "/explorar"):
-                problemas.append(f"{ruta}: el pie {'trae' if con_boton else 'no trae'} «Ver metodología»")
+            if not otra.locator("footer [data-testid=pie-ver-metodologia]").count():
+                problemas.append("el pie del inicio no trae «Ver metodología»")
         if len(problemas) == n_antes:
-            print(f"pie:      «{esperada_pie}» en las cinco vistas y la ficha; «Ver metodología» en todas menos /explorar")
+            print(f"pie:      «{esperada_pie}» y «Ver metodología» solo en el inicio; las otras vistas y la ficha, sin pie")
     except TiempoAgotado as error:
         problemas.append(f"la reorganización no terminó de cargar: {str(error).splitlines()[0]}")
     finally:

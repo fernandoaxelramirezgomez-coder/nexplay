@@ -42,9 +42,11 @@
         <router-outlet />
       </main>
 
-      <footer class="pie">
-        <app-pie [conMetodologia]="pieConMetodologia()" />
-      </footer>
+      @if (conPie()) {
+        <footer class="pie">
+          <app-pie />
+        </footer>
+      }
     </div>
 
     @if (muestraNiaFlotante()) {

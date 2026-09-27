@@ -164,10 +164,22 @@
   max-height: calc(100dvh - 32px);
 }
 
+/* El chat tiene prioridad en la columna: no baja de 340 px, y en una pantalla baja es la
+   ficha técnica la que cede y se desplaza dentro de su recuadro. Sin esto, a 674 px de
+   alto y con una ficha técnica larga (WILD HEARTS, con su resumen de Steam), el chat se
+   quedaba en 24 px y el botón de preguntar se salía de la pantalla. */
 .lateral > app-nia {
   display: flex;
-  flex: 1;
+  flex: 1 0 340px;
   min-height: 0;
+}
+
+.lateral > app-metadatos-juego {
+  display: block;
+  flex: 0 1 auto;
+  min-height: 140px;
+  overflow-y: auto;
+  border-radius: var(--radio-tarjeta);
 }
 
 /* Mismo criterio que el catálogo: lo que decide es el ancho de .contenido. */
@@ -179,6 +191,10 @@
   .lateral {
     position: static;
     max-height: none;
+  }
+
+  .lateral > app-metadatos-juego {
+    overflow-y: visible;
   }
 }
 

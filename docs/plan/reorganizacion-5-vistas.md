@@ -482,3 +482,25 @@ la línea del entrenamiento, en el panel «Ver metodología» del pie).
 - **Qué mueve esta estimación:** más espacio entre factores.
 - **Ficha técnica:** un dato por renglón, con una línea fina entre ellos.
 - **El chat de Nia en la ficha:** un poco más de relleno.
+
+### El pie, solo en el Inicio (pedido del dueño, 2026-09-26)
+
+«Quita la metodología y el mensaje "Fuentes: Steam (appreviews y appdetails) y
+Metacritic, descargadas…" de todos lados, excepto el Inicio.»
+
+- El armazón muestra el pie solo en la vista del Inicio (`conPie` en `app.ts`); el pie
+  vuelve a no tener excepciones.
+- «Cómo calculamos esta estimación», de la ficha, lleva a `/#metodologia`: el Inicio con
+  el panel abierto, como ya hacían `/panorama` y `/como-funciona`.
+- **Recorrido:**
+  - el pie está en el Inicio y en ninguna otra vista ni en la ficha;
+  - el enlace de la ficha abre el panel en el Inicio;
+  - «Tu actividad» cuenta como a la vista si queda entera en pantalla, porque sin pie
+    Perfil ya no da para subirla hasta arriba.
+- **Lo que destapó quitar el pie:** en la ficha, a 674 px de alto, la columna derecha
+  mide 642 px. Con una ficha técnica larga (WILD HEARTS, con su resumen de Steam), al
+  chat de Nia le quedaban 24 px, y el campo y el botón se salían por abajo.
+  - Antes pasaba por suerte: el pie empujaba la columna hacia arriba al final del scroll.
+  - Ahora el chat tiene prioridad y no baja de 340 px. La ficha técnica cede y, en
+    pantallas bajas, se desplaza dentro de su recuadro.
+  - Medido a 1280×674: el botón queda en y=585 en WILD HEARTS y en Terraria.

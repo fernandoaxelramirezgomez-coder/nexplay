@@ -69,10 +69,9 @@ export class App {
    * tres tienen que coincidir. Historial y Cómo funciona comparten el gris-azul. */
   protected readonly vista = computed(() => vistaDe(this.ruta()));
 
-  /** En el catálogo el pie queda en la línea de fuentes, sin «Ver metodología»: lo pidió el
-   * dueño. La ficha, que también es de Explorar, sí lo lleva, porque lo abre desde sus
-   * factores. */
-  protected readonly pieConMetodologia = computed(() => this.ruta().split(/[?#]/)[0] !== '/explorar');
+  /** El pie (la línea de fuentes y «Ver metodología») va solo en el inicio: lo pidió el
+   * dueño. Las demás vistas llevan a /#metodologia cuando hace falta. */
+  protected readonly conPie = computed(() => this.vista() === 'inicio');
 
 }
 
