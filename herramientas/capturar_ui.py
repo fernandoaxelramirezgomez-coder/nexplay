@@ -998,8 +998,12 @@ _MENU = ["nav-inicio", "nav-explorar", "nav-nia", "nav-comparar", "nav-perfil"]
 
 
 def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
-    """Las cifras del Inicio, contadas aquí con /catalogo y /panorama, no copiadas de la página."""
+    """Las cifras de «Antes de pagar, esto importa», contadas aquí con /catalogo y /panorama,
+    no copiadas de la página: el titular y las tres barras de cada pestaña, los conteos del
+    histograma de precios (todos y solo riesgo alto) y las reseñas de la línea de confianza."""
     por_juego = {f["appid"]: f for f in panorama["por_juego"]}
+    niveles = ("bajo", "medio", "alto")
+    redondo = lambda x: int(x + 0.5)  # como Math.round, no el redondeo bancario de Python
 
     def senal(banda: str) -> float:
         filas = [por_juego[j["appid"]] for j in catalogo if j["banda_riesgo"] == banda and j["appid"] in por_juego]
@@ -1011,16 +1015,34 @@ def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
             if j["banda_riesgo"] == banda and not j["es_gratis"] and j["precio_final"] is not None
         )
 
-    altos = [j for j in catalogo if j["banda_riesgo"] == "alto"]
-    positivos = [j for j in altos if (por_juego.get(j["appid"]) or {}).get("consenso") in ("Overwhelmingly Positive", "Very Positive")]
-    alto, bajo = senal("alto"), senal("bajo")
-    no_vistos = len(catalogo) - panorama["modelo"]["juegos_entrenamiento"]
+    def positivas(banda: str) -> float:
+        de_la_banda = [j for j in catalogo if j["banda_riesgo"] == banda]
+        muy = [j for j in de_la_banda if (por_juego.get(j["appid"]) or {}).get("consenso") in ("Overwhelmingly Positive", "Very Positive")]
+        return len(muy) / len(de_la_banda)
+
+    razon_precio = mediana("alto") / mediana("bajo")
+    rangos = (
+        ("Gratis", lambda j: j["es_gratis"]),
+        ("<200", lambda j: 0 <= j["precio_final"] < 200), ("200–400", lambda j: 200 <= j["precio_final"] < 400),
+        ("400–600", lambda j: 400 <= j["precio_final"] < 600), ("600–900", lambda j: 600 <= j["precio_final"] < 900),
+        ("900+", lambda j: j["precio_final"] >= 900),
+    )
+
+    def conteos(banda: str | None) -> list[str]:
+        salida = []
+        for etiqueta, cabe in rangos:
+            juegos = [j for j in catalogo if (banda is None or j["banda_riesgo"] == banda)
+                      and (j["es_gratis"] if etiqueta == "Gratis" else (not j["es_gratis"] and j["precio_final"] is not None and cabe(j)))]
+            salida.append(f"{etiqueta}={len(juegos)}")
+        return salida
+
     return {
-        "senal": f"{alto / bajo:.1f}×",
-        "senal_frase": f"({alto * 100:.2f} % vs {bajo * 100:.2f} %)",
-        "precio": f"${round(mediana('alto')):,} vs ${round(mediana('bajo')):,}",
-        "steam": f"{len(positivos)} de {len(altos)}",
-        "franja": [f"{len(catalogo):,}", f"{panorama['resenas_descargadas']:,}", f"{panorama['casos_senal']:,}", f"{no_vistos:,}"],
+        "senal": (f"{senal('alto') / senal('bajo'):.1f}×", [f"{senal(b) * 100:.2f}%" for b in niveles]),
+        "precio": (f"{int(razon_precio)}×" if razon_precio >= 2 else f"{razon_precio:.1f}×", [f"${redondo(mediana(b)):,}" for b in niveles]),
+        "positivas": (f"{redondo(positivas('alto') * 100)}%", [f"{redondo(positivas(b) * 100)}%" for b in niveles]),
+        "histograma": conteos(None),
+        "histograma_alto": conteos("alto"),
+        "resenas": f"{panorama['resenas_descargadas']:,}",
     }
 
 
@@ -1034,7 +1056,7 @@ def _medir_inicio(navegador, url: str) -> dict:
         try:
             otra = contexto.new_page()
             _abrir(otra, url)
-            otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            otra.get_by_test_id("antes-de-pagar").wait_for(state="visible", timeout=_TIMEOUT_MS)
             otra.wait_for_timeout(1200)
             medidas[str(ancho)] = otra.evaluate("""() => {
                 const palabras = (el) => el ? el.innerText.split(/\\s+/).filter(Boolean).length : 0;
@@ -1071,43 +1093,46 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
         otra = contexto.new_page()
         # El menú: cinco entradas, en el orden de la exposición.
         _abrir(otra, f"{base}/")
-        otra.get_by_test_id("inicio-hallazgos").wait_for(state="visible", timeout=_TIMEOUT_MS)
-        otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.get_by_test_id("antes-de-pagar").wait_for(state="visible", timeout=_TIMEOUT_MS)
         menu = otra.locator("app-barra-lateral nav a.item").evaluate_all("as => as.map(a => a.dataset.testid)")
         if menu != _MENU:
             problemas.append(f"el menú no son las cinco vistas en orden ({menu})")
 
-        # El Inicio: las tres cifras y la franja coinciden con lo que se cuenta con la API.
+        # «Antes de pagar, esto importa»: cada pestaña (titular y tres barras), el histograma
+        # de precios (todos y solo riesgo alto) y la línea de confianza, contra la API.
         n_antes = len(problemas)
-        hallazgos = {
-            h["id"]: h for h in otra.get_by_test_id("hallazgo").evaluate_all("""hs => hs.map(h => ({
-                id: h.dataset.hallazgo,
-                cifra: h.querySelector('[data-testid=hallazgo-cifra]').innerText.replace(/\\s+/g, ' ').trim(),
-                frase: h.querySelector('[data-testid=hallazgo-frase]').innerText.replace(/\\s+/g, ' ').trim(),
-                texto: h.innerText.replace(/\\s+/g, ' ').trim(),
-            }))""")
-        }
-        if list(hallazgos) != ["senal", "precio", "steam"]:
-            problemas.append(f"«Qué encontramos» no trae las tres tarjetas en orden ({list(hallazgos)})")
-        else:
-            if hallazgos["senal"]["cifra"] != esperado["senal"] or esperado["senal_frase"] not in hallazgos["senal"]["frase"]:
-                problemas.append(f"la tarjeta de la señal dice «{hallazgos['senal']['cifra']}» y la API da {esperado['senal']} {esperado['senal_frase']}")
-            if "sin leer las reseñas" not in hallazgos["senal"]["texto"]:
-                problemas.append("la tarjeta de la señal no dice que el modelo asigna el riesgo sin leer las reseñas")
-            if hallazgos["precio"]["cifra"] != esperado["precio"]:
-                problemas.append(f"la tarjeta del precio dice «{hallazgos['precio']['cifra']}» y la API da {esperado['precio']}")
-            if hallazgos["steam"]["cifra"] != esperado["steam"]:
-                problemas.append(f"la tarjeta de Steam dice «{hallazgos['steam']['cifra']}» y la API da {esperado['steam']}")
-        franja = [" ".join(t.split()) for t in otra.get_by_test_id("cifra-muestra").locator("dt").all_inner_texts()]
-        if franja != esperado["franja"]:
-            problemas.append(f"«Cómo lo sabemos» dice {franja} y la API da {esperado['franja']}")
-        for quitado in ("inicio-origenes", "cadena-datos", "inicio-fuentes"):
+        seccion = otra.get_by_test_id("antes-de-pagar")
+        seccion.scroll_into_view_if_needed()
+        vistas = []
+        for metrica in ("senal", "precio", "positivas"):
+            otra.locator(f"[data-testid=antes-pestana][data-metrica={metrica}]").click()
+            otra.wait_for_timeout(900)
+            cifra = otra.get_by_test_id("antes-cifra").inner_text().strip()
+            barras = [t.strip() for t in otra.locator("[data-testid=antes-barras] .valor").all_inner_texts()]
+            if (cifra, barras) != (esperado[metrica][0], esperado[metrica][1]):
+                problemas.append(f"la pestaña {metrica} dice {cifra} {barras} y la API da {esperado[metrica][0]} {esperado[metrica][1]}")
+            vistas.append(f"{metrica} {cifra} {' / '.join(barras)}")
+        columnas = otra.get_by_test_id("histograma-columna")
+        leer = "cs => cs.map(c => c.dataset.rango + '=' + c.dataset.cuantos)"
+        if columnas.evaluate_all(leer) != esperado["histograma"]:
+            problemas.append(f"el histograma dice {columnas.evaluate_all(leer)} y /catalogo da {esperado['histograma']}")
+        otra.locator("[data-testid=histograma-nivel][data-nivel=alto]").click()
+        otra.wait_for_timeout(900)
+        if columnas.evaluate_all(leer) != esperado["histograma_alto"]:
+            problemas.append(f"con «Alto», el histograma dice {columnas.evaluate_all(leer)} y /catalogo da {esperado['histograma_alto']}")
+        otra.locator("[data-testid=histograma-nivel][data-nivel=todos]").click()
+        confianza = " ".join(otra.get_by_test_id("antes-confianza").inner_text().split())
+        if f"{esperado['resenas']} reseñas de Steam" not in confianza or "sin leer las reseñas" not in confianza:
+            problemas.append(f"la línea de confianza no dice las reseñas de /panorama o que el riesgo no lee reseñas ('{confianza}')")
+        for quitado in ("inicio-hallazgos", "inicio-como-lo-sabemos", "inicio-origenes", "cadena-datos", "inicio-fuentes"):
             if otra.get_by_test_id(quitado).count():
                 problemas.append(f"el Inicio todavía muestra {quitado}")
         otra.screenshot(path=destino / "inicio-5-vistas.png", full_page=True)
+        seccion.screenshot(path=destino / "inicio-antes-de-pagar.png")
         if len(problemas) == n_antes:
-            print(f"inicio:   {esperado['senal']} {esperado['senal_frase']} · {esperado['precio']} · {esperado['steam']} · "
-                  f"franja {' · '.join(esperado['franja'])}: igual que /catalogo y /panorama ({(destino / 'inicio-5-vistas.png').relative_to(_RAIZ)})")
+            print(f"inicio:   «Antes de pagar»: {' · '.join(vistas)}; histograma {' '.join(esperado['histograma'])} "
+                  f"(alto {' '.join(esperado['histograma_alto'])}): igual que /catalogo y /panorama "
+                  f"({(destino / 'inicio-antes-de-pagar.png').relative_to(_RAIZ)})")
 
         # El pie: «Ver metodología» despliega metodología y fuentes sin cambiar de vista.
         n_antes = len(problemas)
@@ -3229,7 +3254,7 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
                     # El inicio es la que cambia con los datos: se guarda entera para poder
                     # revisar las cifras de una corrida a otra.
                     if nombre == "escritorio" and ruta_app == "/":
-                        otra.get_by_test_id("inicio-como-lo-sabemos").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                        otra.get_by_test_id("antes-de-pagar").wait_for(state="visible", timeout=_TIMEOUT_MS)
                         _recorrer_pagina(otra)
                         _esperar_quietud(otra)
                         destino_ruta = destino / f"inicio-{tema}.png"

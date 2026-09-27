@@ -202,17 +202,41 @@ export function consensoPorBanda(
   });
 }
 
+/** Los dos escalones más positivos del resumen de Steam. */
+const MUY_POSITIVAS = ['Overwhelmingly Positive', 'Very Positive'];
+
+function muyPositivo(juego: JuegoCatalogo, porAppid: ReadonlyMap<number, JuegoPanorama>): boolean {
+  return MUY_POSITIVAS.includes(porAppid.get(juego.appid)?.consenso ?? '');
+}
+
 /** Juegos de banda alta cuyo consenso en Steam es de los dos escalones más positivos: el
  * caso que justifica mirar las primeras dos horas aparte de la nota general. */
 export function positivosEnBandaAlta(
   juegos: readonly JuegoCatalogo[],
   porAppid: ReadonlyMap<number, JuegoPanorama>,
 ): JuegoCatalogo[] {
-  return juegos.filter(
-    (juego) =>
-      juego.banda_riesgo === 'alto' &&
-      ['Overwhelmingly Positive', 'Very Positive'].includes(porAppid.get(juego.appid)?.consenso ?? ''),
-  );
+  return juegos.filter((juego) => juego.banda_riesgo === 'alto' && muyPositivo(juego, porAppid));
+}
+
+export interface PositivasDeBanda {
+  banda: NivelRiesgo;
+  positivas: number;
+  /** Todos los juegos de la banda, tengan o no resumen de Steam: «23 de 43». */
+  total: number;
+  fraccion: number;
+}
+
+/** Por banda, cuántos juegos tienen en Steam uno de los dos escalones más positivos: el
+ * mismo criterio de positivosEnBandaAlta, en las tres. */
+export function positivosPorBanda(
+  juegos: readonly JuegoCatalogo[],
+  porAppid: ReadonlyMap<number, JuegoPanorama>,
+): PositivasDeBanda[] {
+  return ORDEN_BANDAS.map((banda) => {
+    const deLaBanda = juegos.filter((juego) => juego.banda_riesgo === banda);
+    const positivas = deLaBanda.filter((juego) => muyPositivo(juego, porAppid)).length;
+    return { banda, positivas, total: deLaBanda.length, fraccion: deLaBanda.length ? positivas / deLaBanda.length : 0 };
+  });
 }
 
 export interface MotivoDeBanda {

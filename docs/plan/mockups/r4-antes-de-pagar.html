@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup · Antes de pagar</title>
+<!-- Las mismas fuentes, tokens y estilos base que la app: lo que se ve aquí es lo que
+     quedaría, con la paleta aprobada en la 6A. -->
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/inter/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/jetbrains-mono/latin-400.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-600.css" />
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource/chakra-petch/latin-700.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css" />
+<link rel="stylesheet" href="../../../frontend/src/styles/base.css" />
+<style>
+  body { background: var(--fondo); }
+  svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .encabezado-mockup { max-width: 1240px; margin: 0 auto; padding: 72px 24px 24px; }
+  .encabezado-mockup h1 { font-size: clamp(34px, 4vw, 52px); }
+  .encabezado-mockup p { margin-top: 12px; max-width: 82ch; color: var(--texto-2); font-size: 18px; line-height: 1.5; }
+  .boton-tema-mockup { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .rotulo-mockup { align-self: flex-start; margin: 0; padding: 6px 14px; border-radius: 999px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto); font-family: var(--fuente-mono); font-size: 16px; letter-spacing: 0.04em; }
+  .nota-mockup { padding: 14px 18px; border-radius: 12px; border: 1px dashed var(--borde-control); background: var(--superficie); color: var(--texto-2); font-size: 16px; line-height: 1.5; overflow-x: auto; }
+  .nota-mockup strong { color: var(--texto); }
+  .nota-mockup ul { margin: 6px 0 0; padding-inline-start: 20px; }
+  .nota-mockup li + li { margin-top: 6px; }
+  .nota-mockup p { margin: 0; }
+  .nota-mockup p + p { margin-top: 8px; }
+  .escena {
+    padding: 32px 24px 56px; border-top: 1px solid var(--borde);
+    background:
+      radial-gradient(ellipse 46% 34% at 58% 16%, rgb(var(--accion-canal) / var(--brillo)), transparent 72%),
+      radial-gradient(circle at 1px 1px, var(--estrella-a) 1px, transparent 1.6px) 0 0 / 97px 89px,
+      radial-gradient(circle at 1px 1px, var(--estrella-b) 1px, transparent 1.6px) 41px 63px / 143px 131px,
+      radial-gradient(ellipse 56% 46% at 90% 6%, rgb(var(--accion-canal) / var(--nebulosa)), transparent 70%),
+      radial-gradient(ellipse 50% 56% at 4% 98%, rgb(var(--accion-canal) / calc(var(--nebulosa) * 0.7)), transparent 70%),
+      linear-gradient(var(--rejilla-a) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, var(--rejilla-b) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(160deg, var(--fondo) 0%, var(--fondo-2) 100%);
+  }
+  .marco { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .comparacion { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .comparacion figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .comparacion img { width: 100%; border-radius: 12px; border: 1px solid var(--borde); }
+  .comparacion figcaption { font-size: 16px; color: var(--texto); }
+  .pantalla { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .menu { display: flex; flex-direction: column; gap: 6px; padding: 16px 12px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); }
+  .menu a { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 2px 12px; padding: 8px 10px; border-radius: 12px; color: var(--texto); text-decoration: none; }
+  .menu a .ico { grid-row: 1 / span 2; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--tono); background: rgb(var(--tono-canal) / 0.14); }
+  .menu a strong { font-family: var(--fuente-display); font-size: 17px; letter-spacing: 0.04em; }
+  .menu a span.sub { color: var(--texto-2); font-size: 16px; }
+  .menu a[aria-current='page'] { border: 1px solid color-mix(in srgb, var(--tono) var(--mezcla-filo), var(--superficie)); background: rgb(var(--tono-canal) / 0.1); }
+  .contenido { container: contenido / inline-size; display: flex; flex-direction: column; gap: 40px; min-width: 0; }
+  /* Lo de arriba, resumido: el final de la banda del buscador. */
+  .banda { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px; border-radius: 24px; border: 1px solid color-mix(in srgb, var(--accion-tinta) var(--mezcla-filo), var(--superficie)); background: var(--superficie); }
+  .banda .campo { width: min(100%, 620px); min-height: 52px; display: flex; align-items: center; padding: 0 16px; border-radius: 999px; border: 1px solid var(--borde-control); color: var(--texto-2); font-size: 16px; }
+  .pie { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 18px; border-radius: 16px; border: 1px solid var(--borde); background: var(--superficie); font-size: 16px; }
+
+  /* ── Lo nuevo: «Antes de pagar, esto importa» ───────────────────────────────── */
+  .importa { display: flex; flex-direction: column; align-items: center; gap: 28px; margin: 24px 0; }
+  .importa h2 { margin: 0; text-align: center; font-size: clamp(var(--texto-subheading), 2.6vw, 34px); }
+  .cifras { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: clamp(32px, 5cqw, 56px) clamp(16px, 3cqw, 32px); border-radius: 24px; border: 1px solid var(--borde); background: var(--superficie); }
+  .cifra { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 clamp(16px, 2.6cqw, 36px); text-align: center; }
+  .cifra + .cifra { border-inline-start: 1px solid var(--borde); }
+  .cifra strong { color: var(--accion-tinta); font-family: var(--fuente-display); font-size: clamp(56px, 6.4cqw, 88px); font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
+  .cifra span { max-width: 22ch; color: var(--texto); font-size: 19px; line-height: 1.4; }
+  /* Al pie del panel y no sobre la nebulosa: el enlace de color tiene que ir en panel. */
+  .confianza { grid-column: 1 / -1; margin: clamp(28px, 4cqw, 44px) 0 0; padding-top: 20px; border-top: 1px solid var(--borde); color: var(--texto-2); font-size: 16px; line-height: 1.5; text-align: center; }
+  .confianza a { color: var(--enlace); text-underline-offset: 3px; white-space: nowrap; }
+
+  .tabla-medida { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .tabla-medida th, .tabla-medida td { padding: 6px 10px; border-bottom: 1px solid var(--borde); text-align: start; }
+  .tabla-medida td.num { font-family: var(--fuente-mono); text-align: end; white-space: nowrap; }
+  .tabla-medida td.pasa { color: var(--exito); }
+  .tabla-medida td.falla { color: var(--error); font-weight: 700; }
+
+  @container contenido (max-width: 760px) {
+    .cifras { grid-template-columns: 1fr; gap: 28px; }
+    .cifra { padding: 0; }
+    .cifra + .cifra { border-inline-start: 0; border-top: 1px solid var(--borde); padding-top: 28px; }
+    .confianza { margin-top: 0; }
+  }
+  @media (max-width: 900px) {
+    .comparacion { grid-template-columns: 1fr; }
+    .pantalla { grid-template-columns: 1fr; }
+    .menu { display: none; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-inicio" viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M9.5 20v-6h5v6"/></symbol>
+  <symbol id="i-explorar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-nia" viewBox="0 0 24 24"><path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-1-2.2V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/></symbol>
+  <symbol id="i-comparar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4"/><path d="M6.2 19.2a6 6 0 0 1 11.6 0"/></symbol>
+</svg>
+
+<button class="boton-tema-mockup" type="button" id="boton-tema">Cambiar a tema claro</button>
+
+<header class="encabezado-mockup">
+  <h1>Mockup · «Antes de pagar, esto importa»</h1>
+  <p>«Qué encontramos» contaba cómo se hizo el estudio; esta versión le dice a quien va a comprar qué le conviene saber. Tres cifras grandes con una línea cada una, mucho aire, y la confianza en una sola línea. Las cifras son las de hoy, calculadas con la API.</p>
+</header>
+
+<section class="escena" data-vista="neutro" id="hoy">
+  <div class="marco">
+    <p class="rotulo-mockup">Hoy: «Qué encontramos» y «Cómo lo sabemos» (128 palabras)</p>
+    <div class="comparacion">
+      <figure><img src="../../capturas/angular/hallazgos-hoy.png" alt="«Qué encontramos» y «Cómo lo sabemos» hoy" /><figcaption>Hoy, a 1440 (captura de la app)</figcaption></figure>
+      <div class="nota-mockup">
+        <p><strong>Qué cambia</strong></p>
+        <ul>
+          <li>El título habla al que compra: <strong>«Antes de pagar, esto importa»</strong>.</li>
+          <li>Cada cifra dice qué significa para él, en una línea: 4.2× más señal de arrepentimiento temprano, 3× más caros los de riesgo alto (pagar más no protege), 53 % con reseñas muy positivas (la nota no basta).</li>
+          <li>Salen de la vista los porcentajes finos, las medianas, las fuentes de cada tarjeta y la franja «Cómo lo sabemos»: quedan en una línea de confianza y en el panel de metodología del pie.</li>
+          <li>Se queda la frase que acordaste por honestidad: el riesgo sale de datos del juego, sin leer las reseñas.</li>
+          <li>Un solo panel, sin tres tarjetas con borde, y más aire arriba y abajo.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="inicio" id="propuesta">
+  <div class="marco">
+    <p class="rotulo-mockup">Propuesta, en su lugar: debajo del buscador y antes del pie</p>
+    <div class="pantalla">
+      <nav class="menu" aria-label="Menú (como hoy)">
+        <a href="#" aria-current="page" data-tono="inicio"><span class="ico"><svg class="i"><use href="#i-inicio"/></svg></span><strong>Inicio</strong><span class="sub">Qué es NexPlay</span></a>
+        <a href="#" data-tono="explorar"><span class="ico"><svg class="i"><use href="#i-explorar"/></svg></span><strong>Explorar</strong><span class="sub">Los 123 juegos</span></a>
+        <a href="#" data-tono="nia"><span class="ico"><svg class="i"><use href="#i-nia"/></svg></span><strong>Nia</strong><span class="sub">Tu asistente</span></a>
+        <a href="#" data-tono="comparar"><span class="ico"><svg class="i"><use href="#i-comparar"/></svg></span><strong>Comparar</strong><span class="sub">Hasta 4 lado a lado</span></a>
+        <a href="#" data-tono="perfil"><span class="ico"><svg class="i"><use href="#i-perfil"/></svg></span><strong>Tu perfil</strong><span class="sub">Cómo juegas tú</span></a>
+      </nav>
+      <div class="contenido">
+        <div class="banda"><span class="campo">🔍 Hollow Knight, Cyberpunk, Portal…</span></div>
+
+        <section class="importa muestra" id="seccion-importa" aria-labelledby="t-importa">
+          <h2 id="t-importa">Antes de pagar, esto importa</h2>
+          <div class="cifras">
+            <div class="cifra"><strong>4.2×</strong><span>más señal de arrepentimiento temprano en los de riesgo alto</span></div>
+            <div class="cifra"><strong>3×</strong><span>más caros son los de riesgo alto: pagar más no te protege</span></div>
+            <div class="cifra"><strong>53 %</strong><span>de los de riesgo alto tienen reseñas muy positivas: la nota no basta</span></div>
+            <p class="confianza">Con 184,367 reseñas de Steam. El riesgo sale de datos del juego, sin leer las reseñas. <a href="#">Ver metodología ▾</a></p>
+          </div>
+        </section>
+
+        <div class="pie">Fuentes: Steam (appreviews y appdetails) y Metacritic, descargadas del 14 al 21 sep 2026. <span class="rotulo-mockup">Ver metodología ▾</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="escena" data-vista="neutro" id="notas">
+  <div class="marco">
+    <p class="rotulo-mockup">Notas y medidas</p>
+    <div class="nota-mockup">
+      <p id="palabras-seccion">Contando palabras…</p>
+      <p><strong>De dónde sale cada cifra</strong> (la app las calcula con la API, nada escrito a mano):</p>
+      <ul>
+        <li><strong>4.2×</strong>: reseñas con señal en riesgo alto contra riesgo bajo (4.29 % contra 1.02 %).</li>
+        <li><strong>3×</strong>: mediana de precio de los juegos de pago, $579.99 contra $179.49 (3.2 veces).</li>
+        <li><strong>53 %</strong>: 23 de los 43 juegos de riesgo alto tienen reseñas muy o extremadamente positivas en Steam.</li>
+      </ul>
+      <p><strong>Para decidir:</strong> «Cómo lo sabemos» (123 juegos · 184,367 reseñas · 4,126 con señal · 40 que el modelo no vio) sale como sección aparte y queda en la línea de confianza y en la metodología. Si quieres conservarla, va debajo en una sola fila.</p>
+    </div>
+    <p class="rotulo-mockup">Lo que la página midió</p>
+    <div class="nota-mockup">
+      <p id="letra-minima">Midiendo…</p>
+      <p id="resumen-contraste"></p>
+      <table class="tabla-medida"><thead><tr><th>Texto</th><th>Sobre</th><th>Pide</th><th>Da</th></tr></thead><tbody id="tabla-contraste"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const seccion = document.getElementById('seccion-importa');
+  const palabras = seccion.innerText.split(/\s+/).filter((p) => /[\p{L}\p{N}]/u.test(p)).length;
+  document.getElementById('palabras-seccion').textContent =
+    `La sección nueva tiene ${palabras} palabras; hoy «Qué encontramos» y «Cómo lo sabemos» suman 128.`;
+</script>
+<script>
+  const raiz = document.documentElement;
+  const boton = document.getElementById('boton-tema');
+  function ponerTema(tema) {
+    raiz.dataset.tema = tema;
+    boton.textContent = tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    colorearPortadas();
+    medir();
+  }
+  boton.addEventListener('click', () => ponerTema(raiz.dataset.tema === 'claro' ? 'oscuro' : 'claro'));
+
+  // ── Contraste, con la fórmula de WCAG ─────────────────────────────────────────
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const mezcla = (arriba, alfa, abajo) => arriba.map((c, i) => c * alfa + abajo[i] * (1 - alfa));
+  const lienzo = document.createElement('canvas').getContext('2d');
+  function rgba(valor) {
+    lienzo.fillStyle = '#000'; lienzo.fillStyle = valor;
+    const v = lienzo.fillStyle;
+    if (v.startsWith('#')) return [[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)), 1];
+    const n = v.match(/[\d.]+(e-?\d+)?/g).map(Number);
+    const escala = v.startsWith('color(') ? 255 : 1;
+    return [n.slice(0, 3).map((x) => x * escala), n.length > 3 ? n[3] : 1];
+  }
+  const token = (nombre, el = raiz) => getComputedStyle(el).getPropertyValue(nombre).trim();
+
+  // ── Color dominante de cada portada: por tono, pesado por saturación ─────────
+  function dominante(img) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 15;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 32, 15);
+    const d = x.getImageData(0, 0, 32, 15).data;
+    const cubos = Array.from({ length: 12 }, () => ({ p: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const s = max ? (max - min) / max : 0, v = max / 255;
+      if (v < 0.2 || s < 0.25) continue;
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      const cubo = cubos[Math.floor(((h * 60 + 360) % 360) / 30)];
+      const peso = s * v;
+      cubo.p += peso; cubo.r += r * peso; cubo.g += g * peso; cubo.b += b * peso;
+    }
+    const mejor = cubos.sort((a, b) => b.p - a.p)[0];
+    return mejor.p ? [mejor.r / mejor.p, mejor.g / mejor.p, mejor.b / mejor.p] : null;
+  }
+  // El filo tiene que llegar a 3:1 contra la superficie: se aclara (oscuro) u oscurece (claro).
+  function alFilo(rgb, fondo) {
+    const hacia = lum(fondo) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+    let c = rgb;
+    for (let t = 0; t <= 1 && contraste(c, fondo) < 3; t += 0.04) c = mezcla(hacia, t, rgb);
+    return c;
+  }
+  const aCss = (c) => `rgb(${c.map(Math.round).join(' ')})`;
+  const aHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const colores = new Map();
+  function colorearPortadas() {
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('img[data-dominante]').forEach((img) => {
+      const color = colores.get(img.src);
+      if (!color) return;
+      const tarjeta = img.closest('.tarjeta');
+      const filo = alFilo(color, superficie);
+      tarjeta.style.setProperty('--color-portada', aCss(color));
+      tarjeta.style.setProperty('--color-portada-filo', aCss(filo));
+      const hex = tarjeta.querySelector('.hex');
+      if (hex) hex.textContent = `portada ${aHex(color)} → filo ${aHex(filo)}`;
+    });
+  }
+  const cargas = [...document.querySelectorAll('img[data-dominante]')].map((img) => new Promise((listo) => {
+    const leer = () => { try { const c = dominante(img); if (c) colores.set(img.src, c); } catch (e) { /* sin CORS: se queda sin color */ } listo(); };
+    if (img.complete && img.naturalWidth) leer(); else { img.addEventListener('load', leer); img.addEventListener('error', listo); }
+  }));
+
+  // ── Qué se mide: cada texto de las muestras contra el fondo que tiene debajo ──
+  // El fondo es la pila de background-color de sus ancestros; al llegar a la escena se
+  // toma su peor punto (fondo-2 con la nebulosa y el brillo encima). Donde el fondo es
+  // una imagen (el velo del video), el velo es lo que cuenta: se toma sobre blanco.
+  function fondoDe(el) {
+    const capas = [];
+    for (let a = el; a; a = a.parentElement) {
+      if (a.classList.contains('velo')) { capas.push([[11, 15, 31], 0.78]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('barra-video')) { capas.push([[11, 15, 31], 0.8]); capas.push([[255, 255, 255], 1]); break; }
+      if (a.classList.contains('escena')) {
+        const canal = token('--accion-canal', a).split(/\s+/).map(Number);
+        const peor = mezcla(canal, Number(token('--brillo', a)), mezcla(canal, Number(token('--nebulosa', a)), rgba(token('--fondo-2', a))[0]));
+        capas.push([peor, 1]); break;
+      }
+      const [c, alfa] = rgba(getComputedStyle(a).backgroundColor);
+      if (alfa > 0) { capas.push([c, alfa]); if (alfa >= 1) break; }
+    }
+    let fondo = capas.pop()[0];
+    while (capas.length) { const [c, alfa] = capas.pop(); fondo = mezcla(c, alfa, fondo); }
+    return fondo;
+  }
+  function describir(el) {
+    const t = (el.textContent || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 44) + (t.length > 44 ? '…' : '');
+  }
+  function medir() {
+    const filas = [];
+    let minima = Infinity, donde = '';
+    document.querySelectorAll('.muestra *').forEach((el) => {
+      const directo = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!directo || el.closest('svg')) return;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      const px = parseFloat(estilo.fontSize);
+      if (px < minima) { minima = px; donde = describir(el); }
+      const [color, alfa] = rgba(estilo.color);
+      if (alfa === 0) return; // título con degradado recortado: medido en la 6A
+      const fondo = fondoDe(el);
+      filas.push({ texto: describir(el), fondo: aHex(fondo), pide: 4.5, da: contraste(color, fondo) });
+    });
+    // Filos que tienen que llegar a 3:1: las tarjetas de riesgo (A), las de portada (B) y
+    // los controles del video sobre su propio fondo.
+    const superficie = rgba(token('--superficie'))[0];
+    document.querySelectorAll('.variante:not(.variante-b) .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo ${t.dataset.banda} · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+    document.querySelectorAll('.variante-b .tarjeta').forEach((t) => {
+      filas.push({ texto: `filo portada · ${describir(t.querySelector('.nombre'))}`, fondo: aHex(superficie), pide: 3, da: contraste(rgba(getComputedStyle(t).borderTopColor)[0], superficie) });
+    });
+
+    const fallas = filas.filter((f) => f.da < f.pide);
+    const justas = filas.filter((f) => f.da >= f.pide).sort((a, b) => (a.da - a.pide) - (b.da - b.pide)).slice(0, 8);
+    const fila = (f) => `<tr><td>${f.texto}</td><td class="num">${f.fondo}</td><td class="num">${f.pide}:1</td><td class="num ${f.da >= f.pide ? 'pasa' : 'falla'}">${f.da.toFixed(2)}:1</td></tr>`;
+    document.getElementById('tabla-contraste').innerHTML = [...fallas, ...justas].map(fila).join('');
+    document.getElementById('resumen-contraste').textContent =
+      `${filas.length} textos y filos medidos en tema ${raiz.dataset.tema}: ${fallas.length} no pasan. Abajo, los que no pasan y los ocho más justos.`;
+    document.getElementById('letra-minima').textContent =
+      `Letra más chica en las muestras: ${minima} px («${donde}»). Piso pedido: 16 px.`;
+  }
+
+  ponerTema(location.hash === '#claro' ? 'claro' : 'oscuro');
+  Promise.race([Promise.all(cargas), new Promise((r) => setTimeout(r, 8000))])
+    .then(() => document.fonts.ready)
+    .then(() => { colorearPortadas(); medir(); raiz.dataset.medido = 'si'; });
+</script>
+</body>
+</html>
