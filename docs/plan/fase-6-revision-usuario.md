@@ -21,7 +21,10 @@
 > (`4dd4ec1`); el 26 está evaluado y decidido (IGDB), con la corrida de cobertura esperando
 > credenciales válidas de Twitch en `.env`. **6E** hecha (27 a 29) y subida (`e475b32`).
 > **6F** hecha salvo la búsqueda web (37), que va al final; el 33 y el 38 esperan la corrida
-> con IA de las 25 preguntas (y su latencia). Pulido: P1, P2 y P4 a P12 pendientes. Las capturas no se versionan: las de la app salen
+> con IA de las 25 preguntas (y su latencia).
+>
+> **Pausado: búsqueda web (37), IGDB (26, pendiente de credenciales), corridas con IA
+> antes/después y pulido P1–P13. Se retoma después de la reorganización.** Pulido: P1, P2 y P4 a P12 pendientes. Las capturas no se versionan: las de la app salen
 > con `python herramientas/capturar_ui.py` y las del mockup con
 > `python docs/plan/mockups/capturar_mockup.py`.
 
