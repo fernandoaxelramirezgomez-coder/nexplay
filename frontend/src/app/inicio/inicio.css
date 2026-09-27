@@ -72,12 +72,6 @@
   background: rgb(var(--tono-canal) / 0.16);
 }
 
-/* El emoji a la medida del cuadrito, sin el alto de línea que lo descentraba. */
-.emoji-oferta {
-  font-size: 19px;
-  line-height: 1;
-}
-
 .icono-oferta svg {
   width: 18px;
   height: 18px;

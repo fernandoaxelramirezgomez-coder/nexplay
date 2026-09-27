@@ -15,24 +15,23 @@
         @for (oferta of ofertas(); track oferta.id) {
           <li class="oferta" [attr.data-tono]="oferta.tono" data-testid="oferta">
             <span class="icono-oferta" aria-hidden="true">
-              @if (oferta.emoji) {
-                <span class="emoji-oferta">{{ oferta.emoji }}</span>
-              } @else {
-                <svg viewBox="0 0 24 24">
-                  @switch (oferta.id) {
-                    @case ('gratis') {
-                      <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
-                      <circle cx="7.5" cy="7.5" r="1.5" />
-                    }
-                    @case ('sin-registro') {
-                      <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 7.9-1" />
-                    }
-                    @case ('juegos') {
-                      <rect x="2" y="6" width="20" height="12" rx="4" /><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" />
-                    }
+              <svg viewBox="0 0 24 24">
+                @switch (oferta.id) {
+                  @case ('gratis') {
+                    <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+                    <circle cx="7.5" cy="7.5" r="1.5" />
                   }
-                </svg>
-              }
+                  @case ('sin-registro') {
+                    <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 7.9-1" />
+                  }
+                  @case ('un-minuto') {
+                    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" /><path d="M8 12h.01M12 12h.01M16 12h.01" />
+                  }
+                  @case ('juegos') {
+                    <rect x="2" y="6" width="20" height="12" rx="4" /><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" />
+                  }
+                }
+              </svg>
             </span>
             @if (oferta.lectura) {
               <span aria-hidden="true">{{ oferta.texto }}</span><span class="solo-lector">{{ oferta.lectura }}</span>

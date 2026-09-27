@@ -12,7 +12,6 @@ describe('ofertas del Inicio', () => {
   it('el símbolo se lee en palabras', () => {
     const minuto = ofertasDelInicio(123).find((o) => o.id === 'un-minuto')!;
     expect(minuto.lectura).toBe('Menos de un minuto');
-    expect(minuto.emoji).toBe('💬');
   });
 
   it('sin catálogo no inventa cuántos juegos hay', () => {

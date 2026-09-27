@@ -6,8 +6,6 @@ export interface Oferta {
   texto: string;
   /** Cómo lo lee un lector de pantalla, cuando el texto lleva un símbolo. */
   lectura?: string;
-  /** En lugar del icono de trazo, cuando el dueño pidió un emoji. */
-  emoji?: string;
   /** El color de cada cuadrito: tonos de la paleta, nunca los del riesgo. */
   tono: 'inicio' | 'nia' | 'perfil' | 'neutro';
 }
@@ -16,7 +14,7 @@ export function ofertasDelInicio(totalJuegos: number): Oferta[] {
   const ofertas: Oferta[] = [
     { id: 'gratis', texto: 'Gratis', tono: 'inicio' },
     { id: 'sin-registro', texto: 'Sin registro', tono: 'nia' },
-    { id: 'un-minuto', texto: '<1 minuto', lectura: 'Menos de un minuto', emoji: '💬', tono: 'perfil' },
+    { id: 'un-minuto', texto: '<1 minuto', lectura: 'Menos de un minuto', tono: 'perfil' },
   ];
   // El número sale del catálogo que sirve la API; sin catálogo no se inventa.
   if (totalJuegos > 0) {
