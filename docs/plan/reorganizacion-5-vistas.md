@@ -1,7 +1,9 @@
 # Reorganización: de 9 vistas a 5
 
 > Rama: `reorganizacion-5-vistas`, creada desde `barra-lateral-y-tema` en `6144ce7`.
-> Estado: paso 0 hecho (`fa448e3`). Mockup aprobado. Etapa B hecha; ALTO sin push.
+> Estado: Etapa B hecha (`fc310c5`, sin push). Etapa C (Inicio de negocio): el carrusel con
+> Nia, la etiqueta y los cuadritos ya están en la app. El resto del mockup
+> `docs/plan/mockups/r2-inicio-negocio.html` espera visto bueno.
 
 Mensaje completo del dueño, tal como llegó, con una casilla por punto:
 
@@ -178,3 +180,71 @@ datos del juego, sin leer las reseñas».
   `/panorama`, las tres redirecciones con su sección abierta, contraste de 175 pares por
   tema, nebulosa y letra de 16 px o más en las 5 vistas, la ficha y los 2 paneles, y la barra
   en 674 px sin scroll.
+
+## Etapa C: un Inicio que venda (pedido del dueño, 2026-09-26)
+
+«Siento que es mucha información, perdemos al usuario por tanto contexto; piénsalo como un
+negocio. Los apartados se ven amontonados.»
+
+- **Diagnóstico:**
+  - dos titulares compiten (el `h1` en 5 líneas y «BUSCAR UN JUEGO» en mayúsculas);
+  - 7 bloques con borde separados por el mismo aire;
+  - tarjetas con 4 textos cada una;
+  - dos llamadas a la acción seguidas.
+- **Propuesta** (mockup `r2-inicio-negocio.html`):
+  - la búsqueda dentro del encabezado, con los atajos «Prueba con» (el más reseñado en
+    Steam de cada nivel: Team Fortress 2, Terraria y HELLDIVERS™ 2);
+  - «Qué encontramos» y «Cómo lo sabemos» en un solo panel: tres cifras de una línea y una
+    línea de confianza con «Ver metodología»;
+  - el perfil al final;
+  - 88 px entre zonas.
+- **Medido en el mockup:**
+  - 176 palabras con el carrusel (hoy 262, −33 %);
+  - alto estimado ~1,300 px (hoy 1,825);
+  - la búsqueda y los atajos terminan a ~500 px de 900 (1440) y ~660 de 844 (390);
+  - el título, la búsqueda y las tres cifras caben en la primera pantalla a 1440×900;
+  - 0 contrastes que no pasan, sin desborde, letra mínima de 16 px.
+- La meta de 150 palabras no se alcanza con el carrusel (36 palabras). Bajar de ahí pide
+  quitar la sobrelínea y acortar la invitación al perfil de la 6C: decisión del dueño.
+- **Pedidos directos (2026-09-26), ya en la app sin commit:**
+  - la etiqueta del Inicio dice «🎮 Segunda opinión»;
+  - bajo la descripción, los cuadritos Gratis · Sin registro · <1 minuto · 123 juegos
+    (`dominio/ofertas-inicio.ts`, con pruebas; «Confidencial» no va, porque las preguntas a
+    Nia se guardan 180 días).
+- **El carrusel del Inicio con Nia** (pedido directo, 2026-09-26; ya en la app, sin commit).
+  Primero se propuso en el mockup como «Así opina Nia». El dueño lo pidió en el carrusel de
+  verdad («Así se ve una segunda opinión») y dio el título: «Análisis crítico con nuestra
+  asistente Nia», con otra letra y limpio.
+  - `inicio/carrusel-ejemplo.ts`:
+    - título en la letra del texto (18 px, sin mayúsculas ni mono), con «Nia» en su
+      violeta;
+    - las flechas y la posición pasan al pie del panel;
+    - por diapositiva: la mascota del nivel, tu pregunta con la portada chica, el globo de
+      Nia (el mismo `globo-nia` del resto del sitio), la píldora de riesgo, «Ver su ficha»
+      y «Seguir con Nia» (`/nia?appid=`).
+  - Las cuatro diapositivas van apiladas en la misma celda y solo se ve la activa. El
+    panel mide lo que la más larga, así que no brinca al rotar: el alto es el mismo en las
+    cuatro a 1440, 1280, 1024, 768 y 390.
+  - Se quedan la rotación de 7 s, la pausa con el ratón o el foco, «reducir movimiento» y
+    los `data-testid` de los controles.
+  - Una sola petición por visita, `GET /nia/opiniones`. Sin opiniones queda tu pregunta
+    con «Pregúntale a Nia →».
+  - Prueba de componente `inicio/carrusel-ejemplo.spec.ts`.
+  - En el recorrido, `_angular_carrusel` comprueba por diapositiva la mascota del nivel,
+    la pregunta, que la opinión nombre el riesgo de `/catalogo` y los enlaces. También que
+    el carrusel no hace ninguna consulta al chat (POST /nia).
+- **La opinión de Nia** (lo que se propuso en el mockup):
+  - la mascota del nivel del juego (`nia/ficha-bajo|medio|alto.png`, que no se usaban) y
+    su opinión corta, con «Ver su ficha» y «Seguir con Nia»;
+  - la opinión sale de la regla `nia_reglas.opinion_corta` por
+    `GET /nia/opiniones?appids=…` (hasta 6, validado): sin modelo de lenguaje y sin
+    guardar nada;
+  - ejemplo: «WILD HEARTS™ tiene riesgo alto 😬 Tiende a generar más arrepentimiento
+    temprano que el resto del catálogo; en sus reseñas negativas lo que más sale es
+    rendimiento. ¿Te cuento más?».
+- **Medida del mockup con todo:**
+  - 194 palabras (hoy 262, −26 %);
+  - alto estimado ~1,400 px;
+  - el botón de búsqueda termina a ~490 px de 900 (1440), ~400 de 1366 (1024) y ~655 de
+    844 (390);
+  - 0 contrastes que no pasan, sin desborde, letra de 16 px o más.
