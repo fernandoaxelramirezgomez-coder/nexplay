@@ -143,7 +143,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
   gap: 32px;
-  align-items: start;
+  /* stretch: la columna lateral mide lo mismo que la principal, y así el chat tiene
+     recorrido para quedarse pegado mientras se lee la ficha. */
+  align-items: stretch;
   margin-top: var(--espacio-8);
 }
 
@@ -155,31 +157,21 @@
   min-width: 0;
 }
 
-/* Con techo: sin él la columna era más alta que la pantalla, nunca llegaba a pegarse y
-   el campo de "Preguntar" solo aparecía al final del scroll. Con el techo, el chat se
-   queda con el hueco que sobra y su conversación es la que se desplaza. */
-.lateral {
-  position: sticky;
-  top: var(--espacio-16);
-  max-height: calc(100dvh - 32px);
-}
-
-/* El chat tiene prioridad en la columna: no baja de 340 px, y en una pantalla baja es la
-   ficha técnica la que cede y se desplaza dentro de su recuadro. Sin esto, a 674 px de
-   alto y con una ficha técnica larga (WILD HEARTS, con su resumen de Steam), el chat se
-   quedaba en 24 px y el botón de preguntar se salía de la pantalla. */
-.lateral > app-nia {
-  display: flex;
-  flex: 1 0 340px;
-  min-height: 0;
-}
-
+/* La ficha técnica va entera, sin scroll propio: «Horas típicas» y «Crítica y público»
+   se leían a medias en su recuadro. Lo que se queda pegado al bajar es el chat, con el alto
+   de la pantalla (hasta 760 px): antes compartía la columna con la ficha técnica y en una
+   portátil le tocaban 340 px. */
 .lateral > app-metadatos-juego {
   display: block;
-  flex: 0 1 auto;
-  min-height: 140px;
-  overflow-y: auto;
   border-radius: var(--radio-tarjeta);
+}
+
+.lateral > app-nia {
+  position: sticky;
+  top: var(--espacio-16);
+  display: flex;
+  height: min(calc(100dvh - 32px), 760px);
+  min-height: 520px;
 }
 
 /* Mismo criterio que el catálogo: lo que decide es el ancho de .contenido. */
@@ -188,13 +180,11 @@
     grid-template-columns: 1fr;
   }
 
-  .lateral {
+  /* En una columna el chat va en su lugar, sin pegarse, y con alto propio. */
+  .lateral > app-nia {
     position: static;
-    max-height: none;
-  }
-
-  .lateral > app-metadatos-juego {
-    overflow-y: visible;
+    height: min(75dvh, 640px);
+    min-height: 460px;
   }
 }
 
