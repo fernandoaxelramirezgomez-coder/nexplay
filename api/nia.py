@@ -378,17 +378,23 @@ def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[s
     una palabra común que coincide con un título ("celeste") solo agrega una línea al
     contexto, mientras que no reconocer un juego del catálogo haría que Nia dijera que no
     está."""
-    texto = _sin_acentos(pregunta)
+    # Sin apóstrofos, recto (') ni tipográfico (’): «Don’t Starve» y «Sid Meier’s» del
+    # modelo contra «Don't Starve» y «Sid Meier's» del catálogo.
+    texto = _sin_acentos(pregunta).replace("'", "").replace("’", "")
     encontrados = []
     for juego in catalogo.buscar():
         if juego.appid == appid_abierto:
             continue
         for variante in _variantes_del_nombre(juego.nombre):
-            if re.search(rf"(?<!\w){re.escape(variante)}(?!\w)", texto):
+            if re.search(rf"(?<!\w){re.escape(variante.replace(chr(39), '').replace('’', ''))}(?!\w)", texto):
                 encontrados.append(juego.nombre)
                 break
-    # "Portal 2" ya implica "Portal": se queda el título más largo de cada coincidencia.
-    return [n for n in encontrados if not any(n != otro and _sin_acentos(n) in _sin_acentos(otro) for otro in encontrados)]
+    # "Portal 2" ya implica "Portal": se queda el título más largo de cada coincidencia. Con
+    # frontera de palabra: "Civilization V" no está dentro de "Civilization VI".
+    def dentro(corto: str, largo: str) -> bool:
+        return re.search(rf"(?<!\w){re.escape(_sin_acentos(corto))}(?!\w)", _sin_acentos(largo)) is not None
+
+    return [n for n in encontrados if not any(n != otro and dentro(n, otro) for otro in encontrados)]
 
 
 def _variantes_del_nombre(nombre: str) -> list[str]:
@@ -397,6 +403,8 @@ def _variantes_del_nombre(nombre: str) -> list[str]:
     variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
     # "The Sims 4" también se escribe "Los Sims 4": vale sin el artículo del principio.
     variantes |= {v[4:] for v in variantes if v.startswith("the ")}
+    # "Sid Meier's Civilization V" también se escribe "Civilization V": sin el posesivo.
+    variantes |= {re.sub(r"^[\w ]+?['’]s ", "", v) for v in variantes}
     # "baldurs gate 3" también es Baldur's Gate 3: casi nadie escribe el apóstrofo.
     variantes |= {v.replace("'", "").replace("’", "") for v in variantes}
     return [v for v in variantes if len(v) >= 4]
