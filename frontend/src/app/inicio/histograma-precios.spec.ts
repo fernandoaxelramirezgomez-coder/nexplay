@@ -41,6 +41,12 @@ describe('HistogramaPrecios', () => {
     expect(tramoBajo.style.blockSize).toBe('0px');
   });
 
+  it('la nota dice cuántos juegos tienen precio conocido, sumando las columnas', () => {
+    const fixture = montar();
+    const nota = fixture.nativeElement.querySelector('[data-testid="histograma-nota"]').textContent.replace(/\s+/g, ' ');
+    expect(nota).toContain('49 juegos con precio conocido');
+  });
+
   it('antes de verse, las columnas quedan en cero para crecer al entrar', () => {
     const fixture = montar();
     fixture.componentRef.setInput('visible', false);

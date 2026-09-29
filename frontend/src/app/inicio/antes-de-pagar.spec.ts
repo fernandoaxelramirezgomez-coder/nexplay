@@ -58,14 +58,21 @@ describe('AntesDePagar', () => {
   it('abre en la señal y cambia cifra y barras al cambiar de pestaña', () => {
     const fixture = montar();
     expect(texto(fixture, 'antes-cifra')).toBe('4.0×');
-    fixture.nativeElement.querySelector('[data-testid="antes-pestana"][data-metrica="precio"]').click();
+    fixture.nativeElement.querySelector('[data-testid="antes-pestana"][data-metrica="positivas"]').click();
     fixture.detectChanges();
-    expect(texto(fixture, 'antes-cifra')).toBe('4×');
-    expect(texto(fixture, 'antes-linea')).toContain('pagar más no te protege');
+    expect(texto(fixture, 'antes-cifra')).toBe('0%');
     const cifras = [...fixture.nativeElement.querySelectorAll('[data-testid="antes-barras"] .valor')].map(
       (v: Element) => v.textContent?.trim(),
     );
-    expect(cifras).toEqual(['$100', '$200', '$400']);
+    expect(cifras).toEqual(['100%', '100%', '0%']);
+  });
+
+  it('solo dos pestañas: sin «Precio», que es una variable del modelo', () => {
+    const fixture = montar();
+    const pestanas = [...fixture.nativeElement.querySelectorAll('[data-testid="antes-pestana"]')].map(
+      (p: Element) => p.textContent?.trim(),
+    );
+    expect(pestanas).toEqual(['Señal', 'Reseñas positivas']);
   });
 
   it('las flechas del teclado pasan de pestaña', () => {
@@ -81,5 +88,7 @@ describe('AntesDePagar', () => {
     const confianza = texto(fixture, 'antes-confianza');
     expect(confianza).toContain('184,367 reseñas de Steam');
     expect(confianza).toContain('sin leer las reseñas');
+    // «Ver metodología» vive en el pie del Inicio; aquí era un duplicado.
+    expect(fixture.nativeElement.querySelector('[data-testid="antes-metodologia"]')).toBeNull();
   });
 });

@@ -65,7 +65,10 @@ const OPCIONES: readonly { id: Nivel; nombre: string }[] = [
           </li>
         }
       </ul>
-      <p class="pie-histograma">Precios en pesos (MXN) de Steam México.</p>
+      <p class="pie-histograma" data-testid="histograma-nota">
+        {{ conPrecio() }} {{ conPrecio() === 1 ? 'juego' : 'juegos' }} con precio conocido · precios en pesos (MXN) de
+        Steam México.
+      </p>
     </div>
   `,
   styles: `
@@ -96,7 +99,7 @@ const OPCIONES: readonly { id: Nivel; nombre: string }[] = [
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      min-height: 36px;
+      min-height: 44px;
       padding: 0 var(--espacio-12);
       border: 1px solid var(--borde-control);
       border-radius: var(--radio-pildora);
@@ -247,6 +250,12 @@ export class HistogramaPrecios {
   protected readonly opciones = OPCIONES;
   protected readonly bandas = ORDEN_BANDAS;
   protected readonly nivel = signal<Nivel>('todos');
+
+  /** Los juegos que entran en la gráfica: los gratuitos y los de precio conocido. Los que no
+   * tienen precio quedan fuera, y la nota lo dice con la cifra. */
+  protected readonly conPrecio = computed(() =>
+    this.rangos().reduce((suma, r) => suma + r.porNivel.bajo + r.porNivel.medio + r.porNivel.alto, 0),
+  );
 
   /** La columna más alta con todos los niveles: la escala no cambia al filtrar. */
   private readonly tope = computed(() =>

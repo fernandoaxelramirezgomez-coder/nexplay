@@ -9,7 +9,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import { GraficaBarras } from '../compartido/graficas/grafica-barras';
 import {
@@ -24,14 +23,16 @@ import { PanoramaStore } from '../estado/panorama-store';
 import { HistogramaPrecios } from './histograma-precios';
 
 /** «Antes de pagar, esto importa»: lo que le sirve a quien va a comprar, en dos gráficas
- * con los datos de la API. A la izquierda, una por nivel de riesgo con tres pestañas
- * (señal, precio, reseñas positivas); a la derecha, cuánto cuestan los juegos de cada
- * nivel. Las barras crecen al entrar en pantalla y se animan al cambiar de pestaña. Al pie,
- * la confianza en una línea, con la frase acordada: el riesgo sale de datos del juego. */
+ * con los datos de la API. A la izquierda, una por nivel de riesgo con dos pestañas
+ * (señal y reseñas positivas); a la derecha, cuánto cuestan los juegos de cada nivel.
+ * «Precio» salió de las pestañas: el precio es una variable del modelo, así que compararlo
+ * por nivel era circular. Las barras crecen al entrar en pantalla y se animan al cambiar
+ * de pestaña. Al pie, la confianza en una línea, con la frase acordada: el riesgo sale de
+ * datos del juego. La metodología se abre desde el pie del Inicio. */
 @Component({
   selector: 'app-antes-de-pagar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, GraficaBarras, HistogramaPrecios],
+  imports: [GraficaBarras, HistogramaPrecios],
   template: `
     <section class="antes" #seccion aria-labelledby="titulo-antes" data-testid="antes-de-pagar">
       <h2 id="titulo-antes">Antes de pagar, esto importa</h2>
@@ -71,9 +72,6 @@ import { HistogramaPrecios } from './histograma-precios';
         </div>
         <p class="confianza" data-testid="antes-confianza">
           Con {{ resenas() }} reseñas de Steam. El riesgo sale de datos del juego, sin leer las reseñas.
-          <a class="enlace" [routerLink]="[]" fragment="metodologia" data-testid="antes-metodologia"
-            >Ver metodología ▾</a
-          >
         </p>
       </div>
     </section>
@@ -120,7 +118,7 @@ import { HistogramaPrecios } from './histograma-precios';
       gap: 6px;
     }
     .pestana {
-      min-height: 40px;
+      min-height: 44px;
       padding: 0 var(--espacio-16);
       border: 1px solid var(--borde-control);
       border-radius: var(--radio-pildora);
@@ -174,11 +172,6 @@ import { HistogramaPrecios } from './histograma-precios';
       font-size: var(--texto-body-sm);
       line-height: 1.5;
       text-align: center;
-    }
-    .enlace {
-      color: var(--enlace);
-      text-underline-offset: 3px;
-      white-space: nowrap;
     }
     @container contenido (max-width: 860px) {
       .panel {

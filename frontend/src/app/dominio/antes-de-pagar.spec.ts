@@ -45,10 +45,8 @@ describe('«Antes de pagar, esto importa»', () => {
     ]);
   });
 
-  it('el precio: medianas de los juegos de pago y cuántas veces más cuesta riesgo alto', () => {
-    const barras = barrasAntesDePagar('precio', JUEGOS, POR_APPID)!;
-    expect(barras.segmentos.map((s) => s.cifra)).toEqual(['$150', '$300', '$825']);
-    expect(barras.cifra).toBe('5×');
+  it('no hay pestaña de precio: el precio entra al modelo y compararlo por nivel es circular', () => {
+    expect(PESTANAS_ANTES_DE_PAGAR.map((p) => p.id)).toEqual(['senal', 'positivas']);
   });
 
   it('las reseñas positivas: la parte de cada nivel, «23 de 43» en riesgo alto', () => {

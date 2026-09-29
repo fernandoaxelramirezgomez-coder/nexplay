@@ -1,18 +1,17 @@
 import { JuegoCatalogo, JuegoPanorama, NivelRiesgo } from '../api/contrato';
 import { Segmento } from '../compartido/graficas/segmento';
 import { ORDEN_BANDAS } from './estantes';
-import { numero, porcentaje, porcentajeFino } from './formato';
-import { positivosPorBanda, precioPorBanda, senalPorBanda } from './panorama';
+import { porcentaje, porcentajeFino } from './formato';
+import { positivosPorBanda, senalPorBanda } from './panorama';
 
 /** «Antes de pagar, esto importa», en el Inicio: lo que le sirve a quien va a comprar,
  * en dos gráficas con los datos de la API. Nada va escrito a mano: las cifras salen del
  * catálogo y del panorama. */
 
-export type MetricaAntesDePagar = 'senal' | 'precio' | 'positivas';
+export type MetricaAntesDePagar = 'senal' | 'positivas';
 
 export const PESTANAS_ANTES_DE_PAGAR: readonly { id: MetricaAntesDePagar; nombre: string }[] = [
   { id: 'senal', nombre: 'Señal' },
-  { id: 'precio', nombre: 'Precio' },
   { id: 'positivas', nombre: 'Reseñas positivas' },
 ];
 
@@ -31,11 +30,6 @@ export const NOMBRE_NIVEL: Record<NivelRiesgo, string> = {
 
 type PorAppid = ReadonlyMap<number, JuegoPanorama>;
 
-/** «3×» cuando alcanza para un entero (3.2 veces es más del triple); «1.4×» cuando no. */
-function veces(razon: number): string {
-  return razon >= 2 ? `${Math.floor(razon)}×` : `${razon.toFixed(1)}×`;
-}
-
 function barrasSenal(juegos: readonly JuegoCatalogo[], porAppid: PorAppid): BarrasAntesDePagar | null {
   const filas = senalPorBanda(juegos, porAppid);
   const alto = filas.find((f) => f.banda === 'alto')?.prevalencia;
@@ -53,26 +47,6 @@ function barrasSenal(juegos: readonly JuegoCatalogo[], porAppid: PorAppid): Barr
       cifra: porcentajeFino(f.prevalencia),
       banda: f.banda,
       detalle: `${NOMBRE_NIVEL[f.banda]}: ${porcentajeFino(f.prevalencia)} de sus reseñas con señal de arrepentimiento temprano`,
-    })),
-  };
-}
-
-function barrasPrecio(juegos: readonly JuegoCatalogo[]): BarrasAntesDePagar | null {
-  const filas = precioPorBanda(juegos);
-  const alto = filas.find((f) => f.banda === 'alto')?.mediana;
-  const bajo = filas.find((f) => f.banda === 'bajo')?.mediana;
-  if (!alto || !bajo) {
-    return null;
-  }
-  return {
-    cifra: veces(alto / bajo),
-    linea: 'más caros son los de riesgo alto: pagar más no te protege',
-    segmentos: filas.map((f) => ({
-      etiqueta: NOMBRE_NIVEL[f.banda],
-      valor: f.mediana ?? 0,
-      cifra: f.mediana === null ? 'sin dato' : `$${numero(Math.round(f.mediana))}`,
-      banda: f.banda,
-      detalle: `${NOMBRE_NIVEL[f.banda]}: precio mediano de sus juegos de pago, $${numero(Math.round(f.mediana ?? 0))}`,
     })),
   };
 }
@@ -104,8 +78,6 @@ export function barrasAntesDePagar(
   switch (metrica) {
     case 'senal':
       return barrasSenal(juegos, porAppid);
-    case 'precio':
-      return barrasPrecio(juegos);
     case 'positivas':
       return barrasPositivas(juegos, porAppid);
   }
