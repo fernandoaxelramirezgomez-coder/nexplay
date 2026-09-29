@@ -563,7 +563,9 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
     return _resultado(texto, juegos=[j.appid for j in visibles])
 
 
-_FUERA = re.compile(r"(?:que tal|se parece a(?:l)?|parecido a(?:l)?)\s+(?:el |la |los |las )?([a-z0-9][a-z0-9 :'.-]{2,40})")
+# Con el apóstrofo tipográfico (’) en el nombre: sin él, «¿qué tal Don’t Starve Together?»
+# se leía como «Don» y se daba por fuera del catálogo.
+_FUERA = re.compile(r"(?:que tal|se parece a(?:l)?|parecido a(?:l)?)\s+(?:el |la |los |las )?([a-z0-9][a-z0-9 :'’.-]{2,40})")
 
 
 def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dict | None:
