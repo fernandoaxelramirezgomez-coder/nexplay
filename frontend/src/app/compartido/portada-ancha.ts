@@ -1,9 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
+  inject,
   input,
   linkedSignal,
   output,
@@ -15,6 +17,8 @@ type EstadoVideo = 'cargando' | 'reproduciendo' | 'pausado' | 'fallido';
 
 const CLAVE_VOLUMEN = 'nexplay.video.v1';
 const VOLUMEN_POR_OMISION = 0.6;
+/** Cuánto se ven los controles al empezar el tráiler, antes de esconderse sin cursor. */
+const CONTROLES_AL_EMPEZAR_MS = 3000;
 
 /** Lo que se recuerda del tráiler es el volumen, no el permiso de sonar: cada ficha
  * arranca muda. Un video que empieza a sonar solo en cada juego que abres es justo lo
@@ -51,8 +55,10 @@ function guardarVolumen(valor: number): void {
  * serían veinte videos a la vez.
  *
  * Los controles son el mínimo de WCAG: 2.2.2 pide poder parar el movimiento automático de
- * más de 5 s y 1.4.2 poder callar el audio. Van siempre a la vista, con fondo propio y de
- * 48 px: escondidos hasta el hover, la revisión del usuario final no los encontró. */
+ * más de 5 s y 1.4.2 poder callar el audio. Van con fondo propio y de 48 px. Con cursor se
+ * esconden cuando no está sobre el video (lo pidió el dueño), pero se ven los primeros 3 s,
+ * en pausa y con el foco dentro: escondidos del todo, la revisión del usuario final no los
+ * encontraba. En táctil se quedan siempre. */
 @Component({
   selector: 'app-portada-ancha',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +67,10 @@ function guardarVolumen(valor: number): void {
       class="marco"
       [class.cargando]="estado() === 'cargando'"
       [class.carrusel]="modo() === 'carrusel'"
+      [class.pausado]="estadoVideo() === 'pausado'"
+      [class.recien]="recien()"
+      [class.con-video]="listo()"
+      [style.--portada-catalogo]="modo() === 'carrusel' ? 'url(' + respaldo() + ')' : null"
       data-testid="portada-ancha"
     >
       <img
@@ -136,11 +146,6 @@ function guardarVolumen(valor: number): void {
               [value]="volumen()"
               (input)="cambiarVolumen($any($event.target).valueAsNumber); interaccion.emit()"
             />
-            @if (modo() === 'ficha') {
-              <span class="estado-sonido" data-testid="portada-estado">
-                Tráiler · {{ silenciado() ? 'sin sonido' : 'con sonido' }}
-              </span>
-            }
           </div>
         }
       } @else if (video() && menosMovimiento && estadoVideo() !== 'fallido') {
@@ -216,6 +221,19 @@ function guardarVolumen(valor: number): void {
       background: rgb(11 15 31 / 0.8);
       color: #f2f4ff;
     }
+    /* Con cursor, la barra se ve solo con el cursor encima del video, con el foco dentro,
+       en pausa y en los primeros 3 s del tráiler, que es cuando se descubre. En táctil no
+       hay cursor que pasar: se queda siempre. Sin video corriendo no se esconde nada: con
+       «reducir movimiento», «Ver el tráiler» es la única forma de pedirlo. */
+    .controles {
+      transition: opacity var(--duracion-rapida) var(--curva);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .marco.con-video:not(:hover):not(:focus-within):not(.pausado):not(.recien) .controles {
+        opacity: 0;
+        pointer-events: none;
+      }
+    }
     /* En el escenario de tráileres el pie es de la información del juego: la barra sube a
        la esquina de arriba. */
     .carrusel .controles {
@@ -267,16 +285,6 @@ function guardarVolumen(valor: number): void {
       accent-color: #22d3ee;
       cursor: pointer;
     }
-    .estado-sonido {
-      padding-inline: 2px var(--espacio-8);
-      font-size: var(--texto-caption);
-      white-space: nowrap;
-    }
-    @media (max-width: 480px) {
-      .estado-sonido {
-        display: none;
-      }
-    }
     @keyframes pulso {
       50% {
         opacity: 0.55;
@@ -293,6 +301,18 @@ function guardarVolumen(valor: number): void {
     .marco.carrusel {
       height: auto;
       aspect-ratio: 16 / 9;
+    }
+    /* En Explorar, mientras carga, se ve la portada del juego en color: la del catálogo
+       (ya está en caché por la lista de al lado) de fondo, la ancha encima en cuanto llega
+       y el video al final. Antes era un recuadro que pulsaba y luego la portada en gris. */
+    .marco.carrusel {
+      background: center / cover no-repeat var(--portada-catalogo, none), var(--superficie-tarjeta-hover);
+    }
+    .marco.carrusel.cargando {
+      animation: none;
+    }
+    .carrusel img {
+      filter: none;
     }
   `,
 })
@@ -334,6 +354,10 @@ export class PortadaAncha {
 
   protected readonly volumen = signal(volumenGuardado());
 
+  /** Los primeros segundos del tráiler: la barra se ve aunque el cursor no esté encima. */
+  protected readonly recien = signal(false);
+  private relojRecien?: ReturnType<typeof setTimeout>;
+
   protected readonly menosMovimiento =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -354,6 +378,8 @@ export class PortadaAncha {
   private readonly elementoVideo = viewChild<ElementRef<HTMLVideoElement>>('video');
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.relojRecien));
+
     effect((alLimpiar) => {
       const elemento = this.elementoVideo()?.nativeElement;
       const url = this.video();
@@ -454,9 +480,21 @@ export class PortadaAncha {
       return;
     }
     const elemento = evento.target as HTMLVideoElement;
+    const primeraVez = this.estadoVideo() === 'cargando';
     elemento
       .play()
-      .then(() => this.estadoVideo.set('reproduciendo'))
+      .then(() => {
+        this.estadoVideo.set('reproduciendo');
+        if (primeraVez) {
+          this.mostrarControlesUnMomento();
+        }
+      })
       .catch(() => this.estadoVideo.set('fallido'));
+  }
+
+  private mostrarControlesUnMomento(): void {
+    clearTimeout(this.relojRecien);
+    this.recien.set(true);
+    this.relojRecien = setTimeout(() => this.recien.set(false), CONTROLES_AL_EMPEZAR_MS);
   }
 }
