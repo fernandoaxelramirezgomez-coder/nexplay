@@ -10,50 +10,43 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
 
-import { CLAVE_GLOBITOS, GlobitosVistos, debeMostrarGlobito, hoyLocal, marcarGlobito, vistaConGlobito } from '../dominio/globito-nia';
-import { FICHAS_BURBUJA, SALUDO_BURBUJA, VistaConGlobito, textoGlobito } from '../dominio/textos-nia';
+import { FICHAS_BURBUJA, SALUDO_BURBUJA } from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore } from '../estado/comparar-store';
+import { NiaBurbujaStore } from '../estado/nia-burbuja-store';
 import { Nia } from './nia';
 
-/** Cuánto espera el globito para salir y cuánto se queda si nadie lo toca. */
-const ESPERA_GLOBITO_MS = 2000;
-const DURA_GLOBITO_MS = 10000;
-
-function leerVistos(): GlobitosVistos {
-  try {
-    return JSON.parse(localStorage.getItem(CLAVE_GLOBITOS) ?? '{}') as GlobitosVistos;
-  } catch {
-    return {};
-  }
-}
-
-function guardarVistos(vistos: GlobitosVistos): void {
-  try {
-    localStorage.setItem(CLAVE_GLOBITOS, JSON.stringify(vistos));
-  } catch {
-    // Sin almacenamiento el globito puede volver a salir; no es motivo para fallar.
-  }
-}
+/** Cuánto hay que desplazarse para que la burbuja reaccione, y a qué distancia del final
+ * vuelve aunque se siga bajando: ahí la página ya le dejó su espacio vacío. */
+const UMBRAL_DESPLAZAMIENTO = 8;
+const CERCA_DEL_FINAL = 120;
 
 /** Nia en la esquina, en todas las vistas menos la ficha y la suya. Al abrirse saluda y
  * conversa sobre el catálogo; si hace falta un juego, lo pide dentro del chat.
  *
- * En Explorar, Tu perfil y Comparar ofrece una cosa de esa vista en un globito: sale una
- * vez, se va solo o con la ×, y no vuelve hasta el día siguiente. */
+ * Lo que cada vista ofrece de Nia va en su franja (chat/franja-nia.ts), dentro de la
+ * página: flotando tapaba columnas y tarjetas. El botón de la franja abre esta burbuja
+ * por NiaBurbujaStore.
+ *
+ * En pantallas angostas la burbuja se esconde mientras se baja y vuelve al subir o al
+ * llegar al final: fija en la esquina, siempre caía sobre algún texto. */
 @Component({
   selector: 'app-nia-flotante',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Nia],
-  // La burbuja es de Nia en cualquier vista: su anillo, su globito y sus botones van en
-  // su violeta, no en el color de la vista donde está.
+  // La burbuja es de Nia en cualquier vista: su anillo y sus botones van en su violeta,
+  // no en el color de la vista donde está.
   host: { 'data-vista': 'nia' },
   template: `
-    <div class="flotante" [class.abierto]="abierto()" (document:keydown.escape)="cerrar()">
+    <div
+      class="flotante"
+      [class.abierto]="abierto()"
+      [class.oculta]="oculta() && !abierto()"
+      data-testid="nia-flotante"
+      [attr.data-oculta]="oculta() && !abierto()"
+      (document:keydown.escape)="cerrar()"
+    >
       @if (abierto()) {
         <div
           class="panel panel-vidrio"
@@ -76,22 +69,6 @@ function guardarVistos(vistos: GlobitosVistos): void {
           </header>
           <app-nia [appid]="null" [muestraTitulo]="false" [muestraIntro]="false" [saludo]="saludo" [fichas]="fichas" />
         </div>
-      } @else if (globito(); as mensaje) {
-        <div class="globito" role="status" data-testid="nia-globito">
-          <p>{{ mensaje.texto }}</p>
-          <button type="button" class="compacto" data-testid="nia-globito-accion" (click)="aceptarGlobito()">
-            {{ mensaje.accion }}
-          </button>
-          <button
-            type="button"
-            class="cerrar-globito"
-            aria-label="Cerrar el mensaje de Nia"
-            data-testid="nia-globito-cerrar"
-            (click)="cerrarGlobito()"
-          >
-            ×
-          </button>
-        </div>
       }
 
       <button
@@ -100,6 +77,7 @@ function guardarVistos(vistos: GlobitosVistos): void {
         data-testid="nia-flotante-burbuja"
         [attr.aria-expanded]="abierto()"
         [attr.aria-label]="abierto() ? 'Cerrar el chat de Nia' : 'Abrir el chat de Nia'"
+        [attr.tabindex]="oculta() && !abierto() ? -1 : null"
         #burbuja
         (click)="alternar()"
       >
@@ -121,6 +99,15 @@ function guardarVistos(vistos: GlobitosVistos): void {
       flex-direction: column;
       align-items: flex-end;
       gap: var(--espacio-12);
+      transition:
+        transform var(--duracion) var(--curva),
+        opacity var(--duracion) var(--curva);
+    }
+    /* Escondida baja fuera de la pantalla: sigue en el DOM, pero no recibe toques. */
+    .flotante.oculta {
+      transform: translateY(calc(100% + var(--espacio-16) + var(--elevacion-burbuja, 0px)));
+      opacity: 0;
+      pointer-events: none;
     }
     /* 84 px con Nia asomándose por encima del anillo: se ve de lejos, que era la queja.
        El anillo respira despacio; abierta, se queda encendido. */
@@ -197,51 +184,11 @@ function guardarVistos(vistos: GlobitosVistos): void {
     .subtitulo {
       margin: 0;
     }
-    /* El globito: un mensaje de la vista, en panel (nunca texto de color sobre la
-       nebulosa), con su botón y la × a la mano. */
-    .globito {
-      position: relative;
-      max-width: 300px;
-      padding: var(--espacio-12) 44px var(--espacio-12) 14px;
-      border: 1px solid color-mix(in srgb, var(--neon) var(--mezcla-filo), var(--superficie));
-      border-radius: var(--radio-tarjeta) var(--radio-tarjeta) 4px var(--radio-tarjeta);
-      background: var(--superficie);
-      box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
-      animation: asomar var(--duracion) var(--curva);
-    }
-    .globito p {
-      margin: 0 0 var(--espacio-8);
-      font-size: 17px;
-      line-height: 1.45;
-    }
-    .cerrar-globito {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 40px;
-      height: 40px;
-      display: grid;
-      place-items: center;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--texto-meta);
-      font-size: 22px;
-      cursor: pointer;
-    }
-    .cerrar-globito:hover {
-      color: var(--texto);
-    }
-    @keyframes asomar {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-    }
     @media (prefers-reduced-motion: reduce) {
-      .burbuja,
-      .globito {
+      .flotante {
+        transition: none;
+      }
+      .burbuja {
         animation: none;
       }
     }
@@ -283,9 +230,9 @@ function guardarVistos(vistos: GlobitosVistos): void {
   `,
 })
 export class NiaFlotante {
-  private readonly router = inject(Router);
   private readonly catalogo = inject(CatalogoStore);
   private readonly comparar = inject(CompararStore);
+  private readonly pedidos = inject(NiaBurbujaStore);
   private readonly burbuja = viewChild<ElementRef<HTMLButtonElement>>('burbuja');
   private readonly chat = viewChild(Nia);
 
@@ -293,20 +240,8 @@ export class NiaFlotante {
   protected readonly fichas = FICHAS_BURBUJA;
 
   protected readonly abierto = signal(false);
-  /** La vista cuyo globito está a la vista, o null. */
-  private readonly vistaDelGlobito = signal<VistaConGlobito | null>(null);
-  /** Lo que el botón del globito dejó pedido, para cuando el chat ya esté montado. */
-  private readonly pendiente = signal<VistaConGlobito | null>(null);
-  private relojes: ReturnType<typeof setTimeout>[] = [];
-
-  private readonly ruta = toSignal(
-    this.router.events.pipe(
-      filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
-      map((evento) => evento.urlAfterRedirects),
-      startWith(this.router.url),
-    ),
-    { initialValue: this.router.url },
-  );
+  /** Escondida porque se está bajando en una pantalla angosta. */
+  protected readonly oculta = signal(false);
 
   /** Los nombres de lo que hay en Comparar, para resumirlo. */
   private readonly enComparacion = computed(() => {
@@ -317,27 +252,20 @@ export class NiaFlotante {
       .filter((nombre): nombre is string => !!nombre);
   });
 
-  protected readonly globito = computed(() => {
-    const vista = this.vistaDelGlobito();
-    return vista ? textoGlobito(vista, this.enComparacion().length) : null;
-  });
-
   constructor() {
-    // Cada vez que se entra a una vista con globito, si hoy no ha salido, sale a los 2 s.
+    // El botón de una franja abre el chat; lo que pidió se hace cuando el chat ya existe.
     effect(() => {
-      const vista = vistaConGlobito(this.ruta());
-      untracked(() => this.programarGlobito(vista));
-    });
-
-    // El botón del globito abre el chat; lo que pidió se hace cuando el chat ya existe.
-    effect(() => {
+      const pedido = this.pedidos.pedido();
+      if (!pedido) {
+        return;
+      }
+      untracked(() => this.abierto.set(true));
       const chat = this.chat();
-      const pedido = this.pendiente();
-      if (!chat || !pedido) {
+      if (!chat) {
         return;
       }
       untracked(() => {
-        this.pendiente.set(null);
+        this.pedidos.atendido();
         if (pedido === 'explorar') {
           chat.ofrecerFiltros();
         } else if (pedido === 'perfil') {
@@ -348,47 +276,36 @@ export class NiaFlotante {
       });
     });
 
-    inject(DestroyRef).onDestroy(() => this.limpiarRelojes());
+    this.esconderAlBajar();
   }
 
-  private programarGlobito(vista: VistaConGlobito | null): void {
-    this.limpiarRelojes();
-    this.vistaDelGlobito.set(null);
-    if (!vista || !debeMostrarGlobito(vista, hoyLocal(), leerVistos())) {
+  private esconderAlBajar(): void {
+    if (typeof window === 'undefined' || typeof matchMedia !== 'function') {
       return;
     }
-    this.relojes.push(
-      setTimeout(() => {
-        // En Comparar solo hay algo que resumir con dos juegos o más.
-        if (this.abierto() || (vista === 'comparar' && this.enComparacion().length < 2)) {
-          return;
-        }
-        guardarVistos(marcarGlobito(vista, hoyLocal(), leerVistos()));
-        this.vistaDelGlobito.set(vista);
-        this.relojes.push(setTimeout(() => this.vistaDelGlobito.set(null), DURA_GLOBITO_MS));
-      }, ESPERA_GLOBITO_MS),
-    );
-  }
-
-  private limpiarRelojes(): void {
-    this.relojes.forEach(clearTimeout);
-    this.relojes = [];
-  }
-
-  protected aceptarGlobito(): void {
-    const vista = this.vistaDelGlobito();
-    this.cerrarGlobito();
-    this.pendiente.set(vista);
-    this.abierto.set(true);
-  }
-
-  protected cerrarGlobito(): void {
-    this.limpiarRelojes();
-    this.vistaDelGlobito.set(null);
+    const angosta = matchMedia('(max-width: 640px)');
+    let ultimo = window.scrollY;
+    const alDesplazar = () => {
+      const y = window.scrollY;
+      const delta = y - ultimo;
+      if (Math.abs(delta) < UMBRAL_DESPLAZAMIENTO) {
+        return;
+      }
+      ultimo = y;
+      const alFinal = y + window.innerHeight >= document.documentElement.scrollHeight - CERCA_DEL_FINAL;
+      this.oculta.set(angosta.matches && delta > 0 && !alFinal);
+    };
+    const alCambiarAncho = () => this.oculta.set(false);
+    window.addEventListener('scroll', alDesplazar, { passive: true });
+    // Con ?.: el matchMedia de las pruebas no trae los listeners.
+    angosta.addEventListener?.('change', alCambiarAncho);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('scroll', alDesplazar);
+      angosta.removeEventListener?.('change', alCambiarAncho);
+    });
   }
 
   protected alternar(): void {
-    this.cerrarGlobito();
     this.abierto.update((valor) => !valor);
   }
 

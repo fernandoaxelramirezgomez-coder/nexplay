@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
+import { FranjaNia } from '../chat/franja-nia';
 import { Skeleton } from '../compartido/skeleton';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore, MAXIMO_COMPARAR } from '../estado/comparar-store';
@@ -19,7 +20,7 @@ function aNumeros(appids: string | undefined): number[] {
 @Component({
   selector: 'app-comparar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CapsulasComparar, ColumnaComparar, TablaComparar, Skeleton],
+  imports: [RouterLink, CapsulasComparar, ColumnaComparar, FranjaNia, TablaComparar, Skeleton],
   templateUrl: './comparar.html',
   styleUrl: './comparar.css',
 })

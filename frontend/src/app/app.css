@@ -67,9 +67,11 @@
 
 /* Mientras la burbuja flotante de Nia está en pantalla, el final de la página deja libre
    su alto más el margen: el último párrafo o el pie siempre se pueden subir por encima de
-   ella. Mismos 64 px de la burbuja y el mismo margen de 16 px que nia-flotante.ts. */
+   ella. Mismos 84 px de la burbuja (72 en el teléfono) y el mismo margen de 16 px que
+   nia-flotante.ts, más lo que la sube una barra fija (la de guardar de /perfil). Antes
+   eran 64 px y la burbuja de 84 tapaba los últimos 4 px del pie. */
 .pagina.con-burbuja {
-  padding-bottom: calc(64px + 2 * var(--espacio-16) + env(safe-area-inset-bottom));
+  padding-bottom: calc(84px + 2 * var(--espacio-16) + var(--elevacion-burbuja, 0px) + env(safe-area-inset-bottom));
 }
 
 /* Barra superior: solo existe cuando la lateral es un cajón, y es lo único que la abre. */
@@ -151,6 +153,6 @@
   }
 
   .pagina.con-burbuja {
-    padding-bottom: calc(64px + 2 * var(--espacio-16) + env(safe-area-inset-bottom));
+    padding-bottom: calc(72px + 2 * var(--espacio-16) + var(--elevacion-burbuja, 0px) + env(safe-area-inset-bottom));
   }
 }

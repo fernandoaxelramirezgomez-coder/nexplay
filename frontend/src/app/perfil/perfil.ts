@@ -15,6 +15,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
 import { NexplayApi } from '../api/nexplay-api';
+import { FranjaNia } from '../chat/franja-nia';
 import { Plataforma } from '../api/contrato';
 import {
   COMPRAS,
@@ -41,7 +42,7 @@ import { TarjetasOpcion } from './tarjetas-opcion';
 @Component({
   selector: 'app-perfil',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TarjetasOpcion, SelectorGeneros, SugerenciasPerfil, Historial],
+  imports: [RouterLink, FranjaNia, TarjetasOpcion, SelectorGeneros, SugerenciasPerfil, Historial],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })

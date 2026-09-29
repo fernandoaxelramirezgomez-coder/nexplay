@@ -19,6 +19,8 @@
     </div>
   </header>
 
+  <app-franja-nia vista="comparar" [disponible]="juegos().length > 1" [cuantos]="juegos().length" />
+
   @if (catalogo.cargando()) {
     <div class="columnas">
       @for (n of [1, 2]; track n) {
