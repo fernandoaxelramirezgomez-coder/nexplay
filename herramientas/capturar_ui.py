@@ -25,7 +25,6 @@ Uso:
 
 import argparse
 import json
-import statistics
 import math
 import re
 import sys
@@ -999,8 +998,10 @@ _MENU = ["nav-inicio", "nav-explorar", "nav-nia", "nav-comparar", "nav-perfil"]
 
 def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
     """Las cifras de «Antes de pagar, esto importa», contadas aquí con /catalogo y /panorama,
-    no copiadas de la página: el titular y las tres barras de cada pestaña, los conteos del
-    histograma de precios (todos y solo riesgo alto) y las reseñas de la línea de confianza."""
+    no copiadas de la página: el titular y las tres barras de cada pestaña (señal y reseñas
+    positivas; «Precio» salió por circular), los conteos del histograma de precios (todos y
+    solo riesgo alto), cuántos juegos tienen precio conocido y las reseñas de la línea de
+    confianza."""
     por_juego = {f["appid"]: f for f in panorama["por_juego"]}
     niveles = ("bajo", "medio", "alto")
     redondo = lambda x: int(x + 0.5)  # como Math.round, no el redondeo bancario de Python
@@ -1009,18 +1010,11 @@ def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
         filas = [por_juego[j["appid"]] for j in catalogo if j["banda_riesgo"] == banda and j["appid"] in por_juego]
         return sum(f["casos_senal"] for f in filas) / sum(f["resenas"] for f in filas)
 
-    def mediana(banda: str) -> float:
-        return statistics.median(
-            j["precio_final"] for j in catalogo
-            if j["banda_riesgo"] == banda and not j["es_gratis"] and j["precio_final"] is not None
-        )
-
     def positivas(banda: str) -> float:
         de_la_banda = [j for j in catalogo if j["banda_riesgo"] == banda]
         muy = [j for j in de_la_banda if (por_juego.get(j["appid"]) or {}).get("consenso") in ("Overwhelmingly Positive", "Very Positive")]
         return len(muy) / len(de_la_banda)
 
-    razon_precio = mediana("alto") / mediana("bajo")
     rangos = (
         ("Gratis", lambda j: j["es_gratis"]),
         ("<200", lambda j: 0 <= j["precio_final"] < 200), ("200–400", lambda j: 200 <= j["precio_final"] < 400),
@@ -1038,10 +1032,10 @@ def _cifras_esperadas_del_inicio(catalogo: list[dict], panorama: dict) -> dict:
 
     return {
         "senal": (f"{senal('alto') / senal('bajo'):.1f}×", [f"{senal(b) * 100:.2f}%" for b in niveles]),
-        "precio": (f"{int(razon_precio)}×" if razon_precio >= 2 else f"{razon_precio:.1f}×", [f"${redondo(mediana(b)):,}" for b in niveles]),
         "positivas": (f"{redondo(positivas('alto') * 100)}%", [f"{redondo(positivas(b) * 100)}%" for b in niveles]),
         "histograma": conteos(None),
         "histograma_alto": conteos("alto"),
+        "con_precio": sum(1 for j in catalogo if j["es_gratis"] or j["precio_final"] is not None),
         "resenas": f"{panorama['resenas_descargadas']:,}",
     }
 
@@ -1104,7 +1098,10 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
         seccion = otra.get_by_test_id("antes-de-pagar")
         seccion.scroll_into_view_if_needed()
         vistas = []
-        for metrica in ("senal", "precio", "positivas"):
+        pestanas = otra.locator("[data-testid=antes-pestana]").evaluate_all("ps => ps.map(p => p.dataset.metrica)")
+        if pestanas != ["senal", "positivas"]:
+            problemas.append(f"«Antes de pagar» tiene las pestañas {pestanas}, y «Precio» debía salir")
+        for metrica in ("senal", "positivas"):
             otra.locator(f"[data-testid=antes-pestana][data-metrica={metrica}]").click()
             otra.wait_for_timeout(900)
             cifra = otra.get_by_test_id("antes-cifra").inner_text().strip()
@@ -1121,6 +1118,11 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
         if columnas.evaluate_all(leer) != esperado["histograma_alto"]:
             problemas.append(f"con «Alto», el histograma dice {columnas.evaluate_all(leer)} y /catalogo da {esperado['histograma_alto']}")
         otra.locator("[data-testid=histograma-nivel][data-nivel=todos]").click()
+        nota = " ".join(otra.get_by_test_id("histograma-nota").inner_text().split())
+        if not nota.startswith(f"{esperado['con_precio']} juegos con precio conocido"):
+            problemas.append(f"la nota del histograma dice «{nota}» y /catalogo da {esperado['con_precio']} con precio conocido")
+        if otra.get_by_test_id("antes-metodologia").count():
+            problemas.append("«Antes de pagar» repite «Ver metodología», que ya está en el pie")
         confianza = " ".join(otra.get_by_test_id("antes-confianza").inner_text().split())
         if f"{esperado['resenas']} reseñas de Steam" not in confianza or "sin leer las reseñas" not in confianza:
             problemas.append(f"la línea de confianza no dice las reseñas de /panorama o que el riesgo no lee reseñas ('{confianza}')")
@@ -1131,7 +1133,8 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
         seccion.screenshot(path=destino / "inicio-antes-de-pagar.png")
         if len(problemas) == n_antes:
             print(f"inicio:   «Antes de pagar»: {' · '.join(vistas)}; histograma {' '.join(esperado['histograma'])} "
-                  f"(alto {' '.join(esperado['histograma_alto'])}): igual que /catalogo y /panorama "
+                  f"(alto {' '.join(esperado['histograma_alto'])}), {esperado['con_precio']} con precio conocido: "
+                  f"igual que /catalogo y /panorama; sin «Precio» ni «Ver metodología» repetido "
                   f"({(destino / 'inicio-antes-de-pagar.png').relative_to(_RAIZ)})")
 
         # El pie: «Ver metodología» despliega metodología y fuentes sin cambiar de vista.
@@ -1257,8 +1260,9 @@ def _preguntar_en_chat(pagina: Page, pregunta: str) -> None:
 
 def _angular_6f(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     """Fase 6F: Nia con letra de lectura, saludo de la ficha, buscador dentro del chat que
-    responde la pregunta pendiente, el hilo sin el perfil, sugerencias rotuladas con su
-    riesgo y el globito de la burbuja una vez por vista y por día."""
+    responde la pregunta pendiente, el hilo sin el perfil y sugerencias rotuladas con su
+    riesgo. Lo que antes era el globito de la burbuja es la franja de cada vista
+    (_angular_franja_nia)."""
     problemas = []
     base = url.rstrip("/")
     catalogo = {j["appid"]: j for j in _catalogo_api(api)}
@@ -1371,34 +1375,6 @@ def _angular_6f(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     finally:
         contexto.close()
 
-    # El globito de Explorar: sale una vez, la × lo cierra y al volver no sale hasta mañana.
-    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
-    _sin_consultas_a_nia(contexto, con_globito=True)
-    try:
-        otra = contexto.new_page()
-        n_antes = len(problemas)
-        _abrir(otra, f"{base}/explorar")
-        globito = otra.get_by_test_id("nia-globito")
-        try:
-            globito.wait_for(state="visible", timeout=6000)
-            texto = " ".join(globito.inner_text().split())
-            otra.locator(".flotante").screenshot(path=destino / "nia-globito.png")
-            otra.get_by_test_id("nia-globito-cerrar").click()
-            globito.wait_for(state="detached", timeout=_TIMEOUT_MS)
-            otra.reload()
-            otra.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
-            otra.wait_for_timeout(3500)
-            if globito.count():
-                problemas.append("el globito volvió a salir el mismo día")
-            if "filtrar" not in texto.lower():
-                problemas.append(f"el globito de Explorar no ofrece filtrar ('{texto}')")
-        except TiempoAgotado:
-            problemas.append("el globito de Explorar no salió, o la × no lo cerró")
-        if len(problemas) == n_antes:
-            print(f"burbuja:  en Explorar el globito dice «{texto}», la × lo cierra y al recargar no vuelve "
-                  f"({(destino / 'nia-globito.png').relative_to(_RAIZ)})")
-    finally:
-        contexto.close()
     return problemas
 
 
@@ -1968,6 +1944,13 @@ def _portada_en_gris(pagina: Page) -> bool:
     return "grayscale(1)" in filtro
 
 
+def _pedir_video_escondido(pagina: Page) -> bool:
+    """Si «Ver el tráiler» se esconde con el cursor fuera del video."""
+    pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(400)
+    return _opacidad(pagina.locator("[data-testid=portada-ancha] .controles")) < 0.95
+
+
 def _avanza_el_video(pagina: Page) -> bool:
     antes = pagina.get_by_test_id("portada-video").evaluate("v => v.currentTime")
     pagina.wait_for_timeout(1500)
@@ -1995,31 +1978,41 @@ def _mover_volumen(pagina: Page, tecla: str, veces: int) -> None:
 
 
 def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
-    """Pausar el tráiler (WCAG 2.2.2) y callar su audio (1.4.2), siempre a la vista.
+    """Pausar el tráiler (WCAG 2.2.2) y callar su audio (1.4.2).
 
-    Desde la 6B la barra no se esconde: con fondo propio y botones de 48 px, porque
-    escondida hasta el hover la revisión del usuario final no la encontró. El tráiler
-    arranca mudo: el sonido es siempre una acción de la persona."""
+    Con cursor, la barra se esconde cuando no está sobre el video (lo pidió el dueño), pero
+    se ve los primeros 3 s, en pausa y con el foco dentro: escondida del todo, la revisión
+    del usuario final no la encontraba. Con fondo propio y botones de 48 px, y sin «Tráiler ·
+    sin sonido»: la corredera de volumen ya dice cómo suena. El tráiler arranca mudo: el
+    sonido es siempre una acción de la persona."""
     problemas = []
     controles = pagina.get_by_test_id("portada-controles")
     boton = pagina.get_by_test_id("portada-pausa")
     silenciar = pagina.get_by_test_id("portada-silenciar")
     video = pagina.get_by_test_id("portada-video")
+    # Pasados los 3 s del principio y sin cursor encima, la barra se esconde.
     pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(3600)
+    sin_cursor = _opacidad(controles)
+    caja = pagina.get_by_test_id("portada-ancha").bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
     pagina.wait_for_timeout(400)
+    con_cursor = _opacidad(controles)
     medidas = boton.bounding_box() or {"width": 0, "height": 0}
     fondo = controles.evaluate("c => getComputedStyle(c).backgroundColor")
-    estado = pagina.get_by_test_id("portada-estado")
-    if _opacidad(controles) < 0.95:
-        problemas.append("los controles del tráiler no se ven en reposo")
+    if sin_cursor > 0.05:
+        problemas.append(f"sin el cursor encima, los controles del tráiler siguen a la vista (opacidad {sin_cursor})")
+    elif con_cursor < 0.95:
+        problemas.append(f"con el cursor encima, los controles del tráiler no se ven (opacidad {con_cursor})")
     elif min(medidas["width"], medidas["height"]) < 47.5:
         problemas.append(f"los botones del tráiler miden menos de 48 px ({medidas})")
     elif fondo.startswith("rgba") and float(re.findall(r"[\d.]+", fondo)[3]) < 0.5:
         problemas.append(f"la barra del tráiler no tiene fondo propio ({fondo})")
-    elif not estado.count() or "sin sonido" not in estado.inner_text():
-        problemas.append("la barra del tráiler no dice que va sin sonido")
+    elif pagina.get_by_test_id("portada-estado").count():
+        problemas.append("la barra del tráiler todavía dice «sin sonido», con el volumen al lado")
     else:
-        print("video:    controles siempre a la vista, con fondo, de 48 px y con «Tráiler · sin sonido»")
+        print("video:    los controles se esconden sin cursor y salen con él; con fondo, de 48 px y sin «sin sonido»")
+    pagina.mouse.move(0, 0)
 
     # Con teclado: foco visible, Enter pausa y el video deja de avanzar.
     # Un Tab antes: el navegador solo pinta :focus-visible si la última interacción fue
@@ -2035,6 +2028,12 @@ def _controles_del_video(pagina: Page, destino: Path) -> list[str]:
     quieto = video.evaluate("v => v.paused")
     if not quieto or _avanza_el_video(pagina) or etiqueta != "Reproducir el tráiler":
         problemas.append(f"Enter en el botón no pausa el tráiler (paused={quieto}, etiqueta={etiqueta!r})")
+    pagina.locator("body").focus()
+    pagina.mouse.move(0, 0)
+    pagina.wait_for_timeout(400)
+    if _opacidad(controles) < 0.95:
+        problemas.append("en pausa y sin cursor, los controles del tráiler se esconden y no hay cómo reanudar")
+    boton.focus()
     pagina.keyboard.press("Enter")
     pagina.wait_for_timeout(300)
     if not _avanza_el_video(pagina) or boton.get_attribute("aria-label") != "Pausar el tráiler":
@@ -2217,6 +2216,9 @@ def _angular_video(pagina: Page, url: str, destino: Path, api: str) -> list[str]
             problemas.append("con prefers-reduced-motion la portada no queda en gris")
         elif not otra.get_by_test_id("portada-pedir-video").count():
             problemas.append("con prefers-reduced-motion no hay botón para ver el tráiler")
+        elif _pedir_video_escondido(otra):
+            # Sin video corriendo la barra no se esconde: es la única forma de pedirlo.
+            problemas.append("con prefers-reduced-motion, «Ver el tráiler» se esconde sin el cursor encima")
         else:
             otra.get_by_test_id("portada-pedir-video").click()
             if _esperar_video(otra) != "reproduciendo":
@@ -3313,6 +3315,434 @@ def _angular_barra_y_tema(pagina: Page, url: str, destino: Path) -> list[str]:
     _abrir(pagina, url)
     return problemas
 
+# ── Correcciones de producción (ronda de pruebas del 29 sep 2026) ─────────────────────
+
+# Texto y controles de la página que quedan debajo de la burbuja de Nia a la vista. Sirve
+# para el final de cada vista, donde la página le reserva su espacio.
+_JS_TEXTO_BAJO_LA_BURBUJA = """
+() => {
+    const flotante = document.querySelector('[data-testid=nia-flotante]');
+    const burbuja = document.querySelector('.burbuja')?.getBoundingClientRect();
+    if (!burbuja || flotante?.dataset.oculta === 'true') return [];
+    const cruza = (r) => r.width > 0 && r.height > 0 && r.left < burbuja.right && r.right > burbuja.left
+        && r.top < burbuja.bottom && r.bottom > burbuja.top;
+    const tapados = [];
+    const pagina = document.querySelector('.pagina');
+    const caminante = document.createTreeWalker(pagina, NodeFilter.SHOW_TEXT);
+    for (let nodo = caminante.nextNode(); nodo; nodo = caminante.nextNode()) {
+        if (!nodo.textContent.trim()) continue;
+        const padre = nodo.parentElement;
+        if (!padre || padre.closest('.solo-lector, [aria-hidden=true], [hidden]')) continue;
+        // Lo de un <details> cerrado no se ve, aunque Chrome le dé cajas.
+        const cerrado = padre.closest('details:not([open])');
+        if (cerrado && !padre.closest('summary')) continue;
+        const estilo = getComputedStyle(padre);
+        if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) continue;
+        const rango = document.createRange();
+        rango.selectNodeContents(nodo);
+        if ([...rango.getClientRects()].some(cruza)) tapados.push(nodo.textContent.trim().slice(0, 40));
+    }
+    for (const control of pagina.querySelectorAll('button, a[href], input, textarea')) {
+        if (cruza(control.getBoundingClientRect())) {
+            tapados.push(control.getAttribute('aria-label') || control.textContent.trim().slice(0, 40));
+        }
+    }
+    return tapados;
+}
+"""
+
+# Zonas de toque de menos de 44 px. Cuenta la caja del control o, si lleva .toque-amplio o
+# .chip, el ::before que la agranda. Los enlaces dentro de un párrafo quedan fuera, como
+# en WCAG 2.5.8, igual que lo que no se puede tocar (oculto, inerte o sin eventos).
+_JS_ZONAS_CHICAS = """
+() => {
+    const tocable = (el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return false;
+        if (el.closest('[inert], [hidden], [aria-hidden=true]')) return false;
+        for (let a = el; a; a = a.parentElement) {
+            const e = getComputedStyle(a);
+            if (e.visibility === 'hidden' || e.pointerEvents === 'none' || e.display === 'none') return false;
+        }
+        return true;
+    };
+    const enLinea = (el) => {
+        if (el.tagName !== 'A' || getComputedStyle(el).display !== 'inline') return false;
+        const resto = [...el.parentElement.childNodes].filter((n) => n !== el).map((n) => n.textContent).join('');
+        return /\\S/.test(resto);
+    };
+    const salida = [];
+    const selector = 'button, a[href], input:not([type=hidden]), textarea, summary, [role=tab], [role=switch]';
+    for (const el of document.querySelectorAll(selector)) {
+        if (!tocable(el) || enLinea(el)) continue;
+        const caja = el.getBoundingClientRect();
+        if (caja.width <= 1 && caja.height <= 1 && el.closest('label')) continue;
+        const r = el.getBoundingClientRect();
+        let ancho = r.width, alto = r.height;
+        const antes = getComputedStyle(el, '::before');
+        if (antes.content !== 'none' && antes.position === 'absolute') {
+            ancho = Math.max(ancho, parseFloat(antes.width) || 0);
+            alto = Math.max(alto, parseFloat(antes.height) || 0);
+        }
+        if (ancho < 43.5 || alto < 43.5) {
+            const nombre = el.dataset.testid || el.getAttribute('aria-label') || el.textContent.trim().slice(0, 30) || el.tagName;
+            salida.push(`${nombre} (${Math.round(ancho)}×${Math.round(alto)})`);
+        }
+    }
+    return [...new Set(salida)];
+}
+"""
+
+_VISTAS_CON_BURBUJA = ("/", "/explorar", "/comparar?appids=1145360,367520", "/perfil")
+
+
+def _al_final(pagina: Page) -> None:
+    """Hasta el final de la página, dos veces: lo que carga al bajar la alarga."""
+    for _ in range(2):
+        pagina.evaluate("() => scrollTo(0, document.scrollingElement.scrollHeight)")
+        pagina.wait_for_timeout(700)
+
+
+def _explorar_sin_resultados(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    problemas = []
+    total = len(_catalogo_api(api))
+    _abrir(pagina, f"{url.rstrip('/')}/explorar?q=zzzz")
+    vacio = pagina.get_by_test_id("catalogo-sin-resultados")
+    try:
+        vacio.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        return ["Explorar sin resultados no dice nada: no aparece el mensaje"]
+    texto = " ".join(vacio.inner_text().split())
+    if f"No encontramos «zzzz» en los {total} juegos." not in texto:
+        problemas.append(f"Explorar sin resultados dice «{texto}»")
+    vacio.scroll_into_view_if_needed()
+    vacio.screenshot(path=destino / "explorar-sin-resultados.png")
+    pagina.get_by_test_id("limpiar-busqueda").click()
+    try:
+        pagina.get_by_test_id("estante-bajo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    except TiempoAgotado:
+        problemas.append("«Limpiar búsqueda» no devuelve los estantes")
+    if "q=" in pagina.url or pagina.get_by_test_id("filtro-texto").input_value():
+        problemas.append(f"«Limpiar búsqueda» deja el texto ({pagina.url})")
+    if not problemas:
+        print(f"explorar: sin resultados dice «{texto.split('.')[0]}.» y «Limpiar búsqueda» devuelve el catálogo "
+              f"({(destino / 'explorar-sin-resultados.png').relative_to(_RAIZ)})")
+    return problemas
+
+
+def _llenar_perfil(pagina: Page) -> None:
+    pagina.get_by_test_id("grupo-compras").get_by_text("Pocos", exact=True).click()
+    pagina.get_by_test_id("grupo-gasto").get_by_text("$200 a $500", exact=True).click()
+    pagina.get_by_test_id("grupo-horas").get_by_text("Media", exact=True).click()
+    pagina.get_by_test_id("grupo-plataforma").get_by_text("PC", exact=True).click()
+    pagina.get_by_test_id("grupo-friccion").get_by_text("Media", exact=True).click()
+    pagina.get_by_test_id("crear-perfil").click()
+    pagina.get_by_test_id("perfil-activo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+
+
+def _franja_nia(pagina: Page, url: str, destino: Path) -> list[str]:
+    """Lo que Nia ofrece en Explorar, Comparar y Perfil va en una franja dentro de la vista,
+    no flotando: sale una vez al día, la × la cierra, su botón abre la burbuja; en Comparar
+    con dos juegos o más y en Perfil solo con perfil creado."""
+    problemas = []
+    base = url.rstrip("/")
+    navegador = pagina.context.browser
+
+    def contexto_nuevo(ancho: int = 1440, alto: int = 900):
+        contexto = navegador.new_context(viewport={"width": ancho, "height": alto})
+        _sin_consultas_a_nia(contexto, con_globito=True)
+        return contexto
+
+    # Explorar: dentro de la búsqueda, sin flotar; su botón abre la burbuja con cómo filtrar.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/explorar")
+        franja = otra.get_by_test_id("franja-nia")
+        franja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        texto = " ".join(franja.inner_text().split())
+        dentro = otra.locator("[data-testid=catalogo-busqueda] [data-testid=franja-nia]").count()
+        posicion = franja.evaluate("f => getComputedStyle(f).position")
+        if "filtrar" not in texto.lower() or not dentro or posicion != "static":
+            problemas.append(f"la franja de Explorar no está en la búsqueda o flota ({texto!r}, {posicion})")
+        franja.scroll_into_view_if_needed()
+        franja.screenshot(path=destino / "franja-explorar.png")
+        pedidas = len(_NIA_PEDIDAS)
+        otra.get_by_test_id("franja-nia-accion").click()
+        otra.get_by_test_id("nia-flotante-panel").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        ultimo = " ".join(otra.locator("[data-testid=nia-flotante-panel] [data-testid=mensaje-nia]").last.inner_text().split())
+        if "Dime un género" not in ultimo or len(_NIA_PEDIDAS) != pedidas:
+            problemas.append(f"el botón de la franja no abre la burbuja con cómo filtrar ({ultimo!r})")
+        if franja.count():
+            problemas.append("la franja de Explorar se queda después de usar su botón")
+        otra.reload()
+        otra.get_by_test_id("catalogo-busqueda").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(800)
+        if otra.get_by_test_id("franja-nia").count():
+            problemas.append("la franja de Explorar vuelve a salir el mismo día")
+    finally:
+        contexto.close()
+
+    # La × la cierra.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/explorar")
+        otra.get_by_test_id("franja-nia-cerrar").click()
+        try:
+            # Sin zona, el repintado va después del clic: se espera, no se cuenta al instante.
+            otra.get_by_test_id("franja-nia").wait_for(state="detached", timeout=5000)
+        except TiempoAgotado:
+            problemas.append("la × no cierra la franja de Nia")
+    finally:
+        contexto.close()
+
+    # Comparar: con un juego no hay nada que resumir; con dos sale, bajo el encabezado.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/comparar?appids=1145360")
+        otra.get_by_test_id("comparar-columnas").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(600)
+        if otra.get_by_test_id("franja-nia").count():
+            problemas.append("la franja de Comparar sale con un solo juego")
+        _abrir(otra, f"{base}/comparar?appids=1145360,367520")
+        franja = otra.get_by_test_id("franja-nia")
+        franja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        texto = " ".join(franja.inner_text().split())
+        encabezado = otra.locator(".encabezado").bounding_box()
+        capsulas = otra.get_by_test_id("capsulas-comparar").bounding_box()
+        caja = franja.bounding_box()
+        if "estos 2" not in texto or not (encabezado["y"] + encabezado["height"] <= caja["y"] < capsulas["y"]):
+            problemas.append(f"la franja de Comparar no va entre el encabezado y los juegos ({texto!r})")
+        otra.screenshot(path=destino / "franja-comparar.png")
+    finally:
+        contexto.close()
+
+    # Perfil: sin perfil no sale (ni gasta la vez del día); al guardarlo, sale arriba de las
+    # sugerencias.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/perfil")
+        otra.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(600)
+        if otra.get_by_test_id("franja-nia").count():
+            problemas.append("la franja de Perfil sale sin perfil creado")
+        _llenar_perfil(otra)
+        franja = otra.get_by_test_id("franja-nia")
+        franja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        texto = " ".join(franja.inner_text().split())
+        if "Ver sugerencias" not in texto or franja.bounding_box()["y"] > otra.get_by_test_id("sugerencias").bounding_box()["y"]:
+            problemas.append(f"la franja de Perfil no va arriba de las sugerencias ({texto!r})")
+        franja.scroll_into_view_if_needed()
+        otra.screenshot(path=destino / "franja-perfil.png")
+    finally:
+        contexto.close()
+
+    # En el teléfono, la franja apila el texto y el botón.
+    contexto = contexto_nuevo(390, 844)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/comparar?appids=1145360,367520")
+        franja = otra.get_by_test_id("franja-nia")
+        franja.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        franja.scroll_into_view_if_needed()
+        otra.screenshot(path=destino / "franja-comparar-movil.png")
+    finally:
+        contexto.close()
+
+    if not problemas:
+        print("franja:   Explorar, Comparar (con 2+) y Perfil (con perfil) llevan la franja de Nia en la página; "
+              "la × la cierra, su botón abre la burbuja y no vuelve el mismo día "
+              f"({(destino / 'franja-comparar.png').relative_to(_RAIZ)})")
+    return problemas
+
+
+def _burbuja_no_tapa(pagina: Page, url: str, destino: Path) -> list[str]:
+    """Al final de cada vista la burbuja cae sobre espacio vacío, en escritorio y en el
+    teléfono; en el teléfono se esconde al bajar y vuelve al subir."""
+    problemas = []
+    base = url.rstrip("/")
+    navegador = pagina.context.browser
+    for ancho, alto in ((1440, 900), (390, 844)):
+        contexto = navegador.new_context(viewport={"width": ancho, "height": alto})
+        _sin_consultas_a_nia(contexto)
+        try:
+            otra = contexto.new_page()
+            for ruta in _VISTAS_CON_BURBUJA:
+                _abrir(otra, f"{base}{ruta}")
+                otra.get_by_test_id("nia-flotante-burbuja").wait_for(state="visible", timeout=_TIMEOUT_MS)
+                _esperar_quietud(otra)
+                _al_final(otra)
+                tapados = otra.evaluate(_JS_TEXTO_BAJO_LA_BURBUJA)
+                if tapados:
+                    problemas.append(f"a {ancho} px, al final de {ruta} la burbuja tapa: {tapados[:3]}")
+            otra.screenshot(path=destino / f"burbuja-final-{ancho}.png")
+
+            if ancho == 390:
+                _abrir(otra, f"{base}/explorar")
+                flotante = otra.get_by_test_id("nia-flotante")
+                flotante.wait_for(state="visible", timeout=_TIMEOUT_MS)
+                _esperar_quietud(otra)
+                otra.mouse.move(195, 400)
+                for _ in range(4):
+                    otra.mouse.wheel(0, 120)
+                    otra.wait_for_timeout(120)
+                otra.wait_for_timeout(500)
+                al_bajar = flotante.get_attribute("data-oculta")
+                otra.screenshot(path=destino / "burbuja-al-bajar-390.png")
+                otra.mouse.wheel(0, -200)
+                otra.wait_for_timeout(600)
+                al_subir = flotante.get_attribute("data-oculta")
+                otra.screenshot(path=destino / "burbuja-al-subir-390.png")
+                if (al_bajar, al_subir) != ("true", "false"):
+                    problemas.append(f"a 390 px la burbuja no se esconde al bajar y vuelve al subir ({al_bajar}, {al_subir})")
+        finally:
+            contexto.close()
+    if not problemas:
+        print(f"burbuja:  al final de {len(_VISTAS_CON_BURBUJA)} vistas, a 1440 y 390 px, no tapa texto ni controles; "
+              "a 390 px se esconde al bajar y vuelve al subir "
+              f"({(destino / 'burbuja-al-bajar-390.png').relative_to(_RAIZ)})")
+    return problemas
+
+
+def _zonas_de_toque(pagina: Page, url: str) -> list[str]:
+    """Todo lo que se toca mide 44 px o más en el teléfono (390×844)."""
+    problemas = []
+    base = url.rstrip("/")
+    contexto = pagina.context.browser.new_context(viewport={"width": 390, "height": 844})
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        for ruta in ("/", "/explorar", f"/juego/{_APPID_FICHA}", "/nia", "/comparar?appids=1145360,367520", "/perfil"):
+            _abrir(otra, f"{base}{ruta}")
+            otra.locator("main.contenido > :not(router-outlet)").first.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            _esperar_quietud(otra)
+            chicas = otra.evaluate(_JS_ZONAS_CHICAS)
+            if chicas:
+                problemas.append(f"en {ruta} hay zonas de toque de menos de 44 px: {chicas[:6]}")
+    finally:
+        contexto.close()
+    if not problemas:
+        print("toque:    en las 5 vistas y la ficha, a 390 px, todo lo que se toca mide 44 px o más")
+    return problemas
+
+
+def _tema_dice_su_destino(pagina: Page, url: str, destino: Path) -> list[str]:
+    problemas = []
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    contexto.add_init_script("if (!sessionStorage.getItem('tema-puesto')) { localStorage.setItem('nexplay.tema.v1', 'oscuro'); sessionStorage.setItem('tema-puesto', '1'); }")
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, url)
+        boton = otra.get_by_test_id("cambiar-tema")
+        boton.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        en_oscuro = (" ".join(boton.inner_text().split()), boton.get_attribute("aria-label"), boton.get_attribute("role"))
+        otra.locator(".pie-riel").screenshot(path=destino / "tema-en-oscuro.png")
+        boton.click()
+        otra.wait_for_timeout(300)
+        en_claro = (" ".join(boton.inner_text().split()), boton.get_attribute("aria-label"), boton.get_attribute("role"))
+        otra.locator(".pie-riel").screenshot(path=destino / "tema-en-claro.png")
+        if en_oscuro != ("Modo claro", "Cambiar a modo claro", None) or en_claro != ("Modo oscuro", "Cambiar a modo oscuro", None):
+            problemas.append(f"el botón de tema no dice el modo al que cambia ({en_oscuro}, {en_claro})")
+        else:
+            print("tema:     en oscuro dice «Modo claro» y en claro «Modo oscuro», con su ícono; ya no es un switch")
+    finally:
+        contexto.close()
+    return problemas
+
+
+def _ficha_lateral(pagina: Page, url: str, destino: Path) -> list[str]:
+    """La ficha técnica sin scroll propio y el chat pegado, con el alto de la pantalla."""
+    problemas = []
+    base = url.rstrip("/")
+    for ancho, alto in ((1440, 900), (1366, 674), (390, 844)):
+        contexto = pagina.context.browser.new_context(viewport={"width": ancho, "height": alto})
+        _sin_consultas_a_nia(contexto)
+        try:
+            otra = contexto.new_page()
+            _abrir(otra, f"{base}/juego/{_APPID_FICHA}")
+            metadatos = otra.locator("app-metadatos-juego")
+            metadatos.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            _esperar_quietud(otra)
+            recorte = metadatos.evaluate("m => [m.scrollHeight - m.clientHeight, getComputedStyle(m).overflowY]")
+            # En mayúsculas: los títulos de bloque llevan text-transform.
+            textos = " ".join(metadatos.inner_text().split()).upper()
+            if recorte[0] > 1 or recorte[1] in ("auto", "scroll"):
+                problemas.append(f"a {ancho}×{alto} la ficha técnica se desplaza por dentro ({recorte})")
+            if "HORAS TÍPICAS" not in textos or "CRÍTICA Y PÚBLICO" not in textos:
+                problemas.append(f"a {ancho}×{alto} faltan «Horas típicas» o «Crítica y público» en la ficha técnica")
+            chat = otra.locator(".lateral > app-nia")
+            alto_chat = chat.bounding_box()["height"]
+            minimo = 460 if ancho < 900 else 520
+            if alto_chat < minimo:
+                problemas.append(f"a {ancho}×{alto} el chat de Nia mide {round(alto_chat)} px (mínimo {minimo})")
+            if ancho >= 900:
+                otra.evaluate("() => scrollTo(0, 1400)")
+                otra.wait_for_timeout(500)
+                caja = chat.bounding_box()
+                boton = otra.get_by_test_id("nia-enviar").bounding_box()
+                if not (8 <= caja["y"] <= 24) or boton["y"] + boton["height"] > alto:
+                    problemas.append(f"a {ancho}×{alto} el chat no se queda pegado con «Preguntar» a la vista ({caja}, {boton})")
+                otra.evaluate("() => scrollTo(0, 0)")
+            otra.screenshot(path=destino / f"ficha-lateral-{ancho}x{alto}.png", full_page=ancho < 900)
+            if ancho == 1440:
+                metadatos.screenshot(path=destino / "ficha-tecnica-entera.png")
+        finally:
+            contexto.close()
+    if not problemas:
+        print("ficha:    la ficha técnica va entera, sin scroll propio, y el chat mide la pantalla y se queda pegado "
+              f"({(destino / 'ficha-lateral-1440x900.png').relative_to(_RAIZ)})")
+    return problemas
+
+
+def _trailer_cargando(pagina: Page, url: str, destino: Path) -> list[str]:
+    """Mientras carga el tráiler de Explorar se ve la portada del juego en color."""
+    problemas = []
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    # El video no llega mientras se mira: la captura se queda en el «mientras carga».
+    detenidas = []
+    contexto.route("**/*.m3u8*", lambda ruta: detenidas.append(ruta))
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{url.rstrip('/')}/explorar")
+        marco = otra.locator("[data-testid=trailers] [data-testid=portada-ancha]")
+        marco.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        otra.wait_for_timeout(1500)
+        fondo, filtro = marco.evaluate(
+            "m => [getComputedStyle(m).backgroundImage, getComputedStyle(m.querySelector('img')).filter]"
+        )
+        marco.screenshot(path=destino / "trailer-cargando.png")
+        for ruta in detenidas:
+            ruta.abort()
+        if "url(" not in fondo or filtro != "none":
+            problemas.append(f"mientras carga el tráiler de Explorar no se ve la portada en color ({fondo[:60]}, {filtro})")
+        else:
+            print("trailer:  mientras carga, Explorar muestra la portada del juego en color "
+                  f"({(destino / 'trailer-cargando.png').relative_to(_RAIZ)})")
+    finally:
+        contexto.close()
+    return problemas
+
+
+def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Lo que salió de probar el sitio en producción: Explorar sin resultados, la franja de
+    Nia, la burbuja que no tapa, la ficha técnica entera, el tema, el tráiler cargando y las
+    zonas de toque. (Precio, la nota del histograma y la metodología repetida se revisan en
+    _angular_5_vistas; los controles del video, en _controles_del_video.)"""
+    return (
+        _explorar_sin_resultados(pagina, url, destino, api)
+        + _franja_nia(pagina, url, destino)
+        + _burbuja_no_tapa(pagina, url, destino)
+        + _ficha_lateral(pagina, url, destino)
+        + _tema_dice_su_destino(pagina, url, destino)
+        + _trailer_cargando(pagina, url, destino)
+        + _zonas_de_toque(pagina, url)
+    )
+
 
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
@@ -3339,6 +3769,7 @@ def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[s
         + _angular_movimiento(pagina, url)
         + _angular_barra_y_tema(pagina, url, destino)
         + _angular_letra_y_vocabulario(pagina, url)
+        + _angular_correcciones(pagina, url, destino, api)
     )
 
 
