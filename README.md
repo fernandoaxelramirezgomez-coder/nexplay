@@ -292,8 +292,15 @@ impiden el accidente, no a quien mande el id de otra persona a propósito.
 
 ### `POST /nia`
 
-El chat de la ficha. Recibe `{ usuario, appid, mensajes, perfil? }` (hasta 10 mensajes de
-500 caracteres) y devuelve `{ respuesta, modo, modelo, aviso }`.
+El chat de Nia, con un juego (`appid`) o sobre el catálogo entero. Recibe
+`{ usuario, appid?, mensajes, sugerencias? }`: hasta 40 mensajes, los tuyos de 500
+caracteres como máximo y los de Nia de 1,500. Al modelo solo llegan los últimos 10 turnos.
+Devuelve `{ respuesta, modo, modelo, aviso, juegos, pide_juego, fuera_de_tema, … }`.
+
+`modo` dice de dónde salió la respuesta: `openai` (el modelo), `demostracion` (sin clave,
+por reglas) o `reglas`. Este último es cuando hay clave pero la respuesta no pasa por el
+modelo porque tiene que ser siempre la misma: pedir el juego, resumir la conversación, no
+coronar «el mejor» y no contestar preguntas que no son de juegos.
 
 El backend arma el contexto con los datos reales de ese juego (banda, motivos con sus
 porcentajes, Metacritic, precio, géneros) y el prompt de sistema fija el vocabulario del
@@ -309,6 +316,16 @@ API y hazle a Nia una pregunta *fuera de las reglas*, por ejemplo "¿me lo recom
 "¿lo compro?". La respuesta debe describir los datos y devolver la decisión a quien
 pregunta, sin recomendar la compra. Es la forma de confirmar que el prompt de sistema
 también frena al modelo real, no solo al modo demostración.
+
+**Para verificar a Nia:**
+
+```bash
+python herramientas/verificar_nia.py              # contexto, reglas, votos y los casos de producción; sale 1 si algo falla
+python herramientas/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba   # las 25 preguntas contra una API levantada
+```
+
+`verificar_nia.py` no gasta llamadas. `preguntas_nia.py` responde con el modelo si la API
+que le das tiene clave; si no, con reglas.
 
 ## Contenido de usuarios y moderación
 
