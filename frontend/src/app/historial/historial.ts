@@ -35,7 +35,7 @@ const ROTULO: Record<TipoEntrada, string> = {
             <li class="entrada-historial" [attr.data-tipo]="entrada.tipo" data-testid="historial-entrada">
               <span class="rotulo mono">{{ rotulo(entrada.tipo) }}</span>
               @if (entrada.appid) {
-                <a class="titulo" [routerLink]="['/juego', entrada.appid]">{{ entrada.titulo }}</a>
+                <a class="titulo toque-amplio" [routerLink]="['/juego', entrada.appid]">{{ entrada.titulo }}</a>
               } @else {
                 <span class="titulo">{{ entrada.titulo }}</span>
               }

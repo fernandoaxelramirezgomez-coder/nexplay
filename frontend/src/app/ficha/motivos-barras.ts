@@ -59,7 +59,7 @@ const MINIMO_PARA_BARRAS = 3;
             }
           </ul>
           @if (datos.motivos.length > visibles()) {
-            <button type="button" class="boton-texto" data-testid="motivos-ver-todos" (click)="verTodos()">
+            <button type="button" class="boton-texto toque-amplio" data-testid="motivos-ver-todos" (click)="verTodos()">
               Ver los {{ datos.motivos.length }} motivos →
             </button>
           }

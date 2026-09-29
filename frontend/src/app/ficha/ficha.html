@@ -81,7 +81,7 @@
           @if (descripcionEntera() || descripcionRecortada()) {
             <button
               type="button"
-              class="boton-texto"
+              class="boton-texto toque-amplio"
               data-testid="ficha-ver-mas"
               [attr.aria-expanded]="descripcionEntera()"
               (click)="descripcionEntera.set(!descripcionEntera())"

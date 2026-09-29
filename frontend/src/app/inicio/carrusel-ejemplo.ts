@@ -91,11 +91,11 @@ const MS_ROTACION = 7000;
               </div>
               <div class="acciones">
                 <app-pildora-banda [banda]="juego.banda_riesgo" />
-                <a class="boton-texto" [routerLink]="['/juego', juego.appid]" data-testid="hero-ficha"
+                <a class="boton-texto toque-amplio" [routerLink]="['/juego', juego.appid]" data-testid="hero-ficha"
                   >Ver su ficha <span aria-hidden="true">→</span></a
                 >
                 <a
-                  class="boton-texto"
+                  class="boton-texto toque-amplio"
                   routerLink="/nia"
                   [queryParams]="{ appid: juego.appid }"
                   data-testid="hero-seguir-nia"

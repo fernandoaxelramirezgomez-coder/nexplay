@@ -59,7 +59,7 @@ import { MotivosStore } from '../estado/motivos-store';
       </div>
       <div class="cuerpo">
         <h3 class="nombre">
-          <a class="enlace" [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
+          <a class="enlace toque-amplio" [routerLink]="['/juego', juego().appid]">{{ juego().nombre }}</a>
         </h3>
         <p class="meta mono datos">{{ metacritic() }}<br />{{ precio() }}</p>
         <p class="meta mono motivo" data-testid="tarjeta-motivo">{{ textoMotivo() }}</p>

@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <details class="nota" [attr.data-testid]="idPrueba()">
-      <summary [attr.aria-label]="etiqueta()">
+      <summary class="toque-amplio" [attr.aria-label]="etiqueta()">
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
           <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.4" />
           <circle cx="10" cy="5.9" r="1.05" fill="currentColor" />
