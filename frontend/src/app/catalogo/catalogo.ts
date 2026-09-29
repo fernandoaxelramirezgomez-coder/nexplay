@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { FranjaNia } from '../chat/franja-nia';
 import { SeparadorNave } from '../compartido/separador-nave';
 import { Skeleton } from '../compartido/skeleton';
 import { agruparEnEstantes, ORDEN_BANDAS } from '../dominio/estantes';
@@ -15,7 +16,7 @@ import { Trailers } from './trailers';
 @Component({
   selector: 'app-catalogo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Buscador, Estante, FiltrosCatalogo, SeparadorNave, Skeleton, Trailers],
+  imports: [Buscador, Estante, FiltrosCatalogo, FranjaNia, SeparadorNave, Skeleton, Trailers],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })
@@ -43,6 +44,21 @@ export class Catalogo {
     this.hayFiltro() ? this.estantes().filter((estante) => estante.juegos.length) : this.estantes(),
   );
   protected readonly hayFiltro = computed(() => !!this.texto().trim() || this.generosActivos().length > 0);
+  /** Con géneros elegidos se nombran: «dead» sí está en el catálogo, pero quizá no en Rol. */
+  protected readonly textoSinResultados = computed(() => {
+    const texto = this.texto().trim();
+    const generos = this.generosActivos();
+    const donde = generos.length
+      ? `entre los juegos de ${generos.length === 1 ? generos[0] : `${generos.slice(0, -1).join(', ')} y ${generos.at(-1)}`}`
+      : `en los ${this.catalogo.juegos().length} juegos`;
+    return texto ? `No encontramos «${texto}» ${donde}.` : `No encontramos juegos ${donde}.`;
+  });
+
+  protected limpiar(): void {
+    this.texto.set('');
+    this.actualizarUrl({ q: null, genero: null });
+  }
+
   protected cambiarTexto(texto: string): void {
     this.texto.set(texto);
     this.actualizarUrl({ q: texto.trim() || null });

@@ -42,6 +42,7 @@
         [juegos]="catalogo.juegos()"
         (elegidosCambio)="cambiarGeneros($event)"
       />
+      <app-franja-nia vista="explorar" />
     </div>
   </section>
 
@@ -69,6 +70,13 @@
            títulos con (0) debajo del resultado que sí hay. -->
       @for (estante of estantesVisibles(); track estante.banda; let primero = $first) {
         <app-estante [estante]="estante" [prioritario]="primero" />
+      } @empty {
+        <div class="sin-resultados" role="status" data-testid="catalogo-sin-resultados">
+          <p class="sin-resultados-texto">{{ textoSinResultados() }}</p>
+          <button type="button" class="compacto" data-tono="explorar" data-testid="limpiar-busqueda" (click)="limpiar()">
+            Limpiar búsqueda
+          </button>
+        </div>
       }
     }
   }

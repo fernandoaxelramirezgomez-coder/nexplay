@@ -98,6 +98,24 @@
   overflow: hidden;
 }
 
+.sin-resultados {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-16);
+  padding: var(--espacio-40) var(--espacio-24);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  text-align: center;
+}
+
+.sin-resultados-texto {
+  margin: 0;
+  color: var(--texto);
+  font-size: var(--texto-body);
+}
+
 .error {
   display: flex;
   flex-direction: column;
