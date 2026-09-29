@@ -17,7 +17,7 @@ import { CompararStore } from '../estado/comparar-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { TemaStore } from '../estado/tema-store';
 
-/** La barra lateral: la navegación del sitio, el logo y el interruptor de tema.
+/** La barra lateral: la navegación del sitio, el logo y el botón de tema.
  *
  * En escritorio es una columna de 256 px que se puede encoger a 72 px (solo íconos, con
  * el nombre en el `title` y como texto para lector de pantalla). En pantallas angostas
@@ -208,27 +208,29 @@ import { TemaStore } from '../estado/tema-store';
       }
 
       <div class="pie-riel">
+        <!-- Dice el modo al que cambia, con su ícono: «Modo oscuro» y la luna estando en
+             claro. Por eso es un botón y no un role="switch": un interruptor lleva una
+             etiqueta fija y su estado aparte. -->
         <button
           type="button"
           class="interruptor"
-          role="switch"
           data-testid="cambiar-tema"
-          [attr.aria-checked]="tema.esClaro()"
-          [attr.title]="barra.expandida() ? null : 'Modo claro'"
+          [attr.aria-label]="tema.esClaro() ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'"
+          [attr.title]="barra.expandida() ? null : destinoTema()"
           (click)="tema.alternar()"
         >
           <span class="astro" aria-hidden="true">
             @if (tema.esClaro()) {
+              <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
+            } @else {
               <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="4" />
                 <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
                 <path d="m4.9 4.9 1.5 1.5M17.6 17.6l1.5 1.5M19.1 4.9l-1.5 1.5M6.4 17.6l-1.5 1.5" />
               </svg>
-            } @else {
-              <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
             }
           </span>
-          <span class="etiqueta">Modo claro</span>
+          <span class="etiqueta">{{ destinoTema() }}</span>
         </button>
         <button
           type="button"
@@ -618,6 +620,8 @@ export class BarraLateral {
   protected readonly tema = inject(TemaStore);
   protected readonly comparar = inject(CompararStore);
   protected readonly perfil = inject(PerfilStore);
+  /** El modo al que lleva el botón de tema, que es lo que el botón dice. */
+  protected readonly destinoTema = computed(() => (this.tema.esClaro() ? 'Modo oscuro' : 'Modo claro'));
   private readonly catalogo = inject(CatalogoStore);
 
   private readonly botonCerrar = viewChild<ElementRef<HTMLButtonElement>>('cerrar');

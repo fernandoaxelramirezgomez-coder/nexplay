@@ -142,21 +142,23 @@ describe('BarraLateral', () => {
     expect(explorar.textContent).toContain('Explorar');
   });
 
-  it('el interruptor de tema es un switch que dice si el claro está puesto', async () => {
+  it('el botón de tema dice el modo al que cambia', async () => {
     const { fixture, html } = crear();
     await fixture.whenStable();
-    const interruptor = html.querySelector<HTMLButtonElement>('[data-testid="cambiar-tema"]')!;
+    const boton = html.querySelector<HTMLButtonElement>('[data-testid="cambiar-tema"]')!;
 
-    expect(interruptor.getAttribute('role')).toBe('switch');
-    expect(interruptor.getAttribute('aria-checked')).toBe('false');
-    expect(interruptor.textContent).toContain('Modo claro');
+    expect(boton.getAttribute('role')).toBeNull();
+    expect(boton.textContent).toContain('Modo claro');
+    expect(boton.getAttribute('aria-label')).toBe('Cambiar a modo claro');
 
-    interruptor.click();
+    boton.click();
     await fixture.whenStable();
 
-    expect(interruptor.getAttribute('aria-checked')).toBe('true');
     expect(TestBed.inject(TemaStore).tema()).toBe('claro');
     expect(document.documentElement.getAttribute('data-tema')).toBe('claro');
+    expect(boton.textContent).toContain('Modo oscuro');
+    expect(boton.textContent).not.toContain('Modo claro');
+    expect(boton.getAttribute('aria-label')).toBe('Cambiar a modo oscuro');
   });
 
   it('el cajón abierto se lleva el foco y se cierra con Escape o con un enlace', async () => {
