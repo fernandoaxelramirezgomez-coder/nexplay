@@ -101,12 +101,6 @@ def _ya_explico_la_senal(mensajes: list[MensajeChat]) -> bool:
     return any("primeras 2 horas" in m or "arrepentimiento temprano" in m for m in _respuestas_previas(mensajes))
 
 
-def _primera_oracion(texto: str) -> str:
-    sin_emojis = nia.EMOJI.sub("", texto).strip()
-    oracion = re.split(r"(?<=[.!?])\s+", sin_emojis, maxsplit=1)[0]
-    return oracion.strip("¡!¿ ").rstrip(".")
-
-
 def _resultado(texto: str, **extra) -> dict:
     return {
         "texto": texto, "juegos": [], "sugerencias": [], "pide_juego": False, "pide_perfil": False,
@@ -129,41 +123,130 @@ def _saludo_o_gracias(pregunta: str, datos: dict | None) -> dict | None:
     return None
 
 
-# Al juntar oraciones, la de en medio empieza en minúscula; los nombres propios no.
-_INICIOS_COMUNES = {"de", "del", "en", "los", "las", "el", "la", "hay", "con", "salen", "todos", "solo", "decidir",
-                    "elegir", "no", "aun", "va", "para", "eso", "esa", "ese", "steam"}
+# Lo que no se resume: otro resumen, los saludos y las respuestas que no dijeron nada del
+# catálogo (no lo sé, pedir el juego, no coronar, ya te lo conté).
+_DE_TRAMITE = (
+    "Va, en corto", "Más corto", "Eso no lo sé", "No corono", "¿De qué juego hablamos", "Aún no te he contado",
+    "Ya te lo conté", "¡De nada", "¡Hola", "Para sugerirte algo",
+)
+
+_PIDE_RESUMEN = ("resume", "resumen", "resumir", "resumelo", "resumeme", "en corto", "lo que dijiste",
+                 "lo que me dijiste", "mas corto", "menos texto")
+_MAS_CORTO = ("mas corto", "menos texto", "mas breve", "lo mas que puedas", "mas resumido")
 
 
-def _en_minuscula(oracion: str) -> str:
-    primera = oracion.split(" ", 1)[0]
-    return oracion[0].lower() + oracion[1:] if _norm(primera).strip(",") in _INICIOS_COMUNES - {"steam"} else oracion
+def pide_resumen(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_PIDE_RESUMEN)
+
+
+def _recortar_palabras(oracion: str, tope: int) -> str:
+    palabras_ = oracion.split()
+    return oracion if len(palabras_) <= tope else " ".join(palabras_[:tope]).rstrip(",;:") + "…"
+
+
+_SIN_ARRANQUE = re.compile(r"^\s*(?:¡?hola!?|s[ií]|no|claro|va|ok|listo)[,!.:;]\s+", re.IGNORECASE)
+
+
+def _oraciones_de(texto: str) -> list[str]:
+    """Las oraciones de una respuesta, cortadas también en el emoji y sin la pregunta con
+    que cierra (el remate no se resume)."""
+    # El punto corta solo si sigue una mayúscula, ¿ o ¡: «(93 vs. 87)» es una sola oración.
+    partes = re.split(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡])|\s*" + nia.EMOJI.pattern + r"\s*", texto.strip())
+    # «Sí, hay 7 gratis…», «¡Hola! …»: el arranque de cortesía no es parte de lo dicho.
+    partes = [_SIN_ARRANQUE.sub("", p) for p in partes]
+    oraciones = [p.strip("¡!¿ ").rstrip(".") for p in partes if p and p.strip()]
+    return [o for o in oraciones if o and not o.endswith("?") and len(o.split()) >= 2]
+
+
+def _primera_clausula(oracion: str) -> str:
+    """Lo que dice la oración sin su detalle: antes de los dos puntos («Hay 7 gratis: A, B…»)
+    o, si no los hay, antes de la primera coma o punto y coma. Si eso queda en menos de tres
+    palabras, la oración entera."""
+    for corte in (r":\s", r"(?<=\w)[,;]\s"):
+        clausula = re.split(corte, oracion, maxsplit=1)[0]
+        if clausula != oracion and len(clausula.split()) >= 3:
+            return clausula
+    return oracion
 
 
 def _resumen(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
-    if not _dice(pregunta, "resume", "resumen", "resumir", "resumelo", "resumeme", "en corto", "lo que dijiste",
-                 "lo que me dijiste", "mas corto", "menos texto"):
+    """Junta lo que Nia ya dijo en el hilo, de todas sus respuestas y no solo de las
+    últimas: primero una oración de cada una y, si hay lugar, las siguientes por turnos.
+    Si ni la primera de cada una cabe, se acortan a su primera cláusula y luego a las
+    mismas palabras cada una."""
+    if not _dice(pregunta, *_PIDE_RESUMEN):
         return None
-    # Un resumen anterior no se resume otra vez: repetiría "Va, en corto" dentro de sí.
-    previas = [
-        _primera_oracion(p) for p in _respuestas_previas(mensajes) if not p.startswith(("Va, en corto", "Más corto"))
-    ]
-    previas = [p for p in previas if len(p.split()) >= 3]
-    if not previas:
+    respuestas = [_oraciones_de(p) for p in _respuestas_previas(mensajes) if not p.startswith(_DE_TRAMITE)]
+    respuestas = [r for r in respuestas if r and len(r[0].split()) >= 3]
+    if not respuestas:
         return _resultado("Aún no te he contado nada 🙂 ¿Por dónde empezamos: un juego o el catálogo?")
-    # "Más corto" pide menos que el resumen de antes: la mitad de palabras, y lo último.
-    corto = _dice(pregunta, "mas corto", "menos texto", "mas breve", "lo mas que puedas", "mas resumido")
+    # "Más corto" pide menos que el resumen de antes.
+    corto = _dice(pregunta, *_MAS_CORTO)
     tope = 22 if corto else 40
-    # Las más recientes, hasta el tope: el resumen no puede ser más largo que lo resumido.
-    elegidas: list[str] = []
-    for oracion in reversed(previas):
-        if sum(len(o.split()) for o in elegidas) + len(oracion.split()) > tope:
-            break
-        elegidas.insert(0, oracion)
-    elegidas = elegidas or [previas[-1].split(";")[0]]
-    cuerpo = "; ".join(_en_minuscula(o) if i else o for i, o in enumerate(elegidas))
+    cuenta = lambda partes: sum(len(o.split()) for grupo in partes for o in grupo)
+    elegidas = [[r[0]] for r in respuestas]
+    comprimido = cuenta(elegidas) > tope
+    if comprimido:
+        elegidas = [[_primera_clausula(g[0])] for g in elegidas]
+    if cuenta(elegidas) > tope:
+        cada_una = max(3, tope // len(elegidas))
+        elegidas = [[_recortar_palabras(g[0], cada_una)] for g in elegidas]
+    elif not comprimido:
+        # Con lugar de sobra, las oraciones siguientes de cada respuesta, por turnos.
+        siguiente = 1
+        while any(len(r) > siguiente for r in respuestas):
+            for grupo, respuesta in zip(elegidas, respuestas):
+                if len(respuesta) > siguiente and cuenta(elegidas) + len(respuesta[siguiente].split()) <= tope:
+                    grupo.append(respuesta[siguiente])
+            siguiente += 1
+    # Entre respuestas va punto y no punto y coma: cada una arranca con mayúscula propia.
+    cuerpo = ". ".join(o[0].upper() + o[1:] for grupo in elegidas for o in grupo)
     if corto:
-        return _resultado(f"Más corto ✍️ {cuerpo[0].upper()}{cuerpo[1:]}. ¿Seguimos?")
+        return _resultado(f"Más corto ✍️ {cuerpo}. ¿Seguimos?")
     return _resultado(f"Va, en corto ✍️ {cuerpo}. ¿Seguimos con alguno?")
+
+
+# Ante "el mejor" no se corona a nadie: se ofrece ordenar por un criterio. Si la pregunta
+# ya trae el criterio ("¿cuál tiene mejor nota?"), es ordenar y la contestan los filtros.
+_EL_MEJOR = ("el mejor", "la mejor", "los mejores", "mejor juego", "mejores juegos", "numero uno", "numero 1",
+             "el top", "el mas recomendado", "el que mas recomiendas")
+_CRITERIOS = ("nota", "critica", "metacritic", "precio", "barato", "caro", "riesgo", "calificado", "valorado",
+              "resenas", "positivas", "gratis", "gratuito")
+
+
+def pide_el_mejor(pregunta: str) -> bool:
+    texto = _norm(pregunta)
+    return _dice(texto, *_EL_MEJOR) and not _dice(texto, *_CRITERIOS) and not _dice(texto, *_BARATOS, *_CAROS)
+
+
+def _el_mejor(pregunta: str) -> dict | None:
+    if not pide_el_mejor(pregunta):
+        return None
+    return _resultado(
+        "No corono a ningún juego 🙂 Depende de lo que busques: te los ordeno por precio, por riesgo o por la "
+        "nota de la crítica. ¿Por cuál empezamos?"
+    )
+
+
+# Lo que dice que una pregunta es de juegos aunque no nombre ninguno. Sin nada de esto ni
+# un juego del catálogo, la pregunta es de otro tema (trivia, una tarea, un dato personal)
+# y se contesta con las reglas, que no la responden: un modelo sí lo haría.
+_VOCABULARIO_DE_JUEGOS = (
+    "juego", "jugar", "juega", "gamer", "gaming", "steam", "catalogo", "nexplay", "nia", "riesgo", "arrepent",
+    "precio", "cuesta", "cuanto vale", "barato", "caro", "gratis", "gratuito", "free", "resena", "critica",
+    "metacritic", "nota", "genero", "trailer", "compra", "compro", "reembolso", "consola", "pc", "playstation",
+    "ps4", "ps5", "xbox", "nintendo", "switch", "dlc", "multijugador", "online", "partida", "horas", "perfil",
+    "recomienda", "recomiendas", "sugier", "sugerencia", "compar", "motivo", "bug", "rendimiento", "dificil",
+    "dificultad", "facil", "senal", "dato", "fuente", "rol", "rpg", "shooter", "estrategia", "accion",
+    "aventura", "indie", "simulador", "deporte", "carrera", "mmo", "lanzamiento", "nuevo", "vs",
+)
+
+
+def sin_relacion_con_juegos(pregunta: str) -> bool:
+    texto = _norm(pregunta)
+    if _nombrados(pregunta) or _genero_de(texto):
+        return False
+    return not any(re.search(rf"(?<!\w){re.escape(palabra)}", texto) for palabra in _VOCABULARIO_DE_JUEGOS)
 
 
 def _sugerencias(pregunta: str, sugerencias: list[SugerenciaNia]) -> dict | None:
@@ -339,14 +422,29 @@ _DE_UN_JUEGO = (
 
 
 def necesita_juego(pregunta: str, mensajes: list[MensajeChat], appid: int | None) -> bool:
-    """La pregunta es de un juego, no hay juego fijado y el hilo reciente no nombra ninguno."""
+    """La pregunta es de un juego, no hay juego fijado y el hilo reciente no deja claro cuál:
+    no nombra ninguno o nombra varios."""
     if appid is not None:
         return False
     texto = _norm(pregunta)
     if not _dice(texto, *_DE_UN_JUEGO) or _nombrados(pregunta):
         return False
-    recientes = " ".join(m.contenido for m in mensajes[-5:-1])
-    return not _nombrados(recientes)
+    return len(_juegos_recientes(mensajes)) != 1
+
+
+def _juegos_recientes(mensajes: list[MensajeChat]) -> list[JuegoCatalogo]:
+    return _nombrados(" ".join(m.contenido for m in mensajes[-5:-1]))
+
+
+def _del_juego_del_hilo(pregunta: str, original: str, mensajes: list[MensajeChat]) -> dict | None:
+    """«¿Y cuánto cuesta?» tras hablar de un solo juego: se contesta de ese."""
+    if not _dice(pregunta, *_DE_UN_JUEGO) or _nombrados(original):
+        return None
+    recientes = _juegos_recientes(mensajes)
+    if len(recientes) != 1:
+        return None
+    juego = recientes[0]
+    return _del_juego(pregunta, nia.contexto(juego.appid), juego.appid, mensajes)
 
 
 def _pedir_juego() -> dict:
@@ -458,7 +556,7 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
     for cuantos_nombres in range(len(mostrados), 2, -1):
         visibles = mostrados[:cuantos_nombres]
         cuantos_texto = "Todos" if total <= len(visibles) else f"Los primeros {len(visibles)}"
-        resto = " El resto está en Explorar con esos filtros." if total > len(visibles) else ""
+        resto = f" Y {total - len(visibles)} más en Explorar." if total > len(visibles) else ""
         texto = f"¡Hay {total} {descripcion}! 🎮 {cuantos_texto}: {_lista([j.nombre for j in visibles])}.{resto} {remate}"
         if nia.palabras(texto) <= 60:
             break
@@ -519,6 +617,19 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
     if _dice(pregunta, "motivo", "motivos", "queja", "quejas", "problema", "problemas", "bug", "bugs", "rendimiento",
              "resenas", "que dicen"):
         return _resultado(f"En {nombre}, {nia._texto_motivos(datos)} 🔍 ¿Te cuento por qué tiene riesgo {banda}?", juegos=[appid])
+    if _dice(pregunta, "cuanto dura", "dura", "duracion", "cuantas horas", "horas tipicas", "cuanto tiempo", "largo"):
+        horas = datos.get("horas_tipicas")
+        if horas is None:
+            return _resultado(
+                f"De {nombre} no tengo horas típicas: hay pocas reseñas positivas con horas jugadas ⏱️ "
+                "¿Te cuento qué dicen sus reseñas?",
+                juegos=[appid],
+            )
+        return _resultado(
+            f"Quien recomendó {nombre} llevaba unas {horas:g} h jugadas, en la mediana ⏱️ No es lo que dura, "
+            "pero da una idea de cuánto rinde. ¿Te cuento su riesgo?",
+            juegos=[appid],
+        )
     if _dice(pregunta, "genero", "generos", "tipo de juego", "de que trata"):
         generos = _lista(datos["generos"]) if datos["generos"] else "sin géneros registrados"
         return _resultado(f"Steam clasifica {nombre} como {generos} 🎮 ¿Te cuento su riesgo?", juegos=[appid])
@@ -563,6 +674,7 @@ def responder(
     intentos = (
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
+        lambda: _el_mejor(pregunta),
         lambda: _sugerencias(pregunta, sugerencias),
         lambda: _compara(pregunta, appid),
         lambda: _vale_la_pena(pregunta, datos, appid, mensajes),
@@ -570,7 +682,8 @@ def responder(
         lambda: _pedir_juego() if necesita_juego(original, mensajes, appid) else None,
         lambda: _de_donde_salen(pregunta),
         lambda: _del_juego(pregunta, datos, appid, mensajes) if datos is not None and appid is not None else None,
-        lambda: None if datos is not None else _nombrado_sin_ficha(original),
+        lambda: None if datos is not None else _nombrado_sin_ficha(original, mensajes),
+        lambda: None if datos is not None else _del_juego_del_hilo(pregunta, original, mensajes),
         lambda: _filtros_del_catalogo(pregunta, original),
         lambda: _fuera_del_catalogo(pregunta, original, datos),
     )
@@ -593,9 +706,17 @@ def es_fuera_de_tema(
     return bool(responder(datos, appid, mensajes, sugerencias).get("fuera_de_tema"))
 
 
-def _nombrado_sin_ficha(original: str) -> dict | None:
+def fuera_del_catalogo(original: str, datos: dict | None) -> dict | None:
+    """«¿Qué tal Zelda?», «¿se parece a Mario?»: la respuesta de un juego que no está."""
+    return _fuera_del_catalogo(_norm(original), original, datos)
+
+
+def _nombrado_sin_ficha(original: str, mensajes: list[MensajeChat]) -> dict | None:
     juegos = _nombrados(original)
-    return _ficha_corta(juegos[0]) if len(juegos) == 1 else None
+    if len(juegos) != 1:
+        return None
+    juego = juegos[0]
+    return _del_juego(_norm(original), nia.contexto(juego.appid), juego.appid, mensajes) or _ficha_corta(juego)
 
 
 # La cara de Nia según el nivel del juego; el mismo emoji acompaña la mascota del carrusel.

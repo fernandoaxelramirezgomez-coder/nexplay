@@ -26,7 +26,23 @@ logger = logging.getLogger(__name__)
 # recitado; el resto se resume con "hay N más" y un enlace a Explorar.
 MAXIMO_RESULTADOS = 8
 
-_ORDENES = ("nombre", "precio", "nota", "riesgo")
+_ORDENES = ("nombre", "precio", "nota", "riesgo", "lanzamiento")
+
+_MESES = {"ENE": 1, "FEB": 2, "MAR": 3, "ABR": 4, "MAY": 5, "JUN": 6, "JUL": 7, "AGO": 8, "SEP": 9, "OCT": 10,
+          "NOV": 11, "DIC": 12}
+
+
+def _fecha(juego: JuegoCatalogo) -> tuple[int, int, int]:
+    """«30 JUL 2019» → (2019, 7, 30); sin fecha, al final de cualquier orden por lanzamiento."""
+    partes = (juego.fecha_lanzamiento or "").upper().split()
+    if len(partes) == 3 and partes[1][:3] in _MESES and partes[0].isdigit() and partes[2].isdigit():
+        return int(partes[2]), _MESES[partes[1][:3]], int(partes[0])
+    return (0, 0, 0)
+
+
+def _horas_tipicas() -> dict[int, float]:
+    """Las «Horas típicas» de la ficha: mediana de horas de quien recomendó cada juego."""
+    return {f.appid: f.horas_al_recomendar for f in panorama.resumen().por_juego if f.horas_al_recomendar is not None}
 
 
 def _resumen_de_juego(juego: JuegoCatalogo) -> dict:
@@ -39,6 +55,8 @@ def _resumen_de_juego(juego: JuegoCatalogo) -> dict:
         "precio": "gratis" if juego.es_gratis else juego.precio_final,
         "metacritic": juego.metacritic,
         "generos": juego.generos,
+        "lanzamiento": juego.fecha_lanzamiento,
+        "horas_tipicas": _horas_tipicas().get(juego.appid),
     }
 
 
@@ -49,6 +67,8 @@ def _clave_de_orden(orden: str):
         return lambda j: -(j.metacritic if j.metacritic is not None else -1)
     if orden == "riesgo":
         return lambda j: ({"bajo": 0, "medio": 1, "alto": 2}[j.banda_riesgo.value], j.nombre.lower())
+    if orden == "lanzamiento":
+        return lambda j: tuple(-parte for parte in _fecha(j))
     return lambda j: j.nombre.lower()
 
 
@@ -60,6 +80,7 @@ def buscar_juegos(
     solo_gratis: bool = False,
     con_nota: bool | None = None,
     orden: str = "nombre",
+    horas_max: float | None = None,
 ) -> dict:
     """Juegos del catálogo que cumplen los filtros, hasta MAXIMO_RESULTADOS."""
     nivel = NivelRiesgo(riesgo) if riesgo in ("bajo", "medio", "alto") else None
@@ -70,6 +91,9 @@ def buscar_juegos(
         juegos = [j for j in juegos if j.es_gratis or (j.precio_final is not None and j.precio_final <= precio_max)]
     if con_nota is not None:
         juegos = [j for j in juegos if (j.metacritic is not None) == con_nota]
+    if horas_max is not None:
+        horas = _horas_tipicas()
+        juegos = [j for j in juegos if j.appid in horas and horas[j.appid] <= horas_max]
 
     if orden not in _ORDENES:
         orden = "nombre"
@@ -138,6 +162,7 @@ def ficha_juego(appid: int) -> dict:
         "metacritic": datos["metacritic"],
         "precio": "gratis" if datos["es_gratis"] else datos["precio"],
         "lanzamiento": datos["lanzamiento"],
+        "horas_tipicas": datos["horas_tipicas"],
         "resenas_con_senal": datos["n_casos"],
         "resenas_clasificadas": datos["clasificadas"],
         "motivos": [f"{m.motivo} {m.frecuencia:.0%}" for m in datos["motivos"]],
@@ -190,8 +215,9 @@ ESQUEMAS = [
         "function": {
             "name": "buscar_juegos",
             "description": (
-                "Busca juegos del catálogo de NexPlay por nombre, género, riesgo de arrepentimiento y precio."
-                " Devuelve como máximo 8, en orden alfabético salvo que se pida otro."
+                "Busca juegos del catálogo de NexPlay por nombre, género, riesgo de arrepentimiento, precio y"
+                " horas típicas. Devuelve como máximo 8, en orden alfabético salvo que se pida otro. Para"
+                " «algo nuevo» usa orden lanzamiento; para «jugar poco» o «partidas cortas», horas_max 20."
             ),
             "parameters": {
                 "type": "object",
@@ -202,10 +228,14 @@ ESQUEMAS = [
                     "precio_max": {"type": "number", "description": "Precio máximo en MXN"},
                     "solo_gratis": {"type": "boolean"},
                     "con_nota": {"type": "boolean", "description": "true: solo con nota de Metacritic; false: solo sin ella"},
+                    "horas_max": {
+                        "type": "number",
+                        "description": "Horas típicas máximas: mediana de horas jugadas de quien lo recomendó (no lo que dura)",
+                    },
                     "orden": {
                         "type": "string",
                         "enum": list(_ORDENES),
-                        "description": "Solo si quien pregunta pidió un orden; por omisión, alfabético",
+                        "description": "Solo si quien pregunta pidió un orden o algo nuevo; por omisión, alfabético",
                     },
                 },
             },
@@ -296,7 +326,10 @@ def appids_de(salida: dict) -> set[int]:
     appids = set()
     if isinstance(salida.get("appid"), int):
         appids.add(salida["appid"])
-    for juego in salida.get("juegos", []):
-        if isinstance(juego.get("appid"), int):
+    # En panorama_del_catalogo «juegos» es cuántos hay, no una lista: sin revisar el tipo,
+    # «¿de dónde salen los datos?» con el modelo tronaba y caía al modo demostración.
+    juegos = salida.get("juegos")
+    for juego in juegos if isinstance(juegos, list) else []:
+        if isinstance(juego, dict) and isinstance(juego.get("appid"), int):
             appids.add(juego["appid"])
     return appids

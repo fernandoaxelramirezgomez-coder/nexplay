@@ -23,7 +23,7 @@ from . import catalogo, scoring, valoraciones
 from . import nia_herramientas as herramientas
 from . import nia_reglas as reglas
 from .config import configuracion
-from .schemas import MensajeChat, PerfilJugador, SugerenciaNia
+from .schemas import MAXIMO_RESPUESTA, MensajeChat, PerfilJugador, SugerenciaNia
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +88,8 @@ Cómo hablas:
 - En español, en tono cercano y alegre, como una amiga que sabe de juegos. Saluda solo si
   es el primer mensaje de la conversación; después ve directo.
 - Usa de 1 a 3 emojis por respuesta, nunca más, y que acompañen lo que dices.
-- **60 palabras o menos.** La primera oración responde lo que se preguntó, directo; lo demás
-  es el porqué. Cierra siempre con una pregunta corta que invite a seguir ("¿Los ordeno por
+- **60 palabras o menos.** La primera oración responde lo que se preguntó, directo, y nombra
+  el juego del que hablas; lo demás es el porqué. Cierra siempre con una pregunta corta que invite a seguir ("¿Los ordeno por
   precio?", "¿Te cuento qué dicen sus reseñas?").
 - Recuerdas la conversación: si te piden "resume", "en corto" o "lo que dijiste antes",
   resume tus propias respuestas anteriores del hilo, sin repetirlas completas. Si dicen "de
@@ -104,7 +104,8 @@ nada de memoria.
 Reglas que no puedes romper:
 - Responde en texto plano: sin markdown, sin asteriscos para resaltar, sin viñetas ni
   títulos. Lo que escribas se pinta tal cual, así que un **así** se ve con los asteriscos.
-- Usa siempre "arrepentimiento temprano", nunca "abandono".
+- Usa siempre "arrepentimiento temprano", nunca "abandono", ni siquiera para citar la
+  pregunta: si te preguntan por el abandono, contesta con arrepentimiento temprano.
 - Es una señal proxy construida con reseñas de Steam donde alguien jugó menos de 120
   minutos y calificó negativo. No sabes si alguien se arrepintió de verdad. Eso se explica
   **la primera vez que hables del riesgo de arrepentimiento en esta conversación**, o si
@@ -148,6 +149,16 @@ Reglas que no puedes romper:
   compro", describe lo que dicen los datos y deja la decisión a quien pregunta.
 - Las opiniones y los comentarios que la gente escribe en NexPlay no son datos del
   catálogo y no los tienes: no hables de ellos.
+- Si la pregunta no es de videojuegos, del catálogo o de NexPlay (trivia, tareas, datos
+  personales, otros temas), no la contestes aunque sepas la respuesta: di que solo hablas
+  de los juegos del catálogo y ofrece filtrarlo por género, precio o riesgo.
+- Nunca digas que un juego es el mejor, que encabeza el catálogo, que es el número uno ni
+  el más recomendable. Si piden "el mejor", ofrece ordenar por precio, riesgo o crítica y
+  pregunta por cuál; ordenar por un criterio que ya dieron sí se vale.
+- Si dices cuántos juegos cumplen algo, nombra todos los que muestras; si no caben, di
+  cuántos más hay ("y 2 más en Explorar").
+- "Horas típicas" son las horas que llevaba jugadas, en la mediana, quien recomendó el
+  juego. No es lo que dura: dilo así si preguntan cuánto dura.
 - Cuando venga al caso, nombra las fortalezas y las debilidades del juego, siempre salidas
   de los datos: la nota de la crítica o su ausencia, el riesgo, el precio frente al
   catálogo y los motivos más mencionados. No opines por tu cuenta ni inventes otras.
@@ -175,6 +186,8 @@ _BANDA = (
     (re.compile(r"\b[Bb]andas?\b"), lambda m: "riesgo" if m.group(0)[0] == "b" else "Riesgo"),
     (re.compile(r"\b([Rr]iesgo) (alta|baja|media)\b"), lambda m: f"{m.group(1)} {_MASCULINO[m.group(2)]}"),
     (re.compile(r"\b([Rr]iesgo[^.]{0,40}?) es (alta|baja|media)\b"), lambda m: f"{m.group(1)} es {_MASCULINO[m.group(2)]}"),
+    # «¿Cuál es la tasa de abandono?»: el modelo repetía la palabra de la pregunta.
+    (re.compile(r"\b([Aa])bandono\b"), lambda m: "arrepentimiento temprano" if m.group(1) == "a" else "Arrepentimiento temprano"),
 )
 
 
@@ -184,7 +197,8 @@ def palabras(texto: str) -> int:
 
 
 def pulir(texto: str) -> str:
-    """Lo que el prompt pide y a veces no se cumple: sin "banda" y con 3 emojis como máximo."""
+    """Lo que el prompt pide y a veces no se cumple: sin "banda" ni "abandono" y con 3 emojis
+    como máximo."""
     for patron, reemplazo in _BANDA:
         texto = patron.sub(reemplazo, texto)
     vistos = 0
@@ -238,7 +252,16 @@ def contexto(appid: int) -> dict:
         # Las reseñas sobre las que se calcula cada porcentaje de motivo, no las
         # analizadas: la misma cuenta que hace clasificadas() en ficha/motivos-barras.ts.
         "clasificadas": round(explicacion["n_casos"] * explicacion["pct_clasificados"]),
+        # Las de «Horas típicas» en la ficha técnica: mediana de horas de quien lo recomendó.
+        "horas_tipicas": _horas_tipicas(appid),
     }
+
+
+def _horas_tipicas(appid: int) -> float | None:
+    from . import panorama  # aquí y no arriba: panorama carga el catálogo al importarse
+
+    fila = next((f for f in panorama.resumen().por_juego if f.appid == appid), None)
+    return fila.horas_al_recomendar if fila else None
 
 
 def _texto_precio(datos: dict) -> str:
@@ -372,6 +395,8 @@ def _variantes_del_nombre(nombre: str) -> list[str]:
     """El nombre completo y su primera parte, normalizados; descarta lo muy corto."""
     limpio = _sin_acentos(nombre.replace("™", "").replace("®", "")).strip()
     variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
+    # "The Sims 4" también se escribe "Los Sims 4": vale sin el artículo del principio.
+    variantes |= {v[4:] for v in variantes if v.startswith("the ")}
     # "baldurs gate 3" también es Baldur's Gate 3: casi nadie escribe el apóstrofo.
     variantes |= {v.replace("'", "").replace("’", "") for v in variantes}
     return [v for v in variantes if len(v) >= 4]
@@ -413,6 +438,8 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
         f"Crítica: {_texto_critica(datos)}",
         f"Precio: {_texto_precio(datos)}",
         f"Lanzamiento: {datos['lanzamiento'] or 'sin dato'}",
+        "Horas típicas (mediana de horas jugadas de quien lo recomendó; no es lo que dura): "
+        + (f"{datos['horas_tipicas']:g} h" if datos.get("horas_tipicas") is not None else "sin dato"),
         f"Reseñas de arrepentimiento temprano analizadas: {datos['n_casos']}"
         f" ({datos['pct_clasificados']:.0%} mencionan algún motivo)",
         f"Reseñas clasificadas, sobre las que se calcula cada porcentaje de motivo: {datos['clasificadas']}",
@@ -525,17 +552,20 @@ def _crear_con_reintentos(cliente, conversacion: list[dict], herramientas_dispon
 # ronda van en paralelo, así que comparar cuatro juegos gasta una ronda, no cuatro.
 _MAXIMO_RONDAS = 3
 
-# Cuánto del hilo llega al modelo, contando desde lo más reciente. Con las últimas cuatro
-# vueltas, "resume lo que me dijiste" no alcanzaba lo del principio; con todo, una charla
-# larga pesa más que la pregunta. 8,000 caracteres son unos 2,000 tokens.
+# Cuánto del hilo llega al modelo, contando desde lo más reciente: los últimos 10 turnos
+# (pregunta y respuesta) y, dentro de eso, hasta 8,000 caracteres, unos 2,000 tokens. El
+# resumen de toda la conversación ya no pasa por el modelo (lo hacen las reglas con el hilo
+# entero), así que no hace falta mandarle más; y un historial fabricado no llega completo.
 MAXIMO_CARACTERES_DE_HISTORIAL = 8000
+MAXIMO_TURNOS_AL_MODELO = 10
+MAXIMO_CARACTERES_POR_MENSAJE_DE_NIA = MAXIMO_RESPUESTA
 
 
 def historial_para_el_modelo(mensajes: list[MensajeChat]) -> list[MensajeChat]:
-    """Los mensajes más recientes que caben en el tope; la pregunta nueva siempre entra."""
+    """Los mensajes más recientes que caben en los topes; la pregunta nueva siempre entra."""
     elegidos: list[MensajeChat] = []
     usados = 0
-    for mensaje in reversed(mensajes):
+    for mensaje in reversed(mensajes[-(2 * MAXIMO_TURNOS_AL_MODELO + 1):]):
         if elegidos and usados + len(mensaje.contenido) > MAXIMO_CARACTERES_DE_HISTORIAL:
             break
         elegidos.insert(0, mensaje)
@@ -606,7 +636,17 @@ def _preguntar_a_openai(
         for mensaje in historial_para_el_modelo(mensajes)
     ]
 
-    salida_final = {"texto": "", "pasos": [], "appids": set(), "sugerencias": [], "pide_juego": False, "pide_perfil": False}
+    if ya_explico_la_senal(mensajes):
+        conversacion.append({
+            "role": "system",
+            "content": "En esta conversación ya explicaste qué es la señal y que es una proxy: no lo repitas,"
+                       " salvo que te pregunten qué significa.",
+        })
+
+    salida_final = {
+        "texto": "", "pasos": [], "appids": set(), "orden": [], "sugerencias": [], "pide_juego": False,
+        "pide_perfil": False,
+    }
     esquemas = herramientas.ESQUEMAS + _ESQUEMAS_DE_LA_SOLICITUD
     for ronda in range(_MAXIMO_RONDAS):
         # En la última vuelta se le quitan las herramientas: así cierra con lo que tiene
@@ -648,6 +688,9 @@ def _preguntar_a_openai(
                 if paso not in salida_final["pasos"]:
                     salida_final["pasos"].append(paso)
                 salida_final["appids"] |= herramientas.appids_de(salida)
+                for juego in salida.get("juegos", []) if isinstance(salida.get("juegos"), list) else []:
+                    if isinstance(juego, dict) and juego.get("appid") not in salida_final["orden"]:
+                        salida_final["orden"].append(juego.get("appid"))
             conversacion.append({
                 "role": "tool",
                 "tool_call_id": llamada.id,
@@ -670,16 +713,30 @@ def _contexto_del_catalogo() -> str:
     )
 
 
-def _juegos_para_tarjeta(texto: str, permitidos: set[int], appid: int | None) -> list[int]:
+# "Hay 7 juegos gratis", "son 3": cuántos dice la respuesta que cumplen.
+_CANTIDAD = re.compile(r"\b(?:hay|son|encontre|tengo)\s+(\d{1,3})\b|\b(\d{1,3})\s+(?:juegos|gratuitos|gratis|titulos)\b")
+
+
+def _juegos_para_tarjeta(
+    texto: str, permitidos: set[int], appid: int | None, orden: list[int] | None = None
+) -> list[int]:
     """Los appids que la respuesta puede pintar como tarjeta.
 
     Dos filtros, y los dos hacen falta: el juego tiene que estar en el catálogo y tiene
     que habérselo devuelto una herramienta en este turno. Lo que el modelo nombre de
-    memoria no se pinta, aunque exista."""
+    memoria no se pinta, aunque exista.
+
+    Si la respuesta dice cuántos son («hay 7 gratis») y la herramienta los devolvió todos,
+    salen todos aunque alguno venga nombrado de otra forma («Los Sims 4»): antes decía 7 y
+    pintaba 6."""
     nombrados = juegos_del_catalogo_mencionados(texto, appid or 0)
     por_nombre = {j.nombre: j.appid for j in catalogo.buscar()}
-    appids = [por_nombre[nombre] for nombre in nombrados if nombre in por_nombre]
-    return [a for a in appids if a in permitidos]
+    appids = [a for a in (por_nombre[n] for n in nombrados if n in por_nombre) if a in permitidos]
+    cantidad = next((int(g) for m in _CANTIDAD.finditer(_sin_acentos(texto)) for g in m.groups() if g), None)
+    disponibles = [a for a in (orden or []) if a in permitidos and a != appid]
+    if cantidad and len(appids) < cantidad <= len(disponibles):
+        appids += [a for a in disponibles if a not in appids][: cantidad - len(appids)]
+    return appids
 
 
 def _con_constancia(salida: dict, appid: int | None, usuario: str, pregunta: str) -> dict:
@@ -727,14 +784,16 @@ def responder(
     # para que el modelo no adivine de cuál se habla.
     if reglas.necesita_juego(ultima, mensajes, appid):
         pedido = reglas.responder(datos, appid, mensajes, sugerencias)
-        modo = "openai" if configuracion.hay_openai else "demostracion"
+        # Sin modelo de por medio: no se marca «Con IA», y pedir el juego no es salirse del tema.
+        modo = "reglas" if configuracion.hay_openai else "demostracion"
         return _con_constancia(
             {
                 "respuesta": pedido["texto"],
                 "modo": modo,
-                "modelo": configuracion.nexplay_modelo_nia if modo == "openai" else None,
-                "aviso": None if modo == "openai" else _AVISO_DEMOSTRACION,
+                "modelo": None,
+                "aviso": None if modo == "reglas" else _AVISO_DEMOSTRACION,
                 "pide_juego": True,
+                "fuera_de_tema": False,
             },
             appid, usuario, ultima,
         )
@@ -743,10 +802,13 @@ def responder(
         logger.info("sin clave de OpenAI configurada; appid=%s responde en modo demostración", appid)
         return _de_reglas(datos, appid, mensajes, sugerencias, usuario, ultima, _AVISO_DEMOSTRACION)
 
+    if _por_reglas_aunque_haya_modelo(datos, appid, mensajes, sugerencias, ultima):
+        return _de_reglas(datos, appid, mensajes, sugerencias, usuario, ultima, None, modo="reglas")
+
     try:
         salida = _preguntar_a_openai(datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid or 0), sugerencias)
         if salida["texto"] or salida["pide_juego"] or salida["pide_perfil"]:
-            texto = pulir(salida["texto"]) or (
+            texto = ajustar_largo(sin_descargo_repetido(pulir(salida["texto"]), mensajes, ultima)) or (
                 "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
                 else "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?"
             )
@@ -757,11 +819,14 @@ def responder(
                     "modelo": configuracion.nexplay_modelo_nia,
                     "aviso": None,
                     "pasos": salida["pasos"],
-                    "juegos": _juegos_para_tarjeta(texto, salida["appids"], appid),
+                    "juegos": _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"]),
                     "sugerencias": salida["sugerencias"],
                     "pide_juego": salida["pide_juego"],
                     "pide_perfil": salida["pide_perfil"],
-                    "fuera_de_tema": reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias),
+                    # Lo que no es de juegos ya se contestó con reglas antes de llegar aquí: una
+                    # respuesta del modelo no lleva el aviso de tema. Las reglas no entienden
+                    # «¿Cyberpunk vale lo que cuesta?» y lo marcaban fuera de tema.
+                    "fuera_de_tema": False,
                 },
                 appid, usuario, ultima,
             )
@@ -789,6 +854,73 @@ _AVISO_DEMOSTRACION = (
 )
 
 
+def _por_reglas_aunque_haya_modelo(
+    datos: dict | None, appid: int | None, mensajes: list[MensajeChat], sugerencias: list[SugerenciaNia], ultima: str
+) -> bool:
+    """Lo que se contesta con reglas aunque haya modelo, porque la respuesta tiene que ser
+    siempre la misma y el prompt no lo garantiza: el resumen (de todas las respuestas del
+    hilo, no de la última), "el mejor" (no se corona a nadie), lo que no es de juegos (el
+    modelo contestaba la trivia) y «¿qué tal X?» o «¿se parece a X?» con un X que no está en
+    el catálogo (el modelo a veces se saltaba el «no está en este catálogo»)."""
+    return (
+        reglas.pide_resumen(ultima)
+        or reglas.pide_el_mejor(ultima)
+        or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias))
+        or reglas.fuera_del_catalogo(ultima, datos) is not None
+    )
+
+
+# El descargo de la señal: "es una proxy", "no confirma que alguien se arrepintiera".
+_DESCARGO = re.compile(r"proxy|no confirma|no sabemos si|no se sabe si|no s[eé] si alguien", re.IGNORECASE)
+_PREGUNTA_POR_LA_SENAL = (
+    "que significa", "que es la senal", "que es esa senal", "que quiere decir", "proxy", "como se calcula",
+    "de donde sale", "metodologia",
+)
+# Fin de oración: el punto seguido de mayúscula, ¿ o ¡, o un emoji. «(93 vs. 87)» no corta.
+_FIN_DE_ORACION = re.compile(
+    r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡\U0001F000-\U0001FAFF])|(?<=[\U0001F000-\U0001FAFF\u2600-\u27BF\ufe0f])\s+"
+)
+
+
+def _oraciones(texto: str) -> list[str]:
+    return [o for o in _FIN_DE_ORACION.split(texto.strip()) if o]
+
+
+def ya_explico_la_senal(mensajes: list[MensajeChat]) -> bool:
+    return any(m.rol == "nia" and _DESCARGO.search(m.contenido) for m in mensajes[:-1])
+
+
+def sin_descargo_repetido(texto: str, mensajes: list[MensajeChat], ultima: str) -> str:
+    """El descargo sale la primera vez o cuando preguntan qué significa; después, fuera."""
+    if not ya_explico_la_senal(mensajes) or reglas._dice(_sin_acentos(ultima), *_PREGUNTA_POR_LA_SENAL):
+        return texto
+    quedan = [o for o in _oraciones(texto) if not _DESCARGO.search(o)]
+    return " ".join(quedan) if quedan else texto
+
+
+MAXIMO_PALABRAS = 60
+
+
+def ajustar_largo(texto: str, maximo: int = MAXIMO_PALABRAS) -> str:
+    """Hasta `maximo` palabras sin perder la pregunta del final: se quitan oraciones de en
+    medio, no se corta el remate."""
+    if palabras(texto) <= maximo:
+        return texto
+    oraciones = _oraciones(texto)
+    ultima = oraciones[-1]
+    cierre = ultima if EMOJI.sub("", ultima).rstrip().endswith("?") else ""
+    cuerpo = oraciones[:-1] if cierre else oraciones
+    elegidas: list[str] = []
+    for oracion in cuerpo:
+        if palabras(" ".join([*elegidas, oracion, cierre])) > maximo:
+            break
+        elegidas.append(oracion)
+    if not elegidas:
+        cabe = max(5, maximo - palabras(cierre))
+        elegidas = [" ".join(cuerpo[0].split()[:cabe]).rstrip(",;:") + "…"]
+    return " ".join([*elegidas, cierre]).strip()
+
+
 def _de_reglas(
     datos: dict | None,
     appid: int | None,
@@ -796,13 +928,14 @@ def _de_reglas(
     sugerencias: list[SugerenciaNia],
     usuario: str,
     ultima: str,
-    aviso: str,
+    aviso: str | None,
+    modo: str = "demostracion",
 ) -> dict:
     resultado = reglas.responder(datos, appid, mensajes, sugerencias)
     return _con_constancia(
         {
             "respuesta": pulir(resultado["texto"]),
-            "modo": "demostracion",
+            "modo": modo,
             "modelo": None,
             "aviso": aviso,
             "juegos": resultado["juegos"],

@@ -236,9 +236,11 @@ class ReaccionComentario(BaseModel):
 
 #: Lo que escribe la persona. Es el límite que importa: acota costo y abuso.
 MAXIMO_PREGUNTA = 500
-#: Lo que respondió Nia y vuelve en el historial. Con max_tokens=400 una respuesta pasa
-#: holgadamente de 500 caracteres, y con el tope anterior rompía la pregunta siguiente.
-MAXIMO_RESPUESTA = 4000
+#: Lo que respondió Nia y vuelve en el historial. Sus respuestas son de 60 palabras o menos
+#: (api/nia.py, ajustar_largo), unos 450 caracteres; con 500 de tope una larga rompía la
+#: pregunta siguiente, y con 4,000 cualquiera podía fabricar un historial de 40 «respuestas»
+#: enormes para que lo mandáramos al modelo.
+MAXIMO_RESPUESTA = 1500
 
 
 class MensajeChat(BaseModel):
@@ -252,8 +254,8 @@ class MensajeChat(BaseModel):
         return self
 
 
-#: Mensajes del hilo que acepta /nia: la conversación entera, para que Nia pueda resumir y
-#: retomar. Lo que llega al modelo se recorta además por caracteres (api/nia.py).
+#: Mensajes del hilo que acepta /nia: la conversación entera, para que las reglas puedan
+#: resumirla. Al modelo llegan solo los últimos turnos, con tope de caracteres (api/nia.py).
 MAXIMO_MENSAJES_NIA = 40
 
 
@@ -294,7 +296,9 @@ class SolicitudNia(BaseModel):
 
 class RespuestaNia(BaseModel):
     respuesta: str
-    modo: Literal["openai", "demostracion"]
+    # "reglas": hay modelo configurado pero esta respuesta no lo usó (pedir el juego, el
+    # resumen, "el mejor", una pregunta que no es de juegos). No se muestra como «Con IA».
+    modo: Literal["openai", "demostracion", "reglas"]
     modelo: Optional[str] = Field(None, description="Modelo usado; None en modo demostración")
     aviso: Optional[str] = Field(None, description="Qué mostrar cuando la respuesta no vino del modelo")
     id: str = Field(..., description="Identifica esta respuesta para poder votarla")
