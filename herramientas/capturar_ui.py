@@ -1322,6 +1322,10 @@ def _angular_6f(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
                 problemas.append(f"la pregunta reenviada no es la pendiente o va repetida ({preguntas})")
             if len(enviados[1]["mensajes"]) != 3:
                 problemas.append(f"la segunda pregunta no llevó el hilo ({len(enviados[1]['mensajes'])} mensajes)")
+            # Con el juego ya elegido la pendiente viaja sola: el hilo de antes («los de
+            # acción…») hacía que Nia volviera a preguntar de cuál se hablaba.
+            if len(ultimo) != 1:
+                problemas.append(f"al elegir el juego, la pregunta pendiente viajó con el hilo anterior ({len(ultimo)} mensajes)")
         if any("perfil" in cuerpo for cuerpo in enviados):
             problemas.append("/nia todavía recibe el perfil")
         if "appid=1145360" not in otra.url or not otra.get_by_test_id("nia-juego").count():
@@ -1330,7 +1334,7 @@ def _angular_6f(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
             problemas.append("elegir el juego borró o duplicó la conversación")
         if len(problemas) == n_antes:
             print(f"nia:      sin juego pide uno con contorno punteado; al elegir Hades la pregunta viaja con su appid, "
-                  f"una sola vez, con el hilo y sin perfil ({(destino / 'nia-pide-juego.png').relative_to(_RAIZ)})")
+                  f"una sola vez, sin el hilo anterior y sin perfil ({(destino / 'nia-pide-juego.png').relative_to(_RAIZ)})")
     except TiempoAgotado as error:
         problemas.append(f"la 6F no terminó de cargar: {str(error).splitlines()[0]}")
     finally:

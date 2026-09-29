@@ -124,7 +124,7 @@ interface Extra {
               <p class="pasos meta" data-testid="nia-pasos">{{ extra!.pasos!.join(' · ') }}</p>
             }
             <p class="texto">{{ mensaje.contenido }}</p>
-            @if (extra?.fueraDeTema) {
+            @if (extra?.fueraDeTema && !extra?.pideJuego) {
               <p class="aviso-tema" data-testid="nia-aviso-tema">
                 Solo hablo de los juegos del catálogo y no te digo si comprarlos o no. No escribas datos
                 personales: tus preguntas se guardan {{ diasQueSeGuarda }} días.
@@ -241,7 +241,7 @@ interface Extra {
         <span class="meta mono">{{ texto().length }}/{{ maximo }}</span>
         @if (modo()) {
           <span class="modo" data-testid="nia-modo" [attr.data-modo]="modo()">
-            {{ modo() === 'openai' ? 'Con IA' : 'Sin IA · demostración' }}
+            {{ modo() === 'openai' ? 'Con IA' : modo() === 'reglas' ? 'Sin IA' : 'Sin IA · demostración' }}
           </span>
         }
       </div>
@@ -608,7 +608,7 @@ export class Nia {
   protected readonly mensajes = signal<MensajeChat[]>([]);
   protected readonly extras = signal<Record<number, Extra>>({});
   /** '' hasta la primera respuesta: entonces se sabe si contestó el modelo o las reglas. */
-  protected readonly modo = signal<'' | 'openai' | 'demostracion'>('');
+  protected readonly modo = signal<'' | 'openai' | 'demostracion' | 'reglas'>('');
   /** Mientras espera, el texto cambia: a los cuatro segundos deja de ser "escribiendo". */
   protected readonly progreso = signal('Escribiendo…');
   private relojProgreso?: ReturnType<typeof setTimeout>;
@@ -764,8 +764,9 @@ export class Nia {
       this.agregar({ rol: 'nia', contenido: saludoDeJuego(juego.nombre, juego.banda_riesgo) });
       return;
     }
-    const hastaLaPregunta = anteriores.slice(0, anteriores.lastIndexOf(pendiente) + 1);
-    this.consultar(hastaLaPregunta, pendiente.contenido);
+    // Sola, con el juego elegido: con el hilo de antes («los 7 gratis…»), Nia volvía a
+    // preguntar «¿de cuál de esos hablas?» en vez de contestar.
+    this.consultar([pendiente], pendiente.contenido);
   }
 
   preguntar(pregunta: string): void {

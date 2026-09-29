@@ -189,7 +189,8 @@ export interface SolicitudNia {
 export interface RespuestaNia {
   respuesta: string;
   /** 'demostracion' = armada con reglas sobre los datos, sin modelo de lenguaje. */
-  modo: 'openai' | 'demostracion';
+  /** 'reglas': hay modelo, pero esta respuesta no lo usó (pedir el juego, resumir…). */
+  modo: 'openai' | 'demostracion' | 'reglas';
   modelo: string | null;
   aviso: string | null;
   /** Identifica esta respuesta para poder votarla. */
