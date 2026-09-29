@@ -158,6 +158,9 @@ def _oraciones_de(texto: str) -> list[str]:
     return [o for o in oraciones if o and not o.endswith("?") and len(o.split()) >= 2]
 
 
+_TOPE_DURO = 50
+
+
 def _primera_clausula(oracion: str) -> str:
     """Lo que dice la oración sin su detalle: antes de los dos puntos («Hay 7 gratis: A, B…»)
     o, si no los hay, antes de la primera coma o punto y coma. Si eso queda en menos de tres
@@ -188,8 +191,11 @@ def _resumen(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
     comprimido = cuenta(elegidas) > tope
     if comprimido:
         elegidas = [[_primera_clausula(g[0])] for g in elegidas]
-    if cuenta(elegidas) > tope:
-        cada_una = max(3, tope // len(elegidas))
+    # Sin frases cortadas: si las cláusulas completas pasan del tope pero caben en la
+    # respuesta (50 palabras más el arranque y el remate), se quedan enteras aunque el
+    # «más corto» no salga más corto. Solo una conversación muy larga se recorta a palabras.
+    if cuenta(elegidas) > _TOPE_DURO:
+        cada_una = max(3, _TOPE_DURO // len(elegidas))
         elegidas = [[_recortar_palabras(g[0], cada_una)] for g in elegidas]
     elif not comprimido:
         # Con lugar de sobra, las oraciones siguientes de cada respuesta, por turnos.
