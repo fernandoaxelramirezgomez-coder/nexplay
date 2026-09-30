@@ -39,6 +39,18 @@ describe('FactoresModelo', () => {
     expect(limpio(cobertura.querySelector('[data-testid="factor-evidencia"]'))).toBe('Evidencia sólida');
   });
 
+  it('en un juego gratis, «Es gratis» es un solo factor con su evidencia débil; la extrapolación va en el veredicto', () => {
+    const [gratis] = montar([
+      factor('gratuidad del juego', { valor_relativo: 'alto', direccion: 'reduce', contribucion: -0.58, evidencia: 'debil' }),
+    ]);
+    expect(limpio(gratis.querySelector('.etiqueta'))).toBe('Es gratis');
+    expect(gratis.dataset['direccion']).toBe('reduce');
+    expect(limpio(gratis.querySelector('[data-testid="factor-evidencia"]'))).toBe(
+      'Evidencia débil: con 83 juegos no se distingue de cero',
+    );
+    expect(gratis.textContent).not.toContain('extrapola');
+  });
+
   it('un factor cerca de lo típico va sin flecha de subir ni bajar (Cyberpunk: 86 contra 85.5)', () => {
     const [nota] = montar([
       factor('nota de Metacritic', { valor: 86, referencia: 85.5, cerca_de_lo_tipico: true, contribucion: 0.055 }),

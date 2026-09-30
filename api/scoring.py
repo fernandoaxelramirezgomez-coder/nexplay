@@ -213,14 +213,24 @@ def _factores_prediccion(X: pd.DataFrame, juego: dict) -> list[FactorPrediccion]
     regresión logística por el valor ya estandarizado (mismo StandardScaler
     del pipeline), que es lo que la regresión logística realmente suma.
     Se devuelven las tres de mayor magnitud absoluta, en ese orden: el primero es siempre el
-    que más aporta, aunque sea de evidencia débil o describa un precio que falta."""
+    que más aporta, aunque sea de evidencia débil o describa un precio que falta.
+
+    En un juego gratis, la gratuidad y el precio (0) dicen lo mismo y tiran en sentidos
+    opuestos: se muestran como un solo factor, la gratuidad, con los dos aportes sumados. Que
+    el modelo extrapola en los gratis lo dice el aviso del veredicto, no el factor."""
     escalador = _PIPELINE.named_steps["escalar"]
     clf = _PIPELINE.named_steps["clf"]
     valores_estandarizados = escalador.transform(X)[0]
-    contribuciones = clf.coef_[0] * valores_estandarizados
+    contribuciones = dict(zip(_FEATURES, clf.coef_[0] * valores_estandarizados))
+    gratis = bool(juego["es_gratis"])
+    if gratis:
+        contribuciones["es_gratis"] += contribuciones.pop("log_precio_final")
 
     factores = []
-    for feature, valor_estandarizado, contribucion in zip(_FEATURES, valores_estandarizados, contribuciones):
+    for feature, valor_estandarizado in zip(_FEATURES, valores_estandarizados):
+        if feature not in contribuciones:
+            continue
+        contribucion = contribuciones[feature]
         lectura = _lectura_contra_el_catalogo(feature, juego, valor_estandarizado)
         factores.append(
             FactorPrediccion(

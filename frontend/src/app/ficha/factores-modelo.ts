@@ -6,7 +6,8 @@ import { TEXTO_TIPICO, lecturaDeJugador, textoEvidencia } from '../dominio/facto
 /** Cada factor en el orden en que más aporta según el modelo, con una flecha según suba o
  * baje el riesgo. Un factor cerca de lo típico va sin flecha: casi no mueve la estimación, y
  * una flecha ahí podía contradecir la cifra (una nota de 86 sobre un promedio de 85.5 que el
- * modelo lee por debajo de su media). Cada uno dice su nivel de evidencia. Lo usan la ficha y
+ * modelo lee por debajo de su media). Cada uno dice su nivel de evidencia. En los gratis,
+ * «Es gratis» es un solo factor (la API suma gratuidad y precio). Lo usan la ficha y
  * Comparar. */
 @Component({
   selector: 'app-factores-modelo',

@@ -4009,12 +4009,19 @@ def _explicar_el_riesgo(pagina: Page, url: str, destino: Path, api: str) -> list
     avisos = _avisos_de_la_ficha(pagina)
     if "extrapola" not in avisos.get("gratis_extrapola", ""):
         problemas.append(f"Apex Legends: falta la nota de extrapolación de los gratis ({avisos})")
-    if not any(f["evidencia"].startswith("Evidencia débil") for f in factores):
-        problemas.append(f"Apex Legends: ningún factor dice evidencia débil ({factores})")
+    # Un solo factor «Es gratis» (gratuidad y precio sumados), con evidencia débil; separados,
+    # «Precio: gratis» bajaba y «Es gratis» subía. La extrapolación va solo en el veredicto.
+    gratis = [f for f in factores if f["texto"] == "Es gratis"]
+    if any(f["texto"].startswith("Precio") for f in factores) or len(gratis) != 1:
+        problemas.append(f"Apex Legends: no sale un solo factor «Es gratis» ({[f['texto'] for f in factores]})")
+    elif not gratis[0]["evidencia"].startswith("Evidencia débil"):
+        problemas.append(f"Apex Legends: «Es gratis» sin evidencia débil ({gratis[0]})")
+    if "extrapola" in pagina.get_by_test_id("factores-lista").inner_text():
+        problemas.append("Apex Legends: la extrapolación sale en los factores; va solo en el veredicto")
     _esperar_quietud(pagina)
     pagina.screenshot(path=destino / "ficha-apex-gratis.png", full_page=True)
     problemas += _revisar_vocabulario(pagina, "ficha de Apex Legends")
-    print(f"gratis:   Apex Legends · {avisos.get('gratis_extrapola', '—')}")
+    print(f"gratis:   Apex Legends · {' · '.join(f['texto'] for f in factores)} · aviso: {avisos.get('gratis_extrapola', '—')}")
 
     factores = _factores_de_la_ficha(pagina, url, _CYBERPUNK)
     nota = next((f for f in factores if f["texto"].startswith("Nota de Metacritic")), None)
@@ -4031,8 +4038,13 @@ def _explicar_el_riesgo(pagina: Page, url: str, destino: Path, api: str) -> list
 
     # Comparar: los mismos factores y los mismos avisos que la ficha.
     _abrir(pagina, f"{base}/comparar?appids={_GTA_LEGACY},{_APEX},{_CYBERPUNK}")
+    # Cada columna con sus factores: avisos y factores llegan en la misma predicción. Contar
+    # 6 factores en total dejaba leer los avisos antes de que llegara la tercera columna.
     pagina.wait_for_function(
-        "() => document.querySelectorAll(\"[data-testid='columna-comparar'] [data-testid='factor']\").length >= 6",
+        """() => {
+            const columnas = [...document.querySelectorAll("[data-testid='columna-comparar']")];
+            return columnas.length === 3 && columnas.every((c) => c.querySelector("[data-testid='factor']"));
+        }""",
         timeout=_TIMEOUT_MS,
     )
     codigos = sorted(pagina.locator("[data-testid='columna-aviso']").evaluate_all("ps => ps.map(p => p.dataset.codigo)"))

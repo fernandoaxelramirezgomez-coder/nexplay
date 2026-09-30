@@ -13,13 +13,19 @@
 7. `cerca_de_lo_tipico` coincide con |aporte| < scoring.UMBRAL_TIPICO. Imprime cuántos juegos
    caen en la banda por factor.
 8. Ningún texto del sitio dice «no con sus reseñas»: el modelo sí se entrenó con reseñas.
+9. En los juegos gratis, la gratuidad y el precio (0) salen como un solo factor, «gratuidad
+   del juego» («Es gratis»): ningún factor de precio, su aporte es la suma de los dos que
+   calcula el modelo y lleva evidencia débil. Separados parecían contradecirse («Precio:
+   gratis» baja y «Es gratis» sube). La extrapolación no va en el factor: va en el aviso del
+   veredicto, que sigue siendo obligatorio en los 7, igual que el de GTA V Legacy.
 
 Es la puerta de aceptación de la ronda «explicar el riesgo»
 (docs/plan/mejoras/01-antes-del-reembolso.md, «Aparte»). La interfaz la cubren los specs de
 frontend/src/app/dominio/factores.ts y calidad/capturar_ui.py.
 
 El aporte se calcula aquí por separado —coeficiente × valor estandarizado, con el pipeline
-del artefacto— para no fiarse del orden que manda la API.
+del artefacto— para no fiarse del orden que manda la API. En los gratis, la gratuidad y el
+precio también se suman aquí, por su cuenta.
 
 Uso, desde la raíz:
     python calidad/verificar_factores.py        # sale 1 si algún chequeo falla
@@ -76,13 +82,41 @@ def _textos_con_la_frase_prohibida() -> list[tuple[str, str]]:
     return encontrados
 
 
-def _mayor_aporte(appid: int) -> str:
-    X = scoring._construir_features(scoring._PERFIL_NEUTRO, appid)
+def _aportes(juego) -> dict[str, float]:
+    """El aporte de cada variable, por etiqueta. En un juego gratis, gratuidad y precio suman
+    uno solo, como los muestra la API."""
+    X = scoring._construir_features(scoring._PERFIL_NEUTRO, juego.appid)
     escalador = scoring._PIPELINE.named_steps["escalar"]
     coeficientes = scoring._PIPELINE.named_steps["clf"].coef_[0]
-    aportes = coeficientes * escalador.transform(X)[0]
-    variable = scoring._FEATURES[int(abs(aportes).argmax())]
-    return scoring._ETIQUETAS_FEATURES[variable]
+    aportes = dict(zip(scoring._FEATURES, coeficientes * escalador.transform(X)[0]))
+    if juego.es_gratis:
+        aportes["es_gratis"] += aportes.pop("log_precio_final")
+    return {scoring._ETIQUETAS_FEATURES[variable]: float(aporte) for variable, aporte in aportes.items()}
+
+
+def _mayor_aporte(aportes: dict[str, float]) -> str:
+    return max(aportes, key=lambda etiqueta: abs(aportes[etiqueta]))
+
+
+def _un_solo_factor_gratis(factores, aportes: dict[str, float], codigos: set[str] | None) -> str | None:
+    """Qué le falta al factor único de un juego gratis, o None si está bien."""
+    if any(f.etiqueta == "precio del juego" for f in factores):
+        return "trae también un factor de precio"
+    gratuidad = [f for f in factores if f.etiqueta == "gratuidad del juego"]
+    if not gratuidad:
+        return "no trae el factor «Es gratis» entre los que se muestran"
+    factor = gratuidad[0]
+    if abs(factor.contribucion - aportes["gratuidad del juego"]) > 1e-3:
+        return f"aporte {factor.contribucion:+.4f}, la suma de gratuidad y precio es {aportes['gratuidad del juego']:+.4f}"
+    if factor.valor_relativo.value != "alto":
+        return "no se lee como «Es gratis»"
+    if getattr(factor.evidencia, "value", None) != "debil":
+        return "no lleva evidencia débil"
+    if getattr(factor, "nota", None):
+        return "la extrapolación va en el aviso del veredicto, no en el factor"
+    if codigos is None or "gratis_extrapola" not in codigos:
+        return "falta el aviso de extrapolación en el veredicto"
+    return None
 
 
 def _codigos_de_aviso(prediccion) -> set[str] | None:
@@ -93,17 +127,19 @@ def _codigos_de_aviso(prediccion) -> set[str] | None:
 
 
 EN_LA_BANDA: collections.Counter = collections.Counter()
+GRATIS_REVISADOS: list[str] = []
 
 
 def revisar() -> dict[str, list[tuple[str, str]]]:
     """Por chequeo, los juegos que lo rompen, cada uno con el detalle."""
     fallas = {nombre: [] for nombre in ("1 · primer factor", "2 · evidencia débil", "3 · evidencia sólida",
                                          "4 · aviso de gratis", "5 · precio imputado", "6 · flecha contra la cifra",
-                                         "7 · banda neutral", "8 · «no con sus reseñas»")}
+                                         "7 · banda neutral", "8 · «no con sus reseñas»", "9 · un solo factor gratis")}
     for juego in catalogo.buscar():
         prediccion = scoring.prediccion_de_titulo(juego.appid)
         factores = prediccion.factores
-        esperado = _mayor_aporte(juego.appid)
+        aportes = _aportes(juego)
+        esperado = _mayor_aporte(aportes)
         if not factores or factores[0].etiqueta != esperado:
             fallas["1 · primer factor"].append((juego.nombre, f"sale {factores[0].etiqueta if factores else 'nada'}, "
                                                                 f"el mayor aporte es {esperado}"))
@@ -128,6 +164,10 @@ def revisar() -> dict[str, list[tuple[str, str]]]:
                 fallas["5 · precio imputado"].append((juego.nombre, "sin campo avisos" if codigos is None else "sin el aviso"))
             if not any(f.etiqueta == "precio del juego" and getattr(f, "imputado", False) for f in factores):
                 fallas["5 · precio imputado"].append((juego.nombre, "no trae el factor de precio marcado como imputado"))
+        if juego.es_gratis:
+            GRATIS_REVISADOS.append(juego.nombre)
+            if (falta := _un_solo_factor_gratis(factores, aportes, codigos)) is not None:
+                fallas["9 · un solo factor gratis"].append((juego.nombre, falta))
     fallas["8 · «no con sus reseñas»"] = _textos_con_la_frase_prohibida()
     return fallas
 
@@ -137,7 +177,8 @@ def main() -> int:
     fallas = revisar()
     for nombre, lista in fallas.items():
         if not lista:
-            donde = f"{ARCHIVOS_REVISADOS} archivos de frontend/src y api" if nombre.startswith("8") else f"{total} juegos"
+            donde = (f"{ARCHIVOS_REVISADOS} archivos de frontend/src y api" if nombre.startswith("8")
+                     else f"{len(GRATIS_REVISADOS)} juegos gratis" if nombre.startswith("9") else f"{total} juegos")
             print(f"{nombre}: ok en los {donde}")
             continue
         juegos = {juego for juego, _ in lista}

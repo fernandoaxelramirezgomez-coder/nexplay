@@ -264,7 +264,10 @@ validación, no de un umbral de probabilidad fijo: `class_weight="balanced"` hac
 `factores`: las tres variables del modelo con mayor contribución absoluta al score
 (coeficiente × valor estandarizado), en lenguaje claro. `contribucion` está en unidades
 de log-odds — no se traduce a probabilidad ni tiene una escala intuitiva; sirve para
-comparar factores entre sí, no como número a mostrar suelto.
+comparar factores entre sí, no como número a mostrar suelto. En los juegos gratis, la
+gratuidad y el precio (0) dicen lo mismo y tiran en sentidos opuestos, así que salen como un
+solo factor, «gratuidad del juego», con los dos aportes sumados y evidencia débil. Que el
+modelo extrapola en los gratis (en el entrenamiento había solo 2) lo dice `avisos`.
 
 `nota_plataforma` viene poblada cuando el perfil declara una plataforma distinta de
 `pc`, aclarando que no existe fuente de entrenamiento propia para PlayStation/Xbox/
