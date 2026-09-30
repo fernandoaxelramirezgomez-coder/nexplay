@@ -342,6 +342,67 @@ def juego_contra_compra(df: pd.DataFrame) -> dict:
             "diferencia": compra.mean() - juego.mean(), "std_juego": juego.std()}
 
 
+def sensibilidad_a_la_particion(df: pd.DataFrame, repeticiones: int = 20) -> pd.Series:
+    """PR-AUC medio con `repeticiones` particiones GroupKFold distintas (los juegos repartidos
+    al azar entre folds). Dice cuánto se mueve el PR-AUC solo por el reparto: una diferencia
+    menor que ese rango no dice nada de los datos."""
+    X, y, grupos = construir_features(df, conjunto="juego")
+    medias = {}
+    for semilla in range(repeticiones):
+        fold = pd.Series(-1, index=df.index)
+        divisor = GroupKFold(n_splits=N_SPLITS, shuffle=True, random_state=semilla)
+        for numero, (_, validacion) in enumerate(divisor.split(X, y, groups=grupos)):
+            fold.iloc[validacion] = numero
+        medias[semilla] = pr_auc_con_particion(df, fold.groupby(df["appid"]).first()).mean()
+    return pd.Series(medias, name="PR-AUC media").rename_axis("partición")
+
+
+def _por_juego_y_senal(X: pd.DataFrame, y: pd.Series, grupos: pd.Series) -> pd.DataFrame:
+    """Dos filas por juego (con y sin señal) y cuántas reseñas representa cada una. Las
+    variables no cambian dentro de un juego, así que es el mismo conjunto, más corto."""
+    return (X.assign(y=y.to_numpy(), appid=grupos.to_numpy())
+            .groupby(["appid", "y"], as_index=False)
+            .agg(**{columna: (columna, "first") for columna in X.columns}, n=("y", "size")))
+
+
+def _coeficientes_colapsados(tabla: pd.DataFrame, columnas: list[str]) -> np.ndarray:
+    """El mismo ajuste que construir_pipeline() fila por fila: el escalador pesa cada fila por
+    las reseñas que representa y la regresión, además, por el peso de clase balanceado."""
+    positivas = tabla.loc[tabla["y"] == 1, "n"].sum()
+    negativas = tabla.loc[tabla["y"] == 0, "n"].sum()
+    total = positivas + negativas
+    peso = tabla["n"] * np.where(tabla["y"] == 1, total / (2 * positivas), total / (2 * negativas))
+    modelo = construir_pipeline().set_params(clf__class_weight=None)
+    modelo.fit(tabla[columnas], tabla["y"], escalar__sample_weight=tabla["n"], clf__sample_weight=peso)
+    return modelo.named_steps["clf"].coef_[0]
+
+
+def coeficientes_con_bootstrap(df: pd.DataFrame, repeticiones: int = 1000, semilla: int = SEMILLA) -> pd.DataFrame:
+    """Los coeficientes del modelo B+ (variables estandarizadas) con intervalo al 95 % por
+    bootstrap sobre juegos: cada réplica remuestrea appids con reemplazo, porque el juego es la
+    unidad que varía, no la reseña. `fila por fila` es el ajuste de construir_pipeline() sobre
+    todas las reseñas, para comprobar que el atajo colapsado da lo mismo."""
+    X, y, grupos = construir_features(df, conjunto="juego")
+    columnas = list(X.columns)
+    tabla = _por_juego_y_senal(X, y, grupos)
+    por_juego = {appid: filas for appid, filas in tabla.groupby("appid")}
+    appids = np.array(sorted(por_juego))
+    generador = np.random.default_rng(semilla)
+    replicas = np.array([
+        _coeficientes_colapsados(pd.concat([por_juego[a] for a in generador.choice(appids, len(appids))], ignore_index=True), columnas)
+        for _ in range(repeticiones)
+    ])
+    resultado = pd.DataFrame({
+        "coeficiente": _coeficientes_colapsados(tabla, columnas),
+        "fila por fila": construir_pipeline().fit(X, y).named_steps["clf"].coef_[0],
+        "IC 2.5 %": np.percentile(replicas, 2.5, axis=0),
+        "IC 97.5 %": np.percentile(replicas, 97.5, axis=0),
+        "réplicas > 0": (replicas > 0).mean(axis=0),
+    }, index=pd.Index(columnas, name="variable"))
+    resultado["cruza el cero"] = (resultado["IC 2.5 %"] < 0) & (resultado["IC 97.5 %"] > 0)
+    return resultado
+
+
 def _niveles(df: pd.DataFrame) -> pd.Series:
     """El nivel de cada juego como lo calcula entrenar_modelo: tercios de los scores out-of-fold."""
     X, y, grupos = construir_features(df, conjunto="juego")
