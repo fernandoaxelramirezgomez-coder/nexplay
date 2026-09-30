@@ -1,9 +1,10 @@
 """¿Dejan más señal de arrepentimiento temprano los veteranos que los novatos?
 
-El encuadre de NexPlay dice que los jugadores con biblioteca grande se arrepienten más que los
-novatos: 1.34 % contra 0.45 %. Esa cifra no tenía fuente en el repo. Este script la reproduce
-con su definición original, prerregistrada en docs/evidencia/senal-por-biblioteca.md antes de
-correrlo, y después prueba su robustez con cuartiles.
+El encuadre de NexPlay dice que los jugadores con biblioteca grande dejan más señal que los
+novatos. Este script lo mide en data-v1 con la definición prerregistrada en
+docs/evidencia/senal-por-biblioteca.md (commit 9a394e9) y después prueba su robustez con
+cuartiles. La cifra que se citaba antes venía de un corte previo a data-v1 y no se puede
+reproducir; la ficha lo explica.
 
 Definición original:
 - reseñas de data-v1 (83 juegos) con perfil público, num_games_owned > 0 (el 0 es bandera de
@@ -46,8 +47,6 @@ from entrenar_baseline import cargar_datos  # noqa: E402
 RELEASE = "data-v1"
 SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
 NOVATO_HASTA = 19
-# La cifra que se quiere reproducir: % por reseña, redondeado a dos decimales.
-ESPERADO = {"novatos": 0.45, "veteranos": 1.34}
 REPLICAS = 2000
 SEMILLA = 42
 SALIDA = RAIZ / "docs" / "evidencia" / "senal-por-biblioteca.json"
@@ -119,7 +118,6 @@ def main() -> None:
     df, privadas = resenas_publicas(args.cache)
     original = comparar(df, np.where(df["num_games_owned"] <= NOVATO_HASTA, "novatos", "veteranos"),
                         "novatos", "veteranos")
-    reproduce = all(round(original["grupos"][g]["por_resena_pct"], 2) == ESPERADO[g] for g in ESPERADO)
 
     q25, q75 = (float(v) for v in np.percentile(df["num_games_owned"], [25, 75]))
     extremos = df[(df["num_games_owned"] <= q25) | (df["num_games_owned"] > q75)].reset_index(drop=True)
@@ -135,8 +133,6 @@ def main() -> None:
         "bootstrap": {"replicas": REPLICAS, "semilla": SEMILLA, "unidad": "juego (appid), con reemplazo"},
         "original": {
             "definicion": f"novatos: 1 a {NOVATO_HASTA} juegos; veteranos: {NOVATO_HASTA + 1} o más (perfiles públicos)",
-            "esperado_por_resena_pct": ESPERADO,
-            "reproduce": reproduce,
             **original,
         },
         "robustez_cuartiles": {
@@ -154,7 +150,7 @@ def main() -> None:
               f"({gb['resenas']:,} reseñas)")
         for medida, d in bloque["diferencia_pp"].items():
             print(f"    diferencia {b} − {a} ({medida}): {d['punto']:+.2f} pp, IC 95 % [{d['ic95'][0]:+.2f}, {d['ic95'][1]:+.2f}]")
-    print(f"reproduce 0.45 % contra 1.34 %: {'sí' if reproduce else 'NO'} · cortes de los cuartiles: {q25:g} y {q75:g}")
+    print(f"cortes de los cuartiles: {q25:g} y {q75:g}")
     print(f"guardado en {SALIDA.relative_to(RAIZ)}")
 
 
