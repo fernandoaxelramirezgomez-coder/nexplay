@@ -51,6 +51,8 @@ app.add_middleware(
     allow_origins=_origenes_permitidos,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Un 429 dice cuándo volver a intentar; sin exponerlo, el navegador no deja leerlo.
+    expose_headers=["Retry-After"],
 )
 
 _UMBRAL_VETERANO_COMPRAS = 10
