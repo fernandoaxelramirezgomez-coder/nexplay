@@ -25,7 +25,7 @@ export function factoresVisibles(
  *
  * `alto` y `bajo` son la posición frente al promedio del catálogo, no un juicio.
  *
- * Las mismas frases están en `_LECTURA_FACTORES` (api/nia.py): Nia explica la banda con
+ * Las mismas frases están en `_LECTURA_FACTORES` (api/nia/agente.py): Nia explica la banda con
  * estas variables, así que las dos tablas cambian juntas o Nia contradice a la ficha. */
 const COMO_SE_LEE: Record<string, { alto: string; bajo: string }> = {
   'gratuidad del juego': { alto: 'Es gratis', bajo: 'Es de pago' },

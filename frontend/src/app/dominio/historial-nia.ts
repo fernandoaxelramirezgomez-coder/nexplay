@@ -2,7 +2,7 @@ import { MensajeChat, SugerenciaNia } from '../api/contrato';
 import { Sugerencia } from './sugerencias';
 
 /** Lo mismo que MAXIMO_MENSAJES_NIA en api/schemas.py y MAXIMO_CARACTERES_DE_HISTORIAL en
- * api/nia.py: el hilo entero para poder resumirlo, con tope para que no pese más que la
+ * api/nia/agente.py: el hilo entero para poder resumirlo, con tope para que no pese más que la
  * pregunta. */
 export const MAXIMO_MENSAJES_NIA = 40;
 export const MAXIMO_CARACTERES_NIA = 8000;

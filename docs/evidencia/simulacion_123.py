@@ -19,7 +19,7 @@ RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RAIZ / "modelado"))
 from entrenar_baseline import N_SPLITS, cargar_datos, construir_features, construir_pipeline  # noqa: E402
 
-# Las dos bases que deja herramientas/preparar_entorno.py en un entorno limpio.
+# Las dos bases que deja despliegue/preparar_entorno.py en un entorno limpio.
 CORTES = {
     "data-v1 (83)": RAIZ / "datos" / "entrenamiento" / "nexplay_data-v1.db",
     "data-v2 (123)": RAIZ / "datos" / "nexplay.db",

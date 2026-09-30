@@ -10,9 +10,9 @@ la API a la que se apunta. Contra una API sin clave de OpenAI responde el modo
 demostración.
 
 Uso:
-  .venv/bin/python herramientas/preguntas_nia.py --etiqueta despues
-  .venv/bin/python herramientas/preguntas_nia.py --api http://localhost:8010 --etiqueta demostracion
-  .venv/bin/python herramientas/preguntas_nia.py --comparar antes despues
+  .venv/bin/python calidad/preguntas_nia.py --etiqueta despues
+  .venv/bin/python calidad/preguntas_nia.py --api http://localhost:8010 --etiqueta demostracion
+  .venv/bin/python calidad/preguntas_nia.py --comparar antes despues
 
 Cada corrida queda en registros/preguntas_nia-<etiqueta>.json.
 """
@@ -31,7 +31,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 REGISTROS = RAIZ / "registros"
 USUARIO = "preguntas-nia-script"
 
-# Los mismos rangos que api/nia.py (EMOJI): pictogramas y símbolos misceláneos.
+# Los mismos rangos que api/nia/agente.py (EMOJI): pictogramas y símbolos misceláneos.
 EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF]\ufe0f?")
 PROHIBIDAS = ("banda", "cómprate", "comprate", "te recomiendo comprar", "deberías comprar", "compra este", "abandono")
 

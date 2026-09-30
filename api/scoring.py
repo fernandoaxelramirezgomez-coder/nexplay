@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from modelado.motivos import PALABRAS_CLAVE_POR_CATEGORIA, categorias_de
+from analisis.motivos import PALABRAS_CLAVE_POR_CATEGORIA, categorias_de
 
 from .schemas import (
     DireccionFactor,

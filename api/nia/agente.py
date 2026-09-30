@@ -19,11 +19,10 @@ import re
 import unicodedata
 import uuid
 
-from . import catalogo, scoring, valoraciones
-from . import nia_herramientas as herramientas
-from . import nia_reglas as reglas
-from .config import configuracion
-from .schemas import MAXIMO_RESPUESTA, MensajeChat, PerfilJugador, SugerenciaNia
+from .. import catalogo, scoring, valoraciones
+from ..config import configuracion
+from ..schemas import MAXIMO_RESPUESTA, MensajeChat, PerfilJugador, SugerenciaNia
+from . import herramientas, reglas
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +263,7 @@ def contexto(appid: int) -> dict:
 
 
 def _horas_tipicas(appid: int) -> float | None:
-    from . import panorama  # aquí y no arriba: panorama carga el catálogo al importarse
+    from .. import panorama  # aquí y no arriba: panorama carga el catálogo al importarse
 
     fila = next((f for f in panorama.resumen().por_juego if f.appid == appid), None)
     return fila.horas_al_recomendar if fila else None
@@ -596,7 +595,7 @@ def historial_para_el_modelo(mensajes: list[MensajeChat]) -> list[MensajeChat]:
 
 
 # Las dos herramientas que dependen de la solicitud y no del catálogo: se resuelven aquí,
-# no en nia_herramientas.
+# no en herramientas.py.
 _ESQUEMAS_DE_LA_SOLICITUD = [
     {
         "type": "function",

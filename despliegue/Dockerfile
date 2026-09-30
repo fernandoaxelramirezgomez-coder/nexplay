@@ -18,12 +18,13 @@ RUN python -c "import importlib.util as u; assert not (u.find_spec('torch') or u
 # Copia explícita: .env, datos/ y modelo/ locales nunca entran a la imagen.
 COPY --chown=user api/ api/
 COPY --chown=user modelado/ modelado/
-COPY --chown=user herramientas/preparar_entorno.py herramientas/
-COPY --chown=user despliegue/utilidades.py despliegue/
-COPY --chown=user docs/bandas_referencia.json docs/
+# De analisis/ solo entra motivos.py: api/scoring.py lo usa para /explicacion.
+COPY --chown=user analisis/motivos.py analisis/
+COPY --chown=user despliegue/utilidades.py despliegue/preparar_entorno.py despliegue/
+COPY --chown=user referencias/bandas_referencia.json referencias/
 
 # Baja data-v3 y data-v1 con su sha256, entrena y prueba la API. Si una banda difiere, el build falla.
-RUN python herramientas/preparar_entorno.py \
+RUN python despliegue/preparar_entorno.py \
  && python modelado/verificar_bandas.py \
  && rm -rf datos/entrenamiento
 

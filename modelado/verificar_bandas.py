@@ -1,5 +1,5 @@
 """Compara la banda de riesgo de cada juego del catálogo contra una referencia
-versionada (docs/bandas_referencia.json).
+versionada (referencias/bandas_referencia.json).
 
 Sirve para detectar que un reentrenamiento (por ejemplo, el del build de Docker
 con preparar_entorno.py) clasifica distinto de lo validado. Las bandas salen del
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from api import catalogo, scoring  # noqa: E402
 
 _RAIZ = Path(__file__).resolve().parents[1]
-_REFERENCIA = _RAIZ / "docs" / "bandas_referencia.json"
+_REFERENCIA = _RAIZ / "referencias" / "bandas_referencia.json"
 
 
 def _catalogo_actual() -> dict[str, dict]:

@@ -9,8 +9,9 @@ registros/
 .env
 .claude/
 
-# capturas que genera herramientas/capturar_ui.py (la del README es docs/captura-interfaz.png)
-docs/capturas/
+# capturas que genera calidad/capturar_ui.py; la del README sí se versiona
+docs/capturas/*
+!docs/capturas/captura-interfaz.png
 # Las capturas de los mockups pesan decenas de MB y salen del HTML con un comando.
 docs/plan/mockups/capturas/
 

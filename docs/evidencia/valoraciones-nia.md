@@ -10,7 +10,7 @@ reglas), **el modelo** y **la versión del prompt**.
 
 ## Qué es `version_prompt`
 
-Los primeros ocho hex del sha256 del texto del sistema (`_SISTEMA` en `api/nia.py`). No se
+Los primeros ocho hex del sha256 del texto del sistema (`_SISTEMA` en `api/nia/agente.py`). No se
 escribe a mano a propósito: una etiqueta manual se queda vieja en cuanto alguien toca el
 prompt y no lo anota, y entonces los votos de dos versiones distintas se suman como si
 fueran una sola, que es exactamente el error que esto existe para evitar.
@@ -18,7 +18,7 @@ fueran una sola, que es exactamente el error que esto existe para evitar.
 Para saber qué cambió entre dos hashes:
 
 ```
-git log -S'<un trozo del prompt>' -- api/nia.py
+git log --follow -S'<un trozo del prompt>' -- api/nia/agente.py
 ```
 
 En modo demostración el valor es `reglas`: ahí el prompt no interviene y atribuirle el voto
@@ -59,4 +59,4 @@ poder revisar los votos.»
 
 Vive en `datos/valoraciones.db`, que es contenido de quien usa la app y no datos del
 proyecto: `preparar_entorno.py` no la reconstruye ni la pisa, y no se versiona.
-`herramientas/exportar_valoraciones.py` la saca a CSV para analizarla fuera.
+`operacion/exportar_valoraciones.py` la saca a CSV para analizarla fuera.

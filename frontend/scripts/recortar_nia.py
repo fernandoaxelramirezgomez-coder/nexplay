@@ -40,8 +40,8 @@ Intentos que fallaron, para no repetirlos:
 - Sembrar la pasada fría también desde los lados: se comía las mangas de Happy.
 
 Uso:
-    python herramientas/recortar_nia.py
-    python herramientas/recortar_nia.py --hoja otra/ruta.png
+    python frontend/scripts/recortar_nia.py
+    python frontend/scripts/recortar_nia.py --hoja otra/ruta.png
 """
 
 import argparse
@@ -52,7 +52,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 from scipy import ndimage
 
-_RAIZ = Path(__file__).resolve().parent.parent
+_RAIZ = Path(__file__).resolve().parents[2]
 _HOJA = _RAIZ / "docs" / "diseno" / "nia-hoja-emociones.png"
 _SALIDA = _RAIZ / "frontend" / "public" / "nia"
 

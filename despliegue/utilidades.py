@@ -1,6 +1,6 @@
 """Bajar un asset de un release con tag fijo y verificar su sha256 antes de usarlo.
 
-Lo usan herramientas/preparar_entorno.py (el build de Render) y los notebooks. Aquí los errores
+Lo usan preparar_entorno.py (el build de Render) y los notebooks. Aquí los errores
 lanzan una excepción: el script la convierte en su código de salida y el notebook la muestra
 tal cual, en vez de un SystemExit."""
 

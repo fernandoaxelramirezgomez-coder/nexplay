@@ -2,8 +2,8 @@
 
 El riesgo lo pone el modelo con datos del juego; las reseñas solo dicen de qué se queja la
 gente. Nia confundía las dos cosas porque su contexto no traía los factores, así que este
-script revisa lo que se le manda (api/nia.py, _contexto_para_prompt) y lo que responden las
-reglas (api/nia_reglas.py), que es el mismo camino sin gastar una llamada, con la voz de
+script revisa lo que se le manda (api/nia/agente.py, _contexto_para_prompt) y lo que responden las
+reglas (api/nia/reglas.py), que es el mismo camino sin gastar una llamada, con la voz de
 ahora: 60 palabras o menos, de 1 a 3 emojis, un remate con pregunta y el descargo de la
 señal una sola vez por conversación.
 
@@ -20,7 +20,7 @@ Uso:
   python verificar_nia.py --openai   manda las quince preguntas del recorrido al modelo
                                      configurado e imprime lo que responde (consume cuota)
 
-La corrida de las 25 preguntas contra una API levantada es herramientas/preguntas_nia.py.
+La corrida de las 25 preguntas contra una API levantada es calidad/preguntas_nia.py.
 """
 
 import argparse
@@ -31,7 +31,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# Corre desde herramientas/, así que la raíz no está en sys.path y `api` no se encontraría.
+# Corre desde calidad/, así que la raíz no está en sys.path y `api` no se encontraría.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Antes de importar la API: api.valoraciones fija la ruta de su base al importarse, y este
@@ -39,7 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 _BASE_DE_PRUEBA = Path(tempfile.mkdtemp(prefix="nexplay-verificar-nia-")) / "valoraciones.db"
 os.environ["NEXPLAY_VALORACIONES_DB"] = str(_BASE_DE_PRUEBA)
 
-from api import catalogo, nia, nia_herramientas, nia_reglas, valoraciones  # noqa: E402
+from api import catalogo, valoraciones  # noqa: E402
+from api.nia import agente as nia  # noqa: E402
+from api.nia import herramientas as nia_herramientas  # noqa: E402
+from api.nia import reglas as nia_reglas  # noqa: E402
 from api.schemas import MensajeChat  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.

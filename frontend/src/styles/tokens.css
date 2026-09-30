@@ -1,6 +1,6 @@
 /* Tokens de NexPlay. La paleta es la que aprobó el dueño en la fase 6A (punto 3) y cada par
    de color está medido contra WCAG —4.5:1 para texto, 3:1 para controles— en los dos
-   temas; herramientas/capturar_ui.py vuelve a medirlos sobre los valores que resuelve el
+   temas; calidad/capturar_ui.py vuelve a medirlos sobre los valores que resuelve el
    navegador en cada corrida.
 
    Donde un valor de la paleta no pasaba contra alguna superficie, se movió lo mínimo hacia

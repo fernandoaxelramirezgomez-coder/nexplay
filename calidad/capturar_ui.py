@@ -9,8 +9,8 @@ estante, filtro reactivo, factores de la ficha, entrada directa por URL, appid
 inexistente, perfil que sobrevive a la recarga, la historia del perfil sin que
 cambie el nivel de riesgo, y la comparación sincronizada con ?appids=.
 
-docs/capturas/ está ignorada por git; la captura del README es otra,
-docs/captura-interfaz.png, y este script no la toca. Revisa además que no
+docs/capturas/ está ignorada por git salvo la captura del README,
+docs/capturas/captura-interfaz.png, que este script no toca. Revisa además que no
 aparezca "abandono" ni un score de riesgo con decimales.
 
 Requiere la API y el frontend corriendo (uvicorn api.main:app y npx ng serve en
@@ -20,7 +20,7 @@ frontend/). Una sola vez:
   sudo playwright install-deps chromium   # librerías del sistema (Linux/WSL)
 
 Uso:
-  python herramientas/capturar_ui.py [--url URL]
+  python calidad/capturar_ui.py [--url URL]
 """
 
 import argparse
@@ -3988,7 +3988,7 @@ _NIA_FALSA = json.dumps({
     "respuesta": "Respuesta de prueba del script de capturas: no se consultó ningún modelo.",
     "modo": "demostracion",
     "modelo": None,
-    "aviso": "Respuesta simulada por herramientas/capturar_ui.py; la API no recibió la pregunta.",
+    "aviso": "Respuesta simulada por calidad/capturar_ui.py; la API no recibió la pregunta.",
     # Con id se puede recorrer el voto sin gastar una consulta. El PUT del voto también se
     # intercepta: esta respuesta no existe en la base de la API y daría 404, y lo que se
     # revisa aquí es la interfaz. El almacén de verdad lo prueba verificar_nia.py.

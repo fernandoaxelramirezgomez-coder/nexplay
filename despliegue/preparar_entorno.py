@@ -41,7 +41,7 @@ import urllib.request
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-# Corre desde herramientas/, así que la raíz no está en sys.path y `despliegue` no se encontraría.
+# Corre desde despliegue/, así que la raíz no está en sys.path y `despliegue.utilidades` no se encontraría.
 sys.path.insert(0, str(RAIZ))
 
 from despliegue.utilidades import ErrorDeRelease, descargar_verificado  # noqa: E402

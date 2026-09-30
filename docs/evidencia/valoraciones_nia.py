@@ -5,7 +5,7 @@ prompt, que es el hash de su texto: cuando el prompt cambia, el hash cambia solo
 votos de dos versiones distintas dejan de sumarse como si fueran uno. Para saber qué
 cambió entre dos hashes:
 
-    git log -S'<un trozo del prompt>' -- api/nia.py
+    git log --follow -S'<un trozo del prompt>' -- api/nia/agente.py
 
 Solo lee datos/valoraciones.db (o la que diga NEXPLAY_VALORACIONES_DB). Con la base vacía
 lo dice y sale bien: todavía no hay nada que medir.

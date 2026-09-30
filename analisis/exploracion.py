@@ -36,7 +36,7 @@ PALETA = {"VERDE_OSC": "#2e8b57", "VERDE_CLA": "#90ee90", "ROJO": "#e53935", "GR
 COLOR_GRUPO = {"positiva": PALETA["VERDE_OSC"], "negativa tardía": PALETA["GRIS"], "negativa temprana": PALETA["ROJO"]}
 COLOR_RELEASE = {"data-v1 (83)": PALETA["AZUL"], "externos (40)": PALETA["VERDE_CLA"]}
 
-RUTA_PARTICION = Path(__file__).with_name("particion_gkf_data-v1.csv")
+RUTA_PARTICION = Path(__file__).resolve().parents[1] / "referencias" / "particion_gkf_data-v1.csv"
 
 
 # --- Gráficas -------------------------------------------------------------------------------

@@ -237,7 +237,7 @@ class ReaccionComentario(BaseModel):
 #: Lo que escribe la persona. Es el límite que importa: acota costo y abuso.
 MAXIMO_PREGUNTA = 500
 #: Lo que respondió Nia y vuelve en el historial. Sus respuestas son de 60 palabras o menos
-#: (api/nia.py, ajustar_largo), unos 450 caracteres; con 500 de tope una larga rompía la
+#: (api/nia/agente.py, ajustar_largo), unos 450 caracteres; con 500 de tope una larga rompía la
 #: pregunta siguiente, y con 4,000 cualquiera podía fabricar un historial de 40 «respuestas»
 #: enormes para que lo mandáramos al modelo.
 MAXIMO_RESPUESTA = 1500
@@ -255,7 +255,7 @@ class MensajeChat(BaseModel):
 
 
 #: Mensajes del hilo que acepta /nia: la conversación entera, para que las reglas puedan
-#: resumirla. Al modelo llegan solo los últimos turnos, con tope de caracteres (api/nia.py).
+#: resumirla. Al modelo llegan solo los últimos turnos, con tope de caracteres (api/nia/agente.py).
 MAXIMO_MENSAJES_NIA = 40
 
 

@@ -9,7 +9,7 @@ Tres reglas que valen para todas:
   `datos/valoraciones.db`: los comentarios públicos y las valoraciones de la gente no son
   datos del catálogo y no entran en lo que Nia lee.
 - Devuelven appids reales. Lo que no salga de aquí no puede acabar en una tarjeta: quien
-  llama valida la respuesta contra estos appids (ver `nia.py`).
+  llama valida la respuesta contra estos appids (ver `agente.py`).
 - El orden por omisión es alfabético. Ordenar por precio o por nota es una recomendación
   encubierta si nadie la pidió, así que hay que pedirla.
 """
@@ -17,8 +17,9 @@ Tres reglas que valen para todas:
 import logging
 from urllib.parse import urlencode
 
-from . import catalogo, nia, panorama
-from .schemas import JuegoCatalogo, NivelRiesgo
+from .. import catalogo, panorama
+from ..schemas import JuegoCatalogo, NivelRiesgo
+from . import agente as nia
 
 logger = logging.getLogger(__name__)
 

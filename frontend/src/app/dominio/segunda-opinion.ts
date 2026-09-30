@@ -7,7 +7,7 @@ export interface Segmento {
   clave?: boolean;
 }
 
-// Mismas frases que _FRASES_BANDA en api/nia.py, para que Nia y la ficha digan lo mismo.
+// Mismas frases que _FRASES_BANDA en api/nia/agente.py, para que Nia y la ficha digan lo mismo.
 const FRASES_BANDA: Record<NivelRiesgo, Segmento[]> = {
   bajo: [
     { texto: 'Comparado con el resto del catálogo, este juego tiende a generar ' },
@@ -32,7 +32,7 @@ export function fraseBanda(nivel: NivelRiesgo): Segmento[] {
 
 /** El titular del veredicto. Al lado del título de la ficha ya hay una píldora que dice
  * "Riesgo medio", así que el titular no repite la etiqueta: dice lo único que la etiqueta
- * no dice, que es qué significa. Son las mismas frases que `_FRASES_BANDA` en api/nia.py. */
+ * no dice, que es qué significa. Son las mismas frases que `_FRASES_BANDA` en api/nia/agente.py. */
 const TITULARES_BANDA: Record<NivelRiesgo, Segmento[]> = {
   bajo: [
     { texto: 'Tiende a generar ' },

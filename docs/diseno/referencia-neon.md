@@ -150,5 +150,5 @@ así que sobre blanco un halo aditivo *baja* el brillo y se lee como suciedad. E
 El tema se guarda en `localStorage` y la primera vez toma `prefers-color-scheme`; sin preferencia
 declarada se queda en oscuro. Un script de cinco líneas en `index.html` pone el atributo
 `data-tema` antes de que Angular pinte, para que no haya destello. Los 22 pares de contraste se
-vuelven a medir en cada corrida de `herramientas/capturar_ui.py`, sobre los tokens que el
+vuelven a medir en cada corrida de `calidad/capturar_ui.py`, sobre los tokens que el
 navegador resolvió, en los dos temas.

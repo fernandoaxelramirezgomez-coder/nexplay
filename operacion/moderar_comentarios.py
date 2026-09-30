@@ -14,7 +14,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-# Corre desde herramientas/, así que la raíz no está en sys.path y `api` no se encontraría.
+# Corre desde operacion/, así que la raíz no está en sys.path y `api` no se encontraría.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from api import valoraciones  # noqa: E402

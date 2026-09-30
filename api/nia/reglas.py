@@ -12,9 +12,10 @@ junta las primeras oraciones de lo que ya dijo: el hilo es lo único que se recu
 
 import re
 
-from . import catalogo, nia, panorama
-from . import nia_herramientas as herramientas
-from .schemas import JuegoCatalogo, MensajeChat, SugerenciaNia
+from .. import catalogo, panorama
+from ..schemas import JuegoCatalogo, MensajeChat, SugerenciaNia
+from . import agente as nia
+from . import herramientas
 
 # Cuántas horas típicas cuentan como "para jugar poco": las mismas que usan las
 # sugerencias del perfil (HORAS_DE_SESION_CORTA en frontend/src/app/dominio/sugerencias.ts).
