@@ -1,0 +1,18 @@
+% Generado por documento/generar_figuras.py. No se edita a mano.
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}p{4.2cm}}
+\toprule
+Chequeo (data-v1) & Resultado & Qué se hizo \\
+\midrule
+Nulos en las reseñas & 0 en 21 columnas & ninguna \\
+Llaves: reseña repetida, juego sin reseñas, reseña sin juego & 0 casos & ninguna \\
+Rangos duros (6 reglas: minutos ≥ 0, voto 0/1, fechas, precio, descuento, nota) & 0 casos & ninguna \\
+\texttt{playtime\_\allowbreak{}at\_\allowbreak{}review} ≤ \texttt{playtime\_\allowbreak{}forever} & 1 caso & se conservan y se documentan \\
+\texttt{es\_\allowbreak{}gratis} coherente con el precio & 2 casos & se conservan y se documentan \\
+Juegos de pago sin precio & 2: Grand Theft Auto V Legacy, New World: Aeternum & precio tomado como 0, con aviso (§\ref{sec:procesamiento}) \\
+Juegos sin nota de Metacritic & 23 de 83 & es un dato: variable \texttt{metacritic\_\allowbreak{}disponible} \\
+Nota de Metacritic contra la tienda hoy (40 externos) & 40 de 40 iguales & ninguna \\
+Textos repetidos de 8+ palabras & 359 en el mismo juego; 57 en 2+ juegos & se marcan, no se borran (§\ref{sec:procesamiento}) \\
+Reseñas plantilla & 192 (0.15\,\%) & se marcan, no se borran \\
+Perfil privado (\texttt{num\_\allowbreak{}games\_\allowbreak{}owned} = 0) & 59.9\,\% de las reseñas & bandera de privacidad, no biblioteca vacía \\
+\bottomrule
+\end{tabularx}

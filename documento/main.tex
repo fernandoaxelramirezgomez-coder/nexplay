@@ -6,7 +6,8 @@
 \usepackage[a4paper, margin=2.5cm]{geometry}
 \usepackage{fontspec}
 \setmainfont{Inter}
-\setmonofont{Inter}[Numbers=Monospaced]
+% Los nombres de código (endpoints, columnas, archivos) en monoespaciada, para distinguirlos del texto.
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
 % caption va antes de babel: sin él, babel en español y biblatex-apa chocan al cargar
 % («Generic hooks cannot be added to '\@makecaption'»).
 \usepackage{caption}
@@ -29,6 +30,13 @@
 \setlength{\parindent}{0pt}
 \linespread{1.1}
 \captionsetup{font=small, labelfont=bf}
+% Las tablas y figuras grandes se quedan arriba de una página con texto, en vez de dejar una
+% página de flotantes con medio hueco; y TeX estira espacios antes de sacar una línea del margen.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\emergencystretch}{2em}
 
 % La paleta del frontend (tema claro, frontend/src/styles/tokens.css).
 \definecolor{riesgobajo}{HTML}{047857}
