@@ -1,0 +1,36 @@
+{
+  "generado": "2026-09-30",
+  "commit": "cf8a4c5",
+  "releases": {
+    "data-v1": "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7",
+    "data-v2": "9d5a54f6cbb5f361e397eb043989e592cbff1d553c57ef8a41aae41e2c763d72"
+  },
+  "punto": {
+    "titulos": 40,
+    "filas": 60395,
+    "positivos": 1412,
+    "prevalencia": 0.023379,
+    "pr_auc": 0.035576,
+    "cociente": 1.5217
+  },
+  "bootstrap": {
+    "replicas": 2000,
+    "semilla": 42,
+    "unidad": "título (appid), con reemplazo; cada réplica junta todas sus reseñas",
+    "estadistico": "PR-AUC de la réplica / prevalencia de la réplica (PR-AUC del trivial)",
+    "ic95_cociente": [
+      1.0331,
+      2.3271
+    ],
+    "ic95_pr_auc": [
+      0.0185,
+      0.062
+    ],
+    "ic95_prevalencia": [
+      0.0163,
+      0.0321
+    ],
+    "mediana_cociente": 1.5411,
+    "replicas_con_cociente_hasta_1": 27
+  }
+}

@@ -38,6 +38,11 @@ rutas de entonces.
   artefacto de data-v1. 40/40 evaluables, sin errores ni features faltantes; 60,395 filas,
   prevalencia 2.34 %, PR-AUC 0.0356 contra 0.0234 del clasificador trivial. Esos títulos no
   intervienen en el entrenamiento, la elección de variables, los parámetros ni los umbrales.
+- `bootstrap-prueba-externa.json`: el intervalo de ese 1.52×, remuestreando los 40 títulos
+  con reemplazo (2,000 réplicas, semilla 42; PR-AUC entre la prevalencia de cada réplica).
+  IC 95 %: 1.03× a 2.33×; en 27 de las 2,000 réplicas el cociente no pasa de 1. Script:
+  `calidad/bootstrap_prueba_externa.py`, que antes comprueba que el punto coincida con
+  `prueba-externa.json`.
 - `verificacion-40-steam.csv`: Metacritic, descuento y precio de los 40 títulos nuevos,
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
 - `simulacion_123.txt` (script: `backend/calidad/simulacion_123.py`): la simulación de entrenar con los 123 (solo
