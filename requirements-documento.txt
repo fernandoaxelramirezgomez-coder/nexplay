@@ -1,0 +1,3 @@
+# Solo para documento/generar_figuras.py (las figuras del documento en LaTeX), encima de
+# requirements-modelo.txt y requirements-notebooks.txt. No entra a la imagen de Render.
+matplotlib==3.11.2
