@@ -55,12 +55,13 @@ export function advertenciaSinCritica(total: number): string {
   return `Sin crítica especializada; esto viene de ${ENTEROS.format(total)} ${total === 1 ? 'reseña' : 'reseñas'} de jugadores.`;
 }
 
-/** La misma advertencia para lo que se dice en NexPlay. Valoraciones y comentarios se
- * cuentan aparte: los comentarios son anónimos y no se pueden sumar como personas. */
+/** De dónde sale lo que se dice en NexPlay. No arranca con «Sin crítica especializada»: el
+ * juego puede tenerla, y en Comparar salía debajo de su Metacritic. Valoraciones y
+ * comentarios se cuentan aparte: los comentarios son anónimos y no se suman como personas. */
 export function advertenciaNexplay(valoraciones: number, comentarios: number): string {
   const partes = [
     valoraciones ? `${valoraciones} ${valoraciones === 1 ? 'valoración' : 'valoraciones'}` : '',
     comentarios ? `${comentarios} ${comentarios === 1 ? 'comentario' : 'comentarios'}` : '',
   ].filter(Boolean);
-  return `Sin crítica especializada; esto viene de ${partes.join(' y ')} en NexPlay.`;
+  return `Esto viene de ${partes.join(' y ')} en NexPlay; no es crítica especializada.`;
 }

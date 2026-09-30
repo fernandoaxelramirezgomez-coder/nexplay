@@ -10,8 +10,9 @@ import { UsuarioStore } from '../estado/usuario-store';
 
 /** «Crítica y público»: qué dicen de un juego, además del riesgo. Con Metacritic, su nota
  * y la de Steam; sin Metacritic, lo dice y da el sentimiento de las reseñas de Steam con la
- * advertencia de dónde viene. Con `conNexplay`, lo que se dice en NexPlay, con la misma
- * advertencia.
+ * advertencia de dónde viene. Con `conNexplay`, cuánto se valoró y comentó en NexPlay, sin
+ * citar ningún comentario: son públicos y anónimos, y cualquiera puede escribir algo
+ * ofensivo que la comparación repetiría.
  *
  * Nada de esto entra al modelo. El porcentaje de Steam va en el azul de la opinión y
  * nunca en los colores del riesgo: un 94 % en verde se leería como «riesgo bajo». */
@@ -75,10 +76,7 @@ import { UsuarioStore } from '../estado/usuario-store';
         <div class="nexplay" data-testid="critica-nexplay">
           <p class="titulo-nexplay">En NexPlay</p>
           <p class="resumen mono">{{ resumenNexplay() }}</p>
-          @if (ultimoComentario(); as comentario) {
-            <blockquote class="comentario">«{{ comentario }}»</blockquote>
-          }
-          <p class="advertencia">{{ advertenciaNexplay() }}</p>
+          <p class="advertencia" data-testid="critica-nexplay-advertencia">{{ advertenciaNexplay() }}</p>
         </div>
       }
     </section>
@@ -181,13 +179,6 @@ import { UsuarioStore } from '../estado/usuario-store';
     .titulo-nexplay {
       font-weight: var(--peso-clave);
     }
-    .comentario {
-      margin: 0;
-      padding: var(--espacio-8) var(--espacio-12);
-      border-radius: 12px;
-      background: var(--superficie-lienzo);
-      line-height: 1.45;
-    }
   `,
 })
 export class CriticaPublico {
@@ -234,13 +225,6 @@ export class CriticaPublico {
       partes.push(`${comentarios} ${comentarios === 1 ? 'comentario' : 'comentarios'}`);
     }
     return partes.join(' · ');
-  });
-
-  /** El más reciente: el hilo llega del más viejo al más nuevo. */
-  protected readonly ultimoComentario = computed(() => {
-    const lista = this.lista();
-    const texto = lista.length ? lista[lista.length - 1].texto : '';
-    return texto.length > 140 ? `${texto.slice(0, 137)}…` : texto;
   });
 
   protected readonly advertenciaNexplay = computed(() => advertenciaNexplay(this.totalValoraciones(), this.lista().length));

@@ -3732,6 +3732,46 @@ def _trailer_cargando(pagina: Page, url: str, destino: Path) -> list[str]:
     return problemas
 
 
+def _comparar_sin_comentarios_citados(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """Comparar dice cuánto se valoró y comentó en NexPlay sin citar ningún comentario (son
+    públicos y anónimos), y no dice «Sin crítica especializada» de un juego con Metacritic."""
+    problemas = []
+    usuario = "capturas-comparar-01"
+    texto = "Comentario de prueba del recorrido, que no debe citarse en Comparar"
+    peticion = urllib.request.Request(
+        f"{api}/comentarios/1145360", method="POST", headers={"Content-Type": "application/json"},
+        data=json.dumps({"usuario": usuario, "texto": texto}).encode(),
+    )
+    with urllib.request.urlopen(peticion, timeout=10) as respuesta:
+        hilo = json.load(respuesta)
+    propio = next((c["id"] for c in reversed(hilo) if c["texto"] == texto), None)
+    contexto = pagina.context.browser.new_context(viewport=_VIEWPORT)
+    _sin_consultas_a_nia(contexto)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{url.rstrip('/')}/comparar?appids=1145360,367520")
+        columna = otra.locator("[data-testid=columna-comparar][data-appid='1145360']")
+        bloque = columna.get_by_test_id("critica-nexplay")
+        bloque.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        contenido = " ".join(bloque.inner_text().split())
+        if texto in contenido or bloque.locator("blockquote").count():
+            problemas.append("Comparar cita un comentario público de NexPlay")
+        if "Sin crítica especializada" in contenido:
+            problemas.append(f"Comparar dice «Sin crítica especializada» de Hades, que tiene Metacritic ({contenido!r})")
+        columna.get_by_test_id("critica-publico").screenshot(path=destino / "comparar-en-nexplay.png")
+        if not problemas:
+            print(f"comparar: «En NexPlay» dice «{contenido}» sin citar comentarios "
+                  f"({(destino / 'comparar-en-nexplay.png').relative_to(_RAIZ)})")
+    finally:
+        contexto.close()
+        if propio is not None:
+            borrar = urllib.request.Request(
+                f"{api}/comentarios/1145360/{propio}?usuario={usuario}", method="DELETE"
+            )
+            urllib.request.urlopen(borrar, timeout=10).close()
+    return problemas
+
+
 def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     """Lo que salió de probar el sitio en producción: Explorar sin resultados, la franja de
     Nia, la burbuja que no tapa, la ficha técnica entera, el tema, el tráiler cargando y las
@@ -3745,6 +3785,7 @@ def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> li
         + _tema_dice_su_destino(pagina, url, destino)
         + _trailer_cargando(pagina, url, destino)
         + _zonas_de_toque(pagina, url)
+        + _comparar_sin_comentarios_citados(pagina, url, destino, api)
     )
 
 

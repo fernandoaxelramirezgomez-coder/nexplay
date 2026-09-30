@@ -26,8 +26,8 @@ describe('critica', () => {
   it('la advertencia dice de dónde viene lo que se muestra', () => {
     expect(advertenciaSinCritica(87051)).toBe('Sin crítica especializada; esto viene de 87,051 reseñas de jugadores.');
     expect(advertenciaNexplay(1, 2)).toBe(
-      'Sin crítica especializada; esto viene de 1 valoración y 2 comentarios en NexPlay.',
+      'Esto viene de 1 valoración y 2 comentarios en NexPlay; no es crítica especializada.',
     );
-    expect(advertenciaNexplay(0, 1)).toBe('Sin crítica especializada; esto viene de 1 comentario en NexPlay.');
+    expect(advertenciaNexplay(0, 1)).toBe('Esto viene de 1 comentario en NexPlay; no es crítica especializada.');
   });
 });
