@@ -87,6 +87,8 @@ def main():
         "datos_sha256": args.sha256_asset,
         "filas_entrenamiento": int(len(df)),
         "juegos_entrenamiento": int(grupos.nunique()),
+        # Para el aviso de los juegos gratis: con tan pocos, el modelo extrapola.
+        "gratis_entrenamiento": int(df.groupby("appid")["es_gratis"].first().fillna(0).astype(int).sum()),
     }
 
     MODELO_PATH.parent.mkdir(exist_ok=True)

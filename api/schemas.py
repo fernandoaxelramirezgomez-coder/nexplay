@@ -36,6 +36,11 @@ class NivelRelativo(str, Enum):
     BAJO = "bajo"
 
 
+class Evidencia(str, Enum):
+    SOLIDA = "solida"
+    DEBIL = "debil"
+
+
 def _normalizar_tags(tags: list[str]) -> list[str]:
     return [t.strip().lower() for t in tags if t.strip()]
 
@@ -120,12 +125,34 @@ class SolicitudPrediccion(BaseModel):
 class FactorPrediccion(BaseModel):
     etiqueta: str = Field(..., description="Variable del modelo en lenguaje claro, no el nombre técnico")
     valor_relativo: NivelRelativo = Field(
-        ..., description="Si el valor de esta variable, para este juego/perfil, está por encima o por debajo del promedio del catálogo"
+        ...,
+        description="Nota y precio: si el valor está por encima de la referencia del catálogo. En las variables de sí o "
+        "no (gratis, con nota, con descuento): alto si se cumple",
     )
     contribucion: float = Field(
         ..., description="Coeficiente × valor estandarizado de la variable; unidades de log-odds, no de probabilidad"
     )
     direccion: DireccionFactor = Field(..., description="Si esta variable aumenta o reduce el riesgo estimado")
+    evidencia: Evidencia = Field(
+        ...,
+        description="Sólida si su efecto no cruza el cero en el bootstrap sobre juegos del notebook 00 (§3.4); débil "
+        "si con 83 juegos no se distingue de cero",
+    )
+    cerca_de_lo_tipico: bool = Field(
+        ..., description="Aporte menor que el umbral de lo típico: casi no mueve la estimación y se muestra sin flecha"
+    )
+    valor: Optional[float] = Field(
+        None, description="La nota o el precio en MXN de este juego; None en las variables de sí o no y en el precio que falta"
+    )
+    referencia: Optional[float] = Field(
+        None, description="Contra qué se lee el valor: el promedio de la nota o el precio mediano del catálogo, en MXN"
+    )
+    imputado: bool = Field(False, description="Falta el dato y el modelo usó un sustituto (el precio, tomado como 0)")
+
+
+class AvisoEstimacion(BaseModel):
+    codigo: Literal["gratis_extrapola", "precio_imputado"]
+    texto: str
 
 
 class PrediccionRiesgo(BaseModel):
@@ -141,6 +168,9 @@ class PrediccionRiesgo(BaseModel):
     factores: list[FactorPrediccion] = Field(
         default_factory=list,
         description="Las tres variables con mayor contribución absoluta al score, ordenadas por magnitud",
+    )
+    avisos: list[AvisoEstimacion] = Field(
+        default_factory=list, description="Lo que hace menos firme esta estimación: juegos gratis, precio que falta"
     )
 
 

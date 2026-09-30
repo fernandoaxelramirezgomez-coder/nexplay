@@ -19,7 +19,9 @@ import pandas as pd
 from analisis.motivos import PALABRAS_CLAVE_POR_CATEGORIA, categorias_de
 
 from .schemas import (
+    AvisoEstimacion,
     DireccionFactor,
+    Evidencia,
     FactorPrediccion,
     MotivoInsatisfaccion,
     NivelFriccion,
@@ -60,6 +62,29 @@ _ETIQUETAS_FEATURES = {
 # certeza sobre 2 o 3 reseñas.
 UMBRAL_MIN_CASOS = 5
 
+# Por debajo de este aporte (en log-odds), un factor "casi no mueve la estimación" y se muestra
+# sin flecha. Es el menor umbral que deja 0 flechas contradiciendo la cifra que se muestra
+# (nota contra el promedio del catálogo, precio contra la mediana): con 0.05 quedaban cinco
+# notas de 86 que el modelo lee por debajo de su media de entrenamiento (86.97).
+UMBRAL_TIPICO = 0.10
+
+# Qué tan firme es cada efecto, según el bootstrap sobre juegos de los coeficientes del
+# modelo B+ (notebook 00, §3.4): la crítica no cruza el cero; precio, descuento y gratuidad,
+# sí. Las compras del jugador no están en el modelo de título.
+_EVIDENCIA_POR_VARIABLE = {
+    "metacritic_disponible": Evidencia.SOLIDA,
+    "metacritic": Evidencia.SOLIDA,
+    "log_precio_final": Evidencia.DEBIL,
+    "descuento": Evidencia.DEBIL,
+    "es_gratis": Evidencia.DEBIL,
+    "log_num_games_owned": Evidencia.DEBIL,
+}
+
+_AVISO_PRECIO_IMPUTADO = (
+    "Estimación menos confiable: a este juego le falta el precio y el modelo lo tomó como 0, "
+    "lo que tiende a bajar su riesgo estimado."
+)
+
 def _cargar_artefacto() -> dict:
     with open(_MODELO_PATH, "rb") as f:
         return pickle.load(f)
@@ -93,6 +118,33 @@ def ficha_del_modelo() -> dict:
     }
 
 
+_REFERENCIAS: dict | None = None
+
+
+def referencias_del_catalogo() -> dict:
+    """Contra qué se leen la nota y el precio: el promedio de la nota de los juegos que la
+    tienen (un decimal, como lo muestra la ficha) y el precio mediano de los de pago con precio.
+    La mediana y no el promedio: el modelo usa el logaritmo del precio, y su referencia se
+    parece más a la mediana que al promedio, que los juegos caros inflan.
+
+    Sale de la misma base que se sirve y no de api.catalogo, que importa este módulo y
+    puntúa cada juego al cargarse."""
+    global _REFERENCIAS
+    if _REFERENCIAS is None:
+        con = sqlite3.connect(_DB_PATH)
+        try:
+            filas = con.execute("SELECT es_gratis, precio_final, metacritic FROM juegos").fetchall()
+        finally:
+            con.close()
+        notas = [nota for _, _, nota in filas if nota is not None]
+        precios = [precio / 100 for gratis, precio, _ in filas if not gratis and precio is not None]
+        _REFERENCIAS = {
+            "nota_promedio": round(float(np.mean(notas)), 1) if notas else None,
+            "precio_mediano": round(float(np.median(precios)), 2) if precios else None,
+        }
+    return _REFERENCIAS
+
+
 def _atributos_juego(appid: int) -> dict:
     con = sqlite3.connect(_DB_PATH)
     try:
@@ -117,8 +169,8 @@ def _nivel_desde_riesgo(riesgo: float) -> NivelRiesgo:
     return NivelRiesgo.ALTO
 
 
-def _construir_features(perfil: PerfilJugador, appid: int) -> pd.DataFrame:
-    juego = _atributos_juego(appid)
+def _construir_features(perfil: PerfilJugador, appid: int, juego: dict | None = None) -> pd.DataFrame:
+    juego = juego if juego is not None else _atributos_juego(appid)
     metacritic = juego["metacritic"]
     fila = {
         # El modelo de título no usa compras_al_anio: la fila se arma completa y
@@ -134,27 +186,71 @@ def _construir_features(perfil: PerfilJugador, appid: int) -> pd.DataFrame:
     return pd.DataFrame([fila])[_FEATURES]
 
 
-def _factores_prediccion(X: pd.DataFrame) -> list[FactorPrediccion]:
+def _lectura_contra_el_catalogo(feature: str, juego: dict, estandarizado: float) -> dict:
+    """La cifra del juego, la referencia del catálogo contra la que se lee y si queda por
+    encima. En las variables de sí o no, "alto" es que se cumple."""
+    referencias = referencias_del_catalogo()
+    gratis = bool(juego["es_gratis"])
+    if feature == "metacritic" and juego["metacritic"] is not None:
+        valor, referencia = float(juego["metacritic"]), referencias["nota_promedio"]
+        return {"valor": valor, "referencia": referencia, "alto": valor > referencia}
+    if feature == "log_precio_final":
+        if not gratis and juego["precio_final"] is None:
+            return {"valor": None, "referencia": referencias["precio_mediano"], "alto": False, "imputado": True}
+        valor = 0.0 if gratis else juego["precio_final"] / 100
+        return {"valor": valor, "referencia": referencias["precio_mediano"], "alto": valor > referencias["precio_mediano"]}
+    if feature == "descuento":
+        return {"valor": float(juego["descuento"] or 0), "referencia": None, "alto": (juego["descuento"] or 0) > 0}
+    if feature == "es_gratis":
+        return {"valor": None, "referencia": None, "alto": gratis}
+    if feature == "metacritic_disponible":
+        return {"valor": None, "referencia": None, "alto": juego["metacritic"] is not None}
+    return {"valor": None, "referencia": None, "alto": estandarizado > 0}
+
+
+def _factores_prediccion(X: pd.DataFrame, juego: dict) -> list[FactorPrediccion]:
     """Contribución de cada variable al log-odds del score: coeficiente de la
     regresión logística por el valor ya estandarizado (mismo StandardScaler
     del pipeline), que es lo que la regresión logística realmente suma.
-    Se devuelven las tres de mayor magnitud absoluta."""
+    Se devuelven las tres de mayor magnitud absoluta, en ese orden: el primero es siempre el
+    que más aporta, aunque sea de evidencia débil o describa un precio que falta."""
     escalador = _PIPELINE.named_steps["escalar"]
     clf = _PIPELINE.named_steps["clf"]
     valores_estandarizados = escalador.transform(X)[0]
     contribuciones = clf.coef_[0] * valores_estandarizados
 
-    factores = [
-        FactorPrediccion(
-            etiqueta=_ETIQUETAS_FEATURES[feature],
-            valor_relativo=NivelRelativo.ALTO if valor_estandarizado > 0 else NivelRelativo.BAJO,
-            contribucion=round(float(contribucion), 4),
-            direccion=DireccionFactor.AUMENTA if contribucion > 0 else DireccionFactor.REDUCE,
+    factores = []
+    for feature, valor_estandarizado, contribucion in zip(_FEATURES, valores_estandarizados, contribuciones):
+        lectura = _lectura_contra_el_catalogo(feature, juego, valor_estandarizado)
+        factores.append(
+            FactorPrediccion(
+                etiqueta=_ETIQUETAS_FEATURES[feature],
+                valor_relativo=NivelRelativo.ALTO if lectura["alto"] else NivelRelativo.BAJO,
+                contribucion=round(float(contribucion), 4),
+                direccion=DireccionFactor.AUMENTA if contribucion > 0 else DireccionFactor.REDUCE,
+                evidencia=_EVIDENCIA_POR_VARIABLE[feature],
+                cerca_de_lo_tipico=bool(abs(contribucion) < UMBRAL_TIPICO),
+                valor=lectura["valor"],
+                referencia=lectura["referencia"],
+                imputado=lectura.get("imputado", False),
+            )
         )
-        for feature, valor_estandarizado, contribucion in zip(_FEATURES, valores_estandarizados, contribuciones)
-    ]
     factores.sort(key=lambda f: abs(f.contribucion), reverse=True)
     return factores[:3]
+
+
+def _avisos(juego: dict) -> list[AvisoEstimacion]:
+    avisos = []
+    if juego["es_gratis"]:
+        gratis = _ARTEFACTO.get("gratis_entrenamiento")
+        cuantos = f"solo {gratis} juegos gratis" if gratis is not None else "muy pocos juegos gratis"
+        avisos.append(AvisoEstimacion(
+            codigo="gratis_extrapola",
+            texto=f"En los datos de entrenamiento había {cuantos}; para los gratis, el modelo extrapola.",
+        ))
+    elif juego["precio_final"] is None:
+        avisos.append(AvisoEstimacion(codigo="precio_imputado", texto=_AVISO_PRECIO_IMPUTADO))
+    return avisos
 
 
 # Existe solo porque predecir() pide un perfil en su firma; ningún dato de este perfil
@@ -173,7 +269,8 @@ _PERFIL_NEUTRO = PerfilJugador(
 
 
 def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
-    X = _construir_features(perfil, appid)
+    juego = _atributos_juego(appid)
+    X = _construir_features(perfil, appid, juego)
     riesgo = round(float(_PIPELINE.predict_proba(X)[0, 1]), 4)
     nota_plataforma = (
         _NOTA_PLATAFORMA_SIN_DATOS.format(plataforma=perfil.plataforma.value)
@@ -187,7 +284,8 @@ def predecir(perfil: PerfilJugador, appid: int) -> PrediccionRiesgo:
         nivel=_nivel_desde_riesgo(riesgo),
         modelo_version=_VERSION_MODELO,
         nota_plataforma=nota_plataforma,
-        factores=_factores_prediccion(X),
+        factores=_factores_prediccion(X, juego),
+        avisos=_avisos(juego),
     )
 
 
