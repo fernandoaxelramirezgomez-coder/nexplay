@@ -28,7 +28,14 @@ function fila(appid: number, casos: number, consenso: string): JuegoPanorama {
   };
 }
 
-function montar() {
+const MOTIVOS = [
+  { motivo: 'rendimiento', frecuencia: 0.4085 },
+  { motivo: 'bugs', frecuencia: 0.2716 },
+  { motivo: 'contenido', frecuencia: 0.2284 },
+  { motivo: 'dificultad', frecuencia: 0.1555 },
+];
+
+function montar(datos: object = { resenas_descargadas: 184367, motivos: MOTIVOS, resenas_clasificadas: 1344, casos_senal: 4126 }) {
   TestBed.configureTestingModule({
     imports: [AntesDePagar],
     providers: [
@@ -38,7 +45,7 @@ function montar() {
         provide: PanoramaStore,
         useValue: {
           porAppid: signal(new Map([[1, fila(1, 1, 'Very Positive')], [2, fila(2, 2, 'Very Positive')], [3, fila(3, 4, 'Mixed')]])),
-          datos: signal({ resenas_descargadas: 184367 }),
+          datos: signal(datos),
         },
       },
     ],
@@ -90,5 +97,34 @@ describe('AntesDePagar', () => {
     expect(confianza).toContain('sin leer las reseñas');
     // «Ver metodología» vive en el pie del Inicio; aquí era un duplicado.
     expect(fixture.nativeElement.querySelector('[data-testid="antes-metodologia"]')).toBeNull();
+  });
+
+  it('la tarjeta de motivos es de todo el catálogo, con los tres primeros y de cuántas negativas salen', () => {
+    const fixture = montar();
+    const barras = [...fixture.nativeElement.querySelectorAll('[data-testid="antes-motivos-barras"] li')].map((fila: Element) =>
+      [fila.querySelector('.nombre')?.textContent?.trim(), fila.querySelector('.valor')?.textContent?.trim()],
+    );
+    expect(barras).toEqual([['Rendimiento', '41%'], ['Bugs', '27%'], ['Contenido', '23%']]);
+    expect(texto(fixture, 'antes-motivos')).toContain('En todo el catálogo, no de un juego');
+    expect(texto(fixture, 'antes-motivos-origen')).toBe(
+      'Porcentaje de las 1,344 negativas tempranas que mencionan un motivo (el 33% de las 4,126). Una reseña puede mencionar más de uno.',
+    );
+  });
+
+  it('da la regla de reembolso de Steam con su enlace, sin prometer nada', () => {
+    const fixture = montar();
+    const reembolso = texto(fixture, 'antes-reembolso');
+    expect(reembolso).toContain(
+      'Steam permite pedir reembolso dentro de los 14 días posteriores a la compra y con menos de 2 horas de juego.',
+    );
+    expect(reembolso).toContain('Steam decide cada solicitud: NexPlay no garantiza nada.');
+    const enlace = fixture.nativeElement.querySelector('[data-testid="antes-enlace-steam"]') as HTMLAnchorElement;
+    expect(enlace.href).toBe('https://store.steampowered.com/steam_refunds/');
+    expect(enlace.rel).toBe('noopener');
+  });
+
+  it('sin motivos en el panorama no pinta la tarjeta', () => {
+    const fixture = montar({ resenas_descargadas: 184367, motivos: [], resenas_clasificadas: 0, casos_senal: 0 });
+    expect(fixture.nativeElement.querySelector('[data-testid="antes-motivos"]')).toBeNull();
   });
 });

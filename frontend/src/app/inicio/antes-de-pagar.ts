@@ -16,6 +16,7 @@ import {
   PESTANAS_ANTES_DE_PAGAR,
   barrasAntesDePagar,
   histogramaDePrecios,
+  motivosDelCatalogo,
 } from '../dominio/antes-de-pagar';
 import { numero } from '../dominio/formato';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -28,7 +29,10 @@ import { HistogramaPrecios } from './histograma-precios';
  * «Precio» salió de las pestañas: el precio es una variable del modelo, así que compararlo
  * por nivel era circular. Las barras crecen al entrar en pantalla y se animan al cambiar
  * de pestaña. Al pie, la confianza en una línea, con la frase acordada: el riesgo sale de
- * datos del juego. La metodología se abre desde el pie del Inicio. */
+ * datos del juego. La metodología se abre desde el pie del Inicio.
+ *
+ * Debajo del panel, una tarjeta con lo que más mencionan las negativas tempranas de todo el
+ * catálogo y la regla de reembolso de Steam. No es de un juego ni promete nada: Steam decide. */
 @Component({
   selector: 'app-antes-de-pagar',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,6 +78,29 @@ import { HistogramaPrecios } from './histograma-precios';
           Con {{ resenas() }} reseñas de Steam. El riesgo sale de datos del juego, sin leer las reseñas.
         </p>
       </div>
+      @if (motivos(); as motivos) {
+        <div class="tarjeta" data-testid="antes-motivos">
+          <div class="motivos">
+            <h3 class="titulo">Lo que más mencionan las negativas tempranas</h3>
+            <p class="meta">En todo el catálogo, no de un juego: reseñas negativas escritas antes de 2 horas de juego.</p>
+            <app-grafica-barras [segmentos]="segmentosMotivos()" [maximo]="1" idPrueba="antes-motivos-barras" />
+            <p class="meta" data-testid="antes-motivos-origen">
+              Porcentaje de las {{ motivos.conMotivo }} negativas tempranas que mencionan un motivo (el {{ motivos.cobertura }} de
+              las {{ motivos.total }}). Una reseña puede mencionar más de uno.
+            </p>
+          </div>
+          <div class="reembolso" data-testid="antes-reembolso">
+            <p>
+              Steam permite pedir reembolso dentro de los 14 días posteriores a la compra y con menos de 2 horas de
+              juego.
+            </p>
+            <p class="meta">Steam decide cada solicitud: NexPlay no garantiza nada.</p>
+            <a href="https://store.steampowered.com/steam_refunds/" target="_blank" rel="noopener" data-testid="antes-enlace-steam">
+              Política de reembolsos de Steam ↗
+            </a>
+          </div>
+        </div>
+      }
     </section>
   `,
   styles: `
@@ -173,7 +200,57 @@ import { HistogramaPrecios } from './histograma-precios';
       line-height: 1.5;
       text-align: center;
     }
+    .tarjeta {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: clamp(24px, 4cqw, 44px);
+      padding: clamp(24px, 3cqw, 36px) clamp(24px, 4cqw, 44px);
+      border: 1px solid var(--borde);
+      border-radius: 24px;
+      background: var(--superficie);
+    }
+    .motivos,
+    .reembolso {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-12);
+      min-width: 0;
+    }
+    .motivos p,
+    .reembolso p {
+      margin: 0;
+      line-height: 1.5;
+    }
+    .motivos app-grafica-barras {
+      margin: var(--espacio-8) 0;
+    }
+    .reembolso {
+      justify-content: center;
+      padding-inline-start: clamp(24px, 4cqw, 44px);
+      border-inline-start: 1px solid var(--borde);
+    }
+    /* 44 px de alto: es la única zona de toque de la tarjeta. */
+    .reembolso a {
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      min-height: 44px;
+    }
+    .titulo {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
     @container contenido (max-width: 860px) {
+      .tarjeta {
+        grid-template-columns: 1fr;
+      }
+      .reembolso {
+        padding: var(--espacio-24) 0 0;
+        border-inline-start: 0;
+        border-top: 1px solid var(--borde);
+      }
       .panel {
         grid-template-columns: 1fr;
         gap: var(--espacio-40);
@@ -213,6 +290,11 @@ export class AntesDePagar {
   protected readonly tope = computed(() => Math.max(0, ...(this.barras()?.segmentos ?? []).map((s) => s.valor)) || 1);
   protected readonly rangos = computed(() => histogramaDePrecios(this.catalogo.juegos()));
   protected readonly resenas = computed(() => numero(this.panorama.datos()?.resenas_descargadas ?? 0));
+  protected readonly motivos = computed(() => motivosDelCatalogo(this.panorama.datos()));
+  protected readonly segmentosMotivos = computed(() => {
+    const segmentos = this.motivos()?.segmentos ?? [];
+    return this.visible() ? segmentos : segmentos.map((s) => ({ ...s, valor: 0 }));
+  });
 
   constructor() {
     const destruir = inject(DestroyRef);

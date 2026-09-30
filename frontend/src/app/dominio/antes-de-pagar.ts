@@ -1,7 +1,7 @@
-import { JuegoCatalogo, JuegoPanorama, NivelRiesgo } from '../api/contrato';
+import { JuegoCatalogo, JuegoPanorama, NivelRiesgo, PanoramaCatalogo } from '../api/contrato';
 import { Segmento } from '../compartido/graficas/segmento';
 import { ORDEN_BANDAS } from './estantes';
-import { porcentaje, porcentajeFino } from './formato';
+import { numero, porcentaje, porcentajeFino } from './formato';
 import { positivosPorBanda, senalPorBanda } from './panorama';
 
 /** «Antes de pagar, esto importa», en el Inicio: lo que le sirve a quien va a comprar,
@@ -119,4 +119,36 @@ export function histogramaDePrecios(juegos: readonly JuegoCatalogo[]): RangoDePr
     }
     return { etiqueta: rango.etiqueta, detalle: rango.detalle, porNivel };
   });
+}
+
+/** Lo que más mencionan las negativas tempranas de todo el catálogo. No es de un juego:
+ * la mejora 01 comprobó que el motivo por juego no anticipa mejor que el del catálogo. */
+export interface MotivosDelCatalogo {
+  segmentos: Segmento[];
+  /** Cuántas negativas tempranas mencionan un motivo: de ellas salen los %. */
+  conMotivo: string;
+  /** Qué parte de todas las negativas tempranas son esas. */
+  cobertura: string;
+  total: string;
+}
+
+export const MOTIVOS_EN_EL_INICIO = 3;
+
+export function motivosDelCatalogo(
+  panorama: Pick<PanoramaCatalogo, 'motivos' | 'resenas_clasificadas' | 'casos_senal'> | undefined,
+): MotivosDelCatalogo | null {
+  if (!panorama?.motivos.length || !panorama.resenas_clasificadas || !panorama.casos_senal) {
+    return null;
+  }
+  return {
+    segmentos: panorama.motivos.slice(0, MOTIVOS_EN_EL_INICIO).map((motivo) => ({
+      etiqueta: motivo.motivo.charAt(0).toUpperCase() + motivo.motivo.slice(1),
+      valor: motivo.frecuencia,
+      cifra: porcentaje(motivo.frecuencia),
+      detalle: `${motivo.motivo}: ${porcentaje(motivo.frecuencia)} de las negativas tempranas que mencionan un motivo`,
+    })),
+    conMotivo: numero(panorama.resenas_clasificadas),
+    cobertura: porcentaje(panorama.resenas_clasificadas / panorama.casos_senal),
+    total: numero(panorama.casos_senal),
+  };
 }
