@@ -1,0 +1,115 @@
+% NexPlay: documento final del Módulo V, Diplomado en Ciencia de Datos (FES Acatlán, UNAM).
+% Se compila con LuaLaTeX y biber (ver .latexmkrc). Cada número del texto es una macro de
+% tables/cifras.tex, que genera generar_figuras.py; ninguno se escribe a mano.
+\documentclass[11pt]{article}
+
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Inter}
+\setmonofont{Inter}[Numbers=Monospaced]
+% caption va antes de babel: sin él, babel en español y biblatex-apa chocan al cargar
+% («Generic hooks cannot be added to '\@makecaption'»).
+\usepackage{caption}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage{csquotes}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+\usepackage[style=apa, backend=biber]{biblatex}
+\addbibresource{references.bib}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+\linespread{1.1}
+\captionsetup{font=small, labelfont=bf}
+
+% La paleta del frontend (tema claro, frontend/src/styles/tokens.css).
+\definecolor{riesgobajo}{HTML}{047857}
+\definecolor{riesgomedio}{HTML}{AA4F0A}
+\definecolor{riesgoalto}{HTML}{BE123C}
+\definecolor{acento}{HTML}{0E738F}
+\definecolor{nia}{HTML}{6D28D9}
+\definecolor{neutro}{HTML}{475585}
+
+% Lo que todavía no tiene texto o evidencia se ve en el PDF, nunca se rellena.
+\newcommand{\pendiente}[1]{\textcolor{riesgoalto}{\textbf{[PENDIENTE: #1]}}}
+\newcommand{\pendienteEvidencia}{\textcolor{riesgoalto}{\textbf{[PENDIENTE DE EVIDENCIA]}}}
+\newcommand{\pendienteColab}{\textcolor{riesgoalto}{\textbf{[PENDIENTE: corrida en Colab]}}}
+% Las capturas se regeneran desde el tag de entrega; hasta entonces su pie lo dice.
+\newcommand{\provisional}{\textit{Captura provisional: se regenera desde el tag de entrega.}}
+
+\input{tables/cifras}
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+        \draw[line width=3pt, color=acento]
+        ([shift={(1.2cm,-1.2cm)}]current page.north west)
+        rectangle
+        ([shift={(-1.2cm,1.2cm)}]current page.south east);
+    \end{tikzpicture}
+
+    \noindent
+    \begin{minipage}{0.3\textwidth}
+        \begin{flushleft}
+            \includegraphics[width=3.6cm]{escudos/logo_unam.png}
+        \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.3\textwidth}
+        \begin{flushright}
+            \includegraphics[width=3.4cm]{escudos/logo_fes.png}
+        \end{flushright}
+    \end{minipage}
+
+    \vspace*{2cm}
+
+    \begin{center}
+        {\LARGE Facultad de Estudios Superiores Acatlán} \\[0.8cm]
+        {\LARGE Diplomado en Ciencia de Datos} \\[0.8cm]
+        {\LARGE Módulo V} \\[2cm]
+        {\Huge \textbf{Proyecto final}} \\[1cm]
+        {\Large NexPlay: señal de arrepentimiento temprano} \\[0.3cm]
+        {\Large antes de comprar un videojuego} \\[2.5cm]
+        {\LARGE \textbf{Fernando Axel Ramírez Gómez}} \\[0.8cm]
+        {\Large \today}
+    \end{center}
+\end{titlepage}
+
+\input{sections/00-resumen}
+
+\tableofcontents
+\newpage
+
+\input{sections/01-introduccion}
+\input{sections/02-planteamiento}
+\input{sections/03-nicho}
+\input{sections/04-estrategia}
+\input{sections/05-datos}
+\input{sections/06-objetivo}
+\input{sections/07-exploracion}
+\input{sections/08-procesamiento}
+\input{sections/09-modelacion}
+\input{sections/10-evaluacion}
+\input{sections/11-interpretabilidad}
+\input{sections/12-arquitectura}
+\input{sections/13-interfaz}
+\input{sections/14-resolucion}
+\input{sections/15-limitaciones}
+\input{sections/16-conclusiones}
+\input{sections/17-siguientes-pasos}
+
+\printbibliography[heading=bibintoc, title={Referencias}]
+
+\appendix
+\input{sections/anexo}
+
+\end{document}

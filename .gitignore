@@ -21,3 +21,7 @@ docs/historial/mockups/capturas/
 *.deb
 .agents/
 .artifacts/
+
+# lo que genera la compilación del documento y los releases que baja generar_figuras.py
+documento/build/
+documento/.cache/
