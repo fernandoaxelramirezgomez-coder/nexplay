@@ -34,50 +34,82 @@ _FRASES_BANDA = {
     "alto": "tiende a generar más arrepentimiento temprano que el resto del catálogo",
 }
 
-# Mismas frases que COMO_SE_LEE en frontend/src/app/dominio/factores.ts: lo que la ficha
-# muestra en "Qué mueve esta estimación" es lo que Nia tiene que poder decir con las mismas
-# palabras. Si se cambia una, se cambian las dos.
+# Mismas frases que frontend/src/app/dominio/factores.ts: lo que la ficha muestra en "Qué
+# mueve esta estimación" es lo que Nia tiene que poder decir con las mismas palabras. Si se
+# cambia una, se cambian las dos (calidad/verificar_nia.py lo comprueba).
+TEXTO_TIPICO = "cerca de lo típico del catálogo; casi no mueve la estimación"
+TEXTO_EVIDENCIA_SOLIDA = "evidencia sólida"
+TEXTO_EVIDENCIA_DEBIL = "evidencia débil: con 83 juegos no se distingue de cero"
+TEXTO_PRECIO_IMPUTADO = "Precio no disponible: el modelo lo toma como 0"
+
+# El aviso del precio imputado es largo para las 60 palabras: Nia puede darlo así, con lo
+# mismo que dice. El de los gratis ya es corto.
+_AVISOS_EN_CORTO = {
+    "precio_imputado": "Estimación menos confiable: le falta el precio y el modelo lo tomó como 0.",
+}
+
+# Las variables de sí o no, como COMO_SE_LEE. La nota y el precio no están aquí: se leen con
+# su cifra y la referencia del catálogo, sin "por encima" ni "por debajo".
 _LECTURA_FACTORES = {
     "gratuidad del juego": ("Es gratis", "Es de pago"),
-    "precio del juego": ("Cuesta más que el promedio del catálogo", "Cuesta menos que el promedio"),
     "descuento actual del juego": ("Está con descuento", "No está con descuento"),
     "cobertura de crítica especializada": ("Tiene nota de la crítica", "No tiene nota de la crítica"),
-    "nota de Metacritic": (
-        "Su nota de Metacritic está por encima del promedio del catálogo",
-        "Su nota de Metacritic está por debajo del promedio",
-    ),
     "compras declaradas por año": ("Compras más juegos que el promedio", "Compras menos juegos que el promedio"),
 }
 
+
+def _pesos(valor: float) -> str:
+    return f"${valor:,.2f} MXN"
+
+
 def _lectura_factor(factor) -> str:
+    """lecturaDeJugador() de dominio/factores.ts."""
+    if factor.etiqueta == "nota de Metacritic" and factor.valor is not None:
+        referencia = "" if factor.referencia is None else f" · promedio del catálogo {factor.referencia:.1f}"
+        return f"Nota de Metacritic: {factor.valor:g}{referencia}"
+    if factor.etiqueta == "precio del juego":
+        if factor.imputado or factor.valor is None:
+            return TEXTO_PRECIO_IMPUTADO
+        precio = "gratis" if factor.valor == 0 else _pesos(factor.valor)
+        referencia = "" if factor.referencia is None else f" · precio mediano del catálogo {_pesos(factor.referencia)}"
+        return f"Precio: {precio}{referencia}"
     alto, bajo = _LECTURA_FACTORES.get(
         factor.etiqueta,
-        (f"{factor.etiqueta}, por encima del promedio del catálogo", f"{factor.etiqueta}, por debajo del promedio"),
+        (f"{factor.etiqueta}, por encima del promedio del catálogo", f"{factor.etiqueta}, por debajo del promedio del catálogo"),
     )
     return alto if factor.valor_relativo.value == "alto" else bajo
 
 
 def _factores_visibles(factores, juego) -> list[dict]:
-    """Los factores del modelo con la frase de la ficha y su efecto.
+    """Los factores del modelo con la frase de la ficha, su efecto y su evidencia, en el
+    orden de la API (de mayor a menor aporte).
 
-    Fuera los que describen un valor imputado y no el juego: sin precio conocido el modelo
-    lee 0 y sin nota usa la mediana del catálogo. Mismo filtro que factoresVisibles() en
-    dominio/factores.ts, para que Nia no cite un factor que la ficha esconde."""
-    precio_imputado = juego.precio_final is None and not juego.es_gratis
+    Mismo filtro que factoresVisibles() en dominio/factores.ts: solo se quita la nota de un
+    juego sin nota, porque la cobertura ya dice que no la tiene. El precio que falta se
+    queda, marcado como imputado, igual que en la ficha."""
     visibles = []
     for factor in factores:
-        if precio_imputado and factor.etiqueta == "precio del juego":
-            continue
         if juego.metacritic is None and factor.etiqueta == "nota de Metacritic":
             continue
         visibles.append(
             {
                 "etiqueta": factor.etiqueta,
                 "lectura": _lectura_factor(factor),
-                "efecto": "sube" if factor.direccion.value == "aumenta" else "baja",
+                # Dentro de la banda neutral no sube ni baja: casi no mueve la estimación.
+                "efecto": None if factor.cerca_de_lo_tipico else "sube" if factor.direccion.value == "aumenta" else "baja",
+                "evidencia": TEXTO_EVIDENCIA_SOLIDA if factor.evidencia.value == "solida" else TEXTO_EVIDENCIA_DEBIL,
+                "debil": factor.evidencia.value == "debil",
+                "imputado": factor.imputado,
             }
         )
     return visibles
+
+
+def linea_de_factor(factor: dict) -> str:
+    """Un factor en una línea, como lo ve el modelo de lenguaje y la herramienta ficha_juego."""
+    if factor["efecto"] is None:
+        return f"{factor['lectura']} → {TEXTO_TIPICO} (no es razón del riesgo)"
+    return f"{factor['lectura']} → {factor['efecto']} el riesgo estimado ({factor['evidencia']})"
 
 
 _SISTEMA = """Eres Nia, la asistente de NexPlay: una amiga gamer, cercana y cálida, que lee los
@@ -118,12 +150,22 @@ Reglas que no puedes romper:
   NexPlay no sabe qué es. Nunca des probabilidades, porcentajes de riesgo
   ni scores numéricos del modelo. Los porcentajes de los motivos sí puedes citarlos, y
   cuando cites uno di sobre cuántas reseñas clasificadas está calculado.
-- El riesgo de arrepentimiento lo asigna el modelo con datos del juego (precio, gratuidad,
-  descuento, nota y cobertura de crítica). Las reseñas explican los motivos, no el riesgo.
-  Nunca digas que el riesgo sale de las reseñas. Es del juego, igual para cualquiera: no
-  digas que es el riesgo de quien pregunta.
+- El riesgo de arrepentimiento lo asigna un modelo entrenado con reseñas de Steam, a partir
+  de datos del juego (precio, gratuidad, descuento, nota y cobertura de crítica). Las reseñas
+  de un juego explican sus motivos, no su riesgo: nunca digas que el riesgo sale de sus
+  reseñas. Es del juego, igual para cualquiera: no digas que es el riesgo de quien pregunta.
 - Para explicar por qué un juego tiene ese riesgo, usa las líneas de "Qué mueve esta
-  estimación" del contexto, con esas mismas palabras y sin inventar otras variables.
+  estimación" del contexto, con esas mismas palabras y sin inventar otras variables. Van de
+  la que más aporta a la que menos: nombra primero la primera. Si la que nombras dice
+  "evidencia débil", dilo: con 83 juegos su efecto no se distingue de cero. Lo que está
+  "cerca de lo típico del catálogo" casi no mueve la estimación: no lo des como razón.
+- Si el contexto trae "Avisos de esta estimación", cada vez que hables del riesgo de ese
+  juego di cada aviso, completo o con su versión corta del contexto. Cuentan dentro de las 60
+  palabras: si no cabe todo, recorta los factores, nunca el aviso, la explicación de la señal
+  ni el emoji. Si el contexto no trae avisos, no hables de avisos.
+- La nota se compara solo con el promedio del catálogo y el precio solo con el precio
+  mediano del catálogo, con las cifras de la línea "Catálogo". No hay otro promedio: nunca
+  hables de un promedio que use el modelo.
 - El precio aparece en dos lugares distintos y no hay que confundirlos: como variable del
   modelo (en "Qué mueve esta estimación") y como motivo en las reseñas (en "Motivos").
   Pueden apuntar en direcciones opuestas; si te preguntan por el precio, di de cuál hablas.
@@ -245,6 +287,9 @@ def contexto(appid: int) -> dict:
         "nombre": juego.nombre,
         "banda": prediccion.nivel.value,
         "factores": _factores_visibles(prediccion.factores, juego),
+        # Juegos gratis (el modelo extrapola) y de pago sin precio (lo tomó como 0).
+        "avisos": [aviso.texto for aviso in prediccion.avisos],
+        "avisos_en_corto": [_AVISOS_EN_CORTO.get(aviso.codigo, aviso.texto) for aviso in prediccion.avisos],
         "generos": juego.generos,
         "metacritic": juego.metacritic,
         "precio": None if juego.es_gratis else juego.precio_final,
@@ -285,12 +330,8 @@ def _texto_critica(datos: dict) -> str:
     return f"la crítica especializada lo calificó {juicio} (Metacritic {nota})"
 
 
-def _texto_factores(datos: dict) -> str:
-    """Las variables del modelo en prosa, con las palabras de la ficha."""
-    if not datos["factores"]:
-        return "el modelo no destaca ninguna variable de este juego"
-    partes = [f"{f['lectura'][0].lower()}{f['lectura'][1:]} ({f['efecto']} el riesgo estimado)" for f in datos["factores"]]
-    return "; ".join(partes)
+def _minuscula(texto: str) -> str:
+    return f"{texto[0].lower()}{texto[1:]}"
 
 
 def _texto_motivos(datos: dict, senal_ya_nombrada: bool = False) -> str:
@@ -332,36 +373,28 @@ def _factor_de_precio(datos: dict) -> str | None:
     factor = next((f for e in etiquetas for f in datos["factores"] if f["etiqueta"] == e), None)
     if factor is None:
         return None
-    lectura = f"{factor['lectura'][0].lower()}{factor['lectura'][1:]}"
-    return f"En el modelo, del precio lo que pesa es que {lectura}: eso {factor['efecto']} el riesgo estimado."
-
-
-def _explicacion_de_la_banda(datos: dict) -> str:
-    """De dónde sale la banda: de las variables del juego, nunca de las reseñas."""
+    if factor["imputado"]:
+        return "En el modelo, a este juego le falta el precio y lo tomó como 0: la estimación es menos confiable."
+    if factor["efecto"] is None:
+        return f"En el modelo: {_minuscula(factor['lectura'])}; está cerca de lo típico y casi no mueve la estimación."
     return (
-        f"Ese riesgo lo pone el modelo con datos del juego: {_texto_factores(datos)}. "
-        "Las reseñas explican los motivos, no el riesgo."
+        f"En el modelo: {_minuscula(factor['lectura'])}; eso {factor['efecto']} el riesgo estimado, "
+        f"con {factor['evidencia']}."
     )
 
 
 def _referencias_del_catalogo() -> dict:
-    """Cifras del catálogo para que la comparación tenga con qué compararse. Se calculan
-    una vez: el catálogo se carga al importar y no cambia mientras corre la API."""
+    """Las referencias de la ficha (scoring.referencias_del_catalogo: el promedio de la nota y
+    el precio mediano) más lo que solo usa Nia para comparar. Se calculan una vez: el catálogo
+    se carga al importar y no cambia mientras corre la API."""
     global _REFERENCIAS
     if _REFERENCIAS is None:
         juegos = catalogo.buscar()
-        precios = [j.precio_final for j in juegos if j.precio_final]
-        notas = [j.metacritic for j in juegos if j.metacritic is not None]
         _REFERENCIAS = {
+            **scoring.referencias_del_catalogo(),
             "juegos": len(juegos),
-            # Promedio y no mediana: la ficha dice "cuesta más que el promedio del
-            # catálogo" en sus factores, y dos medidas distintas para lo mismo hacen que
-            # Nia y la ficha parezcan contradecirse cuando dicen lo mismo.
-            "precio_promedio": round(sum(precios) / len(precios)) if precios else None,
-            # Un decimal, el mismo que muestra la ficha (85.5): con el entero, Nia decía
-            # 86 y la ficha 85.5 para el mismo promedio.
-            "metacritic_promedio": round(sum(notas) / len(notas), 1) if notas else None,
-            "con_nota": len(notas),
+            "con_nota": sum(1 for j in juegos if j.metacritic is not None),
+            "de_pago_con_precio": sum(1 for j in juegos if not j.es_gratis and j.precio_final is not None),
             "bandas": {b: sum(1 for j in juegos if j.banda_riesgo.value == b) for b in ("bajo", "medio", "alto")},
         }
     return _REFERENCIAS
@@ -427,19 +460,22 @@ def _donde(valor: float, referencia: float, igual: str = "igual a") -> str:
 
 
 def _texto_comparacion(datos: dict, ref: dict) -> str:
-    """Dónde cae este juego dentro del catálogo, en palabras y sin adjetivos de valor."""
+    """Dónde cae este juego dentro del catálogo, con sus cifras y sin adjetivos de valor: la
+    nota contra el promedio del catálogo y el precio contra el precio mediano, como la ficha."""
     partes = []
     if datos["es_gratis"]:
-        partes.append("es gratuito, y el precio promedio del catálogo es"
-                      f" {ref['precio_promedio']:.0f} MXN")
-    elif datos["precio"] is not None and ref["precio_promedio"]:
-        donde = _donde(datos["precio"], ref["precio_promedio"], "igual al")
-        partes.append(f"su precio está {donde} promedio del catálogo")
+        partes.append(f"es gratuito, y el precio mediano del catálogo es {_pesos(ref['precio_mediano'])}")
+    elif datos["precio"] is None:
+        partes.append("le falta el precio en los datos")
+    elif ref["precio_mediano"]:
+        donde = _donde(datos["precio"], ref["precio_mediano"], "igual al")
+        partes.append(f"su precio ({_pesos(datos['precio'])}) está {donde} precio mediano del catálogo"
+                      f" ({_pesos(ref['precio_mediano'])})")
     if datos["metacritic"] is None:
         partes.append("no tiene nota de Metacritic, como otros del catálogo")
-    elif ref["metacritic_promedio"]:
-        donde = _donde(datos["metacritic"], ref["metacritic_promedio"], "igual al")
-        partes.append(f"su nota está {donde} promedio de los que sí tienen")
+    elif ref["nota_promedio"]:
+        donde = _donde(datos["metacritic"], ref["nota_promedio"], "igual al")
+        partes.append(f"su nota ({datos['metacritic']}) está {donde} promedio del catálogo ({ref['nota_promedio']})")
     partes.append(f"su riesgo de arrepentimiento es {datos['banda']}")
     return "; ".join(partes)
 
@@ -466,22 +502,25 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
         lineas.append("Motivos: no hay suficientes reseñas para señalar uno")
     # Las mismas frases y el mismo orden que la ficha muestra en "Qué mueve esta
     # estimación": sin esto, Nia atribuía la banda a las reseñas negativas.
-    lineas.append("Qué mueve esta estimación (variables del modelo, en el orden de la ficha):")
+    lineas.append("Qué mueve esta estimación (variables del modelo, de la que más aporta a la que menos, como en la ficha):")
     if datos["factores"]:
-        lineas += [f"- {f['lectura']} → {f['efecto']} el riesgo estimado" for f in datos["factores"]]
+        lineas += [f"- {linea_de_factor(f)}" for f in datos["factores"]]
     else:
         lineas.append("- sin variables destacadas para este juego")
     lineas.append(
         "Estas variables son las que producen el riesgo. Los motivos de las reseñas dicen de"
         " qué se queja la gente, no por qué el modelo puso ese riesgo."
     )
+    if datos["avisos"]:
+        lineas.append("Avisos de esta estimación (obligatorios cada vez que hables de su riesgo):")
+        for aviso, corto in zip(datos["avisos"], datos["avisos_en_corto"]):
+            lineas.append(f"- {aviso}" + (f" En corto: «{corto}»" if corto != aviso else ""))
     ref = _referencias_del_catalogo()
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
     lineas.append(
-        f"Catálogo ({ref['juegos']} juegos, para comparar): precio promedio"
-        f" {ref['precio_promedio']:.0f} MXN; Metacritic promedio {ref['metacritic_promedio']}"
-        f" entre los {ref['con_nota']} que tienen nota (es el promedio contra el que se lee"
-        f" el factor de la nota); riesgo de arrepentimiento {bandas}"
+        f"Catálogo ({ref['juegos']} juegos, para comparar): precio mediano {_pesos(ref['precio_mediano'])}"
+        f" entre los {ref['de_pago_con_precio']} de pago con precio; Metacritic promedio {ref['nota_promedio']}"
+        f" entre los {ref['con_nota']} que tienen nota; riesgo de arrepentimiento {bandas}"
     )
     lineas.append(f"Este juego frente al catálogo: {_texto_comparacion(datos, ref)}")
     if mencionados:
@@ -730,9 +769,9 @@ def _contexto_del_catalogo() -> str:
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
     return (
         f"No hay ningún juego abierto: quien pregunta habla del catálogo entero, que son"
-        f" {ref['juegos']} juegos de Steam, por riesgo de arrepentimiento: {bandas}. El precio promedio es"
-        f" {ref['precio_promedio']:.0f} MXN y el Metacritic promedio {ref['metacritic_promedio']}"
-        f" entre los {ref['con_nota']} que tienen nota. Para cualquier dato concreto, usa las"
+        f" {ref['juegos']} juegos de Steam, por riesgo de arrepentimiento: {bandas}. El precio mediano es"
+        f" {_pesos(ref['precio_mediano'])} entre los {ref['de_pago_con_precio']} de pago con precio y el"
+        f" Metacritic promedio {ref['nota_promedio']} entre los {ref['con_nota']} que tienen nota. Para cualquier dato concreto, usa las"
         " herramientas: no sabes de memoria qué juegos hay."
     )
 
@@ -884,10 +923,13 @@ def _por_reglas_aunque_haya_modelo(
     """Lo que se contesta con reglas aunque haya modelo, porque la respuesta tiene que ser
     siempre la misma y el prompt no lo garantiza: el resumen (de todas las respuestas del
     hilo, no de la última), "el mejor" (no se corona a nadie), lo que no es de juegos (el
-    modelo contestaba la trivia) y «¿qué tal X?» o «¿se parece a X?» con un X que no está en
-    el catálogo (el modelo a veces se saltaba el «no está en este catálogo»)."""
+    modelo contestaba la trivia), «¿qué tal X?» o «¿se parece a X?» con un X que no está en
+    el catálogo (el modelo a veces se saltaba el «no está en este catálogo») y «¿por qué tiene
+    ese riesgo?» con un juego abierto (el modelo se saltaba el aviso, el descargo o el factor
+    que más aporta)."""
     return (
         reglas.pide_resumen(ultima)
+        or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias))
         or reglas.fuera_del_catalogo(ultima, datos) is not None

@@ -227,6 +227,18 @@ _CRITERIOS = ("nota", "critica", "metacritic", "precio", "barato", "caro", "ries
               "resenas", "positivas", "gratis", "gratuito")
 
 
+# «¿Por qué tiene ese riesgo?» con un juego abierto. La explicación sigue siempre la regla de
+# factores (el que más aporta primero, «evidencia débil» cuando toca, los avisos y el descargo
+# la primera vez); con el tope de 60 palabras, el modelo se saltaba alguna parte.
+_EXPLICAR_EL_RIESGO = ("por que tiene ese riesgo", "por que tiene riesgo", "por que ese riesgo", "por que quedo",
+                       "por que su riesgo", "explicamelo", "explicame el riesgo", "explica el riesgo", "que mueve",
+                       "de donde sale su riesgo", "de donde sale ese riesgo")
+
+
+def pide_explicar_el_riesgo(pregunta: str, datos: dict | None) -> bool:
+    return datos is not None and _dice(_norm(pregunta), *_EXPLICAR_EL_RIESGO)
+
+
 def pide_el_mejor(pregunta: str) -> bool:
     texto = _norm(pregunta)
     return _dice(texto, *_EL_MEJOR) and not _dice(texto, *_CRITERIOS) and not _dice(texto, *_BARATOS, *_CAROS)
@@ -287,19 +299,19 @@ def _fortalezas_y_debilidades(juego: JuegoCatalogo) -> str:
     a_favor, en_contra = [], []
     if juego.metacritic is None:
         en_contra.append("no tiene nota de la crítica")
-    elif ref["metacritic_promedio"] and juego.metacritic >= ref["metacritic_promedio"]:
-        a_favor.append(f"su Metacritic ({juego.metacritic}) está arriba del promedio")
+    elif ref["nota_promedio"] and juego.metacritic >= ref["nota_promedio"]:
+        a_favor.append(f"su Metacritic ({juego.metacritic}) está arriba del promedio del catálogo")
     else:
-        en_contra.append(f"su Metacritic ({juego.metacritic}) está abajo del promedio")
+        en_contra.append(f"su Metacritic ({juego.metacritic}) está abajo del promedio del catálogo")
     banda = juego.banda_riesgo.value
     if banda != "medio":
         (a_favor if banda == "bajo" else en_contra).append(f"su riesgo es {banda}")
     if juego.es_gratis:
         a_favor.append("es gratis")
-    elif juego.precio_final and ref["precio_promedio"] and juego.precio_final <= ref["precio_promedio"]:
-        a_favor.append("cuesta menos que el promedio")
+    elif juego.precio_final and ref["precio_mediano"] and juego.precio_final <= ref["precio_mediano"]:
+        a_favor.append("cuesta menos que el precio mediano del catálogo")
     elif juego.precio_final:
-        en_contra.append("cuesta más que el promedio")
+        en_contra.append("cuesta más que el precio mediano del catálogo")
     if datos["motivos"]:
         principal = datos["motivos"][0]
         en_contra.append(f"en sus reseñas negativas lo que más sale es {principal.motivo}")
@@ -633,7 +645,11 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
     if _dice(pregunta, "precio", "cuesta", "caro", "barato", "oferta", "descuento"):
         factor = nia._factor_de_precio(datos)
         juego = catalogo.obtener(appid)
-        base = f"{nombre} es gratis 🎁" if juego.es_gratis else f"{nombre} cuesta {_precio(juego)} 💸"
+        base = (
+            f"{nombre} es gratis 🎁" if juego.es_gratis
+            else f"De {nombre} no tengo el precio en los datos 💸" if juego.precio_final is None
+            else f"{nombre} cuesta {_precio(juego)} 💸"
+        )
         return _resultado(f"{base}{(' ' + factor) if factor else ''} ¿Te cuento qué dicen sus reseñas?", juegos=[appid])
     if _dice(pregunta, "critica", "metacritic", "nota", "prensa"):
         return _resultado(f"En {nombre}, {nia._texto_critica(datos)} ⭐ ¿Quieres saber de qué se queja la gente?", juegos=[appid])
@@ -657,14 +673,46 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
         generos = _lista(datos["generos"]) if datos["generos"] else "sin géneros registrados"
         return _resultado(f"Steam clasifica {nombre} como {generos} 🎮 ¿Te cuento su riesgo?", juegos=[appid])
     if _dice(pregunta, "banda", "por que", "porque", "riesgo", "estimacion", "explicamelo", "explica"):
-        factores = datos["factores"][:2]
-        if factores:
-            lectura = _lista([f"{f['lectura'][0].lower()}{f['lectura'][1:]} (lo {f['efecto']})" for f in factores])
-            porque = f" Lo que más lo mueve: {lectura}."
-        else:
-            porque = " El modelo no destaca ninguna variable de este juego."
-        return _resultado(f"{nombre} tiene riesgo {banda} 🙂{porque}{senal} ¿Te cuento qué dicen esas reseñas?", juegos=[appid])
+        # Los avisos van completos y el factor principal siempre; para caber en las 60
+        # palabras se acorta, en este orden, el porqué de «evidencia débil», el segundo
+        # factor, el final del descargo y la pregunta de cierre.
+        for cuantos, evidencia_larga, descargo_largo, cierre in _VARIANTES_DEL_PORQUE:
+            descargo = senal if descargo_largo or not senal else " Esa señal: reseñas negativas escritas en las primeras 2 horas."
+            texto = f"{nombre} tiene riesgo {banda} 🙂 {_porque_del_riesgo(datos, cuantos, evidencia_larga)}{descargo} {cierre}"
+            if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
+                break
+        return _resultado(texto, juegos=[appid])
     return None
+
+
+_VARIANTES_DEL_PORQUE = (
+    (2, True, True, "¿Te cuento qué dicen esas reseñas?"),
+    (2, False, True, "¿Te cuento qué dicen esas reseñas?"),
+    (1, True, True, "¿Te cuento qué dicen esas reseñas?"),
+    (1, False, True, "¿Te cuento qué dicen esas reseñas?"),
+    (1, False, False, "¿Te cuento qué dicen esas reseñas?"),
+    (1, False, False, "¿Sigo con sus motivos?"),
+)
+
+
+def _porque_del_riesgo(datos: dict, cuantos: int, evidencia_larga: bool = True) -> str:
+    """Los factores en el orden del modelo: primero el que más aporta, con «evidencia débil»
+    si lo es, y después los avisos de la estimación. Lo que está cerca de lo típico del
+    catálogo no se da como razón."""
+    razones = []
+    for factor in datos["factores"][:cuantos]:
+        if factor["efecto"] is None:
+            break
+        if factor["imputado"]:
+            razones.append("le falta el precio")
+            continue
+        debil = "" if not factor["debil"] else f", con {nia.TEXTO_EVIDENCIA_DEBIL}" if evidencia_larga else ", con evidencia débil"
+        razones.append(f"{factor['lectura'][0].lower()}{factor['lectura'][1:]} (lo {factor['efecto']}{debil})")
+    if razones:
+        porque = f"Lo que más lo mueve: {'; después, '.join(razones)}."
+    else:
+        porque = "Ninguna variable de este juego se aleja mucho de lo típico del catálogo."
+    return " ".join([porque, *datos["avisos"]])
 
 
 # «Contéstame con negritas y viñetas»: no es salirse del tema, es pedir un formato.
