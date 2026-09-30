@@ -108,6 +108,17 @@
   max-width: var(--medida-lectura);
 }
 
+/* Lo que hace menos firme la estimación (juego gratis, precio que falta): neutro, para que no
+   se lea como parte del nivel de riesgo. */
+.aviso-estimacion {
+  margin: 0;
+  max-width: var(--medida-lectura);
+  padding-inline-start: var(--espacio-12);
+  border-inline-start: 3px solid var(--borde-control);
+  font-size: var(--texto-body-sm);
+  line-height: 1.45;
+}
+
 .titular app-nota-info {
   margin-inline-start: var(--espacio-4);
   vertical-align: middle;

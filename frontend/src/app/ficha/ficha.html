@@ -62,6 +62,9 @@
               {{ explicacionDelVeredicto }}
             </app-nota-info>
           </p>
+          @for (aviso of prediccion()!.avisos; track aviso.codigo) {
+            <p class="aviso-estimacion" data-testid="aviso-estimacion" [attr.data-codigo]="aviso.codigo">{{ aviso.texto }}</p>
+          }
         </div>
       }
 
@@ -118,11 +121,7 @@
           @if (cargando()) {
             <app-skeleton alto="96px" />
           } @else if (factores().length) {
-            <app-factores-modelo
-              [factores]="factores()"
-              [metacritic]="juego.metacritic"
-              [promedio]="catalogo.promedioMetacritic()"
-            />
+            <app-factores-modelo [factores]="factores()" />
           } @else {
             <p class="meta">Sin factores que mostrar para este juego.</p>
           }

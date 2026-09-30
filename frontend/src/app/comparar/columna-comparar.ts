@@ -47,6 +47,9 @@ const MOTIVOS_VISIBLES = 3;
         } @else {
           <app-skeleton alto="64px" />
         }
+        @for (aviso of avisos(); track aviso.codigo) {
+          <p class="meta aviso-estimacion" data-testid="columna-aviso" [attr.data-codigo]="aviso.codigo">{{ aviso.texto }}</p>
+        }
       </section>
 
       <section class="bloque">
@@ -75,11 +78,7 @@ const MOTIVOS_VISIBLES = 3;
       <section class="bloque">
         <h3 class="titulo-bloque meta">Factores del modelo</h3>
         @if (factores().length) {
-          <app-factores-modelo
-            [factores]="factores()"
-            [metacritic]="juego().metacritic"
-            [promedio]="promedioMetacritic()"
-          />
+          <app-factores-modelo [factores]="factores()" />
         } @else {
           <p class="meta">Sin factores que mostrar.</p>
         }
@@ -180,6 +179,11 @@ const MOTIVOS_VISIBLES = 3;
       margin: 0;
       font-size: var(--texto-body-sm);
       line-height: var(--interlineado-largo);
+    }
+    .aviso-estimacion {
+      margin: var(--espacio-8) 0 0;
+      padding-inline-start: var(--espacio-8);
+      border-inline-start: 3px solid var(--borde-control);
     }
     .cuantas {
       margin: var(--espacio-8) 0 0;
@@ -291,6 +295,8 @@ export class ColumnaComparar {
       this.clasificadas(),
     );
   });
+
+  protected readonly avisos = computed(() => this.prediccion()?.avisos ?? []);
 
   protected readonly factores = computed(() => {
     const prediccion = this.prediccion();

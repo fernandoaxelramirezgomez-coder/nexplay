@@ -68,12 +68,30 @@ export interface SolicitudPrediccion {
   appid: number;
 }
 
+export type Evidencia = 'solida' | 'debil';
+
 export interface FactorPrediccion {
   etiqueta: string;
+  /** Nota y precio: contra la referencia del catálogo. Sí/no: alto si se cumple. */
   valor_relativo: NivelRelativo;
   /** Log-odds. No se muestra. */
   contribucion: number;
   direccion: DireccionFactor;
+  /** Del bootstrap del notebook 00 (§3.4): la crítica es sólida; precio, descuento y gratuidad, débiles. */
+  evidencia: Evidencia;
+  /** Aporte chico: casi no mueve la estimación y se muestra sin flecha. */
+  cerca_de_lo_tipico: boolean;
+  /** La nota o el precio en MXN; null en las de sí o no y en el precio que falta. */
+  valor: number | null;
+  /** Promedio de la nota o precio mediano del catálogo, contra el que se lee `valor`. */
+  referencia: number | null;
+  /** Falta el dato y el modelo usó un sustituto (el precio, tomado como 0). */
+  imputado: boolean;
+}
+
+export interface AvisoEstimacion {
+  codigo: 'gratis_extrapola' | 'precio_imputado';
+  texto: string;
 }
 
 /** POST /prediccion (respuesta) */
@@ -86,6 +104,8 @@ export interface PrediccionRiesgo {
   nota_plataforma: string | null;
   /** Hasta 3, ordenados por magnitud. */
   factores: FactorPrediccion[];
+  /** Lo que hace menos firme la estimación: juego gratis, precio que falta. */
+  avisos: AvisoEstimacion[];
 }
 
 export interface MotivoInsatisfaccion {

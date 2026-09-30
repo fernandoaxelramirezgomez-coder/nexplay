@@ -18,18 +18,21 @@ describe('textos sobre el perfil', () => {
 
   /** El nombre podría hacer creer que el riesgo es de quien mira: la explicación lo niega. */
   it('la explicación del riesgo dice que es del juego y no de la persona', () => {
-    expect(EXPLICACION_RIESGO).toContain('Es del juego, no de ti.');
+    expect(EXPLICACION_RIESGO).toContain('es del juego, no de ti');
   });
 
   /** Lo mismo que explica Nia: compara con el catálogo, no es una probabilidad y sale de
-   * datos del juego, no de sus reseñas. */
-  it('la ⓘ del veredicto no atribuye el riesgo a las reseñas ni cuenta juegos', () => {
+   * datos del juego; las reseñas entrenaron el modelo, pero no mueven la estimación de un juego.
+   * Sin "los otros 122": los niveles se fijaron con los 83 de entrenamiento. */
+  it('la ⓘ y la píldora dicen de dónde sale el riesgo, con su evidencia', () => {
     expect(EXPLICACION_VEREDICTO).toContain('Se estima con datos del juego');
     expect(EXPLICACION_VEREDICTO).toContain('no cambian la estimación de un juego');
     expect(EXPLICACION_VEREDICTO).toContain('el resto del catálogo');
     expect(EXPLICACION_VEREDICTO).toContain('no es una probabilidad');
-    expect(EXPLICACION_VEREDICTO).not.toMatch(/\d/);
-    expect(EXPLICACION_RIESGO).toContain('no con sus reseñas');
+    expect(EXPLICACION_VEREDICTO).toContain('evidencia sólida');
+    expect(EXPLICACION_VEREDICTO).not.toContain('los otros');
+    expect(EXPLICACION_RIESGO).toContain('entrenado con reseñas de Steam');
+    expect(EXPLICACION_RIESGO).not.toContain('no con sus reseñas');
   });
 
   it('el aviso de la historia dice que el perfil no cambia el riesgo', () => {
