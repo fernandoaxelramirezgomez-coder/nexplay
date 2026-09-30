@@ -4,7 +4,7 @@
 qué banda de riesgo tiene cada título y por qué (motivos reales de reseñas de Steam,
 no una nota genérica), y decidís con eso encima.
 
-![Catálogo de NexPlay: buscador, un ejemplo de segunda opinión y los estantes por banda de riesgo](docs/captura-interfaz.png)
+![Catálogo de NexPlay: buscador, un ejemplo de segunda opinión y los estantes por banda de riesgo](docs/capturas/captura-interfaz.png)
 
 ## Qué es
 
@@ -14,6 +14,13 @@ compra. `Y = 1` si `playtime_at_review < 120` minutos (ventana de reembolso de S
 
 Proyecto del Módulo V del Diplomado en Ciencia de Datos, FES Acatlán (UNAM). Contexto
 completo (datos, validación, qué no hacer) en [CLAUDE.md](CLAUDE.md).
+
+Antes del modelo, la exploración de los datos (Validación → Limpieza → Exploración) en
+`notebook/00_exploracion.ipynb`. Sus gráficas son interactivas en Colab y en nbviewer; en GitHub
+se ven como imagen:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/00_exploracion.ipynb)
+[![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/00_exploracion.ipynb)
 
 Narrativa completa (Problema → Datos → EDA → Calidad de datos → Ingeniería de variables →
 Modelo → Experimento de privacidad → Conclusiones) en `notebook/nexplay.ipynb`, ejecutable de
@@ -38,10 +45,10 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt -r requirements-modelo.txt
 
-python herramientas/preparar_entorno.py
+python despliegue/preparar_entorno.py
 ```
 
-`herramientas/preparar_entorno.py` hace, en orden:
+`despliegue/preparar_entorno.py` hace, en orden:
 
 1. Verifica que las dependencias estén instaladas.
 2. Descarga el asset del [release `data-v3`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v3)
@@ -55,7 +62,7 @@ python herramientas/preparar_entorno.py
    apagarla.
 
 Es idempotente: si `datos/nexplay.db` o `modelo/nexplay.pkl` ya existen, no los pisa
-(usa `python herramientas/preparar_entorno.py --force` para reconstruirlos de cero).
+(usa `python despliegue/preparar_entorno.py --force` para reconstruirlos de cero).
 
 ## Frontend en Angular
 
@@ -80,54 +87,85 @@ diseño, decisiones y deuda conocida en [frontend/README.md](frontend/README.md)
 Para revisar los cambios visuales sin abrir un navegador a mano:
 
 ```bash
-python herramientas/capturar_ui.py    # capturas en docs/capturas/angular/
+python calidad/capturar_ui.py    # capturas en docs/capturas/angular/
 ```
 
 ## Estructura
 
 ```
-api/                módulos de la API
+api/                la API (FastAPI): contrato estable, lógica delgada
   main.py             endpoints
   schemas.py          contratos Pydantic de entrada y salida
   scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
   catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
   valoraciones.py     calificaciones y hilo de comentarios (base propia, datos/valoraciones.db)
-  nia.py              el chat: contexto del juego, reglas de vocabulario y modo demostración
+  nia/                el chat de Nia
+    agente.py           contexto del juego, modelo de lenguaje y pulido de la respuesta
+    reglas.py           respuestas por reglas, con o sin modelo (el modo demostración)
+    herramientas.py     lo que el modelo puede consultar del catálogo
   config.py           variables de .env (clave y modelo de Nia, topes)
   limites.py          límite de frecuencia en memoria, por usuario e IP
 frontend/           el frontend en Angular, consume la API por HTTP
-notebook/           narrativa completa, ejecutable en Colab
+  scripts/recortar_nia.py  corta los sprites de Nia de la hoja de emociones
+notebook/           los notebooks, ejecutables en Colab (clonan un tag fijo de código)
+  00_exploracion.ipynb  validación, limpieza y exploración de los datos, antes del modelo
+  nexplay.ipynb         la narrativa del modelo de riesgo
 
 ingesta/            de dónde salen los datos
   ingesta_steam.py    ingesta original desde la API pública de Steam (no hace falta correrla)
   appids.txt          el catálogo declarado que baja esa ingesta
-modelado/           el modelo y su validación
+analisis/           las cuentas de la exploración y del texto de las reseñas
+  exploracion.py      chequeos y cuentas de 00_exploracion
+  limpieza.py         reglas de limpieza del texto, con bitácora y firma del conjunto
+  idioma.py           detección del idioma real de cada reseña
+  motivos.py          palabras clave de los motivos (la usa api/scoring.py para /explicacion)
+modelado/           el modelo de riesgo y su validación
   entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
   entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
-  verificar_bandas.py    compara las bandas del catálogo contra docs/bandas_referencia.json
+  verificar_bandas.py    compara las bandas del catálogo contra referencias/bandas_referencia.json
+referencias/        valores fijos contra los que se compara
+  bandas_referencia.json     las bandas validadas de los 123 juegos
+  particion_gkf_data-v1.csv  la partición congelada de GroupKFold (appid → fold)
 publicacion/        lo que se sube a un release
   extracto_datos.py         genera el extracto mínimo en Parquet que consume el notebook
   extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db
-herramientas/       operación del proyecto
+despliegue/         cómo se levanta el proyecto
   preparar_entorno.py       deja el proyecto funcional de punta a punta en una máquina limpia
-  exportar_valoraciones.py  exporta calificaciones y comentarios a CSV (uso local)
-  moderar_comentarios.py    lista y borra comentarios del hilo público (uso local)
-  capturar_ui.py            captura la UI con Playwright para revisar cambios visuales
-  recortar_nia.py           corta los sprites de Nia de la hoja de emociones
+  utilidades.py             descarga verificada de releases (la usan preparar_entorno y los notebooks)
+  Dockerfile                la imagen de la API que construye Render
+calidad/            lo que comprueba que nada se rompió
+  capturar_ui.py            recorre la UI con Playwright, la captura y la revisa
+  verificar_nia.py          revisa a Nia sin gastar llamadas
+  preguntas_nia.py          las 25 preguntas contra una API levantada
+operacion/          tareas locales sobre el contenido de los usuarios
+  exportar_valoraciones.py  exporta calificaciones y comentarios a CSV
+  moderar_comentarios.py    lista y borra comentarios del hilo público
 
 modelo/             artefactos entrenados (.pkl) — no versionado, lo genera preparar_entorno.py
 datos/              nexplay.db (SQLite) — no versionado, lo reconstruye preparar_entorno.py
 extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
 registros/          el log y el candado que deja la ingesta — no versionado
-docs/               capturas, evidencia y material para este README
+docs/               documentación: capturas, diseño, evidencia y planes
 .env.example        plantilla de variables; el .env real no se versiona
-requirements-dev.txt  opcional: Playwright para herramientas/capturar_ui.py; el notebook y
-                      preparar_entorno.py no lo usan
+requirements*.txt   ver la tabla de abajo
 ```
 
+Cada carpeta tiene un `README.md` corto: qué hay y qué no va ahí.
+
 `datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
-entrenados, no código). `herramientas/preparar_entorno.py` los reconstruye sin necesidad
+entrenados, no código). `despliegue/preparar_entorno.py` los reconstruye sin necesidad
 de volver a correr la ingesta de Steam.
+
+### Requirements
+
+Se quedan en la raíz; cada uno se instala donde hace falta y nada más.
+
+| Archivo | Para qué | Dónde se instala |
+|---|---|---|
+| `requirements.txt` | la API: FastAPI, uvicorn, pydantic, openai | Render y local |
+| `requirements-modelo.txt` | datos y modelo: numpy, pandas, scikit-learn, pyarrow | Render (sin pyarrow) y local |
+| `requirements-notebooks.txt` | plotly, lingua y sentence-transformers para los notebooks | solo notebooks; nunca Render (el Dockerfile falla si llega torch) |
+| `requirements-dev.txt` | Playwright (`calidad/capturar_ui.py`) y kaleido (las gráficas de los notebooks como PNG) | solo local |
 
 ## Configuración
 
@@ -320,8 +358,8 @@ también frena al modelo real, no solo al modo demostración.
 **Para verificar a Nia:**
 
 ```bash
-python herramientas/verificar_nia.py              # contexto, reglas, votos y los casos de producción; sale 1 si algo falla
-python herramientas/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba   # las 25 preguntas contra una API levantada
+python calidad/verificar_nia.py              # contexto, reglas, votos y los casos de producción; sale 1 si algo falla
+python calidad/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba   # las 25 preguntas contra una API levantada
 ```
 
 `verificar_nia.py` no gasta llamadas. `preguntas_nia.py` responde con el modelo si la API
@@ -329,14 +367,14 @@ que le das tiene clave; si no, con reglas.
 
 ## Contenido de usuarios y moderación
 
-- **`datos/valoraciones.db` no se regenera.** `herramientas/preparar_entorno.py` reconstruye
+- **`datos/valoraciones.db` no se regenera.** `despliegue/preparar_entorno.py` reconstruye
   `nexplay.db`, pero esta base es contenido de quienes usan la app y no está en ningún
   release. En un contenedor el disco es efímero: en el despliegue necesita un volumen
   persistente (un disco en Render, `/data` en Spaces) o las valoraciones se pierden en
   cada reinicio. Respaldarla es copiar el archivo.
-- `python herramientas/exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
+- `python operacion/exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
   El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
-- `python herramientas/moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
+- `python operacion/moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
   `--borrar ID` elimina uno, con sus reacciones. Cada quien puede borrar los suyos desde
   la app; para **el comentario de alguien más, este script es el único camino**.
 - El id anónimo no es autenticación: cualquiera puede mandar otro id y editar esa
@@ -345,14 +383,14 @@ que le das tiene clave; si no, con reglas.
 ## Regenerar los datos publicados (mantenedores)
 
 Solo hace falta si se vuelve a ingestar Steam o cambia el esquema. No es parte de la
-puesta en marcha normal — `herramientas/preparar_entorno.py` ya descarga estos assets, no los genera.
+puesta en marcha normal — `despliegue/preparar_entorno.py` ya descarga estos assets, no los genera.
 
 ```bash
 python ingesta/ingesta_steam.py --catalogo
 python ingesta/ingesta_steam.py --resenas      # tarda horas; reanuda si se interrumpe
 
 python publicacion/extracto_datos.py        # extracto/nexplay_extracto.parquet (para el notebook)
-python publicacion/extracto_reproducible.py # extracto/nexplay_reproducible.db.xz (para herramientas/preparar_entorno.py)
+python publicacion/extracto_reproducible.py # extracto/nexplay_reproducible.db.xz (para despliegue/preparar_entorno.py)
 ```
 
 `publicacion/extracto_reproducible.py` copia `juegos` y `resenas` completas salvo la columna
@@ -362,7 +400,7 @@ python publicacion/extracto_reproducible.py # extracto/nexplay_reproducible.db.x
 
 Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
 reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
-seguir bajando exactamente lo mismo. Hoy `herramientas/preparar_entorno.py` sirve `data-v3` y entrena
+seguir bajando exactamente lo mismo. Hoy `despliegue/preparar_entorno.py` sirve `data-v3` y entrena
 con `data-v1`; el notebook mide con `data-v1` y usa `data-v2` como prueba externa:
 
 ```bash
@@ -370,12 +408,12 @@ gh release create data-v2 extracto/nexplay_extracto.parquet extracto/nexplay_rep
 ```
 
 Y actualizar los sha256 en `notebook/nexplay.ipynb` (`PARQUET_ENTRENAMIENTO_SHA256`,
-`PARQUET_PRUEBA_SHA256`) y en `herramientas/preparar_entorno.py` (`SERVIDO_SHA256`,
+`PARQUET_PRUEBA_SHA256`) y en `despliegue/preparar_entorno.py` (`SERVIDO_SHA256`,
 `ENTRENAMIENTO_SHA256`) con el que imprime cada script — si no coinciden, la
 descarga se rechaza a propósito en vez de seguir con datos que pudieron cambiar.
 
 ## No versionado
 
 `datos/`, `modelo/` y `extracto/` están en `.gitignore`. `datos/` y `modelo/` los
-reconstruye `herramientas/preparar_entorno.py`; `extracto/` solo hace falta para publicar un release
+reconstruye `despliegue/preparar_entorno.py`; `extracto/` solo hace falta para publicar un release
 nuevo (sección anterior).

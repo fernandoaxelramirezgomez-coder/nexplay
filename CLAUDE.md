@@ -35,7 +35,8 @@ biblioteca vacía. No imputar como cero.
 
 ## Arquitectura
 
-La raíz solo tiene carpetas: cada una es un paso del flujo o una salida generada.
+La raíz solo tiene carpetas y los `requirements*.txt`. Una regla por carpeta: cada una es un
+paso del flujo o una salida generada, y tiene un README corto con qué va ahí y qué no.
 
 ```
 api/           FastAPI. Contrato estable, lógica delgada.
@@ -43,17 +44,22 @@ api/           FastAPI. Contrato estable, lógica delgada.
   schemas.py      modelos Pydantic de entrada y salida
   scoring.py      carga el modelo y predice
   catalogo.py     búsqueda de juegos
-  nia.py          chat con el modelo de lenguaje, con respaldo por reglas
-frontend/      Angular: el único frontend
+  nia/            chat con el modelo de lenguaje, con respaldo por reglas:
+                  agente.py, reglas.py y herramientas.py
+frontend/      Angular: el único frontend (scripts/recortar_nia.py corta los sprites de Nia)
 notebook/      la narrativa ejecutable (clona un tag fijo, no depende de estas rutas)
 
 ingesta/       ingesta_steam.py y appids.txt: bajar datos de Steam
-modelado/      entrenar_baseline.py, entrenar_modelo.py, verificar_bandas.py
+analisis/      exploracion, limpieza, idioma y motivos (motivos.py lo usa la API)
+modelado/      solo entrenar_baseline.py, entrenar_modelo.py y verificar_bandas.py
+referencias/   bandas_referencia.json y particion_gkf_data-v1.csv: contra qué se compara
 publicacion/   extracto_datos.py y extracto_reproducible.py: lo que va a un release
-herramientas/  preparar_entorno.py (la entrada del proyecto), exportar_valoraciones.py,
-               moderar_comentarios.py, capturar_ui.py, recortar_nia.py
-despliegue/    Dockerfile de la API (Render lo construye desde master); el frontend va a
-               Vercel con frontend/vercel.json
+despliegue/    preparar_entorno.py (la entrada del proyecto), utilidades.py y el Dockerfile
+               de la API (Render lo construye desde master); el frontend va a Vercel con
+               frontend/vercel.json
+calidad/       capturar_ui.py, verificar_nia.py y preguntas_nia.py
+operacion/     moderar_comentarios.py y exportar_valoraciones.py
+docs/          solo documentación: capturas, diseño, evidencia y planes
 
 modelo/        artefactos entrenados (.pkl), no versionados
 datos/         SQLite: nexplay.db, tablas `juegos` y `resenas` (más `resumen_resenas`

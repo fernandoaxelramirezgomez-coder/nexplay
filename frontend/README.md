@@ -3,6 +3,10 @@
 Frontend en Angular 22 (componentes standalone, signals, zoneless) que consume la API
 FastAPI de la raíz del repo sin modificarla. Es el único frontend del proyecto.
 
+Qué va aquí: la app (`src/`), sus recursos (`public/`), su configuración y
+`scripts/recortar_nia.py`, que prepara los sprites de Nia. No va aquí: nada de la API ni
+revisiones que no sean de la app (el recorrido con Playwright vive en `calidad/`).
+
 ## Correr en local
 
 Requisitos: Node `^22.22.3 || ^24.15.0 || >=26` y la API corriendo en `http://localhost:8000`
@@ -16,7 +20,7 @@ npx ng serve        # http://localhost:4200 (abrir como localhost, no 127.0.0.1:
 
 - `npx ng test --watch=false`: tests unitarios (Vitest).
 - `npx ng build`: build de producción en `dist/frontend/browser`.
-- `python herramientas/capturar_ui.py` (desde la raíz): capturas en
+- `python calidad/capturar_ui.py` (desde la raíz): capturas en
   `docs/capturas/angular/` para revisar los cambios visuales.
 
 Si alguna vez hay que regenerar el lockfile, npm 10.9 falla con
@@ -42,7 +46,7 @@ Además del riesgo, los motivos y los factores, cada ficha tiene:
   cada una. Es apoyo visual, no un segundo resultado: la emoción sale solo de la banda que
   ya muestra el veredicto (`dominio/reaccion-nia.ts`), y reacciona al riesgo relativo, no
   a una supuesta confianza del modelo. Los sprites salen de una hoja de 12 emociones con
-  `herramientas/recortar_nia.py`; los de la ficha y el retrato del inicio viven aparte, en
+  `frontend/scripts/recortar_nia.py`; los de la ficha y el retrato del inicio viven aparte, en
   `public/nia/`.
 - **Nia**, el chat del juego. Sin clave de OpenAI configurada responde en modo
   demostración, con reglas sobre los mismos datos, y lo dice en pantalla. En el resto de las
