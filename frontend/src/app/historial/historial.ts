@@ -23,9 +23,10 @@ const ROTULO: Record<TipoEntrada, string> = {
           <h1>Tu historial</h1>
         }
         <p class="lectura entrada">
-          Las fichas que abriste, lo que comparaste y lo que le preguntaste a Nia.
-          <strong>Vive solo en este navegador</strong>: no viaja a ningún servidor y nadie más lo ve.
-          Se guardan las últimas {{ maximo }} cosas.
+          Las fichas que abriste, lo que comparaste y de qué juegos le preguntaste a Nia.
+          <strong>Esta lista vive solo en este navegador</strong>: no viaja a ningún servidor y nadie más la ve.
+          Las preguntas a Nia sí se envían para contestarlas y se guardan 180 días, sin correos ni teléfonos.
+          Aquí quedan las últimas {{ maximo }} cosas.
         </p>
       </header>
 

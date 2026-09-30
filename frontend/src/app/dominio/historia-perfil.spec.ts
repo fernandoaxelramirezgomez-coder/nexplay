@@ -126,4 +126,12 @@ describe('historiaPerfil', () => {
     const muchos = plano(historiaPerfil(perfilDePrueba({ compras_al_anio: 25 }), juegoDePrueba(), MOTIVOS));
     expect(muchos).toContain('Compras más de 15 al año: este sería uno más');
   });
+
+  /** Con tope de $200, WILD HEARTS de $1,599 no lo mencionaba. */
+  it('avisa cuando el juego pasa el tope que se declaró por juego', () => {
+    const caro = juegoDePrueba({ precio_final: 1599 });
+    expect(plano(historiaPerfil(perfilDePrueba(), caro, MOTIVOS, 1))).toContain('Cuesta $1,599: pasa tu tope de $200 por juego.');
+    expect(plano(historiaPerfil(perfilDePrueba(), caro, MOTIVOS, 4))).not.toContain('tope');
+    expect(plano(historiaPerfil(perfilDePrueba(), juegoDePrueba({ precio_final: 150 }), MOTIVOS, 1))).not.toContain('tope');
+  });
 });

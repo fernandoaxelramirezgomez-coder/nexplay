@@ -92,6 +92,7 @@ export class Perfil {
   protected readonly guardando = signal(false);
   protected readonly guardado = signal(false);
   protected readonly error = signal('');
+  protected readonly confirmandoBorrado = signal(false);
 
   protected readonly textoEstado = computed(() => {
     const pendientes = this.pendientes();
@@ -167,6 +168,7 @@ export class Perfil {
   }
 
   protected borrar(): void {
+    this.confirmandoBorrado.set(false);
     this.perfil.borrar();
     this.valores.set(VALORES_VACIOS);
     this.guardado.set(false);

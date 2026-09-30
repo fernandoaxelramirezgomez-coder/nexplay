@@ -3772,6 +3772,166 @@ def _comparar_sin_comentarios_citados(pagina: Page, url: str, destino: Path, api
     return problemas
 
 
+def _bloque4(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """El bloque 4 de las correcciones: la lista de comentarios sin scroll propio, Enter en el
+    buscador del chat, el campo de la burbuja a la vista, «Verlos en Comparar» que pregunta
+    antes de pisar, «Borrar perfil» con confirmación, «Tu actividad» con los rangos y la
+    aclaración de Nia, el aviso del tope y el velo del cajón en el teléfono."""
+    problemas = []
+    base = url.rstrip("/")
+    navegador = pagina.context.browser
+
+    def contexto_nuevo(ancho: int = 1440, alto: int = 900, comparar: list[int] | None = None):
+        contexto = navegador.new_context(viewport={"width": ancho, "height": alto})
+        _sin_consultas_a_nia(contexto)
+        if comparar is not None:
+            contexto.add_init_script(f"localStorage.setItem('nexplay.comparar.v1', '{json.dumps(comparar)}')")
+        return contexto
+
+    # La lista de comentarios se lee con el scroll de la página.
+    usuario, texto = "capturas-bloque4-01", "Comentario de prueba del recorrido del bloque 4"
+    peticion = urllib.request.Request(
+        f"{api}/comentarios/1145360", method="POST", headers={"Content-Type": "application/json"},
+        data=json.dumps({"usuario": usuario, "texto": texto}).encode(),
+    )
+    with urllib.request.urlopen(peticion, timeout=10) as respuesta:
+        propio = next((c["id"] for c in reversed(json.load(respuesta)) if c["texto"] == texto), None)
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/juego/1145360")
+        lista = otra.get_by_test_id("lista-comentarios")
+        lista.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        desborde = lista.evaluate("l => getComputedStyle(l).overflowY")
+        if desborde in ("auto", "scroll"):
+            problemas.append(f"la lista de comentarios todavía tiene scroll propio ({desborde})")
+    finally:
+        contexto.close()
+        if propio is not None:
+            urllib.request.urlopen(urllib.request.Request(
+                f"{api}/comentarios/1145360/{propio}?usuario={usuario}", method="DELETE"), timeout=10).close()
+
+    # Enter en el buscador del chat elige el primer resultado.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/nia")
+        otra.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        _preguntar_en_chat(otra, "¿Por qué tiene ese riesgo?")
+        buscar = otra.get_by_test_id("nia-elegir-buscar")
+        buscar.fill("hades")
+        buscar.press("Enter")
+        try:
+            otra.get_by_test_id("nia-juego").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        except TiempoAgotado:
+            problemas.append("Enter en el buscador del chat no elige el primer resultado")
+    finally:
+        contexto.close()
+
+    # La burbuja: con la conversación larga, el campo de escribir sigue a la vista.
+    contexto = contexto_nuevo(390, 844)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/explorar")
+        otra.get_by_test_id("nia-flotante-burbuja").click()
+        panel = otra.get_by_test_id("nia-flotante-panel")
+        panel.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        for n in range(6):
+            panel.get_by_test_id("nia-pregunta").fill(f"Pregunta de prueba {n + 1} para alargar la conversación")
+            panel.get_by_test_id("nia-enviar").click()
+            otra.wait_for_function(
+                "() => !document.querySelector(\"[data-testid='nia-escribiendo']\")", timeout=_TIMEOUT_MS
+            )
+            otra.wait_for_timeout(200)
+        campo = panel.get_by_test_id("nia-pregunta").bounding_box()
+        caja = panel.bounding_box()
+        if not campo or campo["y"] + campo["height"] > min(caja["y"] + caja["height"], 844) + 1:
+            problemas.append(f"en la burbuja, el campo de escribir se sale de la vista ({campo}, {caja})")
+        otra.screenshot(path=destino / "burbuja-campo-visible-390.png")
+    finally:
+        contexto.close()
+
+    # «Verlos en Comparar» con otros juegos ya elegidos: pregunta; «Agregar» junta, «Reemplazarlos» pisa.
+    for accion, esperado in (("agregar", "1938010,1091500,1145360,367520"), ("reemplazar", "1145360,367520")):
+        contexto = contexto_nuevo(comparar=[1938010, 1091500])
+        try:
+            otra = contexto.new_page()
+            _abrir(otra, f"{base}/nia")
+            otra.get_by_test_id("nia-pregunta").wait_for(state="visible", timeout=_TIMEOUT_MS)
+            _preguntar_en_chat(otra, "Compara Hades y Hollow Knight")
+            otra.get_by_test_id("nia-comparar").click()
+            eleccion = otra.get_by_test_id("nia-comparar-elegir")
+            try:
+                eleccion.wait_for(state="visible", timeout=5000)
+            except TiempoAgotado:
+                problemas.append(f"«Verlos en Comparar» no preguntó antes de pisar la comparación ({otra.url})")
+                continue
+            if accion == "agregar":
+                eleccion.screenshot(path=destino / "nia-comparar-elegir.png")
+            otra.get_by_test_id(f"nia-comparar-{accion}").click()
+            otra.wait_for_url("**/comparar**", timeout=_TIMEOUT_MS)
+            if f"appids={esperado.replace(',', '%2C')}" not in otra.url and f"appids={esperado}" not in otra.url:
+                problemas.append(f"«{accion}» en Comparar llevó a {otra.url} y se esperaba {esperado}")
+        finally:
+            contexto.close()
+
+    # Perfil: «Borrar perfil» confirma, «Tu actividad» nombra los rangos y aclara lo de Nia, y
+    # la ficha avisa del tope.
+    contexto = contexto_nuevo()
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/perfil")
+        otra.get_by_test_id("perfil").wait_for(state="visible", timeout=_TIMEOUT_MS)
+        _llenar_perfil(otra)
+        _abrir(otra, f"{base}/juego/1938010")
+        historia = otra.get_by_test_id("historia-texto")
+        historia.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        if "pasa tu tope de $500" not in " ".join(historia.inner_text().split()):
+            problemas.append(f"con tope de $500, WILD HEARTS no avisa que lo pasa ({historia.inner_text()!r})")
+        otra.get_by_test_id("historia-perfil").screenshot(path=destino / "historia-tope.png")
+        _abrir(otra, f"{base}/perfil#actividad")
+        actividad = otra.get_by_test_id("perfil-actividad")
+        actividad.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        leido = " ".join(actividad.inner_text().split())
+        if "Las preguntas a Nia sí se envían" not in leido:
+            problemas.append("«Tu actividad» no aclara que las preguntas a Nia sí se envían")
+        if "3–6 compras al año · 4 a 9 h por semana · fricción media" not in leido:
+            problemas.append(f"«Tu actividad» no resume el perfil con los rangos elegidos ({leido[:200]!r})")
+        actividad.screenshot(path=destino / "tu-actividad.png")
+        otra.get_by_test_id("borrar-perfil").click()
+        if not otra.get_by_test_id("perfil-confirmar-borrado").count() or not otra.get_by_test_id("perfil-activo").count():
+            problemas.append("«Borrar perfil» borra sin pedir confirmación")
+        otra.get_by_test_id("barra-guardar").screenshot(path=destino / "borrar-perfil-confirmacion.png")
+        otra.get_by_test_id("perfil-confirmar-borrar").click()
+        otra.get_by_test_id("perfil-inactivo").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    finally:
+        contexto.close()
+
+    # El cajón del menú en el teléfono: velo oscuro detrás y tocarlo lo cierra.
+    contexto = contexto_nuevo(390, 844)
+    try:
+        otra = contexto.new_page()
+        _abrir(otra, f"{base}/")
+        otra.get_by_test_id("abrir-menu").click()
+        velo = otra.get_by_test_id("velo-menu")
+        velo.wait_for(state="visible", timeout=_TIMEOUT_MS)
+        alfa = _rgb(velo.evaluate("v => getComputedStyle(v).backgroundColor"))[1]
+        otra.screenshot(path=destino / "cajon-velo-390.png")
+        velo.click(position={"x": 370, "y": 400})
+        otra.wait_for_timeout(400)
+        if alfa < 0.3 or otra.get_by_test_id("velo-menu").count():
+            problemas.append(f"el cajón del teléfono no tiene velo oscuro (alfa {alfa}) o tocarlo no lo cierra")
+    finally:
+        contexto.close()
+
+    if not problemas:
+        print("bloque 4: comentarios sin scroll, Enter elige en el chat, el campo de la burbuja a la vista, "
+              "«Verlos en Comparar» pregunta (agregar/reemplazar), «Borrar perfil» confirma, «Tu actividad» "
+              "con rangos y lo de Nia, aviso del tope y velo del cajón "
+              f"({(destino / 'nia-comparar-elegir.png').relative_to(_RAIZ)})")
+    return problemas
+
+
 def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     """Lo que salió de probar el sitio en producción: Explorar sin resultados, la franja de
     Nia, la burbuja que no tapa, la ficha técnica entera, el tema, el tráiler cargando y las
@@ -3786,6 +3946,7 @@ def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> li
         + _trailer_cargando(pagina, url, destino)
         + _zonas_de_toque(pagina, url)
         + _comparar_sin_comentarios_citados(pagina, url, destino, api)
+        + _bloque4(pagina, url, destino, api)
     )
 
 
@@ -3855,6 +4016,11 @@ def _respuesta_falsa(cuerpo: dict) -> str:
         respuesta.update(
             respuesta="Eso no lo sé con estos datos 🙈 Puedo filtrar el catálogo por género, precio o riesgo. ¿Qué se te antoja?",
             fuera_de_tema=True,
+        )
+    elif pregunta.lower().startswith("compara"):
+        respuesta.update(
+            respuesta="Hades y Hollow Knight tienen riesgo bajo 📊 ¿Los abro lado a lado en Comparar?",
+            juegos=[1145360, 367520],
         )
     elif "recomiendas" in pregunta.lower():
         sugeridas = [s["appid"] for s in cuerpo.get("sugerencias", [])][:3]

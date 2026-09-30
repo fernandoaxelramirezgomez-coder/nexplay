@@ -27,6 +27,7 @@ const MAXIMO_RESULTADOS = 5;
           data-testid="nia-elegir-buscar"
           [value]="texto()"
           (input)="texto.set($any($event.target).value)"
+          (keydown.enter)="elegirPrimero($event)"
         />
       </label>
       @if (texto().trim()) {
@@ -143,5 +144,15 @@ export class ElegirJuegoChat {
   constructor() {
     // Nia acaba de pedir el juego: el foco va al buscador, sin tener que buscarlo.
     afterNextRender(() => this.campo()?.nativeElement.focus({ preventScroll: true }));
+  }
+
+  /** Enter elige el primero de la lista, como en cualquier buscador: con un solo resultado,
+   * obligar a ir por el ratón era un paso de más. */
+  protected elegirPrimero(evento: Event): void {
+    evento.preventDefault();
+    const primero = this.resultados()[0];
+    if (this.texto().trim() && primero) {
+      this.elegido.emit(primero);
+    }
   }
 }

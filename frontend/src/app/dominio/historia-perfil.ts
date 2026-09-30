@@ -1,7 +1,7 @@
 import { JuegoCatalogo, MotivoInsatisfaccion, PerfilJugador } from '../api/contrato';
 import { generosEnComun } from './afinidad';
 import { Segmento } from './segunda-opinion';
-import { rangoDeComprasCorto } from './opciones-perfil';
+import { Gasto, TOPE_GASTO, rangoDeComprasCorto } from './opciones-perfil';
 
 /** Las dos horas con las que se define el arrepentimiento temprano (120 minutos). */
 const HORAS_DE_LA_VENTANA = 2;
@@ -25,6 +25,7 @@ export function historiaPerfil(
   perfil: PerfilJugador | null,
   juego: JuegoCatalogo,
   _motivos: readonly MotivoInsatisfaccion[] = [],
+  gasto: Gasto | null = null,
 ): LineaHistoria[] | null {
   if (!perfil) {
     return null;
@@ -33,7 +34,7 @@ export function historiaPerfil(
   const lineas: LineaHistoria[] = [
     { tipo: 'generos', segmentos: lineaGeneros(perfil, juego) },
     { tipo: 'tiempo', segmentos: lineaTiempo(perfil) },
-    { tipo: 'compra', segmentos: lineaCompra(perfil, juego) },
+    { tipo: 'compra', segmentos: lineaCompra(perfil, juego, gasto) },
   ];
   return lineas.filter((linea) => linea.segmentos.length);
 }
@@ -73,12 +74,23 @@ function lineaTiempo(perfil: PerfilJugador): Segmento[] {
   return [{ texto: `Llegas a ${HORAS_DE_LA_VENTANA} h en 1–2 sesiones, dentro del reembolso.` }];
 }
 
-function lineaCompra(perfil: PerfilJugador, juego: JuegoCatalogo): Segmento[] {
+const PESOS = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
+
+function lineaCompra(perfil: PerfilJugador, juego: JuegoCatalogo, gasto: Gasto | null): Segmento[] {
   if (juego.es_gratis) {
     return [{ texto: 'Gratuito: probarlo solo te cuesta el rato.' }];
   }
   if (juego.precio_final === null) {
     return [{ texto: 'Steam no devolvió precio: no se puede decir cuánto pesa.' }];
+  }
+  // Lo que más pesa de la compra, si pasa: que cuesta más de lo que dijiste pagar por juego.
+  const tope = gasto ? TOPE_GASTO[gasto] : null;
+  if (tope !== null && juego.precio_final > tope) {
+    return [
+      { texto: `Cuesta $${PESOS.format(juego.precio_final)}: ` },
+      { texto: `pasa tu tope de $${PESOS.format(tope)}`, clave: true },
+      { texto: ' por juego.' },
+    ];
   }
 
   const compras = perfil.compras_al_anio;

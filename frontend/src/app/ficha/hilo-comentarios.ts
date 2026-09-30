@@ -188,8 +188,6 @@ const MAXIMO_TEXTO = 500;
       display: flex;
       flex-direction: column;
       gap: var(--espacio-8);
-      max-height: 360px;
-      overflow-y: auto;
     }
     .burbuja {
       background: var(--superficie-lienzo);

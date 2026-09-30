@@ -144,7 +144,15 @@
           </button>
         }
         @if (perfil.hayPerfil()) {
-          <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="borrar()">Borrar perfil</button>
+          @if (confirmandoBorrado()) {
+            <span class="meta" role="status" data-testid="perfil-confirmar-borrado">¿Seguro? Se borran tus respuestas.</span>
+            <button type="button" class="boton-cta" data-testid="perfil-confirmar-borrar" (click)="borrar()">Sí, borrar</button>
+            <button type="button" class="boton-fantasma" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+          } @else {
+            <button type="button" class="boton-fantasma" data-testid="borrar-perfil" (click)="confirmandoBorrado.set(true)">
+              Borrar perfil
+            </button>
+          }
         }
       </div>
     </div>

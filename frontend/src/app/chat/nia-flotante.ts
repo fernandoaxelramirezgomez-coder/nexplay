@@ -67,7 +67,14 @@ const CERCA_DEL_FINAL = 120;
               Cerrar
             </button>
           </header>
-          <app-nia [appid]="null" [muestraTitulo]="false" [muestraIntro]="false" [saludo]="saludo" [fichas]="fichas" />
+          <app-nia
+            [appid]="null"
+            [muestraTitulo]="false"
+            [muestraIntro]="false"
+            [llenaAlto]="true"
+            [saludo]="saludo"
+            [fichas]="fichas"
+          />
         </div>
       }
 
@@ -213,13 +220,21 @@ const CERCA_DEL_FINAL = 120;
         width: 82px;
       }
     }
+    /* La conversación se desplaza por dentro y el campo de escribir se queda abajo, a la
+       vista: antes se desplazaba el panel entero y el campo se iba con la conversación. */
     .panel {
       width: min(400px, calc(100vw - var(--espacio-48)));
       max-height: min(72vh, 600px);
-      overflow-y: auto;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       gap: var(--espacio-12);
+    }
+    .panel > app-nia {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
     }
     .cabecera {
       display: flex;

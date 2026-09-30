@@ -201,7 +201,7 @@ export class HistoriaPerfil {
   protected readonly avisoFijo = AVISO_HISTORIA;
 
   protected readonly historia = computed(() =>
-    historiaPerfil(this.perfil.perfil(), this.juego(), this.motivos()),
+    historiaPerfil(this.perfil.perfil(), this.juego(), this.motivos(), this.perfil.valores()?.gasto ?? null),
   );
 
   protected readonly plataforma = computed(() => lineaPlataforma(this.perfil.valores()?.plataformas ?? []));

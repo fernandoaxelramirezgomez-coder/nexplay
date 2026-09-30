@@ -4,7 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormularioAlta, PerfilJugador } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { HistorialStore } from './historial-store';
-import { ValoresPerfil } from '../dominio/opciones-perfil';
+import { FRICCION, ValoresPerfil, rangoDeComprasCorto, rangoDeHoras } from '../dominio/opciones-perfil';
 
 // v4 (6C): varias plataformas y la pregunta del gasto. Los v3 sí se migran —son
 // respuestas de verdad—: su plataforma pasa a la lista y el gasto queda sin responder, con
@@ -34,6 +34,16 @@ interface Guardado {
 
 function valido(guardado: Guardado | null): guardado is Guardado {
   return typeof guardado?.perfil?.compras_al_anio === 'number' && Array.isArray(guardado?.valores?.plataformas);
+}
+
+/** «3–6 compras al año · 4 a 9 h por semana · fricción media», con lo que se eligió. */
+export function resumenDeValores(valores: ValoresPerfil, perfil: PerfilJugador): string {
+  const friccion = FRICCION.find((opcion) => opcion.valor === (valores.friccion ?? perfil.tolerancia_friccion));
+  return [
+    `${rangoDeComprasCorto(valores.compras ?? perfil.compras_al_anio)} compras al año`,
+    `${rangoDeHoras(valores.horas ?? perfil.horas_por_semana).replace('entre ', '').replace(' y ', ' a ')} por semana`,
+    `fricción ${(friccion?.etiqueta ?? 'media').toLowerCase()}`,
+  ].join(' · ');
 }
 
 /** Un perfil v3: sus valores tenían una sola plataforma y no tenían gasto. */
@@ -101,7 +111,9 @@ export class PerfilStore {
     this.guardado.set({ valores, perfil });
     this.historial.registrar({
       tipo: 'perfil',
-      titulo: `${perfil.compras_al_anio} compras al año · ${perfil.horas_por_semana} h por semana · fricción ${perfil.tolerancia_friccion}`,
+      // Los rangos que se eligieron: «4 compras al año · 15 h» eran los puntos medios que
+      // viajan a la API, no lo que alguien declaró.
+      titulo: resumenDeValores(valores, perfil),
     });
     try {
       localStorage.setItem(CLAVE, JSON.stringify({ valores, perfil }));

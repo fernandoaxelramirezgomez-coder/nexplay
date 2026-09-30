@@ -12,7 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { JuegoCatalogo, MensajeChat, RespuestaNia } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
@@ -32,6 +32,7 @@ import {
   sinMarkdown,
 } from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
+import { CompararStore, MAXIMO_COMPARAR } from '../estado/comparar-store';
 import { HistorialStore } from '../estado/historial-store';
 import { PanoramaStore } from '../estado/panorama-store';
 import { PerfilStore } from '../estado/perfil-store';
@@ -62,6 +63,8 @@ interface Extra {
   pidePerfil?: boolean;
   /** La pregunta pedía comparar: si hay dos o más tarjetas, se ofrece abrirlas en Comparar. */
   comparar?: boolean;
+  /** Ya había otros juegos en Comparar: el mensaje pregunta si reemplazarlos o agregar. */
+  eligiendoComparar?: boolean;
   /** La pregunta no encajaba con el catálogo: solo ahí Nia dice sus avisos. */
   fueraDeTema?: boolean;
 }
@@ -151,15 +154,40 @@ interface Extra {
                 }
               </ul>
               @if (extra?.comparar && extra!.juegos!.length >= 2) {
-                <a
-                  class="compacto invitar"
-                  data-tono="comparar"
-                  routerLink="/comparar"
-                  [queryParams]="{ appids: extra!.juegos!.slice(0, 4).join(',') }"
-                  data-testid="nia-comparar"
-                >
-                  Verlos en Comparar →
-                </a>
+                @if (extra?.eligiendoComparar) {
+                  <!-- Ya había otros juegos en Comparar: se pregunta antes de pisarlos. -->
+                  <div class="elegir-comparar" data-testid="nia-comparar-elegir">
+                    <span class="meta">Ya tienes {{ comparar.cantidad() }} en Comparar.</span>
+                    <button
+                      type="button"
+                      class="compacto"
+                      data-tono="comparar"
+                      data-testid="nia-comparar-reemplazar"
+                      (click)="irAComparar(extra!.juegos!)"
+                    >
+                      Reemplazarlos
+                    </button>
+                    <button
+                      type="button"
+                      class="compacto"
+                      data-tono="comparar"
+                      data-testid="nia-comparar-agregar"
+                      (click)="irAComparar(juntos(extra!.juegos!))"
+                    >
+                      Agregar{{ caben(extra!.juegos!) }}
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="compacto invitar"
+                    data-tono="comparar"
+                    data-testid="nia-comparar"
+                    (click)="verEnComparar(extra!.juegos!, $index)"
+                  >
+                    Verlos en Comparar →
+                  </button>
+                }
               }
             }
             @if (extra?.sugerencias?.length) {
@@ -383,6 +411,13 @@ interface Extra {
       display: inline-flex;
       margin-top: var(--espacio-8);
     }
+    .elegir-comparar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--espacio-8);
+      margin-top: var(--espacio-8);
+    }
     /* Los juegos que nombra, como tarjeta: el appid lo devolvió una herramienta y la
        portada sale del catálogo del navegador, nunca de lo que diga el modelo. */
     .tarjetas {
@@ -590,6 +625,8 @@ export class Nia {
   private readonly catalogo = inject(CatalogoStore);
   private readonly panorama = inject(PanoramaStore);
   private readonly historial = inject(HistorialStore);
+  protected readonly comparar = inject(CompararStore);
+  private readonly router = inject(Router);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
   private readonly cuerpo = viewChild<ElementRef<HTMLElement>>('cuerpo');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
@@ -719,6 +756,37 @@ export class Nia {
   protected tarjetas(appids: readonly number[]): JuegoCatalogo[] {
     const porAppid = this.catalogo.porAppid();
     return appids.map((appid) => porAppid.get(appid)).filter((juego): juego is JuegoCatalogo => !!juego);
+  }
+
+  /** Sin nada en Comparar (o con esos mismos juegos), abre la comparación; si había otros,
+   * pregunta antes: «Verlos en Comparar» reemplazaba sin avisar una comparación de 4. */
+  protected verEnComparar(appids: readonly number[], posicion: number): void {
+    const actuales = this.comparar.appids();
+    const nuevos = appids.slice(0, MAXIMO_COMPARAR);
+    const mismos = actuales.length === nuevos.length && nuevos.every((appid) => actuales.includes(appid));
+    if (!actuales.length || mismos) {
+      this.irAComparar(nuevos);
+      return;
+    }
+    this.extras.update((extras) => ({ ...extras, [posicion]: { ...extras[posicion], eligiendoComparar: true } }));
+  }
+
+  /** Los que ya estaban y los nuevos, sin repetir y hasta el máximo. */
+  protected juntos(appids: readonly number[]): number[] {
+    const actuales = this.comparar.appids();
+    return [...actuales, ...appids.filter((appid) => !actuales.includes(appid))].slice(0, MAXIMO_COMPARAR);
+  }
+
+  /** «Agregar (caben 1)» cuando no entran todos. */
+  protected caben(appids: readonly number[]): string {
+    const actuales = this.comparar.appids();
+    const faltan = appids.filter((appid) => !actuales.includes(appid)).length;
+    const lugar = MAXIMO_COMPARAR - actuales.length;
+    return faltan > lugar ? ` (caben ${lugar})` : '';
+  }
+
+  protected irAComparar(appids: readonly number[]): void {
+    this.router.navigate(['/comparar'], { queryParams: { appids: appids.slice(0, MAXIMO_COMPARAR).join(',') } });
   }
 
   protected tocarFicha(ficha: string): void {
