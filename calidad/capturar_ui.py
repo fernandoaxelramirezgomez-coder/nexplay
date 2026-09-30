@@ -4085,10 +4085,47 @@ def _explicar_el_riesgo(pagina: Page, url: str, destino: Path, api: str) -> list
     return problemas
 
 
+def _portada_abre_el_juego(pagina: Page, url: str) -> list[str]:
+    """Un clic en la portada de una tarjeta de Explorar abre el juego, igual que en el título,
+    a 1440 y a 390 px; «+ Comparar» sigue siendo su propio botón. Antes, el enlace del título
+    solo se cubría a sí mismo y la portada no respondía."""
+    problemas = []
+    contexto = pagina.context.browser.new_context(viewport={"width": 390, "height": 844})
+    _sin_consultas_a_nia(contexto)
+    try:
+        for hoja in (pagina, contexto.new_page()):
+            ancho = hoja.viewport_size["width"]
+            _abrir(hoja, _explorar(url))
+            tarjeta = hoja.locator("[data-testid='tarjeta-juego']").first
+            tarjeta.wait_for(state="visible", timeout=_TIMEOUT_MS)
+            tarjeta.scroll_into_view_if_needed()
+            _esperar_quietud(hoja)
+            appid = tarjeta.get_attribute("data-appid")
+            comparar = tarjeta.get_by_test_id("boton-comparar")
+            caja = comparar.bounding_box()
+            hoja.mouse.click(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
+            hoja.wait_for_timeout(400)
+            if "/juego/" in hoja.url or comparar.get_attribute("aria-pressed") != "true":
+                problemas.append(f"a {ancho} px, «+ Comparar» no agrega o abre el juego ({hoja.url})")
+            comparar.click()  # se deja la bandeja como estaba
+            caja = tarjeta.locator("app-portada").bounding_box()
+            hoja.mouse.click(caja["x"] + caja["width"] * 0.3, caja["y"] + caja["height"] * 0.6)
+            try:
+                hoja.wait_for_url(f"**/juego/{appid}", timeout=_TIMEOUT_MS)
+            except TiempoAgotado:
+                problemas.append(f"a {ancho} px, un clic en la portada no abre el juego ({hoja.url})")
+    finally:
+        contexto.close()
+    if not problemas:
+        print("portada:  en Explorar, un clic en la portada abre el juego (1440 y 390 px); «+ Comparar» sigue aparte")
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
+        + _portada_abre_el_juego(pagina, url)
         + _explicar_el_riesgo(pagina, url, destino, api)
         + _angular_descripcion(pagina, url, api)
         + _angular_video(pagina, url, destino, api)

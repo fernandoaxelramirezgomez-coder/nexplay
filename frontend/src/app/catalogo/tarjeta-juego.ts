@@ -148,7 +148,11 @@ import { MotivosStore } from '../estado/motivos-store';
       line-clamp: 2;
       overflow: hidden;
     }
+    /* Estático a propósito: .toque-amplio lo deja en relative, y entonces su ::after solo
+       cubría el título y un clic en la portada no abría el juego. Así el ::after se ancla a
+       la tarjeta entera. */
     .enlace {
+      position: static;
       text-decoration: none;
     }
     .enlace:focus-visible {
