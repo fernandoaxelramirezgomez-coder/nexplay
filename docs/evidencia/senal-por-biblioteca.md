@@ -40,6 +40,32 @@ del promedio por juego (2.02×): los veteranos se concentran en juegos con más 
 concentración explica toda la diferencia o solo parte, lo responde el análisis estratificado
 por juego (abajo).
 
+## Análisis estratificado por juego
+
+**Pregunta:** ¿la diferencia se sostiene dentro de cada juego, o viene de que los veteranos
+compran juegos con más señal?
+
+**Prerregistro** (commiteado antes de la primera corrida):
+- **Datos y grupos:** los mismos de arriba. Data-v1 con perfiles públicos; novatos de 1 a 19
+  juegos y veteranos con 20 o más; la misma señal.
+- **Método:** razón de riesgos de Mantel-Haenszel, veteranos contra novatos, estratificada por
+  appid. En cada juego k, con a y n1 las señales y reseñas de veteranos, c y n0 las de novatos,
+  y N = n1 + n0: RR_MH = Σ a·n0/N / Σ c·n1/N.
+- **Qué juegos aportan:** solo los que tienen reseñas de los dos grupos (juegos informativos).
+  Se reporta cuántos son.
+- **IC 95 %:** bootstrap sobre appid, 2,000 réplicas con reemplazo y semilla 42. Una réplica
+  sin señales de novatos en sus juegos informativos tiene razón infinita: se cuenta, y entra al
+  percentil como +∞ sin interpolar (numpy, `method="inverted_cdf"`).
+- **Regla para la frase del documento:**
+  - si el IC queda completo por encima de 1: «La diferencia se sostiene dentro de cada juego»;
+  - si el IC cruza el 1: «Parte de la diferencia puede venir de qué juegos compra cada grupo»;
+  - si quedara completo por debajo de 1 (caso no previsto): se reporta al dueño antes de
+    escribir ninguna frase.
+- **Salida:** `docs/evidencia/senal-por-biblioteca-estratificada.json`, con
+  `calidad/senal_por_biblioteca_estratificada.py`.
+
+**Resultado:** pendiente; se llena después de correr.
+
 ## La cifra anterior (retirada)
 
 El plan de entrega citaba **1.34 % contra 0.45 %**. Venía de un cálculo del **14 de septiembre**
