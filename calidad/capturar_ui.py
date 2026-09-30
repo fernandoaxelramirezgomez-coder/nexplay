@@ -3899,6 +3899,12 @@ def _bloque4(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
             problemas.append(f"«Tu actividad» no resume el perfil con los rangos elegidos ({leido[:200]!r})")
         actividad.screenshot(path=destino / "tu-actividad.png")
         otra.get_by_test_id("borrar-perfil").click()
+        # Se espera a que la confirmación se pinte: contarla justo después del clic a veces la
+        # leía antes de que Angular la dibujara y reportaba un falso «borra sin confirmar».
+        try:
+            otra.get_by_test_id("perfil-confirmar-borrado").wait_for(state="visible", timeout=5_000)
+        except TiempoAgotado:
+            pass
         if not otra.get_by_test_id("perfil-confirmar-borrado").count() or not otra.get_by_test_id("perfil-activo").count():
             problemas.append("«Borrar perfil» borra sin pedir confirmación")
         otra.get_by_test_id("barra-guardar").screenshot(path=destino / "borrar-perfil-confirmacion.png")
