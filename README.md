@@ -343,7 +343,14 @@ Devuelve `{ respuesta, modo, modelo, aviso, juegos, pide_juego, fuera_de_tema, �
 `modo` dice de dónde salió la respuesta: `openai` (el modelo), `demostracion` (sin clave,
 por reglas) o `reglas`. Este último es cuando hay clave pero la respuesta no pasa por el
 modelo porque tiene que ser siempre la misma: pedir el juego, resumir la conversación, no
-coronar «el mejor» y no contestar preguntas que no son de juegos.
+coronar «el mejor», no contestar preguntas que no son de juegos y explicar por qué un juego
+abierto tiene su riesgo («¿por qué tiene ese riesgo?»), con el factor que más aporta, su
+evidencia y los avisos.
+
+**Limitación conocida.** Un seguimiento sin palabras de juegos, como «¿Y eso es mucho?», se
+trata como fuera de tema y se contesta con reglas: el detector de temas ajenos mira solo la
+pregunta, no la conversación. Se deja así a propósito: si mirara la conversación, la trivia a
+mitad de un hilo («¿cuál es la capital de Francia?») llegaría al modelo.
 
 El backend arma el contexto con los datos reales de ese juego (banda, motivos con sus
 porcentajes, Metacritic, precio, géneros) y el prompt de sistema fija el vocabulario del

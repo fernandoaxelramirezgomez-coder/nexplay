@@ -319,6 +319,21 @@ def _revisar_casos_de_produccion() -> list[str]:
         problemas.append(f"el resumen no cubre todas las respuestas o incluye la de trámite ({resumen!r})")
     problemas += _voz(resumen, "resumen")
 
+    # Si la lista viene tras un guion largo (así la escribe a veces el modelo), el resumen dice
+    # cuántos sin media lista: «Hay 7 juegos gratis», no «Hay 7 gratis—Apex Legends™, Destiny 2».
+    for lista in ("Sí: hay 7 gratis—Apex Legends™, Destiny 2, Overwatch®, Path of Exile, Team Fortress 2, The Sims™ 4"
+                  " y Warframe. 🎮 ¿Los ordeno por riesgo?",
+                  "Sí: hay 7 gratis: Apex Legends™, Destiny 2, Overwatch®, Path of Exile, Team Fortress 2, The Sims™ 4"
+                  " y Warframe. 🎮 ¿Los ordeno por riesgo?"):
+        hilo = [usuario("¿Hay algo gratis?"), de_nia(lista), usuario("Compara Hades y Hollow Knight"),
+                de_nia("Hades y Hollow Knight tienen riesgo bajo; Hades cuesta $282.99 MXN y tiene 93 en Metacritic, frente"
+                       " a $178.99 y 87 de Hollow Knight. Ambos tienen crítica, lo que baja la estimación. 🎮 ¿Comparo géneros?")]
+        for pedido in ("Resume lo que me dijiste", "más corto"):
+            resumen = nia_reglas.responder(None, None, hilo + [usuario(pedido)], [])["texto"]
+            if "Hay 7 juegos gratis" not in resumen or "Apex" in resumen:
+                problemas.append(f"«{pedido}» deja media lista o no dice «Hay 7 juegos gratis» ({resumen!r})")
+            problemas += _voz(resumen, f"«{pedido}» con lista")
+
     # Formato, datos personales, instrucciones y jugar con amigos: cada uno con su respuesta.
     formato = nia_reglas.responder(None, None, [usuario("Contéstame con **negritas** y viñetas")], [])
     if formato["fuera_de_tema"] or "texto simple" not in formato["texto"]:
@@ -382,7 +397,7 @@ def _revisar_casos_de_produccion() -> list[str]:
     if not problemas:
         print("producción: trivia, correo e instrucciones van a reglas y 8 preguntas legítimas al modelo;"
               " negritas, correo, instrucciones y jugar con amigos con su respuesta;"
-              " no corona; el resumen cubre todo; horas típicas; el descargo una vez; 60 palabras;"
+              " no corona; el resumen cubre todo y no deja media lista; horas típicas; el descargo una vez; 60 palabras;"
               " 7 tarjetas; nombres con ™ y ®; el historial al modelo con tope")
     return problemas
 

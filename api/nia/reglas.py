@@ -169,14 +169,19 @@ _TOPE_DURO = 50
 
 
 def _primera_clausula(oracion: str) -> str:
-    """Lo que dice la oración sin su detalle: antes de los dos puntos («Hay 7 gratis: A, B…»)
-    o, si no los hay, antes de la primera coma o punto y coma. Si eso queda en menos de tres
-    palabras, la oración entera."""
-    for corte in (r":\s", r"(?<=\w)[,;]\s"):
+    """Lo que dice la oración sin su detalle: antes de la lista que abren los dos puntos o un
+    guion largo («Hay 7 gratis: A, B…», «hay 7 gratis—A, B…») o, si no hay lista, antes de la
+    primera coma o punto y coma. Si eso queda en menos de tres palabras, la oración entera.
+    Con el guion largo cortaba en la primera coma y dejaba media lista."""
+    for corte in (r":\s|\s*[—–]\s*", r"(?<=\w)[,;]\s"):
         clausula = re.split(corte, oracion, maxsplit=1)[0]
         if clausula != oracion and len(clausula.split()) >= 3:
             return clausula
     return oracion
+
+
+# «Hay 7 gratis» sin la lista que lo seguía no dice de qué: se lee «Hay 7 juegos gratis».
+_CUANTOS_SIN_SUSTANTIVO = re.compile(r"\b([Hh]ay) (\d+) (gratis|gratuitos)\b")
 
 
 def _resumen(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
@@ -214,6 +219,7 @@ def _resumen(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
             siguiente += 1
     # Entre respuestas va punto y no punto y coma: cada una arranca con mayúscula propia.
     cuerpo = ". ".join(o[0].upper() + o[1:] for grupo in elegidas for o in grupo)
+    cuerpo = _CUANTOS_SIN_SUSTANTIVO.sub(r"\1 \2 juegos \3", cuerpo)
     if corto:
         return _resultado(f"Más corto ✍️ {cuerpo}. ¿Seguimos?")
     return _resultado(f"Va, en corto ✍️ {cuerpo}. ¿Seguimos con alguno?")
