@@ -54,6 +54,10 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
   de correr (`docs/plan/mejoras/01-antes-del-reembolso.md`). Script:
   `analisis/antes_del_reembolso.py`. Resultado: no se construye.
+- `verificar-factores-hoy.txt`: la salida de `calidad/verificar_factores.py` el 2026-09-30,
+  antes de la ronda «explicar el riesgo». El primer factor ya es el de mayor aporte en los 123
+  juegos. Fallan la evidencia por factor y los avisos (gratis y precio imputado), porque el
+  contrato todavía no existe.
 - `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
   a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 

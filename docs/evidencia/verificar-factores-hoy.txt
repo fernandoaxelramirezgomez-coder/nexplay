@@ -1,0 +1,28 @@
+1 · primer factor: ok en los 123 juegos
+2 · evidencia débil: FALLA en 123 juegos
+    A Short Hike: precio del juego lleva sin campo evidencia
+    Age of Empires II: Definitive Edition: descuento actual del juego lleva sin campo evidencia
+    Age of Empires IV: Anniversary Edition: precio del juego lleva sin campo evidencia
+    Amnesia: The Bunker: descuento actual del juego lleva sin campo evidencia
+    Apex Legends™: precio del juego lleva sin campo evidencia
+    Apex Legends™: gratuidad del juego lleva sin campo evidencia
+    … y 135 casos más
+3 · evidencia sólida: FALLA en 123 juegos
+    A Short Hike: cobertura de crítica especializada lleva sin campo evidencia
+    A Short Hike: nota de Metacritic lleva sin campo evidencia
+    Age of Empires II: Definitive Edition: cobertura de crítica especializada lleva sin campo evidencia
+    Age of Empires II: Definitive Edition: nota de Metacritic lleva sin campo evidencia
+    Age of Empires IV: Anniversary Edition: cobertura de crítica especializada lleva sin campo evidencia
+    Age of Empires IV: Anniversary Edition: nota de Metacritic lleva sin campo evidencia
+    … y 222 casos más
+4 · aviso de gratis: FALLA en 7 juegos
+    Apex Legends™: sin campo avisos
+    Destiny 2: sin campo avisos
+    Overwatch®: sin campo avisos
+    Path of Exile: sin campo avisos
+    Team Fortress 2: sin campo avisos
+    The Sims™ 4: sin campo avisos
+    … y 1 casos más
+5 · precio imputado: FALLA en 2 juegos
+    Grand Theft Auto V Legacy: sin campo avisos
+    New World: Aeternum: sin campo avisos

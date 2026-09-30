@@ -165,9 +165,10 @@ anteriores: «efecto menor», «Nia empieza siempre por la crítica» y ocultar 
     grande.
 - **Juegos gratis:** una nota explícita de que en data-v1 había solo 2 gratis, así que el
   modelo extrapola.
-- **GTA V Legacy y New World** (de pago, sin precio): el factor de precio sale primero, como
-  lo calculó el modelo, con el texto «Precio no disponible: el modelo lo toma como 0» y la
-  marca de evidencia débil. Junto al veredicto, el aviso «Estimación menos confiable: a este
+- **GTA V Legacy y New World** (de pago, sin precio): el factor de precio se muestra en su
+  lugar por aporte, como lo calculó el modelo, en vez de ocultarse. En GTA V Legacy es el
+  primero; en New World lo supera la falta de nota de la crítica (+1.36 contra −1.08). Lleva el
+  texto «Precio no disponible: el modelo lo toma como 0» y la marca de evidencia débil. Junto al veredicto, el aviso «Estimación menos confiable: a este
   juego le falta el precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo
   estimado».
 - **Nia sigue la misma regla:** nombra el factor que más aportó y, si es de evidencia débil,
@@ -179,8 +180,8 @@ anteriores: «efecto menor», «Nia empieza siempre por la crítica» y ocultar 
 2. todo factor de precio, descuento o gratuidad lleva evidencia débil;
 3. todo factor de crítica lleva evidencia sólida;
 4. los juegos gratis llevan la nota de extrapolación;
-5. los juegos con precio imputado llevan el aviso en el veredicto, y su primer factor es el
-   precio.
+5. los juegos con precio imputado llevan el aviso en el veredicto, y el factor de precio se
+   muestra (su orden lo exige el chequeo 1).
 
 Fija el contrato que implementa la ronda: `FactorPrediccion.evidencia` (`"solida"` o
 `"debil"`) y `PrediccionRiesgo.avisos` (`codigo` y `texto`; códigos `gratis_extrapola` y
