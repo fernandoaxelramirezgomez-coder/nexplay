@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 _BASE_DE_PRUEBA = Path(tempfile.mkdtemp(prefix="nexplay-verificar-nia-")) / "valoraciones.db"
 os.environ["NEXPLAY_VALORACIONES_DB"] = str(_BASE_DE_PRUEBA)
 
-from api import catalogo, valoraciones  # noqa: E402
+from api import catalogo, scoring, valoraciones  # noqa: E402
 from api.nia import agente as nia  # noqa: E402
 from api.nia import herramientas as nia_herramientas  # noqa: E402
 from api.nia import reglas as nia_reglas  # noqa: E402
@@ -71,8 +71,30 @@ _PROHIBIDO_SIEMPRE = ("abandono", "insatisfacción general", "vale la pena", "te
 _FACTORES_TS = Path(__file__).resolve().parents[1] / "frontend" / "src" / "app" / "dominio" / "factores.ts"
 
 
+# Lo que Nia y la ficha dicen igual fuera de _LECTURA_FACTORES: la banda neutral, la
+# evidencia, el precio imputado y las referencias contra las que se leen la nota y el precio.
+_FRASES_COMPARTIDAS = (
+    nia.TEXTO_TIPICO,
+    nia.TEXTO_EVIDENCIA_SOLIDA,
+    nia.TEXTO_EVIDENCIA_DEBIL,
+    nia.TEXTO_PRECIO_IMPUTADO,
+    " · promedio del catálogo ",
+    " · precio mediano del catálogo ",
+)
+
+# L-2: la nota se compara con el promedio del catálogo y el precio con la mediana. Ni el
+# promedio del precio ni un promedio «del modelo».
+_REFERENCIAS_PROHIBIDAS = ("precio promedio", "promedio usado por el modelo", "promedio del modelo",
+                           "promedio que usa el modelo")
+
+# Los casos de esta ronda: precio imputado (GTA V Legacy, New World), gratis (Apex) y la nota
+# de 86 contra 85.5 (Cyberpunk), además de uno por nivel de riesgo.
+_CASOS = ("Grand Theft Auto V Legacy", "New World: Aeternum", "Apex Legends™", "Cyberpunk 2077")
+
+
 def _mismas_frases_que_la_ficha() -> list[str]:
-    """Las frases de _LECTURA_FACTORES tienen que estar tal cual en COMO_SE_LEE.
+    """Las frases de _LECTURA_FACTORES y las compartidas tienen que estar tal cual en
+    dominio/factores.ts.
 
     Viven en dos idiomas porque la ficha las pinta y Nia las dice; si una se cambia sola,
     Nia contradice a la ficha sin que nada falle."""
@@ -85,8 +107,10 @@ def _mismas_frases_que_la_ficha() -> list[str]:
         for frase in frases
         if frase not in ts
     ]
+    faltan += [f"{frase!r} no está en dominio/factores.ts" for frase in _FRASES_COMPARTIDAS if frase not in ts]
     if not faltan:
-        print(f"frases:   las {sum(len(f) for f in nia._LECTURA_FACTORES.values())} lecturas son las mismas que en la ficha")
+        print(f"frases:   las {sum(len(f) for f in nia._LECTURA_FACTORES.values())} lecturas y las"
+              f" {len(_FRASES_COMPARTIDAS)} frases compartidas son las mismas que en la ficha")
     return faltan
 
 
@@ -101,6 +125,10 @@ def _uno_por_banda() -> list:
     sin_nota = next((j for j in juegos if j.metacritic is None), None)
     if sin_nota and sin_nota not in elegidos:
         elegidos.append(sin_nota)
+    for nombre in _CASOS:
+        caso = next((j for j in juegos if j.nombre == nombre), None)
+        if caso and caso not in elegidos:
+            elegidos.append(caso)
     return elegidos
 
 
@@ -125,19 +153,41 @@ def _revisar_contexto(juego) -> list[str]:
             if factor["lectura"] not in esperadas:
                 problemas.append(f"{juego.nombre}: {factor['etiqueta']!r} no usa la frase de la ficha")
 
-    # Factores imputados: si el dato no está, el factor no se cita.
+    # Mismo orden que la API: el primero es el que más aporta. Solo se quita la nota de un
+    # juego sin nota, igual que factoresVisibles() en la ficha.
+    prediccion = scoring.prediccion_de_titulo(juego.appid)
+    esperadas = [f.etiqueta for f in prediccion.factores if not (juego.metacritic is None and f.etiqueta == "nota de Metacritic")]
     etiquetas = [f["etiqueta"] for f in datos["factores"]]
-    if juego.metacritic is None and "nota de Metacritic" in etiquetas:
-        problemas.append(f"{juego.nombre}: sin nota de Metacritic, el factor de la nota no debería citarse")
-    if juego.precio_final is None and not juego.es_gratis and "precio del juego" in etiquetas:
-        problemas.append(f"{juego.nombre}: sin precio conocido, el factor del precio no debería citarse")
+    if etiquetas != esperadas:
+        problemas.append(f"{juego.nombre}: los factores no van en el orden de la API ({etiquetas} contra {esperadas})")
+    for factor, de_la_api in zip(datos["factores"], [f for f in prediccion.factores if f.etiqueta in etiquetas]):
+        if (factor["efecto"] is None) != de_la_api.cerca_de_lo_tipico:
+            problemas.append(f"{juego.nombre}: {factor['etiqueta']!r} no respeta la banda neutral")
+        if factor["debil"] != (de_la_api.evidencia.value == "debil"):
+            problemas.append(f"{juego.nombre}: {factor['etiqueta']!r} no lleva la evidencia de la API")
 
-    # El promedio de la nota, con el mismo decimal que la ficha.
-    promedio = nia._referencias_del_catalogo()["metacritic_promedio"]
-    if f"Metacritic promedio {promedio}" not in texto:
+    # Precio imputado: el factor se cita con su texto y el aviso va en el contexto.
+    precio_imputado = juego.precio_final is None and not juego.es_gratis
+    if precio_imputado:
+        if "precio del juego" in etiquetas and nia.TEXTO_PRECIO_IMPUTADO not in texto:
+            problemas.append(f"{juego.nombre}: el precio imputado no sale con el texto de la ficha")
+        if "Estimación menos confiable" not in texto:
+            problemas.append(f"{juego.nombre}: sin precio, el contexto no lleva el aviso de estimación menos confiable")
+    if juego.es_gratis and "el modelo extrapola" not in texto:
+        problemas.append(f"{juego.nombre}: es gratis y el contexto no lleva la nota de extrapolación")
+
+    # L-2: la nota contra el promedio del catálogo, con el decimal de la ficha, y el precio
+    # contra la mediana. Nada de «precio promedio» ni de un promedio del modelo.
+    ref = nia._referencias_del_catalogo()
+    if f"Metacritic promedio {ref['nota_promedio']}" not in texto:
         problemas.append(f"{juego.nombre}: el contexto no cita el promedio de Metacritic del catálogo")
-    if isinstance(promedio, float) and promedio != round(promedio, 1):
-        problemas.append(f"el promedio de Metacritic no viene con un decimal ({promedio})")
+    if ref["nota_promedio"] != round(ref["nota_promedio"], 1):
+        problemas.append(f"el promedio de Metacritic no viene con un decimal ({ref['nota_promedio']})")
+    if f"precio mediano {nia._pesos(ref['precio_mediano'])}" not in texto:
+        problemas.append(f"{juego.nombre}: el contexto no cita el precio mediano del catálogo")
+    for prohibida in _REFERENCIAS_PROHIBIDAS:
+        if prohibida in texto.lower():
+            problemas.append(f"{juego.nombre}: el contexto dice {prohibida!r}")
 
     # El n de los porcentajes.
     if datos["motivos"] and "clasificada" not in texto:
@@ -145,7 +195,9 @@ def _revisar_contexto(juego) -> list[str]:
 
     print(f"contexto: {juego.nombre} (banda {juego.banda_riesgo.value}) → {len(datos['factores'])} factores")
     for factor in datos["factores"]:
-        print(f"          - {factor['lectura']} → {factor['efecto']} el riesgo estimado")
+        print(f"          - {nia.linea_de_factor(factor)}")
+    for aviso in datos["avisos"]:
+        print(f"          aviso: {aviso}")
     return problemas
 
 
@@ -184,11 +236,25 @@ def _revisar_respuestas(juego) -> list[str]:
         bajo = respuesta.lower()
         if "riesgo" in pregunta.lower() or "por qué" in pregunta.lower():
             citadas = [f["lectura"] for f in datos["factores"] if f["lectura"][1:] in respuesta]
-            if datos["factores"] and not citadas:
+            if datos["factores"] and not citadas and "le falta el precio" not in respuesta:
                 problemas.append(f"{donde}: al explicar el riesgo no cita ninguna variable del modelo")
             for prohibido in _PROHIBIDO_AL_EXPLICAR_LA_BANDA:
                 if prohibido in bajo:
                     problemas.append(f"{donde}: explica el riesgo con las reseñas ({prohibido!r})")
+            # El factor que más aporta va primero, y si es de evidencia débil lo dice.
+            principal = datos["factores"][0] if datos["factores"] else None
+            if principal and principal["efecto"] is not None:
+                cita = "le falta el precio" if principal["imputado"] else principal["lectura"][1:]
+                otras = [f["lectura"][1:] for f in datos["factores"][1:] if f["lectura"][1:] in respuesta]
+                if cita not in respuesta:
+                    problemas.append(f"{donde}: no nombra el factor que más aporta ({principal['etiqueta']})")
+                elif any(respuesta.index(o) < respuesta.index(cita) for o in otras):
+                    problemas.append(f"{donde}: nombra otro factor antes del que más aporta")
+                if principal["debil"] and not principal["imputado"] and "evidencia débil" not in respuesta:
+                    problemas.append(f"{donde}: el factor principal es de evidencia débil y no lo dice")
+            for aviso in datos["avisos"]:
+                if aviso not in respuesta:
+                    problemas.append(f"{donde}: no da el aviso de la estimación ({aviso[:40]}…)")
         if pregunta == "¿El precio influye?":
             esperado = nia._factor_de_precio(datos)
             if esperado and esperado not in respuesta:
@@ -220,6 +286,16 @@ def _revisar_casos_de_produccion() -> list[str]:
         va_a_reglas = nia._por_reglas_aunque_haya_modelo(None, None, [usuario(pregunta)], [], pregunta)
         if va_a_reglas != (pregunta in por_reglas):
             problemas.append(f"«{pregunta}» iría a {'reglas' if va_a_reglas else 'el modelo'}")
+    # Con un juego abierto, explicar el riesgo va a reglas: la regla de factores, los avisos y
+    # el descargo salen siempre. Lo demás de la ficha sigue yendo al modelo.
+    abierto = next(j for j in catalogo.buscar() if j.nombre == "Apex Legends™").appid
+    datos_abierto = nia.contexto(abierto)
+    for pregunta, esperado in (("¿Por qué tiene ese riesgo?", True), ("Sí, explícamelo", True),
+                               ("¿Qué mueve esta estimación?", True), ("¿Me lo compro?", False),
+                               ("¿El riesgo es alto porque sus reseñas son malas?", False)):
+        va_a_reglas = nia._por_reglas_aunque_haya_modelo(datos_abierto, abierto, [usuario(pregunta)], [], pregunta)
+        if va_a_reglas != esperado:
+            problemas.append(f"«{pregunta}» en una ficha iría a {'reglas' if va_a_reglas else 'el modelo'}")
 
     trivia = nia_reglas.responder(None, None, [usuario("¿Cuál es la capital de Francia?")], [])
     if "parís" in trivia["texto"].lower() or not trivia["fuera_de_tema"]:

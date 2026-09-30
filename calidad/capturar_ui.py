@@ -105,6 +105,9 @@ def _revisar_vocabulario(pagina: Page, donde: str) -> list[str]:
     problemas = []
     if "abandono" in texto.lower():
         problemas.append(f"{donde}: aparece 'abandono'")
+    # El modelo sí se entrenó con reseñas: nada lo niega, ni en un title ni en un tooltip.
+    if "no con sus reseñas" in pagina.content():
+        problemas.append(f"{donde}: aparece 'no con sus reseñas'")
     if scores := _SCORE_VISIBLE.findall(texto):
         problemas.append(f"{donde}: scores visibles {scores[:5]}")
     # Modelo de título: el perfil no cambia el riesgo, ningún texto puede prometerlo.
@@ -3956,10 +3959,137 @@ def _angular_correcciones(pagina: Page, url: str, destino: Path, api: str) -> li
     )
 
 
+_GTA_LEGACY, _APEX, _CYBERPUNK = 271590, 1172470, 1091500
+
+
+def _factores_de_la_ficha(pagina: Page, url: str, appid: int) -> list[dict]:
+    _abrir(pagina, f"{url.rstrip('/')}/juego/{appid}")
+    pagina.get_by_test_id("ficha-veredicto").wait_for(state="visible", timeout=_TIMEOUT_MS)
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='factores-lista'] li\").length > 0", timeout=_TIMEOUT_MS
+    )
+    return pagina.locator("[data-testid='factor']").evaluate_all(
+        """lis => lis.map(li => ({
+            texto: li.querySelector('.etiqueta').textContent.trim(),
+            direccion: li.dataset.direccion,
+            evidencia: li.querySelector('[data-testid="factor-evidencia"]').textContent.trim(),
+            tipico: !!li.querySelector('[data-testid="factor-tipico"]'),
+        }))"""
+    )
+
+
+def _avisos_de_la_ficha(pagina: Page) -> dict[str, str]:
+    return dict(pagina.locator("[data-testid='aviso-estimacion']").evaluate_all(
+        "ps => ps.map(p => [p.dataset.codigo, p.textContent.trim()])"
+    ))
+
+
+def _explicar_el_riesgo(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
+    """La ronda «explicar el riesgo»: el precio imputado visible con su aviso (GTA V Legacy),
+    la nota de extrapolación y la evidencia débil en un gratis (Apex), la nota de 86 contra el
+    85.5 del catálogo sin flecha (Cyberpunk), los avisos en Comparar y, en el Inicio, lo que
+    más mencionan las negativas tempranas con la regla de reembolso de Steam."""
+    problemas = []
+    base = url.rstrip("/")
+
+    factores = _factores_de_la_ficha(pagina, url, _GTA_LEGACY)
+    avisos = _avisos_de_la_ficha(pagina)
+    if not factores or factores[0]["texto"] != "Precio no disponible: el modelo lo toma como 0":
+        problemas.append(f"GTA V Legacy: el primer factor no es el precio imputado ({factores[:1]})")
+    elif not factores[0]["evidencia"].startswith("Evidencia débil"):
+        problemas.append(f"GTA V Legacy: el precio imputado no dice que su evidencia es débil ({factores[0]})")
+    if not avisos.get("precio_imputado", "").startswith("Estimación menos confiable"):
+        problemas.append(f"GTA V Legacy: falta el aviso de estimación menos confiable junto al veredicto ({avisos})")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "ficha-gta-precio-imputado.png", full_page=True)
+    problemas += _revisar_vocabulario(pagina, "ficha de GTA V Legacy")
+    print(f"imputado: GTA V Legacy · {factores[0]['texto'] if factores else '—'} · aviso: {avisos.get('precio_imputado', '—')[:40]}…")
+
+    factores = _factores_de_la_ficha(pagina, url, _APEX)
+    avisos = _avisos_de_la_ficha(pagina)
+    if "extrapola" not in avisos.get("gratis_extrapola", ""):
+        problemas.append(f"Apex Legends: falta la nota de extrapolación de los gratis ({avisos})")
+    if not any(f["evidencia"].startswith("Evidencia débil") for f in factores):
+        problemas.append(f"Apex Legends: ningún factor dice evidencia débil ({factores})")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "ficha-apex-gratis.png", full_page=True)
+    problemas += _revisar_vocabulario(pagina, "ficha de Apex Legends")
+    print(f"gratis:   Apex Legends · {avisos.get('gratis_extrapola', '—')}")
+
+    factores = _factores_de_la_ficha(pagina, url, _CYBERPUNK)
+    nota = next((f for f in factores if f["texto"].startswith("Nota de Metacritic")), None)
+    if nota is None or nota["texto"] != "Nota de Metacritic: 86 · promedio del catálogo 85.5":
+        problemas.append(f"Cyberpunk 2077: la nota no se lee con la cifra y el promedio del catálogo ({nota})")
+    elif nota["direccion"] != "neutra" or not nota["tipico"]:
+        problemas.append(f"Cyberpunk 2077: la nota de 86 contra 85.5 lleva flecha ({nota})")
+    if any(re.search(r"por (encima|debajo)", f["texto"]) for f in factores):
+        problemas.append(f"Cyberpunk 2077: un factor dice «por encima/por debajo» ({factores})")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "ficha-cyberpunk-nota-tipica.png", full_page=True)
+    problemas += _revisar_vocabulario(pagina, "ficha de Cyberpunk 2077")
+    print(f"típico:   Cyberpunk 2077 · {nota['texto'] if nota else '—'} · sin flecha: {bool(nota and nota['direccion'] == 'neutra')}")
+
+    # Comparar: los mismos factores y los mismos avisos que la ficha.
+    _abrir(pagina, f"{base}/comparar?appids={_GTA_LEGACY},{_APEX},{_CYBERPUNK}")
+    pagina.wait_for_function(
+        "() => document.querySelectorAll(\"[data-testid='columna-comparar'] [data-testid='factor']\").length >= 6",
+        timeout=_TIMEOUT_MS,
+    )
+    codigos = sorted(pagina.locator("[data-testid='columna-aviso']").evaluate_all("ps => ps.map(p => p.dataset.codigo)"))
+    if codigos != ["gratis_extrapola", "precio_imputado"]:
+        problemas.append(f"comparar: los avisos no son los de GTA V Legacy y Apex ({codigos})")
+    sin_evidencia = pagina.locator("[data-testid='columna-comparar'] [data-testid='factor']:not(:has([data-testid='factor-evidencia']))").count()
+    if sin_evidencia:
+        problemas.append(f"comparar: {sin_evidencia} factores sin su nivel de evidencia")
+    _esperar_portadas(pagina, "[data-testid='columna-comparar'] img")
+    _esperar_quietud(pagina)
+    pagina.screenshot(path=destino / "comparar-avisos.png", full_page=True)
+    problemas += _revisar_vocabulario(pagina, "comparar con avisos")
+    print(f"comparar: avisos {codigos}")
+    # La selección vive en el navegador: si se queda, _angular_comparar parte de 3 juegos ya
+    # elegidos y sus clics los quitan. La página se recarga justo abajo, al abrir el Inicio.
+    pagina.evaluate("() => localStorage.removeItem('nexplay.comparar.v1')")
+
+    # Inicio: los tres motivos que más mencionan las negativas tempranas, con sus cifras de
+    # la API, de cuántas salen, y la regla de reembolso de Steam sin prometer nada.
+    with urllib.request.urlopen(f"{api}/panorama", timeout=10) as respuesta:
+        panorama = json.load(respuesta)
+    _abrir(pagina, f"{base}/")
+    tarjeta = pagina.get_by_test_id("antes-motivos")
+    tarjeta.wait_for(state="visible", timeout=_TIMEOUT_MS)
+    tarjeta.scroll_into_view_if_needed()
+    pagina.wait_for_timeout(900)
+    vistas = pagina.locator("[data-testid='antes-motivos-barras'] li").evaluate_all(
+        "lis => lis.map(li => [li.querySelector('.nombre').textContent.trim(), li.querySelector('.valor').textContent.trim()])"
+    )
+    esperadas = [[m["motivo"].capitalize(), f"{round(m['frecuencia'] * 100)}%"] for m in panorama["motivos"][:3]]
+    if vistas != esperadas:
+        problemas.append(f"inicio: los motivos del catálogo no son los de la API ({vistas} contra {esperadas})")
+    origen = " ".join(pagina.get_by_test_id("antes-motivos-origen").inner_text().split())
+    n = f"{panorama['resenas_clasificadas']:,}"
+    cobertura = f"{round(panorama['resenas_clasificadas'] / panorama['casos_senal'] * 100)}%"
+    if f"de las {n} negativas tempranas que mencionan un motivo" not in origen or cobertura not in origen:
+        problemas.append(f"inicio: el origen no dice de cuántas negativas salen ({origen})")
+    reembolso = " ".join(pagina.get_by_test_id("antes-reembolso").inner_text().split())
+    for frase in ("Steam permite pedir reembolso dentro de los 14 días posteriores a la compra y con menos de 2 horas de juego.",
+                  "Steam decide cada solicitud: NexPlay no garantiza nada."):
+        if frase not in reembolso:
+            problemas.append(f"inicio: falta «{frase}»")
+    enlace = pagina.get_by_test_id("antes-enlace-steam").get_attribute("href")
+    if enlace != "https://store.steampowered.com/steam_refunds/":
+        problemas.append(f"inicio: el enlace de reembolsos no es el de Steam ({enlace})")
+    _esperar_quietud(pagina)
+    pagina.get_by_test_id("antes-de-pagar").screenshot(path=destino / "inicio-antes-de-pagar.png")
+    problemas += _revisar_vocabulario(pagina, "inicio")
+    print(f"inicio:   {' · '.join(f'{a} {b}' for a, b in vistas)} · {origen}")
+    return problemas
+
+
 def _capturar_angular(pagina: Page, url: str, destino: Path, api: str) -> list[str]:
     return (
         _angular_catalogo(pagina, url, destino, api)
         + _angular_ficha(pagina, url, destino)
+        + _explicar_el_riesgo(pagina, url, destino, api)
         + _angular_descripcion(pagina, url, api)
         + _angular_video(pagina, url, destino, api)
         + _angular_6b(pagina, url, destino, api)
