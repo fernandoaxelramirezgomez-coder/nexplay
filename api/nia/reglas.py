@@ -264,6 +264,9 @@ _VOCABULARIO_DE_JUEGOS = (
     "recomienda", "recomiendas", "sugier", "sugerencia", "compar", "motivo", "bug", "rendimiento", "dificil",
     "dificultad", "facil", "senal", "dato", "fuente", "rol", "rpg", "shooter", "estrategia", "accion",
     "aventura", "indie", "simulador", "deporte", "carrera", "mmo", "lanzamiento", "nuevo", "vs",
+    # Lo que Nia y la ficha dicen al explicar el riesgo: «¿qué significa evidencia débil?»
+    # es una pregunta de seguimiento, no de otro tema.
+    "evidencia", "estimacion", "extrapol", "confiable", "factor", "median", "tipico",
 )
 
 

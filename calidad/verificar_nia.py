@@ -292,7 +292,9 @@ def _revisar_casos_de_produccion() -> list[str]:
     datos_abierto = nia.contexto(abierto)
     for pregunta, esperado in (("¿Por qué tiene ese riesgo?", True), ("Sí, explícamelo", True),
                                ("¿Qué mueve esta estimación?", True), ("¿Me lo compro?", False),
-                               ("¿El riesgo es alto porque sus reseñas son malas?", False)):
+                               ("¿El riesgo es alto porque sus reseñas son malas?", False),
+                               ("¿Qué significa evidencia débil?", False), ("¿Por qué el precio lo sube?", False),
+                               ("¿Y cuánto cuesta?", False), ("¿Por qué dice que el modelo extrapola?", False)):
         va_a_reglas = nia._por_reglas_aunque_haya_modelo(datos_abierto, abierto, [usuario(pregunta)], [], pregunta)
         if va_a_reglas != esperado:
             problemas.append(f"«{pregunta}» en una ficha iría a {'reglas' if va_a_reglas else 'el modelo'}")
