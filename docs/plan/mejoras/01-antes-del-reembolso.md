@@ -142,11 +142,10 @@ Detalle en [docs/evidencia/antes-del-reembolso.md](../../evidencia/antes-del-ree
 **Decisión: no se construye.** Los motivos siguen en `/explicacion` como «lo que más
 mencionan», sin prometer qué revisar.
 
-- En los 83, el acierto propio empata con la base en los tres tamaños (10–15, 16–30 y más de
-  30 quejas). No es solo falta de datos: con estas palabras clave, el motivo de cada juego no
-  anticipa mejor que un motivo general.
-- Si la Parte B de los modelos de texto clasifica más quejas con un modelo, A y B se repiten
-  con estos mismos criterios.
+**Interpretación.** El motivo por juego no anticipa mejor que la línea base, en ningún tamaño
+(10–15, 16–30 y más de 30 quejas con motivo). La limitación es la cobertura de las palabras
+clave: solo el 34 % de las negativas tempranas menciona algún motivo (notebook 00, §3.8). Se
+reintenta si la Parte B de los modelos de texto mejora la cobertura, con los mismos criterios.
 
 ---
 
