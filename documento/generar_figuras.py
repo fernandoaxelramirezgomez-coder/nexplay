@@ -55,7 +55,9 @@ RELEASES = {**RELEASES_V1_V2, SERVIDO_REF: SERVIDO_SHA256}
 
 # La paleta del frontend (tema claro), la misma de main.tex. «serie» es el acento un paso más
 # saturado: #0E738F no llega al piso de croma del validador de paletas (0.093 < 0.1).
+# «negativa» es el par de «serie» para dos grupos que no son niveles de riesgo (ΔE 20 con daltonismo).
 PALETA = {"bajo": "#047857", "medio": "#AA4F0A", "alto": "#BE123C", "acento": "#0E738F", "serie": "#0A7EA4",
+          "negativa": "#C2410C",
           "nia": "#6D28D9", "neutro": "#475585", "tinta": "#0B0F1F", "tinta_suave": "#4A5279", "rejilla": "#DDE1EE"}
 ANCHO_DE_TEXTO = 16 / 2.54  # pulgadas: A4 menos los márgenes de 2.5 cm
 MESES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
@@ -281,6 +283,64 @@ def figura_resenas_por_mes(rutas: dict[str, Path]) -> Path:
     return guardar_figura(fig, "resenas-por-mes")
 
 
+def cifras_del_objetivo(cifras: Cifras, rutas: dict[str, Path]) -> pd.DataFrame:
+    """§6: dónde caen las reseñas respecto a 120 minutos y qué tanto importa el umbral."""
+    _, resenas = ex.cargar_release(rutas["data-v1"])
+    minutos, voto = resenas["playtime_at_review"], resenas["voted_up"]
+    prevalencia = ex.senal(resenas).mean()
+    cifras.agregar("ExactitudTrivialPorResena", porcentaje(1 - prevalencia), "data-v1: aciertos de decir siempre «no»")
+    for nombre, pulgar in (("Negativas", 0), ("Positivas", 1)):
+        cifras.agregar(f"{nombre}AntesDelUmbralPorResena", porcentaje((minutos[voto == pulgar] < ex.UMBRAL_REEMBOLSO).mean(), 1),
+                       f"data-v1: reseñas {nombre.lower()} escritas antes de 120 minutos")
+    ventanas = {"AntesDelUmbral": (110, 120), "DespuesDelUmbral": (120, 130), "AntesDeTresHoras": (170, 180),
+                "DesdeTresHoras": (180, 190)}
+    for nombre, pulgar in (("Negativas", 0), ("Positivas", 1)):
+        for ventana, (desde, hasta) in ventanas.items():
+            por_minuto = (minutos[voto == pulgar].between(desde, hasta - 1)).sum() / (hasta - desde)
+            cifras.agregar(f"{nombre}PorMinuto{ventana}", decimal(por_minuto, 1),
+                           f"data-v1: reseñas {nombre.lower()} por minuto entre {desde} y {hasta - 1}")
+    juegos = resenas.loc[minutos.between(180, 189) & (voto == 1), "appid"].nunique()
+    cifras.agregar("JuegosSaltoTresHoras", str(juegos), "data-v1: juegos con positivas entre 180 y 189 minutos")
+
+    sensibilidad = ex.sensibilidad_umbral(resenas)
+    otros = sensibilidad.drop(index=ex.UMBRAL_REEMBOLSO)["Spearman con 120"]
+    cifras.agregar("SpearmanUmbralMin", decimal(otros.min(), 2), "Spearman del orden de los juegos con 60, 90 y 180 contra 120")
+    cifras.agregar("SpearmanUmbralMax", decimal(otros.max(), 2), "Spearman del orden de los juegos con 60, 90 y 180 contra 120")
+    return sensibilidad
+
+
+def figura_minutos_al_resenar(rutas: dict[str, Path]) -> Path:
+    """F2: minutos jugados al reseñar, por pulgar, en escala log. Intervalos del mismo ancho en log,
+    con un borde en 180 y ninguno en 120, como en el notebook 00."""
+    _, resenas = ex.cargar_release(rutas["data-v1"])
+    pulgar = resenas["voted_up"].map({1: "positivas", 0: "negativas"})
+    log_minutos = np.log10(resenas["playtime_at_review"] + 1)
+    ancho = np.log10(181) / 22
+    bordes = np.arange(0, log_minutos.max() + ancho, ancho)
+    if np.isclose(10 ** bordes - 1, ex.UMBRAL_REEMBOLSO, atol=1).any():
+        raise ValueError("un borde de la figura cae en 120 minutos")
+    barras = ex.histograma_por_grupo(log_minutos, pulgar, bordes)
+
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.8))
+    for grupo, color in (("positivas", PALETA["serie"]), ("negativas", PALETA["negativa"])):
+        porcentajes = barras.loc[barras["grupo"] == grupo, "%"].to_numpy()
+        eje.step(bordes, np.append(porcentajes, porcentajes[-1]), where="post", color=color, linewidth=1.6, label=grupo)
+    for minutos, estilo, texto, lado in ((120, (0, (4, 3)), "120 min: ventana de reembolso", "right"),
+                                         (180, (0, (1, 2)), "180 min: salto de las positivas", "left")):
+        x = np.log10(minutos + 1)
+        eje.axvline(x, color=PALETA["tinta_suave"], linewidth=0.8, linestyle=estilo)
+        eje.annotate(texto, xy=(x, 1), xycoords=("data", "axes fraction"), xytext=(-4 if lado == "right" else 4, -2),
+                     textcoords="offset points", ha=lado, va="top", fontsize=7.5, color=PALETA["tinta"])
+    marcas = [10, 120, 600, 6_000, 60_000]
+    eje.set_xticks(np.log10(np.array(marcas) + 1), [f"{m:,}" for m in marcas])
+    eje.set_xlabel("minutos jugados al escribir la reseña (escala log)")
+    eje.set_ylabel("% de las reseñas del grupo")
+    # Aire arriba para las etiquetas de las líneas; la leyenda, donde las curvas ya bajaron.
+    eje.set_ylim(0, barras["%"].max() * 1.3)
+    eje.legend(frameon=False, loc="upper right", fontsize=8)
+    return guardar_figura(fig, "minutos-al-resenar")
+
+
 def estilo_de_figuras() -> None:
     plt.rcParams.update({
         "font.family": "Inter", "font.size": 8.5, "axes.titlesize": 9, "axes.labelsize": 8.5,
@@ -385,6 +445,21 @@ def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     return ruta
 
 
+def tabla_de_umbrales(sensibilidad: pd.DataFrame) -> Path:
+    """T5: la señal con 60, 90, 120 y 180 minutos, y qué tanto se parece el orden de los juegos al de 120."""
+    filas = [f"{umbral} & {entero(int(f['Y=1']))} & {porcentaje(f['prevalencia'])} & {decimal(f['Spearman con 120'], 3)} \\\\"
+             for umbral, f in sensibilidad.iterrows()]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabular}{rrrr}", "\\toprule",
+        "Umbral (min) & Reseñas con señal & Prevalencia por reseña & Spearman con 120 (por juego) \\\\",
+        "\\midrule", *filas, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "umbral.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
 def copiar_capturas() -> list[Path]:
     destino = FIGURAS / "capturas"
     destino.mkdir(parents=True, exist_ok=True)
@@ -406,10 +481,11 @@ def main() -> None:
     cifras_de_bandas(cifras)
     cifras_de_evidencia(cifras)
     cifras_del_periodo(cifras, rutas)
-    tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas)]
+    sensibilidad = cifras_del_objetivo(cifras, rutas)
+    tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
-    figuras = [figura_resenas_por_mes(rutas)]
+    figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas)]
     capturas = copiar_capturas()
 
     print(f"{len(cifras.macros)} cifras en {ruta_cifras.relative_to(RAIZ)}")

@@ -1,14 +1,90 @@
-% Rúbrica: Análisis exploratorio y modelación. Fuentes y figuras: ver el plan del documento.
+% Rúbrica: Análisis exploratorio y modelación (la variable objetivo y su métrica).
 \section{Definición del objetivo}\label{sec:objetivo}
 
-\subsection{La fórmula}
-\pendiente{redacción}
+El modelo aprende a ordenar juegos según una señal que sale de sus reseñas: un voto negativo
+escrito antes de las dos horas de juego. Esa señal no es el arrepentimiento mismo, el corte de
+120 minutos viene de una regla de Steam y la métrica tiene que funcionar con una clase muy rara.
 
-\subsection{Por qué es una señal proxy}
-\pendiente{redacción}
+\subsection{La fórmula}\label{sec:objetivo-formula}
 
-\subsection{Robustez del umbral de 120 minutos}
-\pendiente{redacción}
+Para cada reseña $i$,
+\[
+  Y_i =
+  \begin{cases}
+    1 & \text{si } \texttt{playtime\_at\_review}_i < 120 \text{ y } \texttt{voted\_up}_i = 0,\\
+    0 & \text{en otro caso,}
+  \end{cases}
+\]
+donde \texttt{playtime\_at\_review} son los minutos que llevaba jugados quien escribió la reseña
+cuando la publicó y \texttt{voted\_up} es el pulgar: 1 arriba, 0 abajo. En data-v1 hay
+\cifraPositivosEntrenamiento{} reseñas con $Y = 1$ de \cifraResenasEntrenamiento{}, una
+prevalencia de \cifraPrevalenciaEntrenamientoPorResena{} por reseña. A esa etiqueta se le llama
+\emph{señal de arrepentimiento temprano}.
 
-\subsection{Por qué PR-AUC}
-\pendiente{redacción}
+\subsection{Por qué es una señal proxy}\label{sec:objetivo-proxy}
+
+Steam no registra arrepentimiento. Registra que alguien votó en contra y cuánto había jugado al
+escribir. Los 120 minutos vienen de la política de reembolsos de la tienda: se puede pedir el
+reembolso dentro de las dos semanas posteriores a la compra y con menos de dos horas de juego
+\parencite{steam_reembolsos}. Una reseña negativa escrita dentro de esa ventana es lo más cercano
+que dejan los datos a «esto no era para mí, y me di cuenta pronto».
+
+Por eso el sitio y este documento la llaman señal de arrepentimiento temprano y nunca dicen que
+alguien se arrepintió. La señal deja fuera a quien se arrepiente y no escribe, a quien pide el
+reembolso sin reseñar y a quien reseña después de las dos horas. Tampoco mide abandono ni
+reembolsos: de ninguno de los dos hay dato.
+
+Lo que sí muestran los datos es que las negativas llegan antes. El
+\cifraNegativasAntesDelUmbralPorResena{} de las reseñas negativas se escribe antes de los 120
+minutos, contra el \cifraPositivasAntesDelUmbralPorResena{} de las positivas. La señal se queda con
+ese tramo temprano de las negativas.
+
+\subsection{Robustez del umbral de 120 minutos}\label{sec:objetivo-umbral}
+
+El umbral no se eligió con los datos, sale de la regla de Steam. Lo que sí se revisó es si
+moverlo cambia qué juegos tienen más señal. Con 60, 90 o 180 minutos cambia cuántas reseñas
+cuentan, pero el orden de los juegos casi no se mueve: su correlación de Spearman con el orden de
+120 va de \cifraSpearmanUmbralMin{} a \cifraSpearmanUmbralMax{} (tabla~\ref{tab:umbral}).
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/umbral}
+  \caption{La señal con otros umbrales. La prevalencia es por reseña; el Spearman compara las
+  tasas por juego de los \cifraJuegosEntrenamiento{} juegos contra las de 120 minutos. Fuente:
+  data-v1, con \texttt{sensibilidad\_umbral} de \texttt{analisis/exploracion.py}.}
+  \label{tab:umbral}
+\end{table}
+
+La figura~\ref{fig:minutos} muestra en qué minuto se escribe cada reseña. En 120 no hay escalón:
+por minuto, las negativas pasan de \cifraNegativasPorMinutoAntesDelUmbral{} a
+\cifraNegativasPorMinutoDespuesDelUmbral{} al cruzarlo, y las positivas de
+\cifraPositivasPorMinutoAntesDelUmbral{} a \cifraPositivasPorMinutoDespuesDelUmbral{}. El salto
+que se ve está en los 180 minutos y solo en las positivas, que pasan de
+\cifraPositivasPorMinutoAntesDeTresHoras{} a \cifraPositivasPorMinutoDesdeTresHoras{} reseñas por
+minuto en \cifraJuegosSaltoTresHoras{} juegos. Las negativas apenas cambian (de
+\cifraNegativasPorMinutoAntesDeTresHoras{} a \cifraNegativasPorMinutoDesdeTresHoras{}). La causa de
+ese salto no está en estos datos, y no toca la señal, que se define en 120 minutos y con reseñas
+negativas.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{minutos-al-resenar.pdf}
+  \caption{Minutos jugados al escribir la reseña, por pulgar, en escala logarítmica. Cada curva
+  se normaliza sobre su propio grupo. Los intervalos tienen el mismo ancho en escala log, con un borde en 180
+  y ninguno en 120. Fuente: data-v1.}
+  \label{fig:minutos}
+\end{figure}
+
+\subsection{Por qué PR-AUC}\label{sec:objetivo-metrica}
+
+Con una prevalencia de \cifraPrevalenciaEntrenamientoPorResena{}, un modelo que siempre dice «no»
+acierta el \cifraExactitudTrivialPorResena{} de las veces y no encuentra un solo caso. La
+exactitud premia justo eso, así que aquí no sirve. El proyecto usa el área bajo la curva de
+precisión y exhaustividad (PR-AUC, con \texttt{average\_precision\_score} de scikit-learn). Mide
+qué proporción de lo que el modelo pone arriba es de verdad señal, y con clases desbalanceadas informa
+más que la curva ROC \parencite{saito2015,davis2006}.
+
+El PR-AUC de un clasificador que no sabe nada es la prevalencia, \cifraPRAUCTrivial{}. Ese es el
+piso, y por eso en este documento el PR-AUC del modelo siempre va junto al del trivial. En la
+validación agrupada por juego el modelo llega a \cifraPRAUCModelo{}, \cifraPRAUCCociente{} veces
+ese piso (sección~\ref{sec:evaluacion}).

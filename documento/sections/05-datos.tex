@@ -10,6 +10,8 @@ juegos y \cifraResenasEntrenamiento{} reseñas (data-v1), y el sitio sirve un ca
 ningún conjunto de terceros.
 
 \subsection{La API de Steam}\label{sec:datos-api}
+% NOTA (dueño, 2026-09-30): la ingesta pidió language=english, así que el 98.7 % mide qué tan bien
+% etiquetaron sus reseñas los autores, no el idioma de Steam en general. Decirlo donde se cite el 98.7 %.
 
 La ingesta usa dos servicios públicos de la tienda, sin clave:
 
@@ -85,6 +87,8 @@ actualización. Se reporta como limitación de la fuente (sección~\ref{sec:limi
 corrige con pesos, porque no hay forma de saber cómo era la mezcla de compradores en otra época.
 
 \subsection{Calidad}\label{sec:datos-calidad}
+% NOTA (dueño, 2026-09-30): el tope de 1,500 reseñas por juego es una decisión de diseño: cada título pesa
+% casi igual. Decirlo aquí y en §9.4.
 
 Antes de explorar, el notebook \texttt{00\_exploracion} valida data-v1: tipos y nulos, llaves,
 rangos, textos repetidos y la partición de validación. La tabla~\ref{tab:calidad} resume lo que

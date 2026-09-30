@@ -92,6 +92,19 @@ CANONICAS = {
     "SinNotaEntrenamiento": "23",
     "PagoSinPrecioEntrenamiento": "2",
     "MetacriticVerificadoExternos": "40 de 40",
+    # objetivo (§6), contrastadas con el 00 §3.3
+    "ExactitudTrivialPorResena": "97.81" + PORCIENTO,
+    "NegativasAntesDelUmbralPorResena": "15.6" + PORCIENTO,
+    "PositivasAntesDelUmbralPorResena": "2.0" + PORCIENTO,
+    "NegativasPorMinutoAntesDelUmbral": "11.9",
+    "NegativasPorMinutoDespuesDelUmbral": "12.2",
+    "NegativasPorMinutoAntesDeTresHoras": "9.9",
+    "NegativasPorMinutoDesdeTresHoras": "12.4",
+    "PositivasPorMinutoAntesDelUmbral": "17.4",
+    "PositivasPorMinutoDespuesDelUmbral": "18.6",
+    "PositivasPorMinutoAntesDeTresHoras": "17.6",
+    "PositivasPorMinutoDesdeTresHoras": "81.7",
+    "JuegosSaltoTresHoras": "81",
     # del 00: se generan con las secciones 6 a 8
     "IdiomaInglesPorResena": "98.7" + PORCIENTO,
     "NegativasTempranasLimpias": "2,706",
@@ -108,7 +121,8 @@ CANONICAS = {
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")
 _COMENTARIO = re.compile(r"(?<!\\)%.*$")
-_NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+|\d+\s*\\%")
+# Un decimal, o un número seguido de % con o sin el espacio fino de LaTeX («100\,\%»).
+_NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+|\d+(?:\s|\\,)*\\%")
 
 
 def macros_generadas() -> dict[str, str]:
