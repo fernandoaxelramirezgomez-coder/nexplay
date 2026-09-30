@@ -159,6 +159,12 @@ Reglas que no puedes romper:
   cuántos más hay ("y 2 más en Explorar").
 - "Horas típicas" son las horas que llevaba jugadas, en la mediana, quien recomendó el
   juego. No es lo que dura: dilo así si preguntan cuánto dura.
+- Si piden negritas, viñetas o tablas, di en una frase que escribes en texto simple y
+  responde lo que pidieron.
+- Si piden jugar con amigos, multijugador, cooperativo u online, busca el género
+  "Multijugador masivo" y ofrécelo, aclarando que el catálogo no tiene un dato específico
+  de cooperativo ni de en línea.
+- Si en la pregunta aparece "[dato personal]", di que no guardas datos personales.
 - Cuando venga al caso, nombra las fortalezas y las debilidades del juego, siempre salidas
   de los datos: la nota de la crítica o su ausencia, el riesgo, el precio frente al
   catálogo y los motivos más mencionados. No opines por tu cuenta ni inventes otras.
@@ -379,8 +385,9 @@ def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[s
     contexto, mientras que no reconocer un juego del catálogo haría que Nia dijera que no
     está."""
     # Sin apóstrofos, recto (') ni tipográfico (’): «Don’t Starve» y «Sid Meier’s» del
-    # modelo contra «Don't Starve» y «Sid Meier's» del catálogo.
-    texto = _sin_acentos(pregunta).replace("'", "").replace("’", "")
+    # modelo contra «Don't Starve» y «Sid Meier's» del catálogo. Sin ™ ni ®, como las
+    # variantes: el modelo copia «Diablo® IV» tal cual y no coincidía con «diablo iv».
+    texto = _sin_acentos(pregunta).replace("'", "").replace("’", "").replace("™", "").replace("®", "")
     encontrados = []
     for juego in catalogo.buscar():
         if juego.appid == appid_abierto:
@@ -484,6 +491,13 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None) -> 
             f" juegos fuera del catálogo): {', '.join(mencionados)}"
         )
     return "\n".join(lineas)
+
+
+def sin_datos_personales(texto: str) -> str:
+    """Correos y teléfonos fuera, antes de anotar la pregunta o mandarla al modelo: así es
+    cierto que Nia no guarda datos personales (la pregunta se anota 180 días para los votos)."""
+    texto = reglas._CORREO.sub("[dato personal]", texto)
+    return reglas._TELEFONO.sub("[dato personal]", texto)
 
 
 def _sin_claves(texto: str) -> str:
@@ -640,7 +654,10 @@ def _preguntar_a_openai(
     else:
         conversacion.append({"role": "system", "content": _contexto_del_catalogo()})
     conversacion += [
-        {"role": "user" if mensaje.rol == "usuario" else "assistant", "content": mensaje.contenido}
+        {
+            "role": "user" if mensaje.rol == "usuario" else "assistant",
+            "content": sin_datos_personales(mensaje.contenido) if mensaje.rol == "usuario" else mensaje.contenido,
+        }
         for mensaje in historial_para_el_modelo(mensajes)
     ]
 
@@ -761,7 +778,7 @@ def _con_constancia(salida: dict, appid: int | None, usuario: str, pregunta: str
             id_respuesta=salida["id"],
             usuario=usuario,
             appid=appid,
-            pregunta=pregunta,
+            pregunta=sin_datos_personales(pregunta),
             respuesta=salida["respuesta"],
             modo=salida["modo"],
             modelo=salida["modelo"],

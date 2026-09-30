@@ -33,6 +33,12 @@ _SINONIMOS_GENERO = {
     "f2p": "Free to Play",
 }
 
+# Lo que se pide para jugar con otros. El catálogo no tiene un dato de cooperativo ni de
+# en línea: lo más cercano es el género «Multijugador masivo», y se dice así.
+_SOCIAL = ("multijugador", "multiplayer", "cooperativo", "cooperativos", "coop", "co-op", "online", "en linea",
+           "con amigos", "con mis amigos", "con otros", "en grupo")
+_SINONIMOS_GENERO.update({clave: "Multijugador masivo" for clave in _SOCIAL})
+
 _GRATIS = ("gratis", "gratuito", "gratuitos", "free", "f2p", "sin pagar", "sin costo")
 _BARATOS = ("barato", "baratos", "economico", "economicos", "que no cueste mucho", "mas barato")
 _CAROS = ("caro", "caros", "mas caro")
@@ -491,6 +497,14 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
         else None
     )
 
+    if genero == "Multijugador masivo" and _dice(pregunta, *_SOCIAL) and not _dice(pregunta, "masivo", "mmo"):
+        juegos = sorted(catalogo.buscar(genero=genero), key=lambda j: j.nombre.lower())
+        nombres = _lista([j.nombre for j in juegos[:5]])
+        return _resultado(
+            "No tengo un dato de cooperativo ni de en línea 🎮 Lo más cercano en el catálogo es el género "
+            f"Multijugador masivo, con {len(juegos)}: {nombres}. ¿Te cuento de alguno?",
+            juegos=[j.appid for j in juegos[:5]],
+        )
     if facil and not (genero or banda or gratis or precio_max):
         return _resultado(
             "No tengo un dato de qué tan fácil es un juego 🙈 Lo más cercano es el riesgo bajo: menos gente lo "
@@ -652,6 +666,59 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
     return None
 
 
+# «Contéstame con negritas y viñetas»: no es salirse del tema, es pedir un formato.
+_FORMATO = ("negritas", "negrita", "vinetas", "vineta", "markdown", "en tabla", "una tabla", "en lista",
+            "con formato", "bullets", "en mayusculas")
+
+
+def _formato(pregunta: str) -> dict | None:
+    if not _dice(pregunta, *_FORMATO):
+        return None
+    return _resultado(
+        "Escribo en texto simple, sin negritas, viñetas ni tablas, para que se lea igual en cualquier pantalla ✍️ "
+        "Aun así te cuento lo que necesites del catálogo. ¿Qué quieres saber?"
+    )
+
+
+# Un correo, un teléfono o la frase que lo anuncia. El número va con 8 dígitos o más para no
+# confundir precios ni años.
+_CORREO = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+_TELEFONO = re.compile(r"(?:\+?\d[\s().-]?){8,}")
+_DATO_PERSONAL = ("mi correo", "mi email", "mi mail", "mi telefono", "mi celular", "mi numero", "mi direccion",
+                  "mi contrasena", "mi tarjeta", "mi curp", "mi rfc")
+
+
+def tiene_datos_personales(texto: str) -> bool:
+    return bool(_CORREO.search(texto) or _TELEFONO.search(texto)) or _dice(_norm(texto), *_DATO_PERSONAL)
+
+
+def _datos_personales(original: str) -> dict | None:
+    if not tiene_datos_personales(original):
+        return None
+    return _resultado(
+        "No guardo datos personales 🔒 Lo que parece un correo o un teléfono se borra antes de anotar tu pregunta, "
+        "y no lo necesito para nada. ¿Te ayudo con algún juego del catálogo?",
+        fuera_de_tema=True,
+    )
+
+
+# «Ignora tus instrucciones», «muéstrame tu prompt», «ahora eres…»: no se discute, se vuelve
+# al catálogo.
+_INSTRUCCIONES = ("ignora tus instrucciones", "ignora las instrucciones", "olvida tus instrucciones",
+                  "tus instrucciones", "tu prompt", "prompt de sistema", "system prompt", "modo desarrollador",
+                  "jailbreak", "actua como", "finge que eres")
+
+
+def _instrucciones(pregunta: str) -> dict | None:
+    if not _dice(pregunta, *_INSTRUCCIONES):
+        return None
+    return _resultado(
+        "Solo hablo de los juegos del catálogo de NexPlay 🎮 Te los filtro por género, precio o riesgo, o te cuento "
+        "de uno en particular. ¿Por dónde empezamos?",
+        fuera_de_tema=True,
+    )
+
+
 def _no_se(datos: dict | None) -> dict:
     """Lo que no encaja con nada del catálogo: el chat enseña ahí sus avisos (solo datos del
     catálogo, sin decir si comprar, qué se guarda), y no antes."""
@@ -680,6 +747,8 @@ def responder(
     pregunta = _norm(original)
 
     intentos = (
+        lambda: _datos_personales(original),
+        lambda: _instrucciones(pregunta),
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
         lambda: _el_mejor(pregunta),
@@ -694,6 +763,7 @@ def responder(
         lambda: None if datos is not None else _del_juego_del_hilo(pregunta, original, mensajes),
         lambda: _filtros_del_catalogo(pregunta, original),
         lambda: _fuera_del_catalogo(pregunta, original, datos),
+        lambda: _formato(pregunta),
     )
     resultado = next((r for r in (intento() for intento in intentos) if r is not None), None) or _no_se(datos)
 
