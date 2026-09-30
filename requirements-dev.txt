@@ -1,1 +1,4 @@
 playwright==1.63.0
+# Guardar las gráficas de los notebooks también como PNG (EXPORTAR_ESTATICO = True), para que se vean en
+# GitHub. Necesita un Chrome: `plotly_get_chrome`, o BROWSER_PATH apuntando a uno.
+kaleido==1.4.0

@@ -1,0 +1,8 @@
+# Solo para los notebooks (00_exploracion y los modelos de texto), encima de requirements-modelo.txt.
+# No entra a la imagen de Render: el Dockerfile instala requirements.txt y requirements-modelo.txt, y el
+# build falla si aparece torch o sentence-transformers.
+# sentence-transformers trae torch; en una máquina sin GPU conviene instalar antes la versión CPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+plotly==7.1.0
+lingua-language-detector==2.2.0
+sentence-transformers==6.1.0
