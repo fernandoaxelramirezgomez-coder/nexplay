@@ -1,0 +1,96 @@
+{
+  "generado": "2026-09-30",
+  "commit": "ef9f0b7",
+  "release": {
+    "data-v1": "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
+  },
+  "resenas_publicas": 49749,
+  "resenas_privadas_excluidas": 74223,
+  "bootstrap": {
+    "replicas": 2000,
+    "semilla": 42,
+    "unidad": "juego (appid), con reemplazo"
+  },
+  "original": {
+    "definicion": "novatos: 1 a 19 juegos; veteranos: 20 o más (perfiles públicos)",
+    "grupos": {
+      "novatos": {
+        "resenas": 4916,
+        "senales": 33,
+        "juegos": 83,
+        "por_resena_pct": 0.6713,
+        "prom_juegos_pct": 0.9662
+      },
+      "veteranos": {
+        "resenas": 44833,
+        "senales": 1295,
+        "juegos": 83,
+        "por_resena_pct": 2.8885,
+        "prom_juegos_pct": 2.7191
+      }
+    },
+    "diferencia_pp": {
+      "por_resena": {
+        "punto": 2.2172,
+        "ic95": [
+          1.3002,
+          3.2641
+        ]
+      },
+      "prom_juegos": {
+        "punto": 1.753,
+        "ic95": [
+          0.9815,
+          2.715
+        ]
+      }
+    },
+    "cociente": {
+      "por_resena": 4.303,
+      "prom_juegos": 2.814
+    }
+  },
+  "robustez_cuartiles": {
+    "definicion": "Q1: num_games_owned ≤ percentil 25; Q4: > percentil 75 (perfiles públicos, por reseña)",
+    "cortes": {
+      "p25": 46.0,
+      "p75": 245.0
+    },
+    "grupos": {
+      "Q1": {
+        "resenas": 12507,
+        "senales": 124,
+        "juegos": 83,
+        "por_resena_pct": 0.9914,
+        "prom_juegos_pct": 1.6939
+      },
+      "Q4": {
+        "resenas": 12417,
+        "senales": 611,
+        "juegos": 83,
+        "por_resena_pct": 4.9207,
+        "prom_juegos_pct": 3.4259
+      }
+    },
+    "diferencia_pp": {
+      "por_resena": {
+        "punto": 3.9292,
+        "ic95": [
+          2.197,
+          5.6869
+        ]
+      },
+      "prom_juegos": {
+        "punto": 1.732,
+        "ic95": [
+          1.1622,
+          2.3621
+        ]
+      }
+    },
+    "cociente": {
+      "por_resena": 4.963,
+      "prom_juegos": 2.022
+    }
+  }
+}

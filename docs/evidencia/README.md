@@ -59,6 +59,10 @@ rutas de entonces.
   agrupados por modo y por versión del prompt (el hash de su texto), con la cobertura —qué
   proporción de respuestas recibe voto— y el reparto de motivos del 👎. Incluye qué se
   guarda y los 180 días que se conserva.
+- `senal-por-biblioteca.md` y `.json`: veteranos (20 juegos o más) contra novatos (1 a 19) en
+  data-v1, con perfil público: 2.89 % contra 0.67 % por reseña, diferencia +2.22 pp
+  [+1.30, +3.26]. Tiene el prerregistro, la robustez con cuartiles y por qué se retiró la cifra
+  que se citaba antes. Script: `calidad/senal_por_biblioteca.py`.
 - `nia-pruebas.md`: las pruebas de Nia con la clave real de OpenAI. Cubre la regresión de 25
   preguntas y las tres rondas de trampas y legítimas (`calidad/preguntas_trampa.json`), con las
   respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos

@@ -34,5 +34,7 @@ Evidencia (cada script escribe o reproduce un archivo de `docs/evidencia/`):
   con esa versión).
 - `bootstrap_prueba_externa.py`: el intervalo del PR-AUC externo entre el del trivial, remuestreando los 40
   títulos (`bootstrap-prueba-externa.json`).
+- `senal_por_biblioteca.py`: la señal de veteranos contra novatos en data-v1 (perfiles públicos), por reseña
+  y promedio por juego, con bootstrap sobre juegos (`senal-por-biblioteca.json`).
 
 No va aquí: tareas sobre el contenido de los usuarios (`operacion/`) ni el entorno (`despliegue/`).
