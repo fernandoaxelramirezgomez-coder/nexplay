@@ -29,9 +29,15 @@ Requiere que las dependencias ya esten instaladas (ver README.md):
 Uso:
     python preparar_entorno.py            # no pisa datos/ ni modelo/ si ya existen
     python preparar_entorno.py --force    # reconstruye aunque ya existan
+
+--force solo pisa una base que salio de un release: la reconoce por su sha256, contra
+la marca que este script deja al escribirla (<base>.origen.json) o contra las bases
+publicadas (BASES_DE_RELEASE). Cualquier otra, como la base original de la ingesta, la
+deja como esta, se detiene y explica por que.
 """
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -60,6 +66,14 @@ ENTRENAMIENTO_REF = "data-v1"
 ENTRENAMIENTO_SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
 ENTRENAMIENTO_DB_PATH = RAIZ / "datos" / "entrenamiento" / f"nexplay_{ENTRENAMIENTO_REF}.db"
 
+# sha256 de cada base ya descomprimida, tal como la deja descargar_verificado. Con esto
+# --force reconoce una base de release que no tiene su marca (las de antes de la marca).
+# Si se publica un release nuevo, su base entra aqui junto con su SERVIDO_SHA256.
+BASES_DE_RELEASE = {
+    "2f031cf37a2d6a2db9ad4701531e50dda8db0b7138bf5a8e0c544533e70cc65e": "data-v3",
+    "6eff5dbc5c5d0a5bde03272146d74a3047a38ab6c07acfdb633e39a735097fb8": "data-v1",
+}
+
 PUERTO_PRUEBA_API = 8321
 
 
@@ -77,17 +91,66 @@ def _verificar_dependencias() -> None:
         sys.exit(1)
 
 
+def _sha256_archivo(ruta: Path) -> str:
+    h = hashlib.sha256()
+    with open(ruta, "rb") as archivo:
+        for bloque in iter(lambda: archivo.read(1 << 20), b""):
+            h.update(bloque)
+    return h.hexdigest()
+
+
+def _marca(destino: Path) -> Path:
+    return destino.with_name(f"{destino.name}.origen.json")
+
+
+def origen_de_release(destino: Path) -> str | None:
+    """El tag del release del que salió la base, o None si no se reconoce.
+
+    La marca solo cuenta si su sha256 sigue siendo el de la base: una base de release que
+    después se modificó ya no es la del release."""
+    sha = _sha256_archivo(destino)
+    marca = _marca(destino)
+    if marca.exists():
+        try:
+            datos = json.loads(marca.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            datos = {}
+        if datos.get("sha256_base") == sha:
+            return datos.get("ref")
+    return BASES_DE_RELEASE.get(sha)
+
+
+def _explicar_por_que_no_se_pisa(destino: Path) -> str:
+    return (
+        f"No piso {destino}: no la reconozco como una base que haya salido de un release.\n"
+        f"Su sha256 ({_sha256_archivo(destino)[:12]}…) no coincide con ninguna base publicada"
+        f" ni con su marca {_marca(destino).name}.\n"
+        "Puede ser la base original de la ingesta, que guarda lo que los releases quitan a"
+        " propósito (la columna steamid y la tabla progreso); eso no se recupera de un release.\n"
+        f"Si de verdad quieres reemplazarla, respáldala o muévela primero (por ejemplo, a"
+        f" {destino.name}.respaldo) y vuelve a correr con --force."
+    )
+
+
 def _descargar(ref: str, sha256_esperado: str, destino: Path, forzar: bool) -> None:
     """Baja el asset de un release, verifica su sha256 antes de tocar nada y lo
-    descomprime en destino."""
-    if destino.exists() and not forzar:
-        print(f"{destino} ya existe, no se reconstruye (usa --force para pisarla).")
-        return
+    descomprime en destino. Con --force solo pisa una base que salió de un release."""
+    if destino.exists():
+        if not forzar:
+            print(f"{destino} ya existe, no se reconstruye (usa --force para pisarla).")
+            return
+        if origen_de_release(destino) is None:
+            print(_explicar_por_que_no_se_pisa(destino))
+            sys.exit(1)
     try:
         descargar_verificado(ref, sha256_esperado, destino)
     except ErrorDeRelease as exc:
         print(exc)
         sys.exit(1)
+    _marca(destino).write_text(
+        json.dumps({"ref": ref, "sha256_asset": sha256_esperado, "sha256_base": _sha256_archivo(destino)}, indent=1),
+        encoding="utf-8",
+    )
 
 
 def _base_de_entrenamiento(forzar: bool) -> Path:

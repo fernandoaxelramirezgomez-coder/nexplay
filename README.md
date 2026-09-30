@@ -62,7 +62,9 @@ python despliegue/preparar_entorno.py
    apagarla.
 
 Es idempotente: si `datos/nexplay.db` o `modelo/nexplay.pkl` ya existen, no los pisa
-(usa `python despliegue/preparar_entorno.py --force` para reconstruirlos de cero).
+(usa `python despliegue/preparar_entorno.py --force` para reconstruirlos de cero). Aun con
+`--force`, solo pisa una base que reconoce por su sha256 como salida de un release; la base
+original de la ingesta, con `steamid` y `progreso`, la deja intacta y se detiene.
 
 ## Frontend en Angular
 
