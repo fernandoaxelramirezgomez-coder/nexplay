@@ -1,5 +1,5 @@
 import { PASOS } from '../como-funciona/como-funciona';
-import { EXPLICACION_RIESGO, ROTULO_RIESGO } from './etiqueta-riesgo';
+import { EXPLICACION_RIESGO, EXPLICACION_VEREDICTO, ROTULO_RIESGO } from './etiqueta-riesgo';
 import { AVISO_HISTORIA } from './historia-perfil';
 
 /** El modelo es de título: ningún texto puede prometer que el perfil ajusta el riesgo. */
@@ -19,6 +19,17 @@ describe('textos sobre el perfil', () => {
   /** El nombre podría hacer creer que el riesgo es de quien mira: la explicación lo niega. */
   it('la explicación del riesgo dice que es del juego y no de la persona', () => {
     expect(EXPLICACION_RIESGO).toContain('Es del juego, no de ti.');
+  });
+
+  /** Lo mismo que explica Nia: compara con el catálogo, no es una probabilidad y sale de
+   * datos del juego, no de sus reseñas. */
+  it('la ⓘ del veredicto no atribuye el riesgo a las reseñas ni cuenta juegos', () => {
+    expect(EXPLICACION_VEREDICTO).toContain('Se estima con datos del juego');
+    expect(EXPLICACION_VEREDICTO).toContain('no cambian la estimación de un juego');
+    expect(EXPLICACION_VEREDICTO).toContain('el resto del catálogo');
+    expect(EXPLICACION_VEREDICTO).toContain('no es una probabilidad');
+    expect(EXPLICACION_VEREDICTO).not.toMatch(/\d/);
+    expect(EXPLICACION_RIESGO).toContain('no con sus reseñas');
   });
 
   it('el aviso de la historia dice que el perfil no cambia el riesgo', () => {

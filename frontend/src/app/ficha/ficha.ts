@@ -21,7 +21,7 @@ import { NotaInfo } from '../compartido/nota-info';
 import { PildoraBanda } from '../compartido/pildora-banda';
 import { PortadaAncha } from '../compartido/portada-ancha';
 import { Skeleton } from '../compartido/skeleton';
-import { EXPLICACION_RIESGO, ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
+import { EXPLICACION_VEREDICTO, ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
 import { factoresVisibles, fraseFactor } from '../dominio/factores';
 import { fraseBanda, segundaOpinion, titularBanda } from '../dominio/segunda-opinion';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -101,7 +101,7 @@ export class Ficha {
   protected readonly esperandoOpinion = computed(() => this.cargando() || this.explicacionRecurso.isLoading());
 
   protected readonly rotulo = ROTULO_RIESGO;
-  protected readonly explicacionRiesgo = EXPLICACION_RIESGO;
+  protected readonly explicacionDelVeredicto = EXPLICACION_VEREDICTO;
 
   protected readonly titular = computed(() => {
     const nivel = this.prediccion()?.nivel;
