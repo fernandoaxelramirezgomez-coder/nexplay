@@ -63,6 +63,10 @@ rutas de entonces.
   data-v1, con perfil público: 2.89 % contra 0.67 % por reseña, diferencia +2.22 pp
   [+1.30, +3.26]. Tiene el prerregistro, la robustez con cuartiles y por qué se retiró la cifra
   que se citaba antes. Script: `calidad/senal_por_biblioteca.py`.
+- `senal-por-biblioteca-estratificada.json`: la misma comparación dentro de cada juego. Razón
+  de Mantel-Haenszel por appid 2.62, IC 95 % [1.84, 4.12], en 83 juegos informativos: la
+  diferencia se sostiene dentro de cada juego. Script:
+  `calidad/senal_por_biblioteca_estratificada.py`; prerregistro en `senal-por-biblioteca.md`.
 - `nia-pruebas.md`: las pruebas de Nia con la clave real de OpenAI. Cubre la regresión de 25
   preguntas y las tres rondas de trampas y legítimas (`calidad/preguntas_trampa.json`), con las
   respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos

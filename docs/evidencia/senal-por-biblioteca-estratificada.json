@@ -1,0 +1,36 @@
+{
+  "generado": "2026-09-30",
+  "commit": "94df3b6",
+  "release": {
+    "data-v1": "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
+  },
+  "definicion": "data-v1, perfiles públicos; novatos: 1 a 19 juegos; veteranos: 20 o más",
+  "metodo": "razón de riesgos de Mantel-Haenszel, veteranos contra novatos, estratificada por appid",
+  "juegos": 83,
+  "juegos_informativos": 83,
+  "juegos_informativos_con_senal": 81,
+  "senales_en_informativos": {
+    "veteranos": 1295,
+    "novatos": 33
+  },
+  "razon_cruda_por_resena": 4.303,
+  "razon_mh": 2.623,
+  "bootstrap": {
+    "replicas": 2000,
+    "semilla": 42,
+    "unidad": "juego (appid), con reemplazo",
+    "percentil": "numpy inverted_cdf (sin interpolar)",
+    "ic95_razon_mh": [
+      1.839,
+      4.125
+    ],
+    "replicas_infinitas": 0
+  },
+  "regla": {
+    "encima": "La diferencia se sostiene dentro de cada juego.",
+    "cruza": "Parte de la diferencia puede venir de qué juegos compra cada grupo.",
+    "debajo": "se reporta antes de escribir ninguna frase"
+  },
+  "lectura": "encima",
+  "frase": "La diferencia se sostiene dentro de cada juego."
+}

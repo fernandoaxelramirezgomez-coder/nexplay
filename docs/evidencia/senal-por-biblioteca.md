@@ -6,6 +6,10 @@ Sí. En data-v1, entre las reseñas con perfil público, los veteranos (20 juego
 +3.26 por bootstrap sobre juegos. Con el promedio de las tasas por juego da lo mismo en
 dirección: 2.72 % contra 0.97 %, diferencia +1.75 puntos [+0.98, +2.71].
 
+La diferencia se sostiene dentro de cada juego. Comparando a los dos grupos en el mismo
+juego, la razón de Mantel-Haenszel es 2.62, con IC 95 % [1.84, 4.12]. Es menor que la razón
+cruda (4.30), porque los veteranos también se concentran en juegos con más señal.
+
 De aquí sale el encuadre: el riesgo está en el título y no en la inexperiencia de quien compra.
 Cuando el documento cite esta diferencia, dirá que es por reseña.
 
@@ -64,7 +68,26 @@ compran juegos con más señal?
 - **Salida:** `docs/evidencia/senal-por-biblioteca-estratificada.json`, con
   `calidad/senal_por_biblioteca_estratificada.py`.
 
-**Resultado:** pendiente; se llena después de correr.
+**Resultado** (`94df3b6`, `docs/evidencia/senal-por-biblioteca-estratificada.json`):
+
+| | Valor |
+|---|---|
+| Juegos informativos (con reseñas de los dos grupos) | **83 de 83**; 81 con alguna señal |
+| Señales en esos juegos | veteranos 1,295; novatos 33 |
+| Razón cruda, por reseña | 4.30 |
+| **Razón de Mantel-Haenszel por juego** | **2.62**, IC 95 % **[1.84, 4.12]** |
+| Réplicas con razón infinita | 0 de 2,000 |
+
+El IC queda completo por encima de 1, así que según la regla la frase del documento es:
+**«La diferencia se sostiene dentro de cada juego.»**
+
+Dentro de un mismo juego, los veteranos dejan unas 2.6 veces más señal que los novatos. La
+razón cruda, 4.3, es mayor porque además los veteranos se concentran en juegos con más señal:
+esa mezcla explica parte de la diferencia cruda, pero no toda. Los novatos suman solo 33
+señales; el intervalo ya lo refleja, porque remuestrea juegos enteros.
+
+Como comprobación, el punto se recalculó con un bucle por juego, independiente de la versión
+vectorizada del script, y dio el mismo 2.623.
 
 ## La cifra anterior (retirada)
 
