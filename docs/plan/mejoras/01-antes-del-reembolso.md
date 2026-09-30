@@ -124,8 +124,29 @@ juegos externos». Si los 40 alcanzan a concluir y no confirman, no se construye
 
 ## 6. Resultado
 
-Pendiente: se llena después de correr A y B, con el comando, la salida y el hash del commit
-de los criterios.
+Corrido el 2026-09-30 con los criterios del commit `7b0ba52`, sin cambiarlos.
+
+```bash
+python analisis/antes_del_reembolso.py > docs/evidencia/antes-del-reembolso.txt
+```
+
+Detalle en [docs/evidencia/antes-del-reembolso.md](../../evidencia/antes-del-reembolso.md).
+
+| Prueba | Resultado | Contra el criterio |
+|---|---|---|
+| A en los 83 | 15 juegos evaluables; acierto propio 60.0 %, igual que la base («rendimiento» para todos); ventaja +0.0 puntos, IC [−26.7, +26.7] | **no concluyente** (pide ≥ 20 evaluables); tampoco cumple el 70 % ni los +10 puntos |
+| A en los 40 | 13 evaluables; propio 84.6 %, base 69.2 % | confirma, pero sobre algo que en los 83 no se concluyó |
+| B | N = 30 quejas con motivo; 13 de los 123 juegos llegan (9 de los 83, 4 de los 40) | **no pasa** (pide N ≤ 20 y ≥ 30 juegos) |
+| C | no se hace | la maqueta y el guion solo iban si A y B pasaban |
+
+**Decisión: no se construye.** Los motivos siguen en `/explicacion` como «lo que más
+mencionan», sin prometer qué revisar.
+
+- En los 83, el acierto propio empata con la base en los tres tamaños (10–15, 16–30 y más de
+  30 quejas). No es solo falta de datos: con estas palabras clave, el motivo de cada juego no
+  anticipa mejor que un motivo general.
+- Si la Parte B de los modelos de texto clasifica más quejas con un modelo, A y B se repiten
+  con estos mismos criterios.
 
 ---
 

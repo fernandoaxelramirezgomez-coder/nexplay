@@ -1,0 +1,53 @@
+descargando https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/download/data-v1/nexplay_reproducible.db.xz ...
+descarga verificada (data-v1): 10.9 MB, sha256 OK
+extracto/antes_del_reembolso/nexplay_data-v1.db reconstruida (41.3 MB)
+descargando https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/download/data-v2/nexplay_reproducible.db.xz ...
+descarga verificada (data-v2): 15.9 MB, sha256 OK
+extracto/antes_del_reembolso/nexplay_data-v2.db reconstruida (60.4 MB)
+Mejora 01 · pruebas A y B. Criterios fijados en el commit 7b0ba52.
+data-v1: 83 juegos, 921 quejas con motivo | externos (data-v2): 40 juegos, 423 quejas con motivo
+
+A · anticipación, 83 juegos (data-v1)
+  motivo de la línea base (mitades viejas juntas): rendimiento
+  1. juegos evaluables (≥ 10 quejas): 15  (pide ≥ 20) → NO cumple
+  2. acierto propio: 60.0%  (pide ≥ 70%) → NO cumple
+     acierto de la base: 60.0%
+  3. ventaja sobre la base: +0.0 puntos  (pide ≥ 10) → NO cumple
+  4. IC 95 % de la ventaja: [-26.7, +26.7] puntos  (pide > 0) → NO cumple
+  A en los 83: no concluyente
+
+  por tamaño del juego (no es criterio):
+                   juegos  acierto propio  acierto base
+quejas con motivo                                      
+10–15                   2           50.0%         50.0%
+16–30                   5           60.0%         60.0%
+más de 30               8           62.5%         62.5% 
+
+A · confirmación en los 40 externos (data-v2), misma línea base
+  juegos evaluables: 13 | acierto propio: 84.6% (pide ≥ 60%) | acierto de la base: 69.2% (el propio debe ser ≥) → CONFIRMA
+  por tamaño del juego (no es criterio):
+                   juegos  acierto propio  acierto base
+quejas con motivo                                      
+10–15                   3           66.7%        100.0%
+16–30                   7           85.7%         57.1%
+más de 30               3          100.0%         66.7%
+
+B · confianza, juegos de referencia de los 83
+  referencia: 9 juegos con ≥ 30 quejas con motivo
+           p25  mediana   p75
+k quejas                     
+5        53.2%    58.2% 60.2%
+10       53.9%    68.4% 73.0%
+15       58.2%    69.9% 78.6%
+20       59.2%    77.1% 83.8%
+25       63.3%    78.2% 86.5%
+30       63.0%    80.5% 88.5%
+  N = 30 quejas con motivo (pide ≤ 20)
+  juegos con ≥ N: 13 de 123 (83: 9, 40: 4; pide ≥ 30) → NO PASA
+    WILD HEARTS™: 213 quejas con motivo · llega a N
+    Hades: 1 quejas con motivo · no llega a N
+    Apex Legends™: 4 quejas con motivo · no llega a N
+
+Resumen contra la regla de decisión (C la corre el equipo):
+  A en los 83: no concluyente | A en los 40: CONFIRMA | B: NO PASA | C: pendiente
+  No se construye: falla A o B, o los 40 no confirman

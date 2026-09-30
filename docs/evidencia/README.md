@@ -50,6 +50,10 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   agrupados por modo y por versión del prompt (el hash de su texto), con la cobertura —qué
   proporción de respuestas recibe voto— y el reparto de motivos del 👎. Incluye qué se
   guarda y los 180 días que se conserva.
+- `antes-del-reembolso.md` y `antes-del-reembolso.txt`: las pruebas A (anticipación) y B
+  (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
+  de correr (`docs/plan/mejoras/01-antes-del-reembolso.md`). Script:
+  `analisis/antes_del_reembolso.py`. Resultado: no se construye.
 - `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
   a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 
