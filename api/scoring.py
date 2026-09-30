@@ -10,12 +10,13 @@ nota de plataforma), pero ningún dato del perfil entra al score."""
 
 import logging
 import pickle
-import re
 import sqlite3
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from modelado.motivos import PALABRAS_CLAVE_POR_CATEGORIA, categorias_de
 
 from .schemas import (
     DireccionFactor,
@@ -58,54 +59,6 @@ _ETIQUETAS_FEATURES = {
 # ruido entre folds en el notebook): mejor no reportar motivos que inventar
 # certeza sobre 2 o 3 reseñas.
 UMBRAL_MIN_CASOS = 5
-
-# Palabras clave en inglés: la ingesta filtra language=english (ver
-# ingesta_steam.py), así que es lo que hay en el texto de las reseñas.
-_PALABRAS_CLAVE_POR_CATEGORIA: dict[str, list[str]] = {
-    "rendimiento": [
-        "fps", "lag", "laggy", "lagging", "stutter", "stuttering", "freeze", "freezing",
-        "freezes", "crash", "crashes", "crashing", "crashed", "optimize", "optimise",
-        "optimization", "optimisation", "framerate", "frame rate", "sluggish",
-        "memory leak", "loading times", "load times",
-    ],
-    "bugs": [
-        "bug", "bugs", "buggy", "glitch", "glitches", "glitchy", "broken", "game-breaking",
-        "gamebreaking", "softlock", "softlocked", "unplayable",
-    ],
-    "dificultad": [
-        "difficult", "difficulty", "hard", "hardcore", "frustrating", "frustrated",
-        "unfair", "punishing", "grind", "grindy", "grinding", "brutal",
-    ],
-    "controles": [
-        "controls", "controller", "clunky", "unresponsive", "aiming", "aim assist",
-        "keybind", "keybinding", "key bindings", "input lag", "camera controls",
-    ],
-    "contenido": [
-        "content", "short", "shallow", "repetitive", "repetition", "empty", "lacking",
-        "incomplete", "unfinished", "dlc", "pay to win", "filler",
-    ],
-    # "refund", "waste of money" y "not worth" se descartaron: son insatisfaccion
-    # generica (aparecen en cualquier resena Y=1 sin importar el motivo), no
-    # queja de costo especificamente.
-    "precio": [
-        "price", "priced", "pricing", "cost", "costly", "overpriced", "expensive",
-        "paywall", "cash grab", "microtransaction", "microtransactions",
-    ],
-}
-
-
-def _compilar_patrones() -> dict[str, re.Pattern]:
-    return {
-        categoria: re.compile(
-            r"\b(?:" + "|".join(re.escape(palabra) for palabra in palabras) + r")\b",
-            re.IGNORECASE,
-        )
-        for categoria, palabras in _PALABRAS_CLAVE_POR_CATEGORIA.items()
-    }
-
-
-_PATRONES_MOTIVOS = _compilar_patrones()
-
 
 def _cargar_artefacto() -> dict:
     with open(_MODELO_PATH, "rb") as f:
@@ -266,10 +219,10 @@ def contar_motivos(appid: int) -> tuple[dict[str, int], int, int]:
     (api/panorama.py) necesita sumar reseñas, no promediar porcentajes de juegos con
     muestras de tamaños muy distintos."""
     textos = _textos_resenas_y1(appid)
-    conteos = {categoria: 0 for categoria in _PATRONES_MOTIVOS}
+    conteos = {categoria: 0 for categoria in PALABRAS_CLAVE_POR_CATEGORIA}
     n_clasificados = 0
     for texto in textos:
-        categorias_encontradas = [c for c, patron in _PATRONES_MOTIVOS.items() if patron.search(texto)]
+        categorias_encontradas = categorias_de(texto)
         if not categorias_encontradas:
             continue
         n_clasificados += 1

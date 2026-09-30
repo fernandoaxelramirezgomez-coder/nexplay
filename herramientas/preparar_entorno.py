@@ -33,16 +33,19 @@ Uso:
 
 import argparse
 import json
-import lzma
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
-from hashlib import sha256
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
+# Corre desde herramientas/, así que la raíz no está en sys.path y `despliegue` no se encontraría.
+sys.path.insert(0, str(RAIZ))
+
+from despliegue.utilidades import ErrorDeRelease, descargar_verificado  # noqa: E402
+
 DB_PATH = RAIZ / "datos" / "nexplay.db"
 MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 
@@ -50,9 +53,6 @@ MODELO_PATH = RAIZ / "modelo" / "nexplay.pkl"
 # igual dentro de un año. Cada sha256 es el del asset publicado en ese release
 # (ver salida de extracto_reproducible.py): si se sube uno nuevo, va con un tag
 # nuevo y su sha256 se actualiza aqui.
-GITHUB_REPO = "fernandoaxelramirezgomez-coder/nexplay"
-ASSET_NOMBRE = "nexplay_reproducible.db.xz"
-
 SERVIDO_REF = "data-v3"
 SERVIDO_SHA256 = "44f6704d469a8f59683be8e28429108b7a88a06ee01aecdb21da94d90077dfb8"
 
@@ -61,7 +61,6 @@ ENTRENAMIENTO_SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191
 ENTRENAMIENTO_DB_PATH = RAIZ / "datos" / "entrenamiento" / f"nexplay_{ENTRENAMIENTO_REF}.db"
 
 PUERTO_PRUEBA_API = 8321
-TIMEOUT_RED = 60
 
 
 def _verificar_dependencias() -> None:
@@ -84,28 +83,11 @@ def _descargar(ref: str, sha256_esperado: str, destino: Path, forzar: bool) -> N
     if destino.exists() and not forzar:
         print(f"{destino} ya existe, no se reconstruye (usa --force para pisarla).")
         return
-
-    url = f"https://github.com/{GITHUB_REPO}/releases/download/{ref}/{ASSET_NOMBRE}"
-    print(f"descargando {url} ...")
     try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT_RED) as resp:
-            comprimido = resp.read()
-    except urllib.error.URLError as exc:
-        print(f"no se pudo descargar el asset del release {ref}: {exc}")
+        descargar_verificado(ref, sha256_esperado, destino)
+    except ErrorDeRelease as exc:
+        print(exc)
         sys.exit(1)
-
-    checksum = sha256(comprimido).hexdigest()
-    if checksum != sha256_esperado:
-        print(
-            f"SHA-256 de {ref} no coincide: esperado {sha256_esperado}, obtenido {checksum}. "
-            "El asset del release pudo cambiar o la descarga se corrompió; no seguir sin verificarlo."
-        )
-        sys.exit(1)
-    print(f"descarga verificada ({ref}): {len(comprimido) / (1024 * 1024):.1f} MB, sha256 OK")
-
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_bytes(lzma.decompress(comprimido))
-    print(f"{destino} reconstruida ({destino.stat().st_size / (1024 * 1024):.1f} MB)")
 
 
 def _base_de_entrenamiento(forzar: bool) -> Path:
