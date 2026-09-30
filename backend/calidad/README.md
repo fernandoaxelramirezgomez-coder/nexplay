@@ -21,6 +21,9 @@ Contra la app levantada:
 - `capturar_ui.py`: recorre la UI con Playwright, guarda capturas en `docs/capturas/` y reporta problemas.
   Necesita la API y el frontend corriendo, y `requirements-dev.txt`.
 - `preguntas_nia.py`: las 25 preguntas a Nia contra una API levantada.
+- `preguntas_trampa.json`: las 24 trampas, 8 legítimas y dos conversaciones para Nia con modelo, con la
+  categoría y el comportamiento esperado de cada una. Se corren contra una API con clave (gasta OpenAI); el
+  resumen está en `docs/evidencia/nia-pruebas.md`.
 
 Evidencia (cada script escribe o reproduce un archivo de `docs/evidencia/`):
 
@@ -29,5 +32,7 @@ Evidencia (cada script escribe o reproduce un archivo de `docs/evidencia/`):
 - `valoraciones_nia.py`: los votos a las respuestas de Nia.
 - `particion_alternativa.py`: el PR-AUC con la partición de scikit-learn 1.6.1 (prerregistrado; corre solo
   con esa versión).
+- `bootstrap_prueba_externa.py`: el intervalo del PR-AUC externo entre el del trivial, remuestreando los 40
+  títulos (`bootstrap-prueba-externa.json`).
 
 No va aquí: tareas sobre el contenido de los usuarios (`operacion/`) ni el entorno (`despliegue/`).

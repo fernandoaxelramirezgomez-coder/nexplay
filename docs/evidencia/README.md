@@ -59,6 +59,10 @@ rutas de entonces.
   agrupados por modo y por versión del prompt (el hash de su texto), con la cobertura —qué
   proporción de respuestas recibe voto— y el reparto de motivos del 👎. Incluye qué se
   guarda y los 180 días que se conserva.
+- `nia-pruebas.md`: las pruebas de Nia con la clave real de OpenAI. Cubre la regresión de 25
+  preguntas y las tres rondas de trampas y legítimas (`calidad/preguntas_trampa.json`), con las
+  respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos
+  redactados: sin texto de respuestas ni de personas.
 - `antes-del-reembolso.md` y `antes-del-reembolso.txt`: las pruebas A (anticipación) y B
   (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
   de correr (`docs/historial/mejoras/01-antes-del-reembolso.md`). Script:
