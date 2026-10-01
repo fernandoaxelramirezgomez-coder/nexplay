@@ -15,13 +15,17 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+import sklearn
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import GroupKFold, KFold
 
-from entrenar_baseline import N_SPLITS, SEMILLA, construir_features, construir_pipeline, evaluar_gkf
+# leer_particion no se usa aquí: el notebook la llama como ex.leer_particion().
+from entrenar_baseline import (  # noqa: F401
+    N_SPLITS, SEMILLA, construir_features, construir_pipeline, evaluar_gkf, leer_particion, particion_groupkfold, splits_de,
+)
 from entrenar_modelo import _scores_oof
 from limpieza import PALABRAS_DE_UNA_COPIA, clave_de_copia, es_plantilla, palabras
 
@@ -35,8 +39,6 @@ PALETA = {"VERDE_OSC": "#2e8b57", "VERDE_CLA": "#90ee90", "ROJO": "#e53935", "GR
 # El mismo color para lo mismo en todas las figuras.
 COLOR_GRUPO = {"positiva": PALETA["VERDE_OSC"], "negativa tardía": PALETA["GRIS"], "negativa temprana": PALETA["ROJO"]}
 COLOR_RELEASE = {"data-v1 (83)": PALETA["AZUL"], "externos (40)": PALETA["VERDE_CLA"]}
-
-RUTA_PARTICION = Path(__file__).resolve().parents[1] / "referencias" / "particion_gkf_data-v1.csv"
 
 
 # --- Gráficas -------------------------------------------------------------------------------
@@ -185,23 +187,41 @@ def ejemplos(filas: pd.DataFrame, juegos: pd.DataFrame, n: int = 3, columnas=("t
 
 # --- Partición congelada --------------------------------------------------------------------
 
-def particion_gkf(df: pd.DataFrame) -> pd.Series:
-    """El fold de cada juego, con el mismo GroupKFold y las mismas funciones que evaluar_gkf."""
-    X, y, grupos = construir_features(df, conjunto="juego")
-    fold = pd.Series(-1, index=df.index)
-    for numero, (_, validacion) in enumerate(GroupKFold(n_splits=N_SPLITS).split(X, y, groups=grupos)):
-        fold.iloc[validacion] = numero
-    por_juego = fold.groupby(df["appid"]).agg(["min", "max"])
-    assert (por_juego["min"] == por_juego["max"]).all(), "un juego quedó repartido entre folds"
-    return por_juego["min"].rename("fold").sort_index()
+# La firma de referencias/particion_gkf_data-v1.csv: si el CSV cambia, el notebook falla en 1.6.
+FIRMA_PARTICION_DATA_V1 = "416aa8243b570f05f40aa238cb9730faa67d41ecd3f79da7db56558028bb7493"
 
 
 def firma_de_particion(folds: pd.Series) -> str:
     return hashlib.sha256("\n".join(f"{appid},{fold}" for appid, fold in folds.sort_index().items()).encode()).hexdigest()
 
 
-def leer_particion() -> pd.Series:
-    return pd.read_csv(RUTA_PARTICION, index_col="appid")["fold"].sort_index()
+def chequeo_de_particion(folds: pd.Series, appids: dict[str, pd.Series]) -> pd.DataFrame:
+    """Que el CSV sea una partición válida de los mismos juegos que leen 00 y 01. Todo sale del CSV y de
+    los datos, nada de la versión de scikit-learn: da lo mismo en cualquier entorno."""
+    juegos = set().union(*map(set, appids.values()))
+    filas = [("appids en el CSV", len(folds), len(juegos)),
+             ("folds", folds.nunique(), N_SPLITS),
+             ("juegos en más de un fold", int(folds.index.duplicated().sum()), 0)]
+    filas += [(f"appids de {nombre} fuera del CSV", len(set(serie) - set(folds.index)), 0) for nombre, serie in appids.items()]
+    filas += [("appids del CSV fuera de los datos", len(set(folds.index) - juegos), 0),
+              ("firma", firma_de_particion(folds), FIRMA_PARTICION_DATA_V1)]
+    tabla = pd.DataFrame(filas, columns=["chequeo", "valor", "esperado"]).set_index("chequeo")
+    tabla["ok"] = [valor == esperado for valor, esperado in zip(tabla["valor"], tabla["esperado"])]
+    return tabla
+
+
+def groupkfold_de_esta_version(df: pd.DataFrame, folds: pd.Series) -> dict:
+    """Lo que arma el GroupKFold de la versión instalada, contra la partición congelada. Solo informa:
+    ninguna cuenta del notebook usa esta partición."""
+    recalculada = particion_groupkfold(df["appid"])
+    resenas = df.groupby("appid").size()
+    empate = int(resenas.mode().iloc[0])
+    return {"scikit-learn": sklearn.__version__,
+            "misma partición": firma_de_particion(recalculada) == firma_de_particion(folds),
+            "juegos con el mismo fold": int(recalculada.eq(folds.reindex(recalculada.index)).sum()),
+            "juegos": len(recalculada),
+            "juegos empatados": int(resenas.eq(empate).sum()),
+            "reseñas del empate": empate}
 
 
 def copias_en_folds_distintos(resenas: pd.DataFrame, claves: pd.Index, folds: pd.Series) -> int:
@@ -415,13 +435,11 @@ def _niveles(df: pd.DataFrame) -> pd.Series:
 def pr_auc_con_particion(df: pd.DataFrame, folds: pd.Series) -> np.ndarray:
     """PR-AUC por fold con la partición congelada: así dos conjuntos de filas se comparan en los
     mismos juegos de validación, y la diferencia es de los datos y no del reparto."""
-    X, y, _ = construir_features(df, conjunto="juego")
-    fold = df["appid"].map(folds).to_numpy()
+    X, y, grupos = construir_features(df, conjunto="juego")
     resultados = []
-    for numero in sorted(set(fold)):
-        validacion = fold == numero
-        modelo = construir_pipeline().fit(X[~validacion], y[~validacion])
-        resultados.append(average_precision_score(y[validacion], modelo.predict_proba(X[validacion])[:, 1]))
+    for entrenamiento, validacion in splits_de(grupos, folds):
+        modelo = construir_pipeline().fit(X.iloc[entrenamiento], y.iloc[entrenamiento])
+        resultados.append(average_precision_score(y.iloc[validacion], modelo.predict_proba(X.iloc[validacion])[:, 1]))
     return np.array(resultados)
 
 
@@ -429,17 +447,14 @@ def impacto_en_modelo_congelado(original: pd.DataFrame, filtrado: pd.DataFrame, 
     """Qué le pasaría al modelo de riesgo si se entrenara con `filtrado`. No se aplica: el modelo
     congelado se entrena con data-v1 tal cual.
 
-    Dos PR-AUC: con la partición congelada (el efecto de quitar las filas) y con GroupKFold
-    recalculado, que es lo que haría entrenar_modelo: al cambiar el tamaño de los grupos, los
-    juegos se reparten distinto entre folds. Los niveles salen como al reentrenar."""
-    recalculado = _en_silencio(evaluar_gkf, construir_pipeline(), *construir_features(filtrado, conjunto="juego"), "después")
+    El PR-AUC se mide con la partición congelada antes y después: la diferencia es de las filas
+    quitadas, no del reparto. Los niveles salen como al reentrenar, con la misma partición."""
     niveles_antes, niveles_despues = _niveles(original), _niveles(filtrado)
     comunes = niveles_antes.index.intersection(niveles_despues.index)
     return {"filas quitadas": len(original) - len(filtrado),
             "Y=1 quitadas": int(senal(original).sum() - senal(filtrado).sum()),
             "PR-AUC antes": round(pr_auc_con_particion(original, folds).mean(), 4),
             "PR-AUC después (partición congelada)": round(pr_auc_con_particion(filtrado, folds).mean(), 4),
-            "PR-AUC después (GroupKFold recalculado)": round(recalculado.mean(), 4),
             "juegos que cambian de nivel al reentrenar": int((niveles_antes[comunes] != niveles_despues[comunes]).sum())}
 
 

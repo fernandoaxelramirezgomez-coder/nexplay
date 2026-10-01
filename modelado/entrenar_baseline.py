@@ -14,7 +14,9 @@ engineering o en texto.
 Reglas del proyecto que este script respeta:
 - Y = 1 si playtime_at_review < 120 Y voted_up == 0 (arrepentimiento
   temprano, proxy). Ninguna de las dos variables se usa como feature.
-- GroupKFold por appid: el modelo se valida contra juegos que no vio.
+- GroupKFold por appid: el modelo se valida contra juegos que no vio. La
+  particion esta congelada en referencias/particion_gkf_data-v1.csv y no se
+  recalcula (ver leer_particion).
 - Metrica: PR-AUC (average_precision_score). La clase esta desbalanceada.
 - num_games_owned == 0 es bandera de privacidad, no biblioteca vacia: se
   modela con un flag explicito, no se imputa como cero silenciosamente.
@@ -23,7 +25,7 @@ Reglas del proyecto que este script respeta:
   se declara en el formulario, no se observa post-hoc.
 
 Uso:
-    python entrenar_baseline.py
+    python entrenar_baseline.py    # sobre data-v1, la base que deja preparar_entorno.py
 """
 
 import sqlite3
@@ -39,6 +41,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 DB_PATH = Path(__file__).resolve().parents[1] / "datos" / "nexplay.db"
+# El corte con el que se entrena y se mide: la particion congelada solo cubre sus 83 juegos.
+DB_ENTRENAMIENTO = Path(__file__).resolve().parents[1] / "datos" / "entrenamiento" / "nexplay_data-v1.db"
+RUTA_PARTICION = Path(__file__).resolve().parents[1] / "referencias" / "particion_gkf_data-v1.csv"
 N_SPLITS = 5
 SEMILLA = 42
 
@@ -122,10 +127,51 @@ def construir_pipeline() -> Pipeline:
     ])
 
 
+def leer_particion(ruta: Path = RUTA_PARTICION) -> pd.Series:
+    """La particion congelada de data-v1: el fold (0 a N_SPLITS-1) de cada appid.
+
+    Se armo una vez con GroupKFold y no se recalcula: 73 de los 83 juegos
+    empatan en 1,500 resenas (el tope de la ingesta) y cada version de
+    scikit-learn desempata distinto, asi que recalcularla da otros folds."""
+    particion = pd.read_csv(ruta)
+    repetidos = particion.loc[particion["appid"].duplicated(), "appid"].tolist()
+    if repetidos:
+        raise ValueError(f"{ruta.name}: juegos en mas de un fold: {repetidos}")
+    if set(particion["fold"]) != set(range(N_SPLITS)):
+        raise ValueError(f"{ruta.name}: los folds son {sorted(set(particion['fold']))}, no 0 a {N_SPLITS - 1}")
+    return particion.set_index("appid")["fold"].sort_index()
+
+
+def splits_de(grupos: pd.Series, particion: pd.Series) -> list[tuple[np.ndarray, np.ndarray]]:
+    """(entrenamiento, validacion) de cada fold de `particion`, en su orden:
+    todas las filas de un juego caen en el fold de ese juego."""
+    fold = grupos.map(particion)
+    faltan = sorted(int(appid) for appid in grupos[fold.isna()].unique())
+    if faltan:
+        raise ValueError(f"{len(faltan)} juegos no estan en la particion (solo cubre data-v1): {faltan[:10]}")
+    fold = fold.to_numpy()
+    return [(np.flatnonzero(fold != numero), np.flatnonzero(fold == numero)) for numero in sorted(particion.unique())]
+
+
+def splits_congelados(grupos: pd.Series) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Los splits de toda evaluacion y de los umbrales: la particion congelada,
+    nunca un GroupKFold recalculado."""
+    return splits_de(grupos, leer_particion())
+
+
+def particion_groupkfold(grupos: pd.Series) -> pd.Series:
+    """La particion que arma el GroupKFold de la version instalada de
+    scikit-learn. Solo para compararla con la congelada: nunca para evaluar."""
+    fold = pd.Series(-1, index=grupos.index)
+    for numero, (_, validacion) in enumerate(GroupKFold(n_splits=N_SPLITS).split(grupos, groups=grupos)):
+        fold.iloc[validacion] = numero
+    return fold.groupby(grupos).first().rename("fold").sort_index()
+
+
 def evaluar_gkf(modelo, X, y, grupos, nombre: str) -> np.ndarray:
-    gkf = GroupKFold(n_splits=N_SPLITS)
+    """PR-AUC por fold, con la particion congelada por appid."""
     pr_aucs = []
-    for fold, (idx_train, idx_val) in enumerate(gkf.split(X, y, groups=grupos), 1):
+    for fold, (idx_train, idx_val) in enumerate(splits_congelados(grupos), 1):
         modelo.fit(X.iloc[idx_train], y.iloc[idx_train])
         proba = modelo.predict_proba(X.iloc[idx_val])[:, 1]
         pr_auc = average_precision_score(y.iloc[idx_val], proba)
@@ -197,7 +243,7 @@ def comparar_variantes_privacidad(df: pd.DataFrame) -> dict:
 
 
 def main():
-    df = cargar_datos()
+    df = cargar_datos(DB_ENTRENAMIENTO)
 
     resultados = {
         "completo": correr_conjunto(df, "completo"),

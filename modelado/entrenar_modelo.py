@@ -16,10 +16,10 @@ queda guardado en el artefacto.
 
 La generalización a juegos nuevos ya se midió con GroupKFold en
 entrenar_baseline.py; este script no repite esa validación de PR-AUC, pero
-sí corre un GroupKFold para obtener predicciones out-of-fold: son la base
-para calibrar los cortes bajo/medio/alto (tercios de la distribución real
-de scores, no valores de probabilidad fijos — con prevalencia ~2% un
-umbral fijo como 0.66 puede ser inalcanzable).
+sí usa su partición congelada para obtener predicciones out-of-fold: son
+la base para calibrar los cortes bajo/medio/alto (tercios de la
+distribución real de scores, no valores de probabilidad fijos — con
+prevalencia ~2% un umbral fijo como 0.66 puede ser inalcanzable).
 
 Uso:
     python entrenar_modelo.py --db datos/entrenamiento/nexplay_data-v1.db \\
@@ -32,9 +32,8 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
-from sklearn.model_selection import GroupKFold
 
-from entrenar_baseline import N_SPLITS, cargar_datos, construir_features, construir_pipeline
+from entrenar_baseline import cargar_datos, construir_features, construir_pipeline, splits_congelados
 
 MODELO_PATH = Path(__file__).resolve().parents[1] / "modelo" / "nexplay.pkl"
 VERSION_MODELO = f"logreg-juego-{date.today().isoformat()}"
@@ -45,9 +44,8 @@ def _scores_oof(X, y, grupos) -> np.ndarray:
     """Predicciones out-of-fold (cada fila puntuada por un modelo que no la
     vio en entrenamiento) para calibrar los cortes de riesgo sobre una
     distribución de validación, no sobre el ajuste optimista in-sample."""
-    gkf = GroupKFold(n_splits=N_SPLITS)
     oof = np.zeros(len(X))
-    for idx_train, idx_val in gkf.split(X, y, groups=grupos):
+    for idx_train, idx_val in splits_congelados(grupos):
         pipeline = construir_pipeline()
         pipeline.fit(X.iloc[idx_train], y.iloc[idx_train])
         oof[idx_val] = pipeline.predict_proba(X.iloc[idx_val])[:, 1]

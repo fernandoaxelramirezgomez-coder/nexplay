@@ -21,7 +21,8 @@ COPY --chown=user modelado/ modelado/
 # De analisis/ solo entra motivos.py: api/scoring.py lo usa para /explicacion.
 COPY --chown=user analisis/motivos.py analisis/
 COPY --chown=user despliegue/utilidades.py despliegue/preparar_entorno.py despliegue/
-COPY --chown=user referencias/bandas_referencia.json referencias/
+# Las bandas validadas y la partición congelada: entrenar_modelo.py saca los umbrales con ella.
+COPY --chown=user referencias/bandas_referencia.json referencias/particion_gkf_data-v1.csv referencias/
 
 # Baja data-v3 y data-v1 con su sha256, entrena y prueba la API. Si una banda difiere, el build falla.
 RUN python despliegue/preparar_entorno.py \

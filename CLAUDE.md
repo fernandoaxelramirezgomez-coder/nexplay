@@ -15,7 +15,10 @@ respuestas de la API, decir "señal de arrepentimiento temprano", nunca "el usua
 arrepintió".
 
 **Validación.** `GroupKFold` agrupando por `appid`. El modelo debe generalizar a juegos
-que no vio. Nunca usar `train_test_split` simple: fuga garantizada.
+que no vio. Nunca usar `train_test_split` simple: fuga garantizada. La partición está
+congelada en `referencias/particion_gkf_data-v1.csv`: toda evaluación y los umbrales usan
+`splits_congelados` (`modelado/entrenar_baseline.py`), nunca un `GroupKFold` recalculado, porque
+cada versión de scikit-learn desempata distinto.
 
 **Métrica principal.** PR-AUC. La clase está desbalanceada, accuracy no sirve.
 
