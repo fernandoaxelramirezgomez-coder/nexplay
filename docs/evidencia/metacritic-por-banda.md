@@ -56,10 +56,10 @@ Los totales de este corte cuadran con `prueba-externa.json`: 40 títulos, 60,395
 ## Cómo se reproduce
 
 ```
-python docs/evidencia/metacritic_por_banda.py
+cd backend && python calidad/metacritic_por_banda.py
 ```
 
-`metacritic_por_banda.py` solo lee: `datos/nexplay.db` para las reseñas y la nota de cada
+`metacritic_por_banda.py` solo lee: `backend/datos/nexplay.db` para las reseñas y la nota de cada
 juego, y `prueba-externa.json` para saber cuáles son los 40 títulos externos. Las bandas
 salen del mismo camino que sirve la API (`api.catalogo` → `scoring.prediccion_de_titulo`),
 así que la tabla cambia si cambia el modelo. La consulta que cuenta la señal es:

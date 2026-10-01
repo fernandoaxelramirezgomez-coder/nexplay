@@ -5,11 +5,11 @@ Pruebas A y B de la mejora 01, «Antes de que cierre tu reembolso»
 commitearon **antes** de correr (`7b0ba52`); aquí solo se miden.
 
 ```bash
-python analisis/antes_del_reembolso.py > docs/evidencia/antes-del-reembolso.txt
+cd backend && python analisis/antes_del_reembolso.py > ../docs/evidencia/antes-del-reembolso.txt
 ```
 
 Baja data-v1 y data-v2 con su sha256. Usa las mismas palabras clave de `/explicacion`
-(`analisis/motivos.py`) y la semilla 42. Dos corridas dan la misma salida.
+(`backend/analisis/motivos.py`) y la semilla 42. Dos corridas dan la misma salida.
 [Salida completa](antes-del-reembolso.txt).
 
 **Datos.** 921 quejas con motivo en los 83 juegos de data-v1 y 423 en los 40 externos. Una

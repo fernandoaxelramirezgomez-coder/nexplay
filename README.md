@@ -1,431 +1,329 @@
 # NexPlay
 
-**Una segunda opinión antes de comprar tu próximo juego.** Explorás el catálogo, ves
-qué banda de riesgo tiene cada título y por qué (motivos reales de reseñas de Steam,
-no una nota genérica), y decidís con eso encima.
+**Una segunda opinión antes de comprar tu próximo juego.** NexPlay estima el riesgo de arrepentirte
+pronto de una compra en Steam y te dice por qué, con los motivos que aparecen en reseñas reales en lugar
+de una nota genérica. Es el proyecto del Módulo V del Diplomado en Ciencia de Datos de la FES Acatlán
+(UNAM).
 
 ![Catálogo de NexPlay: buscador, un ejemplo de segunda opinión y los estantes por banda de riesgo](docs/capturas/captura-interfaz.png)
 
-## Qué es
+## Índice
 
-Estima el riesgo de **arrepentimiento temprano** al comprar un videojuego, antes de la
-compra. `Y = 1` si `playtime_at_review < 120` minutos (ventana de reembolso de Steam) y
-`voted_up == 0`. Es una señal proxy: Steam no observa arrepentimiento real.
+- [Qué es NexPlay](#qué-es-nexplay)
+- [Arquitectura](#arquitectura)
+- [Requisitos previos](#requisitos-previos)
+- [Puesta en marcha](#puesta-en-marcha)
+- [Configuración (.env)](#configuración-env)
+- [API](#api)
+- [Calidad](#calidad)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Datos y releases](#datos-y-releases)
+- [Despliegue](#despliegue)
+- [Contenido de usuarios y moderación](#contenido-de-usuarios-y-moderación)
+- [Solución de problemas](#solución-de-problemas)
 
-Proyecto del Módulo V del Diplomado en Ciencia de Datos, FES Acatlán (UNAM). Contexto
-completo (datos, validación, qué no hacer) en [CLAUDE.md](CLAUDE.md).
+## Qué es NexPlay
 
-Antes del modelo, la exploración de los datos (Validación → Limpieza → Exploración) en
-`notebook/00_exploracion.ipynb`. Sus gráficas son interactivas en Colab y en nbviewer; en GitHub
-se ven como imagen:
+Steam devuelve el dinero de un juego si lo pides antes de jugar 120 minutos. NexPlay toma esa ventana
+como referencia: una reseña negativa escrita antes de los 120 minutos es una **señal de arrepentimiento
+temprano** (`Y = 1` si `playtime_at_review < 120` y `voted_up == 0`). Es una proxy. Steam no pregunta a
+nadie si se arrepintió, así que el proyecto nunca afirma que alguien lo hizo.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/00_exploracion.ipynb)
-[![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/00_exploracion.ipynb)
+- **Datos.** Reseñas de la API pública `appreviews` de Steam, publicadas en releases con tag fijo. El
+  modelo se entrena siempre con data-v1 (83 juegos, 123,972 reseñas). La app sirve 123 juegos (data-v3);
+  los 40 que no están en data-v1 son prueba externa y nunca entran al entrenamiento.
+- **Modelo.** Una regresión logística con variables del juego: gratuidad, precio, descuento y cobertura y
+  nota de la crítica. El riesgo es del juego, igual para cualquier persona. Se valida con GroupKFold por
+  `appid`, porque tiene que funcionar con juegos que no vio, y se mide con PR-AUC, porque la clase es
+  rara: 0.0694 ± 0.0415 entre folds, 3.2 veces el clasificador trivial. En los 40 externos da 0.0356
+  contra 0.0234 del trivial.
+- **La app.** Muestra la banda de riesgo (bajo, medio o alto, nunca un número), los factores que más la
+  mueven, los motivos de queja más frecuentes y a Nia, un chat que explica los datos del juego sin
+  recomendar la compra. El perfil que declaras sirve para contarte qué tanto encaja un juego contigo; no
+  cambia el riesgo.
 
-Narrativa completa (Problema → Datos → EDA → Calidad de datos → Ingeniería de variables →
-Modelo → Experimento de privacidad → Conclusiones) en `notebook/nexplay.ipynb`, ejecutable de
-punta a punta en un Colab limpio:
+La narrativa completa está en dos notebooks que corren en Colab: `00_exploracion` (los datos, antes del
+modelo) y `01_modelo_riesgo` (el modelo). Ver [notebooks/README.md](notebooks/README.md).
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebook/nexplay.ipynb)
+## Arquitectura
 
-Esta guía es la otra mitad: **cómo dejar el proyecto completo (API + modelo + UI)
-funcionando en una máquina limpia**, no solo el notebook.
+```mermaid
+flowchart LR
+    steam["API appreviews<br/>de Steam"] -->|ingesta, ya hecha| releases["Releases con tag fijo<br/>data-v1 · data-v2 · data-v3<br/>cada asset con su sha256"]
+    releases -->|make data| datos[("backend/datos/<br/>nexplay.db (data-v3)<br/>nexplay_data-v1.db")]
+    datos -->|make train| modelo["backend/modelo/<br/>nexplay.pkl"]
+    datos --> api["API FastAPI<br/>backend/api<br/>scoring · catálogo · Nia"]
+    modelo --> api
+    openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
+    api -->|HTTP/JSON| web["Angular<br/>frontend/"]
+    releases -->|Parquet y SQLite| nb["Notebooks 00 y 01<br/>(Colab)"]
+    tag["tag codigo-v3"] -->|git clone| nb
+```
 
-## Puesta en marcha, de cero
+En producción, Render construye la API con `backend/despliegue/Dockerfile`. El build baja los datos,
+entrena el modelo y falla si alguna de las 123 bandas cambia. Vercel publica el frontend.
 
-Requisitos: Python 3.10+ y `git`. No hace falta cuenta ni credenciales de Steam ni de
-GitHub — todo lo que se descarga es público.
+Lo que pasa al abrir la ficha de un juego:
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant W as Angular
+    participant A as API
+    participant S as scoring.py
+    U->>W: abre /juego/:appid
+    W->>A: GET /catalogo (una vez, al iniciar)
+    A-->>W: juegos con su banda de riesgo
+    W->>A: POST /prediccion {perfil, appid}
+    A->>S: predecir(perfil, appid)
+    S-->>A: riesgo, nivel y los factores que más aportan
+    A-->>W: PrediccionRiesgo
+    W->>A: GET /explicacion/{appid}
+    A-->>W: motivos de las reseñas con señal
+    W-->>U: banda, factores y motivos (nunca el score)
+```
+
+## Requisitos previos
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Python | 3.12 o más nuevo (probado con 3.14, la del Dockerfile) | backend, modelo y notebooks |
+| Node.js con npm | `^22.22.3`, `^24.15.0` o `>=26` | frontend |
+| git | cualquiera reciente | clonar; `make notebooks` exporta el último commit |
+| make | GNU make | la opción A (Linux, macOS o WSL) |
+| Chrome | opcional | las gráficas del 00 en PNG y las capturas de la UI |
+| Clave de OpenAI | opcional | Nia con modelo; sin clave responde con reglas |
+
+No hace falta cuenta ni credenciales de Steam ni de GitHub: todo lo que se descarga es público. Con la
+instalación base y los datos se ocupan unos 1.5 GB; los paquetes de los notebooks (torch, entre otros)
+suman otro tanto.
+
+## Puesta en marcha
+
+### Opción A: con make
 
 ```bash
 git clone https://github.com/fernandoaxelramirezgomez-coder/nexplay.git
 cd nexplay
 
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+make setup       # .venv con backend/requirements*.txt y npm ci en frontend/
+make data        # baja data-v3 y data-v1 a backend/datos/ y verifica su sha256
+make train       # entrena backend/modelo/nexplay.pkl y compara las 123 bandas con la referencia
 
-pip install -r requirements.txt -r requirements-modelo.txt
+make api         # terminal 1: API en http://localhost:8000 (contrato en /docs)
+make web         # terminal 2: frontend en http://localhost:4200
 
-python despliegue/preparar_entorno.py
+make test        # verificadores del backend y pruebas del frontend
+make notebooks   # opcional: ejecuta el 00 y el 01 y los compara con las salidas guardadas
 ```
 
-`despliegue/preparar_entorno.py` hace, en orden:
+`make` sin objetivo muestra la lista. Cada objetivo revisa antes lo que necesita: si falta `.venv`, las
+bases o el modelo, te dice qué correr primero. Abre el frontend como `localhost`, no como `127.0.0.1`:
+el CORS de la API solo permite `http://localhost:4200`.
 
-1. Verifica que las dependencias estén instaladas.
-2. Descarga el asset del [release `data-v3`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v3)
-   (el catálogo que sirve la API) y el del [release `data-v1`](https://github.com/fernandoaxelramirezgomez-coder/nexplay/releases/tag/data-v1)
-   (el corte de entrenamiento), y valida el SHA-256 de cada uno antes de tocarlo.
-3. Reconstruye `datos/nexplay.db` con data-v3 y `datos/entrenamiento/nexplay_data-v1.db`
-   con data-v1.
-4. Corre `modelado/entrenar_modelo.py` sobre data-v1 para generar `modelo/nexplay.pkl`; el
-   artefacto guarda el tag, el sha256 del asset y las filas y juegos de entrenamiento.
-5. Levanta la API en un puerto de prueba y confirma que `/catalogo` responde, antes de
-   apagarla.
-
-Es idempotente: si `datos/nexplay.db` o `modelo/nexplay.pkl` ya existen, no los pisa
-(usa `python despliegue/preparar_entorno.py --force` para reconstruirlos de cero). Aun con
-`--force`, solo pisa una base que reconoce por su sha256 como salida de un release; la base
-original de la ingesta, con `steamid` y `progreso`, la deja intacta y se detiene.
-
-## Frontend en Angular
-
-El frontend vive en `frontend/` y consume la API por HTTP, sin cambiarla.
+### Opción B: manual, paso a paso
 
 ```bash
-# terminal 1, desde la raíz
-uvicorn api.main:app --reload
+git clone https://github.com/fernandoaxelramirezgomez-coder/nexplay.git
+cd nexplay
 
-# terminal 2
+python3 -m venv .venv
+source .venv/bin/activate            # en Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt -r backend/requirements-modelo.txt
+
+cd backend
+python despliegue/preparar_entorno.py      # baja los datos, entrena y prueba que la API responda
+python modelado/verificar_bandas.py        # las 123 bandas, idénticas a la referencia
+uvicorn api.main:app --reload              # http://localhost:8000
+
+# en otra terminal, desde la raíz del repo
 cd frontend
 npm ci
-npx ng serve        # http://localhost:4200
+npx ng serve                               # http://localhost:4200
 ```
 
-Hay que abrirlo como `localhost`, no como `127.0.0.1`: el CORS de la API permite
-`http://localhost:4200` (`api/main.py`). Requiere Node `^22.22.3 || ^24.15.0 || >=26`.
+`preparar_entorno.py` no pisa lo que ya existe; `--force` reconstruye, pero solo sobre bases que salieron
+de un release. Todos los comandos de Python corren desde `backend/`.
 
-Rutas: `/` (catálogo), `/juego/:appid` (ficha), `/comparar` y `/perfil`. Detalles de
-diseño, decisiones y deuda conocida en [frontend/README.md](frontend/README.md).
+### Opción C: los notebooks en Colab
 
-Para revisar los cambios visuales sin abrir un navegador a mano:
+| Notebook | Abrir |
+|---|---|
+| `00_exploracion`: valida, limpia y explora los datos | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) |
+| `01_modelo_riesgo`: construye y mide el modelo | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
+
+Abre cada uno y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag `codigo-v3` y baja
+los datos verificando su sha256, así que no necesita nada de lo anterior ni pide credenciales.
+
+## Configuración (.env)
+
+Para usar Nia con un modelo de lenguaje, copia la plantilla en la raíz y llena la clave:
 
 ```bash
-python calidad/capturar_ui.py    # capturas en docs/capturas/angular/
+cp .env.example .env
 ```
 
-## Estructura
+`.env` está en `.gitignore` y la clave nunca va en un archivo del repo; en Render se carga en
+*Environment*. La API lee el `.env` de la raíz aunque corra desde `backend/`, pero solo para las variables
+de Nia. Las demás se leen del entorno del proceso: expórtalas en la terminal antes de `make api`, o ponlas
+en el panel de Render.
 
-```
-api/                la API (FastAPI): contrato estable, lógica delgada
-  main.py             endpoints
-  schemas.py          contratos Pydantic de entrada y salida
-  scoring.py          predicción de riesgo y explicación (carga modelo/nexplay.pkl)
-  catalogo.py         búsqueda de juegos (cargado una vez al arrancar)
-  valoraciones.py     calificaciones y hilo de comentarios (base propia, datos/valoraciones.db)
-  nia/                el chat de Nia
-    agente.py           contexto del juego, modelo de lenguaje y pulido de la respuesta
-    reglas.py           respuestas por reglas, con o sin modelo (el modo demostración)
-    herramientas.py     lo que el modelo puede consultar del catálogo
-  config.py           variables de .env (clave y modelo de Nia, topes)
-  limites.py          límite de frecuencia en memoria, por usuario e IP
-frontend/           el frontend en Angular, consume la API por HTTP
-  scripts/recortar_nia.py  corta los sprites de Nia de la hoja de emociones
-notebook/           los notebooks, ejecutables en Colab (clonan un tag fijo de código)
-  00_exploracion.ipynb  validación, limpieza y exploración de los datos, antes del modelo
-  nexplay.ipynb         la narrativa del modelo de riesgo
+| Variable | Por omisión | Qué hace | Se lee de |
+|---|---|---|---|
+| `OPENAI_API_KEY` | vacía | La clave del chat de Nia. Vacía, Nia responde en modo demostración, con reglas. | `.env` o entorno |
+| `NEXPLAY_MODELO_NIA` | vacío | El modelo de OpenAI de Nia. Vacío, también modo demostración. | `.env` o entorno |
+| `NEXPLAY_NIA_MAX_TOKENS` | 400 | El largo máximo de la respuesta. | `.env` o entorno |
+| `NEXPLAY_NIA_TIMEOUT` | 20 | Segundos de espera al modelo. | `.env` o entorno |
+| `NEXPLAY_NIA_POR_MINUTO` | 10 | Mensajes a Nia por minuto, por usuario e IP. | `.env` o entorno |
+| `NEXPLAY_NIA_RAZONAMIENTO` | false | En true, pide 1,200 tokens y esfuerzo bajo (para un modelo de razonamiento). | `.env` o entorno |
+| `NEXPLAY_CORS_ORIGENES` | vacío | Orígenes extra separados por coma. `http://localhost:4200` siempre está permitido. | entorno |
+| `NEXPLAY_VALORACIONES_DB` | `backend/datos/valoraciones.db` | Dónde guardar calificaciones, comentarios y votos. | entorno |
+| `NEXPLAY_COMENTARIOS_POR_MINUTO` | 3 | Comentarios por minuto, por usuario e IP. | entorno |
+| `NEXPLAY_REACCIONES_POR_MINUTO` | 30 | Reacciones por minuto. | entorno |
+| `NEXPLAY_VOTOS_NIA_POR_MINUTO` | 30 | Votos a respuestas de Nia por minuto. | entorno |
 
-ingesta/            de dónde salen los datos
-  ingesta_steam.py    ingesta original desde la API pública de Steam (no hace falta correrla)
-  appids.txt          el catálogo declarado que baja esa ingesta
-analisis/           las cuentas de la exploración y del texto de las reseñas
-  exploracion.py      chequeos y cuentas de 00_exploracion
-  limpieza.py         reglas de limpieza del texto, con bitácora y firma del conjunto
-  idioma.py           detección del idioma real de cada reseña
-  motivos.py          palabras clave de los motivos (la usa api/scoring.py para /explicacion)
-modelado/           el modelo de riesgo y su validación
-  entrenar_baseline.py   pipeline compartido + comparación de conjuntos de features
-  entrenar_modelo.py     entrena el modelo de producción (el que sirve api/scoring.py)
-  verificar_bandas.py    compara las bandas del catálogo contra referencias/bandas_referencia.json
-referencias/        valores fijos contra los que se compara
-  bandas_referencia.json     las bandas validadas de los 123 juegos
-  particion_gkf_data-v1.csv  la partición congelada de GroupKFold (appid → fold)
-publicacion/        lo que se sube a un release
-  extracto_datos.py         genera el extracto mínimo en Parquet que consume el notebook
-  extracto_reproducible.py  genera la copia sanitizada de datos/nexplay.db
-despliegue/         cómo se levanta el proyecto
-  preparar_entorno.py       deja el proyecto funcional de punta a punta en una máquina limpia
-  utilidades.py             descarga verificada de releases (la usan preparar_entorno y los notebooks)
-  Dockerfile                la imagen de la API que construye Render
-calidad/            lo que comprueba que nada se rompió
-  capturar_ui.py            recorre la UI con Playwright, la captura y la revisa
-  verificar_nia.py          revisa a Nia sin gastar llamadas
-  preguntas_nia.py          las 25 preguntas contra una API levantada
-operacion/          tareas locales sobre el contenido de los usuarios
-  exportar_valoraciones.py  exporta calificaciones y comentarios a CSV
-  moderar_comentarios.py    lista y borra comentarios del hilo público
+## API
 
-modelo/             artefactos entrenados (.pkl) — no versionado, lo genera preparar_entorno.py
-datos/              nexplay.db (SQLite) — no versionado, lo reconstruye preparar_entorno.py
-extracto/           extractos generados (Parquet para el notebook, DB para preparar_entorno.py) — no versionado
-registros/          el log y el candado que deja la ingesta — no versionado
-docs/               documentación: capturas, diseño, evidencia y planes
-.env.example        plantilla de variables; el .env real no se versiona
-requirements*.txt   ver la tabla de abajo
+Con la API levantada, el contrato completo está en http://localhost:8000/docs. Qué significa cada campo,
+con ejemplos, está en [backend/api/README.md](backend/api/README.md).
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /catalogo?q=` | Busca juegos por nombre; sin `q`, el catálogo completo con la banda de cada uno. |
+| `GET /panorama` | Cuántas reseñas hay detrás del catálogo, de cuándo son y cuántas traen la señal. |
+| `POST /perfil` | Recibe el formulario de alta y devuelve el perfil derivado. |
+| `POST /prediccion` | Recibe perfil y `appid`; devuelve riesgo, nivel y los factores que más aportan. |
+| `GET /explicacion/{appid}` | Los motivos de queja más frecuentes en las reseñas con señal de ese juego. |
+| `GET`, `PUT` y `DELETE /valoraciones/{appid}` | La calificación de 1 a 5 de la segunda opinión: leerla, ponerla o quitarla. |
+| `GET` y `POST /comentarios/{appid}` | El hilo público de comentarios del juego. |
+| `PUT` y `DELETE /comentarios/{appid}/{id}` | Editar o borrar un comentario propio. |
+| `PUT /comentarios/{appid}/{id}/reaccion` | Pulgar arriba a un comentario, en toggle. |
+| `POST /nia` | El chat de Nia, sobre un juego o sobre el catálogo. |
+| `GET /nia/opiniones?appids=` | La opinión corta de Nia sobre hasta 6 juegos, sin modelo de lenguaje. |
+| `PUT` y `DELETE /nia/valoracion/{id}` | El 👍 o 👎 a una respuesta de Nia. |
+
+Por ejemplo, el riesgo de Hades:
+
+```bash
+PERFIL=$(curl -s -X POST http://localhost:8000/perfil -H 'Content-Type: application/json' \
+  -d '{"compras_al_anio": 3, "horas_por_semana": 6, "tolerancia_friccion": 3,
+       "tags_preferidos": ["Roguelike"], "tags_rechazados": [], "plataforma": "pc"}')
+curl -s -X POST http://localhost:8000/prediccion -H 'Content-Type: application/json' \
+  -d "{\"perfil\": $PERFIL, \"appid\": 1145360}"
 ```
 
-Cada carpeta tiene un `README.md` corto: qué hay y qué no va ahí.
+`riesgo` ordena los juegos de más a menos riesgo, pero no es una probabilidad calibrada. Por eso la app
+muestra solo `nivel`, que sale de los terciles de los scores de validación.
 
-`datos/nexplay.db` y `modelo/nexplay.pkl` no están en el repo (son datos e artefactos
-entrenados, no código). `despliegue/preparar_entorno.py` los reconstruye sin necesidad
-de volver a correr la ingesta de Steam.
+## Calidad
 
-### Requirements
+| Comando | Qué revisa |
+|---|---|
+| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que `preparar_entorno --force` no pise bases ajenas y las 279 pruebas del frontend. |
+| `make notebooks` | Ejecuta el 00 y el 01 con el último commit y compara cada salida con la guardada, sin sobrescribirla. |
+| `cd frontend && npx ng build` | El build de producción del frontend. |
+| `python calidad/capturar_ui.py`, desde `backend/` | Recorre la UI con Playwright (API y frontend corriendo), guarda capturas en `docs/capturas/angular/` y reporta problemas de texto y contraste. |
+| `python calidad/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba`, desde `backend/` | Las 25 preguntas a Nia contra una API levantada. |
+| El build de Render | Corre `preparar_entorno.py` y `verificar_bandas.py`; falla si una banda cambia o si llega torch a la imagen. |
 
-Se quedan en la raíz; cada uno se instala donde hace falta y nada más.
+Cada decisión medida (por qué no se entrena con los 123, qué pasa con otra partición, la señal por banda)
+está en [docs/evidencia/](docs/evidencia/README.md), con el script que la reproduce en `backend/calidad/`.
 
-| Archivo | Para qué | Dónde se instala |
+## Estructura del repositorio
+
+```
+nexplay/
+├── README.md            este archivo
+├── Makefile             make help lista los objetivos
+├── .env.example         plantilla de variables; el .env real no se versiona
+├── CLAUDE.md · AGENTS.md  decisiones y convenciones del proyecto
+├── backend/             todo el Python; los comandos corren desde aquí
+│   ├── api/               FastAPI: endpoints, esquemas, scoring y el chat de Nia (nia/)
+│   ├── modelado/          entrenamiento y comparación de bandas
+│   ├── analisis/          cuentas del EDA y del texto; motivos.py lo usa la API
+│   ├── referencias/       bandas validadas y partición congelada
+│   ├── despliegue/        preparar_entorno.py, utilidades.py y el Dockerfile de Render
+│   ├── calidad/           verificadores y scripts de evidencia
+│   ├── ingesta/           la ingesta original desde Steam
+│   ├── publicacion/       lo que se sube a un release
+│   ├── operacion/         exportar y moderar comentarios
+│   └── requirements*.txt  uno por uso (ver backend/README.md)
+├── frontend/            Angular: src/, public/, fuentes/ (la hoja de Nia) y scripts/
+├── notebooks/           00_exploracion y 01_modelo_riesgo, con su ruta de ejecución
+└── docs/                evidencia, capturas, diseño e historial
+```
+
+Cada carpeta tiene un `README.md` corto con lo que va ahí y lo que no. Al correr aparecen, sin
+versionarse, `backend/datos/`, `backend/modelo/`, `backend/extracto/` y `backend/registros/`. El documento
+final en LaTeX (`documento/`) llega al fusionar su rama; mientras tanto, `make doc` solo avisa.
+
+## Datos y releases
+
+| Release | Qué trae | Para qué |
 |---|---|---|
-| `requirements.txt` | la API: FastAPI, uvicorn, pydantic, openai | Render y local |
-| `requirements-modelo.txt` | datos y modelo: numpy, pandas, scikit-learn, pyarrow | Render (sin pyarrow) y local |
-| `requirements-notebooks.txt` | plotly, lingua y sentence-transformers para los notebooks | solo notebooks; nunca Render (el Dockerfile falla si llega torch) |
-| `requirements-dev.txt` | Playwright (`calidad/capturar_ui.py`) y kaleido (las gráficas de los notebooks como PNG) | solo local |
+| `data-v1` | 83 juegos y 123,972 reseñas | Entrenar y medir el modelo; todas las decisiones. |
+| `data-v2` | 123 juegos | Los 40 títulos que no están en data-v1 son la prueba externa del 01. |
+| `data-v3` | Los juegos y reseñas de data-v2, más los totales públicos de Steam (`resumen_resenas`) | Lo que sirve la API. |
 
-## Configuración
+Cada release trae `nexplay_reproducible.db.xz`, una copia sanitizada de la base sin la columna `steamid`,
+y `nexplay_extracto.parquet`, un extracto sin texto para el 01. Quien los baja verifica el sha256 antes de
+abrirlos (`descargar_verificado`, en `backend/despliegue/utilidades.py`).
 
-- `NEXPLAY_CORS_ORIGENES`: orígenes adicionales permitidos por CORS, separados por
-  coma (p. ej. `https://nexplay.example.com,https://otra.example.com`).
-  `http://localhost:4200`, el frontend en desarrollo, está siempre permitido.
-- `NEXPLAY_VALORACIONES_DB`: dónde vive la base de valoraciones y comentarios. Por
-  defecto `datos/valoraciones.db`.
-- `NEXPLAY_COMENTARIOS_POR_MINUTO` (3), `NEXPLAY_REACCIONES_POR_MINUTO` (30) y
-  `NEXPLAY_NIA_POR_MINUTO` (10): topes por usuario e IP, en memoria.
-- `OPENAI_API_KEY` y `NEXPLAY_MODELO_NIA`: la clave y el modelo del chat de Nia. Vacíos,
-  Nia responde en modo demostración. `NEXPLAY_NIA_MAX_TOKENS` (400) y
-  `NEXPLAY_NIA_TIMEOUT` (20) acotan la respuesta.
-
-Todo eso puede ir en un `.env` en la raíz: copia [.env.example](.env.example), que está
-versionado y vacío. **`.env` no se versiona** (está en `.gitignore`) y la clave de OpenAI
-**nunca va en un archivo del repo**: en el despliegue se carga como secreto del proveedor
-(*Repository secrets* en Hugging Face Spaces, *Environment* en Render).
-
-## Endpoints
-
-### `GET /catalogo?q=`
-
-Busca juegos por nombre. Sin `q`, devuelve el catálogo completo.
-
-### `POST /perfil`
-
-Recibe el formulario de alta declarado por el jugador y devuelve el perfil derivado.
-
-**Request** (`FormularioAlta`):
-
-```json
-{
-  "compras_al_anio": 3,
-  "horas_por_semana": 6,
-  "tolerancia_friccion": 3,
-  "tags_preferidos": ["roguelike", "singleplayer"],
-  "tags_rechazados": ["pvp", "pay to win"],
-  "plataforma": "pc"
-}
-```
-
-`tolerancia_friccion` es una escala 1 (nula tolerancia) a 5 (muy alta).
-
-**Response** (`PerfilJugador`): `tolerancia_friccion` normalizada a `baja`/`media`/`alta`,
-más `segmento` (`novato`/`veterano`) y `disponibilidad` (`baja`/`media`/`alta`) —
-todas derivadas por heurística.
-
-### `POST /prediccion`
-
-Recibe el perfil derivado (el que devolvió `/perfil`) más un `appid`, y devuelve el
-riesgo con los tres factores que más lo movieron. El riesgo es del título (modelo
-`conjunto='juego'`): el perfil se acepta por compatibilidad y solo aporta la nota de
-plataforma; ningún dato suyo mueve el score.
-
-**Request** (`SolicitudPrediccion`): `{ "perfil": {...}, "appid": 1245620 }`
-
-**Response** (`PrediccionRiesgo`):
-
-```json
-{
-  "appid": 1245620,
-  "riesgo": 0.42,
-  "nivel": "medio",
-  "modelo_version": "logreg-compra-2026-09-16",
-  "nota_plataforma": null,
-  "factores": [
-    {
-      "etiqueta": "cobertura de crítica especializada",
-      "valor_relativo": "bajo",
-      "contribucion": 1.33,
-      "direccion": "aumenta"
-    },
-    {
-      "etiqueta": "precio del juego",
-      "valor_relativo": "alto",
-      "contribucion": 0.2,
-      "direccion": "aumenta"
-    },
-    {
-      "etiqueta": "compras declaradas por año",
-      "valor_relativo": "bajo",
-      "contribucion": -0.07,
-      "direccion": "reduce"
-    }
-  ]
-}
-```
-
-`nivel` (`bajo`/`medio`/`alto`) viene de terciles de la distribución de scores de
-validación, no de un umbral de probabilidad fijo: `class_weight="balanced"` hace que
-`riesgo` ordene riesgo relativo, no sea una probabilidad calibrada.
-
-`factores`: las tres variables del modelo con mayor contribución absoluta al score
-(coeficiente × valor estandarizado), en lenguaje claro. `contribucion` está en unidades
-de log-odds — no se traduce a probabilidad ni tiene una escala intuitiva; sirve para
-comparar factores entre sí, no como número a mostrar suelto. En los juegos gratis, la
-gratuidad y el precio (0) dicen lo mismo y tiran en sentidos opuestos, así que salen como un
-solo factor, «gratuidad del juego», con los dos aportes sumados y evidencia débil. Que el
-modelo extrapola en los gratis (en el entrenamiento había solo 2) lo dice `avisos`.
-
-`nota_plataforma` viene poblada cuando el perfil declara una plataforma distinta de
-`pc`, aclarando que no existe fuente de entrenamiento propia para PlayStation/Xbox/
-Nintendo (el lado del juego transfiere, pero la señal viene de reseñas de Steam).
-
-### `GET /explicacion/{appid}`
-
-Motivos de insatisfacción más frecuentes en las reseñas de arrepentimiento temprano
-(`Y=1`) de ese juego, por conteo de palabras clave por categoría (rendimiento, bugs,
-dificultad, controles, contenido, precio) — sin modelo de lenguaje.
-
-**Response** (`ExplicacionJuego`):
-
-```json
-{
-  "appid": 1938010,
-  "nombre": "WILD HEARTS™",
-  "n_casos": 325,
-  "pct_clasificados": 0.6554,
-  "motivos": [
-    { "motivo": "rendimiento", "frecuencia": 0.86 },
-    { "motivo": "bugs", "frecuencia": 0.25 },
-    { "motivo": "dificultad", "frecuencia": 0.09 }
-  ]
-}
-```
-
-`n_casos` es cuántas reseñas `Y=1` se analizaron; `pct_clasificados`, qué proporción de
-esas menciona al menos una de las seis categorías. `frecuencia` se calcula sobre las
-reseñas clasificadas, no sobre `n_casos` — con cobertura parcial, dividir sobre el total
-se ve engañosamente bajo. Con menos de 5 casos `Y=1`, `motivos` viene vacío: no hay
-muestra para decir algo confiable.
-
-### Valoraciones y comentarios de la segunda opinión
-
-Viven en `datos/valoraciones.db`, aparte de `nexplay.db`. La identidad es un id anónimo
-que genera el navegador y guarda en `localStorage`: **identifica, no autentica**.
-
-- `GET /valoraciones/{appid}?usuario=` → `{ appid, promedio, total, mia }`. El promedio
-  y el total son públicos (`promedio` es `null` si nadie ha calificado); `mia` es la
-  calificación de quien pregunta, de 1 a 5, o `null`.
-- `PUT /valoraciones/{appid}` con `{ usuario, calificacion }` → crea o cambia la
-  calificación (uno por persona y juego). `calificacion` es un entero de 1 a 5: `0`, `6`,
-  `3.5` o `"3"` devuelven 422. `DELETE` con `?usuario=` la quita.
-- `GET /comentarios/{appid}?usuario=` → hilo público, del más viejo al más nuevo. Cada
-  entrada trae `id`, `texto`, `creado`, `actualizado`, `editado`, `reacciones`,
-  `reaccione_mia` y `es_mio`. **Nunca devuelve el id de quien escribió**: de esa identidad
-  solo sale `es_mio`, que es la comparación contra quien pregunta. Sin `usuario` el hilo
-  se lee igual, pero nada viene marcado como propio. Máximo 100.
-- `POST /comentarios/{appid}` con `{ usuario, texto }` (hasta 500 caracteres) → agrega uno
-  al final. Pasado el tope por minuto responde 429 con `Retry-After`.
-- `PUT /comentarios/{appid}/{id}` con `{ usuario, texto }` → cambia el texto, marca
-  `editado` y guarda la fecha del cambio en `actualizado`; `creado` no se toca, porque es
-  cuándo apareció en el hilo. **403** si el comentario es de otra persona, 404 si no
-  existe en ese juego.
-- `DELETE /comentarios/{appid}/{id}?usuario=` → lo borra con todo y sus reacciones.
-  **403** si es de otra persona.
-- `PUT /comentarios/{appid}/{id}/reaccion` con `{ usuario }` → pulgar arriba en toggle:
-  una fila por persona y comentario, y si ya estaba se quita. Devuelve
-  `{ comentario_id, reacciones, reaccione_mia }`. Tiene su propio tope por minuto
-  (`NEXPLAY_REACCIONES_POR_MINUTO`, 30), más alto que el de publicar porque es un clic.
-
-Los tres últimos se apoyan en el mismo id anónimo, así que **no son control de acceso**:
-impiden el accidente, no a quien mande el id de otra persona a propósito.
-
-### `POST /nia`
-
-El chat de Nia, con un juego (`appid`) o sobre el catálogo entero. Recibe
-`{ usuario, appid?, mensajes, sugerencias? }`: hasta 40 mensajes, los tuyos de 500
-caracteres como máximo y los de Nia de 1,500. Al modelo solo llegan los últimos 10 turnos.
-Devuelve `{ respuesta, modo, modelo, aviso, juegos, pide_juego, fuera_de_tema, … }`.
-
-`modo` dice de dónde salió la respuesta: `openai` (el modelo), `demostracion` (sin clave,
-por reglas) o `reglas`. Este último es cuando hay clave pero la respuesta no pasa por el
-modelo porque tiene que ser siempre la misma: pedir el juego, resumir la conversación, no
-coronar «el mejor», no contestar preguntas que no son de juegos y explicar por qué un juego
-abierto tiene su riesgo («¿por qué tiene ese riesgo?»), con el factor que más aporta, su
-evidencia y los avisos.
-
-**Limitación conocida.** Un seguimiento sin palabras de juegos, como «¿Y eso es mucho?», se
-trata como fuera de tema y se contesta con reglas: el detector de temas ajenos mira solo la
-pregunta, no la conversación. Se deja así a propósito: si mirara la conversación, la trivia a
-mitad de un hilo («¿cuál es la capital de Francia?») llegaría al modelo.
-
-El backend arma el contexto con los datos reales de ese juego (banda, motivos con sus
-porcentajes, Metacritic, precio, géneros) y el prompt de sistema fija el vocabulario del
-proyecto: "arrepentimiento temprano" y nunca "abandono", señal proxy, bandas en vez de
-probabilidades, y nada de recomendar comprar o no comprar.
-
-Sin `OPENAI_API_KEY` o sin `NEXPLAY_MODELO_NIA` —y también si la llamada falla— responde
-en **modo demostración**: la misma información armada con reglas, marcada como tal en la
-respuesta y en pantalla.
-
-**Para probar el modo con OpenAI real:** pon la clave y el modelo en `.env`, reinicia la
-API y hazle a Nia una pregunta *fuera de las reglas*, por ejemplo "¿me lo recomiendas?" o
-"¿lo compro?". La respuesta debe describir los datos y devolver la decisión a quien
-pregunta, sin recomendar la compra. Es la forma de confirmar que el prompt de sistema
-también frena al modelo real, no solo al modo demostración.
-
-**Para verificar a Nia:**
-
-```bash
-python calidad/verificar_nia.py              # contexto, reglas, votos y los casos de producción; sale 1 si algo falla
-python calidad/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba   # las 25 preguntas contra una API levantada
-```
-
-`verificar_nia.py` no gasta llamadas. `preguntas_nia.py` responde con el modelo si la API
-que le das tiene clave; si no, con reglas.
-
-## Contenido de usuarios y moderación
-
-- **`datos/valoraciones.db` no se regenera.** `despliegue/preparar_entorno.py` reconstruye
-  `nexplay.db`, pero esta base es contenido de quienes usan la app y no está en ningún
-  release. En un contenedor el disco es efímero: en el despliegue necesita un volumen
-  persistente (un disco en Render, `/data` en Spaces) o las valoraciones se pierden en
-  cada reinicio. Respaldarla es copiar el archivo.
-- `python operacion/exportar_valoraciones.py` genera dos CSV en `extracto/`: calificaciones y comentarios.
-  El de comentarios sí lleva el id anónimo, porque es una herramienta local de análisis.
-- `python operacion/moderar_comentarios.py [appid]` lista los comentarios con su id y su fecha, y
-  `--borrar ID` elimina uno, con sus reacciones. Cada quien puede borrar los suyos desde
-  la app; para **el comentario de alguien más, este script es el único camino**.
-- El id anónimo no es autenticación: cualquiera puede mandar otro id y editar esa
-  valoración. La app lo advierte antes de comentar y conviene no guardar nada sensible.
-
-## Regenerar los datos publicados (mantenedores)
-
-Solo hace falta si se vuelve a ingestar Steam o cambia el esquema. No es parte de la
-puesta en marcha normal — `despliegue/preparar_entorno.py` ya descarga estos assets, no los genera.
+**Regenerar un release (solo mantenedores).** Hace falta solo si se vuelve a ingestar Steam o cambia el
+esquema. Desde `backend/`:
 
 ```bash
 python ingesta/ingesta_steam.py --catalogo
-python ingesta/ingesta_steam.py --resenas      # tarda horas; reanuda si se interrumpe
+python ingesta/ingesta_steam.py --resenas          # tarda horas; reanuda si se interrumpe
 
-python publicacion/extracto_datos.py        # extracto/nexplay_extracto.parquet (para el notebook)
-python publicacion/extracto_reproducible.py # extracto/nexplay_reproducible.db.xz (para despliegue/preparar_entorno.py)
+python publicacion/extracto_datos.py               # extracto/nexplay_extracto.parquet
+python publicacion/extracto_reproducible.py        # extracto/nexplay_reproducible.db.xz
+gh release create data-v4 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
 ```
 
-`publicacion/extracto_reproducible.py` copia `juegos` y `resenas` completas salvo la columna
-`steamid` (identifica cuentas reales de Steam; nada en el proyecto la usa). Desde
-`data-v3` también copia `resumen_resenas`: los totales públicos de Steam por juego, que
-`api/panorama.py` necesita. `progreso` no se copia: es el estado de paginación de la ingesta.
+Cada extracto nuevo va con un tag nuevo, nunca reemplazando los assets de uno publicado. Después hay que
+poner los sha256 que imprime cada script en `backend/despliegue/preparar_entorno.py` (`SERVIDO_SHA256` y
+`ENTRENAMIENTO_SHA256`) y en los notebooks. Si no coinciden, la descarga se rechaza a propósito.
 
-Cada extracto nuevo va en un release con tag nuevo (`data-v2`, `data-v3`…), nunca
-reemplazando los assets de uno ya publicado: quien tenga fijado el tag anterior debe
-seguir bajando exactamente lo mismo. Hoy `despliegue/preparar_entorno.py` sirve `data-v3` y entrena
-con `data-v1`; el notebook mide con `data-v1` y usa `data-v2` como prueba externa:
+## Despliegue
 
-```bash
-gh release create data-v2 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
-```
+- **API en Render**, como servicio Docker: Root Directory `backend`, Dockerfile Path
+  `despliegue/Dockerfile` y Docker Build Context `.`. El build instala `requirements.txt` y
+  `requirements-modelo.txt` (sin pyarrow), baja los datos, entrena y corre `verificar_bandas.py`. Los Build
+  Filters incluyen solo lo que copia el Dockerfile, así que un cambio en un README no dispara un deploy. URL:
+  https://nexplay-api-345o.onrender.com.
+- **Frontend en Vercel**, con Root Directory `frontend`. `frontend/vercel.json` reescribe toda ruta a
+  `index.html`, y `frontend/src/environments/environment.ts` apunta a la API de Render. El origen de Vercel
+  se agrega a la API con `NEXPLAY_CORS_ORIGENES`.
 
-Y actualizar los sha256 en `notebook/nexplay.ipynb` (`PARQUET_ENTRENAMIENTO_SHA256`,
-`PARQUET_PRUEBA_SHA256`) y en `despliegue/preparar_entorno.py` (`SERVIDO_SHA256`,
-`ENTRENAMIENTO_SHA256`) con el que imprime cada script — si no coinciden, la
-descarga se rechaza a propósito en vez de seguir con datos que pudieron cambiar.
+En el plan gratis de Render el disco es efímero: `valoraciones.db` se borra cuando el servicio se reinicia.
 
-## No versionado
+## Contenido de usuarios y moderación
 
-`datos/`, `modelo/` y `extracto/` están en `.gitignore`. `datos/` y `modelo/` los
-reconstruye `despliegue/preparar_entorno.py`; `extracto/` solo hace falta para publicar un release
-nuevo (sección anterior).
+Las calificaciones, los comentarios y los votos a Nia viven en `backend/datos/valoraciones.db`, aparte del
+catálogo. No salen de ningún release: `make data` no los toca y respaldarlos es copiar el archivo. La
+identidad es un id anónimo que genera el navegador: identifica, pero no autentica, así que no es control
+de acceso.
+
+Desde `backend/`:
+
+- `python operacion/exportar_valoraciones.py` deja dos CSV en `extracto/`, uno de calificaciones y otro de
+  comentarios.
+- `python operacion/moderar_comentarios.py [appid]` lista los comentarios, y `--borrar ID` elimina uno con
+  sus reacciones. Es el único camino para borrar el comentario de otra persona.
+
+## Solución de problemas
+
+| Síntoma | Causa | Qué hacer |
+|---|---|---|
+| `make` dice «Falta el entorno .venv», «Faltan las bases» o «Falta el modelo» | Un paso anterior no se corrió. | Corre lo que indica, en orden: `make setup`, `make data`, `make train`. |
+| `make setup` dice que hace falta Python 3.12 | `python3` es más viejo (numpy 2.5 pide 3.12). | `make setup PYTHON=python3.14`, o el Python 3.12+ que tengas. |
+| El frontend carga pero no trae juegos | Lo abriste como `127.0.0.1`, o la API no está corriendo. | Ábrelo como `http://localhost:4200` y revisa que `make api` siga arriba. |
+| `make api` dice que el puerto 8000 está en uso | Ya hay otra API corriendo. | Apágala, o usa `make api PUERTO=8001` (el frontend en desarrollo espera el 8000). |
+| `preparar_entorno.py --force` dice «No piso …» | Esa base no salió de un release (por ejemplo, la base original de la ingesta). | Respáldala o muévela y vuelve a correr. Es a propósito: esa base no se recupera de un release. |
+| «sha256 … no coincide» al bajar datos | El asset cambió o la descarga se cortó. | Vuelve a intentar. Si persiste, no sigas: el release no es el esperado. |
+| `npm install` falla con `Cannot read properties of null (reading 'edgesOut')` | Un bug de npm 10.9 con las dependencias de Vitest. | Usa `npm ci` (es lo que hace `make setup`). Para regenerar el lockfile, `npx npm@11.19.1 install`. |
+| El 00 avisa «Exportación estática apagada» | En Colab, o kaleido no encuentra un Chrome. | Nada que arreglar: las gráficas se ven interactivas. Para tener PNG en local, `.venv/bin/plotly_get_chrome` o `BROWSER_PATH`. |
+| `make notebooks` marca celdas distintas | Las salidas guardadas salieron de otro entorno (Colab, otra versión de pandas). | Revisa el diff que imprime: si solo cambia cómo se escribe un tipo o el orden de un empate, no es una cifra distinta. |
+| El build de Render falla con «torch o sentence-transformers en la imagen» | Algo agregó un paquete de notebooks a los requirements de la API. | Esos paquetes van solo en `backend/requirements-notebooks.txt`. |
+| Vienes de la estructura anterior y la API no encuentra los datos | `datos/`, `modelo/`, `extracto/` y `registros/` ahora viven en `backend/`. | Muévelas: `mv datos modelo extracto registros backend/`. |

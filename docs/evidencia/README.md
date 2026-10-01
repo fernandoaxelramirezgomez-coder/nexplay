@@ -21,8 +21,12 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
 
 ## Archivos
 
+Los scripts que reproducen cada resultado viven en `backend/calidad/` (o `backend/analisis/`) y se
+corren desde `backend/`. Los logs y las salidas `.txt` son el registro de lo que se corrió, con las
+rutas de entonces.
+
 - `entrenamiento-*.log`: salida de `herramientas/preparar_entorno.py --force` en cada rama.
-- `verificar-antes-*.txt`: `modelado/verificar_bandas.py` del modelo nuevo contra la referencia
+- `verificar-antes-*.txt`: `backend/modelado/verificar_bandas.py` del modelo nuevo contra la referencia
   `'compra'`, antes de regenerarla (exit 1: los juegos que cambian de banda).
 - `verificar-despues-*.txt`: la misma verificación contra la referencia regenerada (exit 0).
 - `compra-*.json` y `juego-*.json`: banda y score de cada juego con el modelo anterior y con
@@ -36,25 +40,25 @@ El artefacto es idéntico en las dos ramas (mismos datos, mismo código).
   intervienen en el entrenamiento, la elección de variables, los parámetros ni los umbrales.
 - `verificacion-40-steam.csv`: Metacritic, descuento y precio de los 40 títulos nuevos,
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
-- `simulacion_123.py` y `simulacion_123.txt`: la simulación de entrenar con los 123 (solo
+- `simulacion_123.txt` (script: `backend/calidad/simulacion_123.py`): la simulación de entrenar con los 123 (solo
   validación cruzada, sin escribir artefactos) y su salida completa.
-- `metacritic-por-banda.md`, `metacritic_por_banda.py` y `metacritic-por-banda.txt`: la
+- `metacritic-por-banda.md` y `metacritic-por-banda.txt` (script: `backend/calidad/metacritic_por_banda.py`): la
   tasa real de arrepentimiento temprano por banda y por cobertura de crítica, separada
   entre los 83 de data-v1 (descriptiva: el modelo ya los vio) y los 40 externos. Responde
   si la banda alta es solo «no tiene nota de Metacritic», con la advertencia de que «alto
   con nota» son 10 juegos en todo el catálogo.
-- `senal-por-nivel.md`, `senal_por_nivel.py` y `senal-por-nivel.txt`: cuántas veces más
+- `senal-por-nivel.md` y `senal-por-nivel.txt` (script: `backend/calidad/senal_por_nivel.py`): cuántas veces más
   señal hay en riesgo alto que en bajo, en los 123, en los 83 de entrenamiento y en los 40 que
   el modelo no vio (4.19×, 6.99× y 1.93×), y por qué la tarjeta del Inicio dice lo que dice.
-- `valoraciones-nia.md` y `valoraciones_nia.py`: los votos 👍/👎 a las respuestas de Nia,
+- `valoraciones-nia.md` (script: `backend/calidad/valoraciones_nia.py`): los votos 👍/👎 a las respuestas de Nia,
   agrupados por modo y por versión del prompt (el hash de su texto), con la cobertura —qué
   proporción de respuestas recibe voto— y el reparto de motivos del 👎. Incluye qué se
   guarda y los 180 días que se conserva.
 - `antes-del-reembolso.md` y `antes-del-reembolso.txt`: las pruebas A (anticipación) y B
   (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
-  de correr (`docs/plan/mejoras/01-antes-del-reembolso.md`). Script:
-  `analisis/antes_del_reembolso.py`. Resultado: no se construye.
-- `verificar-factores-hoy.txt`: la salida de `calidad/verificar_factores.py` el 2026-09-30,
+  de correr (`docs/historial/mejoras/01-antes-del-reembolso.md`). Script:
+  `backend/analisis/antes_del_reembolso.py`. Resultado: no se construye.
+- `verificar-factores-hoy.txt`: la salida de `backend/calidad/verificar_factores.py` el 2026-09-30,
   antes de la ronda «explicar el riesgo». El primer factor ya es el de mayor aporte en los 123
   juegos. Fallan la evidencia por factor y los avisos (gratis y precio imputado), porque el
   contrato todavía no existe.
@@ -80,7 +84,7 @@ foto del día de ingesta (10 de los 40 estaban en oferta, contra 8 de los 83).
 
 ## Por qué no se entrena con los 123 (simulación, sin reentrenar)
 
-`simulacion_123.py` compara los dos cortes solo con validación cruzada —sin escribir
+`backend/calidad/simulacion_123.py` compara los dos cortes solo con validación cruzada —sin escribir
 ningún artefacto—, con el GroupKFold de producción y con 30 particiones aleatorias de los
 juegos en 5 folds. Salida completa en `simulacion_123.txt`.
 
@@ -118,9 +122,9 @@ ramas.
 GroupKFold reparte los juegos por tamaño, y 73 de los 83 de data-v1 empatan en 1,500 reseñas. Cada
 versión de scikit-learn desempata distinto (el desempate estable llega en la 1.9.0): la 1.6.1 de Colab
 deja solo 12 de los 83 juegos en el mismo fold que la partición congelada
-(`referencias/particion_gkf_data-v1.csv`), que es la que usa toda evaluación del proyecto.
+(`backend/referencias/particion_gkf_data-v1.csv`), que es la que usa toda evaluación del proyecto.
 
-`particion_alternativa.py` se commiteó antes de correrlo (`fba2af7`) y `particion-alternativa.json`
+`backend/calidad/particion_alternativa.py` se commiteó antes de correrlo (`fba2af7`) y `particion-alternativa.json`
 salió de él sin editarlo, en el entorno de Colab (Python 3.13.15, scikit-learn 1.6.1, numpy 2.1.3,
 pandas 2.2.3, SciPy 1.16.3), con el código en `1a020b7` y el árbol limpio. Es descriptivo: no fija un
 criterio de pasa o no pasa, y la cifra de Colab ya se conocía antes de escribirlo.

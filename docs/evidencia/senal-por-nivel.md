@@ -49,7 +49,7 @@ señal, y es modesta.
 ## Cómo se reproduce
 
 ```
-python docs/evidencia/senal_por_nivel.py > docs/evidencia/senal-por-nivel.txt
+cd backend && python calidad/senal_por_nivel.py > ../docs/evidencia/senal-por-nivel.txt
 ```
 
 Solo lee `datos/nexplay.db` y `prueba-externa.json`. Los niveles salen de `api.catalogo`, el

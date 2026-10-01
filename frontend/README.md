@@ -1,16 +1,17 @@
 # NexPlay · frontend Angular
 
 Frontend en Angular 22 (componentes standalone, signals, zoneless) que consume la API
-FastAPI de la raíz del repo sin modificarla. Es el único frontend del proyecto.
+FastAPI de `backend/` sin modificarla. Es el único frontend del proyecto.
 
-Qué va aquí: la app (`src/`), sus recursos (`public/`), su configuración y
-`scripts/recortar_nia.py`, que prepara los sprites de Nia. No va aquí: nada de la API ni
-revisiones que no sean de la app (el recorrido con Playwright vive en `calidad/`).
+Qué va aquí: la app (`src/`), sus recursos (`public/`), su configuración,
+`scripts/recortar_nia.py`, que prepara los sprites de Nia, y la hoja de la que los saca
+(`fuentes/`). No va aquí: nada de la API ni revisiones que no sean de la app (el recorrido con
+Playwright vive en `backend/calidad/`).
 
 ## Correr en local
 
 Requisitos: Node `^22.22.3 || ^24.15.0 || >=26` y la API corriendo en `http://localhost:8000`
-(`uvicorn api.main:app` desde la raíz; su CORS ya permite `http://localhost:4200`).
+(`make api` desde la raíz; su CORS ya permite `http://localhost:4200`).
 
 ```bash
 cd frontend
@@ -20,7 +21,7 @@ npx ng serve        # http://localhost:4200 (abrir como localhost, no 127.0.0.1:
 
 - `npx ng test --watch=false`: tests unitarios (Vitest).
 - `npx ng build`: build de producción en `dist/frontend/browser`.
-- `python calidad/capturar_ui.py` (desde la raíz): capturas en
+- `python calidad/capturar_ui.py`, desde `backend/`: capturas en
   `docs/capturas/angular/` para revisar los cambios visuales.
 
 Si alguna vez hay que regenerar el lockfile, npm 10.9 falla con
@@ -45,8 +46,8 @@ Además del riesgo, los motivos y los factores, cada ficha tiene:
   bajo, piensa en medio y revisa datos con gesto serio en alto, con un texto breve para
   cada una. Es apoyo visual, no un segundo resultado: la emoción sale solo de la banda que
   ya muestra el veredicto (`dominio/reaccion-nia.ts`), y reacciona al riesgo relativo, no
-  a una supuesta confianza del modelo. Los sprites salen de una hoja de 12 emociones con
-  `frontend/scripts/recortar_nia.py`; los de la ficha y el retrato del inicio viven aparte, en
+  a una supuesta confianza del modelo. Los sprites salen de una hoja de 12 emociones
+  (`frontend/fuentes/nia-hoja-emociones.png`) con `frontend/scripts/recortar_nia.py`; los de la ficha y el retrato del inicio viven aparte, en
   `public/nia/`.
 - **Nia**, el chat del juego. Sin clave de OpenAI configurada responde en modo
   demostración, con reglas sobre los mismos datos, y lo dice en pantalla. En el resto de las
@@ -61,7 +62,7 @@ La identidad es un id anónimo en `localStorage` (`UsuarioStore`): identifica, n
   (`capsule_616x353.jpg`, en `src/app/compartido/portada-ancha.ts`), con respaldo automático
   a `portada_url` si esa imagen no existe. Lo limpio sería que la API la entregue como un
   campo más del catálogo, junto a `portada_url` y `tienda_url`, que ya se derivan del appid
-  en `api/catalogo.py`.
+  en `backend/api/catalogo.py`.
 
 ## Decisiones
 

@@ -28,8 +28,9 @@ make notebooks
 ```
 
 Instala `backend/requirements-notebooks.txt` y `backend/requirements-dev.txt` y ejecuta los dos notebooks
-en una carpeta temporal, con el código de tu checkout en lugar del tag. Las copias ejecutadas quedan ahí;
-los notebooks del repositorio no cambian. Si kaleido encuentra un Chrome (`plotly_get_chrome`, o la variable
+en una carpeta temporal, con el último commit de tu checkout en lugar del tag, y compara cada salida con la
+guardada. Las copias ejecutadas quedan ahí; los notebooks del repositorio no cambian, porque sus salidas
+salen de una corrida en Colab sobre el tag. Si kaleido encuentra un Chrome (`plotly_get_chrome`, o la variable
 `BROWSER_PATH` apuntando a uno), el 00 guarda cada gráfica también como PNG. Si no lo encuentra, o en Colab,
 lo avisa y deja las gráficas solo interactivas.
 

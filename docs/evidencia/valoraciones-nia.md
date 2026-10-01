@@ -10,7 +10,7 @@ reglas), **el modelo** y **la versión del prompt**.
 
 ## Qué es `version_prompt`
 
-Los primeros ocho hex del sha256 del texto del sistema (`_SISTEMA` en `api/nia/agente.py`). No se
+Los primeros ocho hex del sha256 del texto del sistema (`_SISTEMA` en `backend/api/nia/agente.py`). No se
 escribe a mano a propósito: una etiqueta manual se queda vieja en cuanto alguien toca el
 prompt y no lo anota, y entonces los votos de dos versiones distintas se suman como si
 fueran una sola, que es exactamente el error que esto existe para evitar.
@@ -18,7 +18,7 @@ fueran una sola, que es exactamente el error que esto existe para evitar.
 Para saber qué cambió entre dos hashes:
 
 ```
-git log --follow -S'<un trozo del prompt>' -- api/nia/agente.py
+git log --follow -S'<un trozo del prompt>' -- backend/api/nia/agente.py
 ```
 
 En modo demostración el valor es `reglas`: ahí el prompt no interviene y atribuirle el voto
@@ -27,7 +27,7 @@ sería falso.
 ## La consulta
 
 ```
-python docs/evidencia/valoraciones_nia.py
+cd backend && python calidad/valoraciones_nia.py
 ```
 
 Imprime tres cosas:
@@ -51,7 +51,7 @@ estrellas y los comentarios. Se guardan al producir la respuesta, no al votarla:
 voto sigue teniendo a qué referirse aunque la API se haya reiniciado en medio, y se puede
 medir la cobertura de arriba. El precio es que también se guarda lo que nadie votó.
 
-**Retención: 180 días** (`DIAS_DE_RETENCION_NIA` en `api/valoraciones.py`). El barrido corre
+**Retención: 180 días** (`DIAS_DE_RETENCION_NIA` en `backend/api/valoraciones.py`). El barrido corre
 en cada escritura, no en un documento ni en una tarea que alguien tenga que acordarse de
 lanzar, y se lleva los votos de lo que borra. El chat lo dice antes de que se escriba nada:
 «No escribas datos personales: se guardan tu pregunta y la respuesta durante 180 días, para
@@ -59,4 +59,4 @@ poder revisar los votos.»
 
 Vive en `datos/valoraciones.db`, que es contenido de quien usa la app y no datos del
 proyecto: `preparar_entorno.py` no la reconstruye ni la pisa, y no se versiona.
-`operacion/exportar_valoraciones.py` la saca a CSV para analizarla fuera.
+`backend/operacion/exportar_valoraciones.py` la saca a CSV para analizarla fuera.
