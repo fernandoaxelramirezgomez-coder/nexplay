@@ -112,3 +112,25 @@ demostración** (portada, capturas, presentaciones):
 
 Warframe solo está en el catálogo de frontend-angular (data-v2); Hollow Knight, en las dos
 ramas.
+
+## Partición congelada contra la de scikit-learn 1.6.1 (prerregistrada), 2026-09-30
+
+GroupKFold reparte los juegos por tamaño, y 73 de los 83 de data-v1 empatan en 1,500 reseñas. Cada
+versión de scikit-learn desempata distinto (el desempate estable llega en la 1.9.0): la 1.6.1 de Colab
+deja solo 12 de los 83 juegos en el mismo fold que la partición congelada
+(`referencias/particion_gkf_data-v1.csv`), que es la que usa toda evaluación del proyecto.
+
+`particion_alternativa.py` se commiteó antes de correrlo (`fba2af7`) y `particion-alternativa.json`
+salió de él sin editarlo, en el entorno de Colab (Python 3.13.15, scikit-learn 1.6.1, numpy 2.1.3,
+pandas 2.2.3, SciPy 1.16.3), con el código en `1a020b7` y el árbol limpio. Es descriptivo: no fija un
+criterio de pasa o no pasa, y la cifra de Colab ya se conocía antes de escribirlo.
+
+| Partición | PR-AUC por fold, modelo / trivial | Media ± std | Folds donde gana el modelo |
+|---|---|---|---|
+| Congelada (CSV) | 0.1459 / 0.0253 · 0.0367 / 0.0187 · 0.0809 / 0.0255 · 0.0436 / 0.0236 · 0.0399 / 0.0163 | 0.0694 ± 0.0415 | 5 de 5 |
+| GroupKFold de scikit-learn 1.6.1 | 0.1364 / 0.0299 · 0.0843 / 0.0167 · 0.0594 / 0.0336 · 0.0104 / 0.0079 · 0.0555 / 0.0219 | 0.0692 ± 0.0412 | 5 de 5 |
+
+Con otro reparto de los juegos la media casi no cambia, pero cada fold sí: el ruido entre folds (~0.04)
+es mucho mayor que la diferencia entre particiones. En las dos el modelo supera al trivial en los 5
+folds; el margen más chico es 0.0104 contra 0.0079, en un fold con 202 reseñas con señal. La sección 3.2
+de `00_exploracion` mide lo mismo con 20 particiones al azar (de 0.0477 a 0.0873).
