@@ -68,7 +68,7 @@ _PROHIBIDO_AL_EXPLICAR_LA_BANDA = (
 _PROHIBIDO_SIEMPRE = ("abandono", "insatisfacción general", "vale la pena", "te recomiendo", "banda", "cómprate")
 
 
-_FACTORES_TS = Path(__file__).resolve().parents[1] / "frontend" / "src" / "app" / "dominio" / "factores.ts"
+_FACTORES_TS = Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "dominio" / "factores.ts"
 
 
 # Lo que Nia y la ficha dicen igual fuera de _LECTURA_FACTORES: la banda neutral, la

@@ -15,7 +15,7 @@ Solo lee: datos/nexplay.db y docs/evidencia/prueba-externa.json (los 40 externos
 niveles salen del mismo camino que sirve la API (api.catalogo).
 
 Uso:
-  python docs/evidencia/senal_por_nivel.py > docs/evidencia/senal-por-nivel.txt
+  python calidad/senal_por_nivel.py > ../docs/evidencia/senal-por-nivel.txt   # desde backend/
 """
 
 import json
@@ -24,13 +24,13 @@ import sqlite3
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[2]
+RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
 from api import catalogo  # noqa: E402
 
 _DB = RAIZ / "datos" / "nexplay.db"
-_EXTERNOS = RAIZ / "docs" / "evidencia" / "prueba-externa.json"
+_EXTERNOS = RAIZ.parent / "docs" / "evidencia" / "prueba-externa.json"
 _BANDAS = ("bajo", "medio", "alto")
 _REPETICIONES = 2000
 _SEMILLA = 42

@@ -11,7 +11,7 @@ Solo lee datos/valoraciones.db (o la que diga NEXPLAY_VALORACIONES_DB). Con la b
 lo dice y sale bien: todavía no hay nada que medir.
 
 Uso:
-  python docs/evidencia/valoraciones_nia.py
+  python calidad/valoraciones_nia.py   # desde backend/
 """
 
 import os
@@ -19,7 +19,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[2]
+RAIZ = Path(__file__).resolve().parents[1]
 BASE = Path(os.environ.get("NEXPLAY_VALORACIONES_DB", RAIZ / "datos" / "valoraciones.db"))
 
 # El % de 👍 por modo y por versión del prompt, con el n al lado: sin él, un 100% de dos

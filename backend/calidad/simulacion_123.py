@@ -14,8 +14,8 @@ import numpy as np
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import GroupKFold
 
-RAIZ = Path(__file__).resolve().parents[2]
-# El pipeline vive en modelado/, no en la raíz.
+RAIZ = Path(__file__).resolve().parents[1]
+# El pipeline vive en modelado/, no en la raíz de backend/.
 sys.path.insert(0, str(RAIZ / "modelado"))
 from entrenar_baseline import N_SPLITS, cargar_datos, construir_features, construir_pipeline  # noqa: E402
 

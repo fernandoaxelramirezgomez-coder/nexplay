@@ -14,7 +14,7 @@ anotados los 40 títulos externos. Las bandas salen del mismo camino que sirve l
 (api.catalogo -> scoring.prediccion_de_titulo).
 
 Uso:
-  python docs/evidencia/metacritic_por_banda.py > docs/evidencia/metacritic-por-banda.txt
+  python calidad/metacritic_por_banda.py > ../docs/evidencia/metacritic-por-banda.txt   # desde backend/
 """
 
 import json
@@ -22,13 +22,13 @@ import sqlite3
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[2]
+RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
 from api import catalogo  # noqa: E402
 
 _DB = RAIZ / "datos" / "nexplay.db"
-_EXTERNOS = RAIZ / "docs" / "evidencia" / "prueba-externa.json"
+_EXTERNOS = RAIZ.parent / "docs" / "evidencia" / "prueba-externa.json"
 _BANDAS = ("bajo", "medio", "alto")
 
 

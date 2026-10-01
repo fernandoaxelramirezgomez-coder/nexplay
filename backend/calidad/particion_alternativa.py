@@ -25,7 +25,7 @@ Método:
 Solo lee: no escribe modelos, umbrales ni referencias.
 
 Uso (en un entorno con scikit-learn 1.6.1):
-  python docs/evidencia/particion_alternativa.py
+  python calidad/particion_alternativa.py   # desde backend/
 """
 
 import hashlib
@@ -45,7 +45,7 @@ from scipy.optimize import OptimizeWarning
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import average_precision_score
 
-RAIZ = Path(__file__).resolve().parents[2]
+RAIZ = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(RAIZ), str(RAIZ / "modelado")]
 
 from despliegue.preparar_entorno import origen_de_release  # noqa: E402
@@ -55,7 +55,7 @@ from entrenar_baseline import (  # noqa: E402
 )
 
 VERSION_SKLEARN = "1.6.1"
-SALIDA = RAIZ / "docs" / "evidencia" / "particion-alternativa.json"
+SALIDA = RAIZ.parent / "docs" / "evidencia" / "particion-alternativa.json"
 
 # scikit-learn 1.6.1 le pasa `iprint` al L-BFGS-B de SciPy, que en las versiones nuevas ya no lo
 # acepta y avisa. No cambia el ajuste.
@@ -114,7 +114,7 @@ def main() -> int:
     por_fold = {"congelada": _por_fold(X, y, grupos, congelada), "alternativa": _por_fold(X, y, grupos, alternativa)}
     resultado = {
         "generado": date.today().isoformat(),
-        "script": "docs/evidencia/particion_alternativa.py",
+        "script": "backend/calidad/particion_alternativa.py",
         "codigo": {"commit": _git("rev-parse", "HEAD"), "arbol_limpio": _git("status", "--porcelain") == ""},
         "entorno": {"python": platform.python_version(), "scikit-learn": sklearn.__version__,
                     "numpy": np.__version__, "pandas": pd.__version__, "scipy": scipy.__version__},
@@ -140,7 +140,7 @@ def main() -> int:
     particiones = resultado["particiones"]
     print(f"juegos con el mismo fold: {particiones['juegos_con_el_mismo_fold']} de {grupos.nunique()}; "
           f"empatados en {empate:,} reseñas: {particiones['juegos_empatados']}")
-    print(f"escrito en {SALIDA.relative_to(RAIZ)}")
+    print(f"escrito en {SALIDA.relative_to(RAIZ.parent)}")
     return 0
 
 

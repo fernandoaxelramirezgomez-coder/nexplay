@@ -35,7 +35,7 @@ from playwright.sync_api import Error as ErrorPlaywright
 from playwright.sync_api import Page, sync_playwright
 from playwright.sync_api import TimeoutError as TiempoAgotado
 
-_RAIZ = Path(__file__).resolve().parent.parent
+_RAIZ = Path(__file__).resolve().parents[2]
 _DESTINO = _RAIZ / "docs" / "capturas" / "angular"
 _URL = "http://localhost:4200"
 
@@ -1238,7 +1238,7 @@ def _angular_5_vistas(pagina: Page, url: str, destino: Path, api: str) -> list[s
 
     # Alto y palabras del Inicio, contra la medida de antes de reorganizar.
     medidas = _medir_inicio(pagina.context.browser, f"{base}/")
-    REGISTROS = _RAIZ / "registros"
+    REGISTROS = _RAIZ / "backend" / "registros"
     REGISTROS.mkdir(exist_ok=True)
     (REGISTROS / "inicio-despues.json").write_text(json.dumps(medidas, indent=2))
     antes_ruta = REGISTROS / "inicio-antes.json"

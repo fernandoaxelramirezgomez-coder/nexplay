@@ -4,8 +4,8 @@ Los criterios están en docs/plan/mejoras/01-antes-del-reembolso.md y se commite
 correr esto (7b0ba52). Aquí solo se mide y se compara contra ellos; los números de
 CRITERIOS son los de la ficha, no se ajustan.
 
-Uso, desde la raíz:
-    python analisis/antes_del_reembolso.py > docs/evidencia/antes-del-reembolso.txt
+Uso, desde backend/:
+    python analisis/antes_del_reembolso.py > ../docs/evidencia/antes-del-reembolso.txt
 """
 
 import os
@@ -154,7 +154,7 @@ def prueba_confianza(quejas: pd.DataFrame) -> dict:
 
 
 def main() -> int:
-    # Rutas relativas a la raíz: así la evidencia no lleva rutas de una máquina.
+    # Rutas relativas a backend/: así la evidencia no lleva rutas de una máquina.
     os.chdir(RAIZ)
     destino = Path("extracto") / "antes_del_reembolso"
     rutas = {ref: descargar_verificado(ref, sha, destino / f"nexplay_{ref}.db") for ref, sha in RELEASES.items()}

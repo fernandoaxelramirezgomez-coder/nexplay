@@ -5,11 +5,16 @@ el despliegue se carga como variable de entorno o secreto del proveedor. Sin cla
 sin modelo, Nia responde en modo demostración con reglas sobre los datos reales.
 """
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# El .env vive en la raíz del repo, junto a .env.example, aunque la API corra desde backend/.
+_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 class ConfiguracionNia(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV, env_file_encoding="utf-8", extra="ignore")
 
     openai_api_key: str = ""
     nexplay_modelo_nia: str = ""

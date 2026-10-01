@@ -27,7 +27,7 @@ El aporte se calcula aquí por separado —coeficiente × valor estandarizado, c
 del artefacto— para no fiarse del orden que manda la API. En los gratis, la gratuidad y el
 precio también se suman aquí, por su cuenta.
 
-Uso, desde la raíz:
+Uso, desde backend/:
     python calidad/verificar_factores.py        # sale 1 si algún chequeo falla
 """
 
@@ -70,7 +70,7 @@ ARCHIVOS_REVISADOS = 0
 def _textos_con_la_frase_prohibida() -> list[tuple[str, str]]:
     global ARCHIVOS_REVISADOS
     encontrados = []
-    for carpeta, patrones in ((RAIZ / "frontend" / "src", ("*.ts", "*.html")), (RAIZ / "api", ("*.py",))):
+    for carpeta, patrones in ((RAIZ.parent / "frontend" / "src", ("*.ts", "*.html")), (RAIZ / "api", ("*.py",))):
         for patron in patrones:
             for ruta in carpeta.rglob(patron):
                 if ruta.name.endswith(".spec.ts"):
@@ -78,7 +78,7 @@ def _textos_con_la_frase_prohibida() -> list[tuple[str, str]]:
                 ARCHIVOS_REVISADOS += 1
                 for numero, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), 1):
                     if FRASE_PROHIBIDA in linea:
-                        encontrados.append((str(ruta.relative_to(RAIZ)), f"línea {numero}"))
+                        encontrados.append((str(ruta.relative_to(RAIZ.parent)), f"línea {numero}"))
     return encontrados
 
 

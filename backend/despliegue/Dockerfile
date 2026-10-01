@@ -1,5 +1,5 @@
-# La API de NexPlay en un contenedor. El contexto del build es la raíz del repo:
-#   docker build -f despliegue/Dockerfile .
+# La API de NexPlay en un contenedor. El contexto del build es backend/:
+#   docker build -f backend/despliegue/Dockerfile backend
 FROM python:3.14-slim
 
 # Sin root: datos/ es del usuario que corre la API, para que pueda escribir valoraciones.db.

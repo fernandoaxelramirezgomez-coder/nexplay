@@ -227,8 +227,8 @@ def main():
 
     print()
     print("Entorno listo. Para levantar el proyecto:")
-    print("    uvicorn api.main:app --reload")
-    print("    cd frontend && npx ng serve   # en otra terminal")
+    print("    uvicorn api.main:app --reload            # desde backend/")
+    print("    cd ../frontend && npx ng serve   # en otra terminal")
 
 
 if __name__ == "__main__":
