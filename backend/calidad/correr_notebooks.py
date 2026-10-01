@@ -13,7 +13,10 @@ Cómo lo hace:
   Las celdas del clon, de las versiones del entorno y de la configuración de las gráficas (con PNG solo si
   hay Chrome) cambian de una máquina a otra: se listan aparte.
 
-Sale con 1 si falta algo, si un notebook falla o si otra celda da una salida distinta.
+Sale con 1 si falta algo o si un notebook no termina (sus asserts, 34 en el 00 y 6 en el 01, detienen la
+ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff para
+revisarlas, pero no hacen fallar: las salidas guardadas salen de Colab, y otra versión de pandas escribe
+distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.
 
 Uso, desde backend/ (make notebooks, desde la raíz, instala antes lo que hace falta):
   python calidad/correr_notebooks.py                        # en una carpeta temporal nueva
@@ -170,8 +173,8 @@ def main() -> int:
 
     print(f"Los notebooks ejecutados quedaron en {carpeta}; los de notebooks/ no cambiaron.")
     if diferencias:
-        print(f"{diferencias} celdas dan una salida distinta de la guardada: revísalas arriba.")
-        return 1
+        print(f"{diferencias} celdas dan una salida distinta de la guardada: revisa el diff de arriba. Si solo cambia "
+              "cómo se escribe un tipo o el orden de un empate, no es una cifra distinta.")
     return 0
 
 

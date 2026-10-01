@@ -11,7 +11,8 @@ Verificadores (salen con 1 si algo falla):
 - `verificar_preparar_entorno.py`: que `preparar_entorno.py --force` no pise una base que no salió de un
   release. Sin red, en un directorio temporal.
 - `correr_notebooks.py`: ejecuta el 00 y el 01 con el último commit en una carpeta temporal y compara sus
-  salidas con las guardadas, sin tocarlas (`make notebooks`).
+  salidas con las guardadas, sin tocarlas (`make notebooks`). Sale con 1 solo si un notebook no termina;
+  las celdas distintas las lista con su diff.
 
 Contra la app levantada:
 
