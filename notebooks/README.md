@@ -29,8 +29,9 @@ make notebooks
 
 Instala `backend/requirements-notebooks.txt` y `backend/requirements-dev.txt` y ejecuta los dos notebooks
 en una carpeta temporal, con el código de tu checkout en lugar del tag. Las copias ejecutadas quedan ahí;
-los notebooks del repositorio no cambian. En local, el 00 guarda cada gráfica también como PNG, y para eso
-kaleido necesita un Chrome: `plotly_get_chrome`, o la variable `BROWSER_PATH` apuntando a uno.
+los notebooks del repositorio no cambian. Si kaleido encuentra un Chrome (`plotly_get_chrome`, o la variable
+`BROWSER_PATH` apuntando a uno), el 00 guarda cada gráfica también como PNG. Si no lo encuentra, o en Colab,
+lo avisa y deja las gráficas solo interactivas.
 
 Los dos validan con la partición congelada de `backend/referencias/particion_gkf_data-v1.csv`. Así, los
 folds no dependen de cómo desempata cada versión de scikit-learn, y el PR-AUC del modelo de producción

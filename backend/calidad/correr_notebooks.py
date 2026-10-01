@@ -10,7 +10,8 @@ Cómo lo hace:
 - ejecuta 00_exploracion y 01_modelo_riesgo ahí, en ese orden;
 - compara, celda por celda, el stdout, el texto de las tablas y los errores contra lo guardado. El stdout se
   une antes de comparar, porque Jupyter lo parte distinto en cada corrida. Las gráficas no se comparan.
-  La celda de clon y la de versiones del entorno cambian de una máquina a otra: se listan aparte.
+  Las celdas del clon, de las versiones del entorno y de la configuración de las gráficas (con PNG solo si
+  hay Chrome) cambian de una máquina a otra: se listan aparte.
 
 Sale con 1 si falta algo, si un notebook falla o si otra celda da una salida distinta.
 
@@ -34,10 +35,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 NOTEBOOKS = ("00_exploracion", "01_modelo_riesgo")
 PAQUETES = {"nbclient": "nbclient", "nbformat": "nbformat", "ipykernel": "ipykernel", "plotly": "plotly",
-            "kaleido": "kaleido", "lingua": "lingua-language-detector",
+            "lingua": "lingua-language-detector",
             "sentence_transformers": "sentence-transformers", "pyarrow": "pyarrow", "requests": "requests"}
 # Las celdas cuya salida depende de la máquina, reconocidas por su código.
-MARCAS_DE_ENTORNO = ("repo_nexplay ya existe", "__version__")
+MARCAS_DE_ENTORNO = ("repo_nexplay ya existe", "__version__", "configurar_graficas")
 # Cómo empiezan las líneas con la cifra principal de cada notebook, para verlas sin abrirlos.
 CIFRAS = ("GroupKFold por appid ", "PR-AUC GroupKFold del modelo de produccion")
 
@@ -48,20 +49,6 @@ def _comprobar_paquetes() -> None:
         sys.exit(f"Faltan paquetes para los notebooks: {', '.join(faltan)}.\n"
                  "Corre `make notebooks` desde la raíz (los instala), o desde backend/:\n"
                  "  pip install -r requirements-notebooks.txt -r requirements-dev.txt")
-
-
-def _comprobar_kaleido() -> None:
-    """Fuera de Colab, el 00 guarda cada gráfica también como PNG, y para eso kaleido necesita un Chrome."""
-    import plotly.graph_objects as go
-
-    try:
-        go.Figure().to_image(format="png", width=20, height=20)
-    except Exception as exc:  # kaleido lanza tipos distintos según lo que falte
-        primera = str(exc).strip().splitlines()[0] if str(exc).strip() else type(exc).__name__
-        sys.exit("El 00 guarda cada gráfica también como PNG y kaleido no pudo exportar una de prueba:\n"
-                 f"  {primera}\n"
-                 "Instala un Chrome para kaleido con `.venv/bin/plotly_get_chrome`, o define BROWSER_PATH "
-                 "apuntando a uno.")
 
 
 def _git(*argumentos: str) -> subprocess.CompletedProcess:
@@ -142,7 +129,7 @@ def _comparar(nombre: str, guardado, ejecutado) -> int:
         else:
             distintas.append(i)
     print(f"  {nombre}: {iguales} celdas con la misma salida; "
-          f"de entorno (clon o versiones): {de_entorno or 'ninguna'}; distintas: {distintas or 'ninguna'}")
+          f"de entorno (clon, versiones o gráficas): {de_entorno or 'ninguna'}; distintas: {distintas or 'ninguna'}")
     for i in distintas:
         diff = difflib.unified_diff("\n".join(_salidas(guardado.cells[i])).splitlines(),
                                     "\n".join(_salidas(ejecutado.cells[i])).splitlines(),
@@ -164,7 +151,6 @@ def main() -> int:
     args = parser.parse_args()
 
     _comprobar_paquetes()
-    _comprobar_kaleido()
     carpeta = _preparar_carpeta(args.carpeta)
     commit = _exportar_commit(carpeta)
     for nombre in NOTEBOOKS:
