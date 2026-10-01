@@ -3,6 +3,10 @@
 # build falla si aparece torch o sentence-transformers.
 # sentence-transformers trae torch; en una máquina sin GPU conviene instalar antes la versión CPU:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# make notebooks lo hace solo si torch no está instalado.
 plotly==7.1.0
 lingua-language-detector==2.2.0
 sentence-transformers==6.1.0
+# Para ejecutarlos fuera de Colab (make notebooks, calidad/correr_notebooks.py). Colab ya los trae.
+nbclient==0.11.0
+ipykernel==7.3.0

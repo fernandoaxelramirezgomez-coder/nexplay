@@ -29,6 +29,7 @@ Requiere que las dependencias ya esten instaladas (ver README.md):
 Uso:
     python preparar_entorno.py            # no pisa datos/ ni modelo/ si ya existen
     python preparar_entorno.py --force    # reconstruye aunque ya existan
+    python preparar_entorno.py --solo-datos   # solo baja y verifica los releases (make data)
 
 --force solo pisa una base que salio de un release: la reconoce por su sha256, contra
 la marca que este script deja al escribirla (<base>.origen.json) o contra las bases
@@ -217,11 +218,18 @@ def _verificar_api() -> None:
 def main():
     parser = argparse.ArgumentParser(description="Prepara un entorno NexPlay limpio de punta a punta")
     parser.add_argument("--force", action="store_true", help="reconstruye datos/ y modelo/ aunque ya existan")
+    parser.add_argument("--solo-datos", action="store_true",
+                        help="solo baja y verifica los releases: no entrena ni levanta la API")
     args = parser.parse_args()
 
     _verificar_dependencias()
     _descargar(SERVIDO_REF, SERVIDO_SHA256, DB_PATH, args.force)
     base = _base_de_entrenamiento(args.force)
+    if args.solo_datos:
+        print()
+        print(f"Datos listos: {DB_PATH.relative_to(RAIZ)} ({SERVIDO_REF}) y {base.relative_to(RAIZ)} ({ENTRENAMIENTO_REF}).")
+        print("Para entrenar el modelo: make train, desde la raíz del repo.")
+        return
     _entrenar_modelo(base, args.force)
     _verificar_api()
 
