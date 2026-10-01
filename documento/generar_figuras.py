@@ -34,7 +34,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(RAIZ), str(RAIZ / "modelado"), str(RAIZ / "calidad"), str(RAIZ / "analisis")]
+# El código del proyecto vive en backend/; docs/ y documento/ siguen en la raíz.
+BACKEND = RAIZ / "backend"
+sys.path[:0] = [str(BACKEND), str(BACKEND / "modelado"), str(BACKEND / "calidad"), str(BACKEND / "analisis")]
 
 import exploracion as ex  # noqa: E402
 from limpieza import PALABRAS_DE_UNA_COPIA  # noqa: E402
@@ -160,7 +162,7 @@ def conteos(db: Path, appids: set[int] | None = None) -> dict:
 def cifras_de_datos(cifras: Cifras, rutas: dict[str, Path]) -> None:
     entrenamiento = conteos(rutas["data-v1"])
     catalogo = conteos(rutas[SERVIDO_REF])
-    appids_v1 = {int(f["appid"]) for f in csv.DictReader(open(RAIZ / "referencias" / "particion_gkf_data-v1.csv"))}
+    appids_v1 = {int(f["appid"]) for f in csv.DictReader(open(BACKEND / "referencias" / "particion_gkf_data-v1.csv"))}
     todos = {f[0] for f in sqlite3.connect(f"file:{rutas[SERVIDO_REF]}?mode=ro", uri=True).execute(
         "SELECT DISTINCT appid FROM resenas")}
     externos = conteos(rutas[SERVIDO_REF], todos - appids_v1)
@@ -193,13 +195,13 @@ def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> None:
 
 
 def cifras_de_bandas(cifras: Cifras) -> None:
-    bandas = json.loads((RAIZ / "referencias" / "bandas_referencia.json").read_text())["bandas"]
+    bandas = json.loads((BACKEND / "referencias" / "bandas_referencia.json").read_text())["bandas"]
     bandas = {int(appid): (b if isinstance(b, str) else b.get("banda")) for appid, b in bandas.items()}
-    appids_v1 = {int(f["appid"]) for f in csv.DictReader(open(RAIZ / "referencias" / "particion_gkf_data-v1.csv"))}
+    appids_v1 = {int(f["appid"]) for f in csv.DictReader(open(BACKEND / "referencias" / "particion_gkf_data-v1.csv"))}
     for nombre, appids in (("Entrenamiento", appids_v1), ("Catalogo", set(bandas))):
         for banda in ("bajo", "medio", "alto"):
             cifras.agregar(f"{banda.capitalize()}{nombre}", str(sum(1 for a in appids if bandas[a] == banda)),
-                           "referencias/bandas_referencia.json")
+                           "backend/referencias/bandas_referencia.json")
 
 
 def cifras_de_evidencia(cifras: Cifras) -> None:
@@ -246,7 +248,7 @@ def cifras_del_periodo(cifras: Cifras, rutas: dict[str, Path]) -> None:
 
     juegos, resenas = ex.cargar_release(rutas["data-v1"])
     cobertura = ex.cobertura_por_juego(resenas, juegos)
-    cifras.agregar("TopeIngesta", entero(ex.TOPE_DE_LA_INGESTA), "ingesta/ingesta_steam.py: MAX_RESENAS_POR_JUEGO")
+    cifras.agregar("TopeIngesta", entero(ex.TOPE_DE_LA_INGESTA), "backend/ingesta/ingesta_steam.py: MAX_RESENAS_POR_JUEGO")
     cifras.agregar("JuegosEnElTope", str(int((cobertura["reseñas"] >= ex.TOPE_DE_LA_INGESTA).sum())),
                    "data-v1: juegos con el tope de reseñas")
     dias = cobertura["días cubiertos"]

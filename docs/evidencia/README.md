@@ -41,7 +41,7 @@ rutas de entonces.
 - `bootstrap-prueba-externa.json`: el intervalo de ese 1.52×, remuestreando los 40 títulos
   con reemplazo (2,000 réplicas, semilla 42; PR-AUC entre la prevalencia de cada réplica).
   IC 95 %: 1.03× a 2.33×; en 27 de las 2,000 réplicas el cociente no pasa de 1. Script:
-  `calidad/bootstrap_prueba_externa.py`, que antes comprueba que el punto coincida con
+  `backend/calidad/bootstrap_prueba_externa.py`, que antes comprueba que el punto coincida con
   `prueba-externa.json`.
 - `verificacion-40-steam.csv`: Metacritic, descuento y precio de los 40 títulos nuevos,
   comparados en vivo contra `appdetails` de Steam el 2026-09-21.
@@ -62,13 +62,13 @@ rutas de entonces.
 - `senal-por-biblioteca.md` y `.json`: veteranos (20 juegos o más) contra novatos (1 a 19) en
   data-v1, con perfil público: 2.89 % contra 0.67 % por reseña, diferencia +2.22 pp
   [+1.30, +3.26]. Tiene el prerregistro, la robustez con cuartiles y por qué se retiró la cifra
-  que se citaba antes. Script: `calidad/senal_por_biblioteca.py`.
+  que se citaba antes. Script: `backend/calidad/senal_por_biblioteca.py`.
 - `senal-por-biblioteca-estratificada.json`: la misma comparación dentro de cada juego. Razón
   de Mantel-Haenszel por appid 2.62, IC 95 % [1.84, 4.12], en 83 juegos informativos: la
   diferencia se sostiene dentro de cada juego. Script:
-  `calidad/senal_por_biblioteca_estratificada.py`; prerregistro en `senal-por-biblioteca.md`.
+  `backend/calidad/senal_por_biblioteca_estratificada.py`; prerregistro en `senal-por-biblioteca.md`.
 - `nia-pruebas.md`: las pruebas de Nia con la clave real de OpenAI. Cubre la regresión de 25
-  preguntas y las tres rondas de trampas y legítimas (`calidad/preguntas_trampa.json`), con las
+  preguntas y las tres rondas de trampas y legítimas (`backend/calidad/preguntas_trampa.json`), con las
   respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos
   redactados: sin texto de respuestas ni de personas.
 - `antes-del-reembolso.md` y `antes-del-reembolso.txt`: las pruebas A (anticipación) y B

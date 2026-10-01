@@ -11,7 +11,7 @@ localizable desde el índice.
   `docs/capturas/documento/`) y los escudos de la portada.
 - `references.bib`: solo referencias abiertas y verificadas antes de citarlas.
 - `generar_figuras.py`: de los releases (verificados por sha256) y `docs/evidencia/` a `figures/` y
-  `tables/`. Necesita `requirements-documento.txt`.
+  `tables/`. Necesita `documento/requirements-documento.txt`.
 - `verificar_cifras.py`: compara `cifras.tex` con la lista canónica y falla si una sección trae un
   número con decimales o con % fuera de una macro.
 - `capturar_recorrido.py`: las capturas del recorrido (PAYDAY 3 contra Dead Space), provisionales
@@ -25,5 +25,5 @@ Compilar, desde la raíz:
 cd documento && latexmk        # LuaLaTeX + biber; el PDF queda en documento/build/main.pdf
 ```
 
-No va aquí: evidencia nueva (`docs/evidencia/` con su script en `calidad/`) ni cambios al
+No va aquí: evidencia nueva (`docs/evidencia/` con su script en `backend/calidad/`) ni cambios al
 modelo o a la API.

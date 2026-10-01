@@ -1,13 +1,13 @@
 # Nia con el modelo de lenguaje: qué se probó y qué pasó
 
 Nia se probó con la clave real de OpenAI (`gpt-5.6-sol`) de dos formas:
-- **Regresión:** las 25 preguntas de `calidad/preguntas_nia.py`, 25 de 25 en las dos corridas.
-- **Trampas y legítimas:** tres rondas contra el conjunto de `calidad/preguntas_trampa.json`.
+- **Regresión:** las 25 preguntas de `backend/calidad/preguntas_nia.py`, 25 de 25 en las dos corridas.
+- **Trampas y legítimas:** tres rondas contra el conjunto de `backend/calidad/preguntas_trampa.json`.
   La última corrida (30 de septiembre, 48 respuestas) terminó con 0 casos por revisar.
 
 En todas, las respuestas se separan en dos modos. Las **del modelo** (`modo: openai`) las
 redacta el modelo de lenguaje con las herramientas del catálogo. Las **por reglas**
-(`modo: reglas`) salen de `api/nia/reglas.py` aunque haya modelo, porque tienen que salir
+(`modo: reglas`) salen de `backend/api/nia/reglas.py` aunque haya modelo, porque tienen que salir
 siempre igual: trivia, «el mejor», resumen, juego fuera del catálogo, pedir el juego y, desde
 la ronda «explicar el riesgo», «¿por qué tiene ese riesgo?» con un juego abierto.
 
@@ -19,9 +19,9 @@ ninguna sale de usuarios del sitio.
 
 | Qué | Dónde | Versionado |
 |---|---|---|
-| Las 25 preguntas de regresión y sus chequeos | `calidad/preguntas_nia.py` | sí |
+| Las 25 preguntas de regresión y sus chequeos | `backend/calidad/preguntas_nia.py` | sí |
 | Resultados de la regresión | `registros/preguntas_nia-<etiqueta>.json` | no (`registros/` se ignora) |
-| Las 48 preguntas trampa, legítimas y de conversación, con su comportamiento esperado | `calidad/preguntas_trampa.json` | sí |
+| Las 48 preguntas trampa, legítimas y de conversación, con su comportamiento esperado | `backend/calidad/preguntas_trampa.json` | sí |
 | Resultados de las corridas de trampas | transcript de la sesión de trabajo `ce04a9d3-19c8-4cae-839c-3c206ff2163b` (Claude Code), entradas 35090, 36058 y 40480; el script que las corrió (`nia_real.py`) vivía en el scratchpad y no se versionó | no |
 
 Las horas son de la Ciudad de México (UTC−6). Las APIs de prueba corrían en local: la 8010
@@ -121,7 +121,7 @@ dos últimas corridas terminaron con 0 casos por revisar (0 de 45 y 0 de 48).
 - **No se registró qué modelo usa Render** en producción. Estas corridas son locales, con la
   clave de `.env`.
 - **Los resultados de las trampas no están versionados.** Para repetirlos hace falta correr
-  `calidad/preguntas_trampa.json` contra una API con clave, lo que gasta OpenAI y le toca al
+  `backend/calidad/preguntas_trampa.json` contra una API con clave, lo que gasta OpenAI y le toca al
   dueño. No hay un script versionado que lo haga.
 
 ## Cómo se reproduce
@@ -133,9 +133,9 @@ preguntas por minuto, que frenaría una corrida de 25 seguidas:
 # regresión sin clave (no gasta OpenAI)
 OPENAI_API_KEY= NEXPLAY_MODELO_NIA= NEXPLAY_VALORACIONES_DB=/tmp/val-8010.db NEXPLAY_NIA_POR_MINUTO=1000 \
   .venv/bin/uvicorn api.main:app --port 8010
-.venv/bin/python calidad/preguntas_nia.py --api http://localhost:8010 --etiqueta demostracion
+.venv/bin/python backend/calidad/preguntas_nia.py --api http://localhost:8010 --etiqueta demostracion
 
 # regresión con clave (gasta OpenAI; la clave y el modelo salen de .env)
 NEXPLAY_VALORACIONES_DB=/tmp/val-8020.db NEXPLAY_NIA_POR_MINUTO=1000 .venv/bin/uvicorn api.main:app --port 8020
-.venv/bin/python calidad/preguntas_nia.py --api http://localhost:8020 --etiqueta openai
+.venv/bin/python backend/calidad/preguntas_nia.py --api http://localhost:8020 --etiqueta openai
 ```

@@ -19,7 +19,7 @@ momento, así que no son independientes.
 Antes del bootstrap comprueba que el punto coincida con docs/evidencia/prueba-externa.json.
 
 Uso:
-  python calidad/bootstrap_prueba_externa.py [--cache DIR]
+  python calidad/bootstrap_prueba_externa.py [--cache DIR]   # desde backend/
 """
 
 import argparse
@@ -45,8 +45,8 @@ RELEASES = {
 }
 REPLICAS = 2000
 SEMILLA = 42
-SALIDA = RAIZ / "docs" / "evidencia" / "bootstrap-prueba-externa.json"
-PRUEBA_EXTERNA = RAIZ / "docs" / "evidencia" / "prueba-externa.json"
+SALIDA = RAIZ.parent / "docs" / "evidencia" / "bootstrap-prueba-externa.json"
+PRUEBA_EXTERNA = RAIZ.parent / "docs" / "evidencia" / "prueba-externa.json"
 
 
 def puntuar_externos(cache: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -137,7 +137,7 @@ def main() -> None:
     print(f"IC 95 % del cociente ({REPLICAS:,} réplicas por título, semilla {SEMILLA}): "
           f"{b['ic95_cociente'][0]:.2f} a {b['ic95_cociente'][1]:.2f}; mediana {b['mediana_cociente']:.2f}; "
           f"réplicas con cociente ≤ 1: {b['replicas_con_cociente_hasta_1']}")
-    print(f"guardado en {SALIDA.relative_to(RAIZ)}")
+    print(f"guardado en {SALIDA.relative_to(RAIZ.parent)}")
 
 
 if __name__ == "__main__":

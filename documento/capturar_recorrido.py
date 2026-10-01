@@ -5,7 +5,7 @@ de la interfaz, no la página entera, para que se lea en papel. Tema claro, 1440
 escala 2.
 
 Usa el frontend local (ng serve, 4200), pero desvía sus llamadas a la API (8000) hacia una API
-de captura (--api), para no anotar nada en la datos/valoraciones.db del dueño. La API de captura
+de captura (--api), para no anotar nada en la backend/datos/valoraciones.db del dueño. La API de captura
 se levanta aparte, desde la raíz:
 
   OPENAI_API_KEY=sin-llamadas NEXPLAY_MODELO_NIA=sin-llamadas OPENAI_BASE_URL=http://127.0.0.1:9 \\
@@ -29,7 +29,7 @@ from pathlib import Path
 from playwright.sync_api import Page, sync_playwright
 
 RAIZ = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(RAIZ / "calidad"))
+sys.path.insert(0, str(RAIZ / "backend" / "calidad"))
 
 from capturar_ui import _abrir, _esperar_quietud, _preguntar_en_chat  # noqa: E402
 

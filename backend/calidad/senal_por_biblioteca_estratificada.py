@@ -20,7 +20,7 @@ por juego», commiteado antes de la primera corrida.
   cada grupo. Si quedara completo por debajo de 1, se reporta antes de escribir ninguna frase.
 
 Uso:
-  python calidad/senal_por_biblioteca_estratificada.py [--cache DIR]
+  python calidad/senal_por_biblioteca_estratificada.py [--cache DIR]   # desde backend/
 """
 
 import argparse
@@ -38,7 +38,7 @@ sys.path[:0] = [str(RAIZ / "calidad")]
 
 from senal_por_biblioteca import NOVATO_HASTA, RELEASE, REPLICAS, SEMILLA, SHA256, resenas_publicas  # noqa: E402
 
-SALIDA = RAIZ / "docs" / "evidencia" / "senal-por-biblioteca-estratificada.json"
+SALIDA = RAIZ.parent / "docs" / "evidencia" / "senal-por-biblioteca-estratificada.json"
 FRASES = {
     "encima": "La diferencia se sostiene dentro de cada juego.",
     "cruza": "Parte de la diferencia puede venir de qué juegos compra cada grupo.",
@@ -112,7 +112,7 @@ def main() -> None:
     print(f"razón cruda por reseña: {cruda:.2f} · Mantel-Haenszel por juego: {punto:.2f}, "
           f"IC 95 % [{ic95[0]:.2f}, {ic95[1]:.2f}] ({resultado['bootstrap']['replicas_infinitas']} réplicas infinitas)")
     print(f"lectura: {lectura} → {frase or 'reportar antes de escribir ninguna frase'}")
-    print(f"guardado en {SALIDA.relative_to(RAIZ)}")
+    print(f"guardado en {SALIDA.relative_to(RAIZ.parent)}")
 
 
 if __name__ == "__main__":

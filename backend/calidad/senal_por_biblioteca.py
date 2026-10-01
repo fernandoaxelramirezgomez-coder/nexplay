@@ -24,7 +24,7 @@ num_games_owned describe al autor cuando se descargó la reseña, no cuando comp
 contexto del encuadre y no entra al modelo de título.
 
 Uso:
-  python calidad/senal_por_biblioteca.py [--cache DIR]
+  python calidad/senal_por_biblioteca.py [--cache DIR]   # desde backend/
 """
 
 import argparse
@@ -49,7 +49,7 @@ SHA256 = "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7"
 NOVATO_HASTA = 19
 REPLICAS = 2000
 SEMILLA = 42
-SALIDA = RAIZ / "docs" / "evidencia" / "senal-por-biblioteca.json"
+SALIDA = RAIZ.parent / "docs" / "evidencia" / "senal-por-biblioteca.json"
 
 
 def resenas_publicas(cache: Path) -> tuple[pd.DataFrame, int]:
@@ -151,7 +151,7 @@ def main() -> None:
         for medida, d in bloque["diferencia_pp"].items():
             print(f"    diferencia {b} − {a} ({medida}): {d['punto']:+.2f} pp, IC 95 % [{d['ic95'][0]:+.2f}, {d['ic95'][1]:+.2f}]")
     print(f"cortes de los cuartiles: {q25:g} y {q75:g}")
-    print(f"guardado en {SALIDA.relative_to(RAIZ)}")
+    print(f"guardado en {SALIDA.relative_to(RAIZ.parent)}")
 
 
 if __name__ == "__main__":

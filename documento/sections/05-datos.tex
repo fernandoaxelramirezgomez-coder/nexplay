@@ -38,7 +38,7 @@ ausencia se guarda tal cual y el modelo la usa como una variable más.
 \subsection{Releases y su verificación}\label{sec:datos-releases}
 
 Cada corte de datos se publica como un release de GitHub con tag fijo. Cada archivo se baja y
-se compara con su sha256 antes de usarse (\texttt{despliegue/utilidades.py}). La
+se compara con su sha256 antes de usarse (\texttt{backend/despliegue/utilidades.py}). La
 tabla~\ref{tab:releases} los resume.
 
 \begin{table}[htbp]
@@ -97,7 +97,7 @@ encontró y qué se hizo.
 \begin{table}[htbp]
   \centering\small
   \input{tables/calidad}
-  \caption{Chequeos de calidad sobre data-v1. Fuente: \texttt{analisis/exploracion.py}, las
+  \caption{Chequeos de calidad sobre data-v1. Fuente: \texttt{backend/analisis/exploracion.py}, las
   mismas funciones que usa el bloque de validación del notebook 00.}
   \label{tab:calidad}
 \end{table}

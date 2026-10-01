@@ -66,7 +66,7 @@ compran juegos con más señal?
   - si quedara completo por debajo de 1 (caso no previsto): se reporta al dueño antes de
     escribir ninguna frase.
 - **Salida:** `docs/evidencia/senal-por-biblioteca-estratificada.json`, con
-  `calidad/senal_por_biblioteca_estratificada.py`.
+  `backend/calidad/senal_por_biblioteca_estratificada.py`.
 
 **Resultado** (`94df3b6`, `docs/evidencia/senal-por-biblioteca-estratificada.json`):
 
@@ -129,9 +129,9 @@ juego y vale igual para cualquier persona.
 ## Cómo se reproduce
 
 ```
-python calidad/senal_por_biblioteca.py [--cache DIR]
+cd backend && python calidad/senal_por_biblioteca.py [--cache DIR]
 ```
 
-Baja data-v1 con su sha256 (`despliegue/utilidades.py::descargar_verificado`), lee las reseñas
-con `modelado/entrenar_baseline.py::cargar_datos` y escribe
-`docs/evidencia/senal-por-biblioteca.json`. No toca `datos/` ni `modelo/`.
+Baja data-v1 con su sha256 (`backend/despliegue/utilidades.py::descargar_verificado`), lee las reseñas
+con `backend/modelado/entrenar_baseline.py::cargar_datos` y escribe
+`docs/evidencia/senal-por-biblioteca.json`. No toca `backend/datos/` ni `backend/modelo/`.
