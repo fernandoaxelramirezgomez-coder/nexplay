@@ -94,9 +94,9 @@ sequenceDiagram
 | Chrome | opcional | las gráficas del 00 en PNG y las capturas de la UI |
 | Clave de OpenAI | opcional | Nia con modelo; sin clave responde con reglas |
 
-No hace falta cuenta ni credenciales de Steam ni de GitHub: todo lo que se descarga es público. Con la
-instalación base y los datos se ocupan unos 1.5 GB; los paquetes de los notebooks (torch, entre otros)
-suman otro tanto.
+No hace falta cuenta ni credenciales de Steam ni de GitHub: todo lo que se descarga es público. La
+instalación base con los datos ocupa algo más de 1 GB (`.venv` 575 MB, `node_modules` 366 MB y los datos
+102 MB). Los paquetes de los notebooks (torch CPU, lingua y transformers, entre otros) suman otros 1.6 GB.
 
 ## Puesta en marcha
 

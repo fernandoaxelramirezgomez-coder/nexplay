@@ -25,7 +25,7 @@ Los comandos de Python corren desde esta carpeta, con el entorno de la raíz act
 |---|---|---|
 | `requirements.txt` | La API: FastAPI, uvicorn, pydantic y openai. | Render y local (`make setup`) |
 | `requirements-modelo.txt` | Datos y modelo: numpy, pandas, scikit-learn y pyarrow. | Render (sin pyarrow) y local (`make setup`) |
-| `requirements-notebooks.txt` | plotly, lingua, sentence-transformers, nbclient e ipykernel. | Solo para ejecutar los notebooks fuera de Colab (`make notebooks`). Nunca en Render: el build falla si llega torch. |
+| `requirements-notebooks.txt` | plotly, lingua, sentence-transformers, nbclient, ipykernel y requests. | Solo para ejecutar los notebooks fuera de Colab (`make notebooks`). Nunca en Render: el build falla si llega torch. |
 | `requirements-dev.txt` | Playwright, para las capturas de la UI, y kaleido, para las gráficas del 00 en PNG. | Solo local |
 
 ## Lo que no se versiona
