@@ -1,5 +1,12 @@
 % Rúbrica: Resolución del problema. Fuentes y figuras: ver el plan del documento.
 \section{Arquitectura y despliegue}\label{sec:arquitectura}
+% NOTA (2026-09-30), estructura del repo (desde master 4d47c3e): todo el Python vive en backend/ (api, modelado,
+% analisis, referencias, despliegue, calidad, ingesta, publicacion, operacion); frontend/ es Angular;
+% notebooks/ trae 00_exploracion y 01_modelo_riesgo; documento/ es este LaTeX; docs/ guarda evidencia,
+% capturas, diseño e historial. Un Makefile une todo (setup, data, train, api, web, test, notebooks, doc).
+% Render construye la API con Root Directory backend y despliegue/Dockerfile; Vercel publica frontend/.
+% NOTA (2026-09-30), tag codigo-v3: apunta a 9b64795 y es el código que clonan los notebooks. Las salidas
+% finales de los notebooks llegaron después (d1f4a65) y no están en el tag, a propósito.
 
 \subsection{De los datos a la interfaz}
 \pendiente{redacción}

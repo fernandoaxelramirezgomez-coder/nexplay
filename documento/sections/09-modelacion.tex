@@ -10,12 +10,22 @@
 \subsection{La decisión B+: no forzar una personalización que los datos no justifican}
 \pendiente{redacción}
 
-\subsection{Validación agrupada por juego}
+\subsection{Validación agrupada por juego}\label{sec:modelacion-validacion}
 % NOTA (dueño, 2026-09-30): el tope de 1,500 reseñas por juego es una decisión de diseño: cada título pesa
-% casi igual. Decirlo aquí y en §9.4.
-% NOTA (dueño, 2026-09-30): ese tope produce empates por los que GroupKFold da otra partición en otras versiones de
-% scikit-learn; se resolvió con la partición congelada (referencias/particion_gkf_data-v1.csv, firma 416aa824…).
-% ESPERA el resultado de la rama particion-congelada antes de redactar.
+% casi igual. §5.4 ya lo dice; aquí se retoma para explicar los empates.
+% NOTA (2026-09-30), la partición congelada. Ya resuelta (antes ESPERABA la rama particion-congelada):
+%  - Por qué: GroupKFold reparte los juegos por tamaño, y 73 de los 83 juegos de data-v1 tienen exactamente
+%    1,500 reseñas (el tope). Cada versión de scikit-learn desempata distinto: hasta la 1.8 con un argsort
+%    inestable, y desde la 1.9 con uno estable. La 1.6.1 de Colab deja solo 12 de los 83 juegos en el mismo fold.
+%  - Qué se hizo: la partición se congeló en backend/referencias/particion_gkf_data-v1.csv (appid → fold,
+%    firma 416aa8243b57…). Toda evaluación y los umbrales usan splits_congelados
+%    (backend/modelado/entrenar_baseline.py), nunca un GroupKFold recalculado.
+%  - Robustez, prerregistrada (docs/evidencia/particion-alternativa.json, en el entorno de Colab): con la
+%    partición de scikit-learn 1.6.1 el PR-AUC da 0.0692 ± 0.0412, contra 0.0694 ± 0.0415 con la congelada,
+%    y el modelo gana al trivial en los 5 folds en las dos. El ruido entre folds (~0.04) es mucho mayor que
+%    la diferencia entre particiones.
+%  - Al redactar: estas cifras entran como macros nuevas (generar_figuras.py y la lista canónica de
+%    verificar_cifras.py), nunca escritas a mano.
 \pendiente{redacción}
 
 \subsection{Bootstrap de coeficientes}

@@ -1,18 +1,21 @@
 % Generado por documento/generar_figuras.py. No se edita a mano.
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}p{4.2cm}}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{3.9cm} >{\raggedright\arraybackslash}p{4.4cm}}
 \toprule
 Chequeo (data-v1) & Resultado & Qué se hizo \\
 \midrule
-Nulos en las reseñas & 0 en 21 columnas & ninguna \\
-Llaves: reseña repetida, juego sin reseñas, reseña sin juego & 0 casos & ninguna \\
-Rangos duros (6 reglas: minutos ≥ 0, voto 0/1, fechas, precio, descuento, nota) & 0 casos & ninguna \\
-\texttt{playtime\_\allowbreak{}at\_\allowbreak{}review} ≤ \texttt{playtime\_\allowbreak{}forever} & 1 caso & se conservan y se documentan \\
-\texttt{es\_\allowbreak{}gratis} coherente con el precio & 2 casos & se conservan y se documentan \\
-Juegos de pago sin precio & 2: Grand Theft Auto V Legacy, New World: Aeternum & precio tomado como 0, con aviso (§\ref{sec:procesamiento}) \\
-Juegos sin nota de Metacritic & 23 de 83 & es un dato: variable \texttt{metacritic\_\allowbreak{}disponible} \\
-Nota de Metacritic contra la tienda hoy (40 externos) & 40 de 40 iguales & ninguna \\
-Textos repetidos de 8+ palabras & 359 en el mismo juego; 57 en 2+ juegos & se marcan, no se borran (§\ref{sec:procesamiento}) \\
+\multicolumn{3}{l}{\textit{Sin hallazgos}} \\
+Nulos en las reseñas & 0 en 21 columnas & nada que corregir \\
+Llaves: reseña repetida, juego sin reseñas, reseña sin juego & 0 casos & nada que corregir \\
+Rangos imposibles (6 reglas: minutos negativos, voto fuera de 0 y 1, fechas, precio, descuento, nota) & 0 casos & nada que corregir \\
+Nota de Metacritic contra la de la tienda hoy (40 juegos externos) & 40 de 40 iguales & nada que corregir \\
+\midrule
+\multicolumn{3}{l}{\textit{Hallazgos y qué se hizo}} \\
+Más minutos al reseñar que en total\textsuperscript{a} & 1 caso & se conserva: la señal no cambia con ninguno de los dos contadores \\
+Juegos de pago sin precio\textsuperscript{b} & 2: Grand Theft Auto V Legacy, New World: Aeternum & precio tomado como 0, con aviso en la ficha (§\ref{sec:procesamiento}) \\
+Juegos sin nota de Metacritic & 23 de 83 & la falta de nota es una variable del modelo\textsuperscript{c} \\
+Textos repetidos de 8 palabras o más & 359 en el mismo juego; 57 en 2 o más juegos & se marcan, no se borran (§\ref{sec:procesamiento}) \\
 Reseñas plantilla & 192 (0.15\,\%) & se marcan, no se borran \\
-Perfil privado (\texttt{num\_\allowbreak{}games\_\allowbreak{}owned} = 0) & 59.9\,\% de las reseñas & bandera de privacidad, no biblioteca vacía \\
+Perfil privado: aparece con 0 juegos\textsuperscript{d} & 59.9\,\% de las reseñas & es una bandera de privacidad, no una biblioteca vacía \\
 \bottomrule
+\multicolumn{3}{>{\raggedright\arraybackslash}p{\dimexpr\textwidth-2\tabcolsep}}{\footnotesize Columnas: \textsuperscript{a}~\texttt{playtime\_at\_review} y \texttt{playtime\_forever}; \textsuperscript{b}~\texttt{es\_gratis} y \texttt{precio\_final}; \textsuperscript{c}~\texttt{metacritic\_disponible}; \textsuperscript{d}~\texttt{num\_games\_owned}.} \\
 \end{tabularx}

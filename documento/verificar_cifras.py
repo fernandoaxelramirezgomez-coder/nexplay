@@ -46,7 +46,8 @@ CANONICAS = {
     "PRAUCModeloStd": "0.0415",
     "PRAUCTrivial": "0.0219",
     "PRAUCTrivialStd": "0.0037",
-    "PRAUCCociente": "3.17",
+    # Los cocientes contra el trivial van con un decimal: la variación entre folds no justifica centésimas.
+    "PRAUCCociente": "3.2",
     "PliegosGanados": "5",
     "Pliegues": "5",
     "UmbralMedio": "0.2858",
@@ -60,7 +61,7 @@ CANONICAS = {
     # prueba externa
     "PRAUCExterno": "0.0356",
     "PRAUCExternoTrivial": "0.0234",
-    "PRAUCExternoCociente": "1.52",
+    "PRAUCExternoCociente": "1.5",
     "ExternoICInf": "1.03",
     "ExternoICSup": "2.33",
     "ExternoReplicasSinVentaja": "27",

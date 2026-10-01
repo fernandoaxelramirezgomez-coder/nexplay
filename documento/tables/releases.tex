@@ -1,12 +1,10 @@
 % Generado por documento/generar_figuras.py. No se edita a mano.
-\begin{tabularx}{\textwidth}{ll>{\raggedright\arraybackslash}Xrlrr}
+\begin{tabularx}{\textwidth}{llrrrr>{\raggedright\arraybackslash}X}
 \toprule
-Release & Publicado & Asset & MB & sha256 & Juegos & Reseñas \\
+Release & Publicado & Juegos & Reseñas & \begin{tabular}[b]{@{}r@{}}Base\\(MB)\end{tabular} & \begin{tabular}[b]{@{}r@{}}Extracto\\(MB)\end{tabular} & Para qué \\
 \midrule
-data-v1 & 2026-09-16 & \texttt{nexplay\_\allowbreak{}extracto.\allowbreak{}parquet} & 1.4 & \texttt{645d685df884…} & 83 & 123,972 \\
-data-v1 & 2026-09-16 & \texttt{nexplay\_\allowbreak{}reproducible.\allowbreak{}db.\allowbreak{}xz} & 11.4 & \texttt{2ef8ef403303…} & 83 & 123,972 \\
-data-v2 & 2026-09-21 & \texttt{nexplay\_\allowbreak{}extracto.\allowbreak{}parquet} & 1.9 & \texttt{025323e0d0e9…} & 123 & 184,367 \\
-data-v2 & 2026-09-21 & \texttt{nexplay\_\allowbreak{}reproducible.\allowbreak{}db.\allowbreak{}xz} & 16.7 & \texttt{9d5a54f6cbb5…} & 123 & 184,367 \\
-data-v3 & 2026-09-27 & \texttt{nexplay\_\allowbreak{}reproducible.\allowbreak{}db.\allowbreak{}xz} & 16.7 & \texttt{44f6704d469a…} & 123 & 184,367 \\
+data-v1 & 2026-09-16 & 83 & 123,972 & 11.4 & 1.4 & Entrenar, elegir las variables y fijar los umbrales. \\
+data-v2 & 2026-09-21 & 123 & 184,367 & 16.7 & 1.9 & Suma 40 juegos que el modelo no ve: la prueba externa. \\
+data-v3 & 2026-09-27 & 123 & 184,367 & 16.7 & --- & data-v2 más los totales públicos de Steam por juego. Lo sirve la API. \\
 \bottomrule
 \end{tabularx}

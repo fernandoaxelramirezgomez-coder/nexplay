@@ -3,7 +3,8 @@
 % tables/cifras.tex, que genera generar_figuras.py; ninguno se escribe a mano.
 \documentclass[11pt]{article}
 
-\usepackage[a4paper, margin=2.5cm]{geometry}
+% headheight: el encabezado lleva los escudos.
+\usepackage[a4paper, margin=2.5cm, headheight=34pt]{geometry}
 \usepackage{fontspec}
 \setmainfont{Inter}
 % Los nombres de código (endpoints, columnas, archivos) en monoespaciada, para distinguirlos del texto.
@@ -25,12 +26,14 @@
 \usepackage[style=apa, backend=biber]{biblatex}
 \addbibresource{references.bib}
 \usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
 
 \graphicspath{{figures/}}
 \setlength{\parskip}{0.5em}
 \setlength{\parindent}{0pt}
 \linespread{1.1}
-\captionsetup{font=small, labelfont=bf}
+% Pies alineados a la izquierda: las rutas en monoespaciada no se parten y, justificadas, dejaban huecos.
+\captionsetup{font=small, labelfont=bf, justification=raggedright, singlelinecheck=true}
 % Las tablas y figuras grandes se quedan arriba de una página con texto, en vez de dejar una
 % página de flotantes con medio hueco; y TeX estira espacios antes de sacar una línea del margen.
 \renewcommand{\topfraction}{0.9}
@@ -50,9 +53,20 @@
 % Lo que todavía no tiene texto o evidencia se ve en el PDF, nunca se rellena.
 \newcommand{\pendiente}[1]{\textcolor{riesgoalto}{\textbf{[PENDIENTE: #1]}}}
 \newcommand{\pendienteEvidencia}{\textcolor{riesgoalto}{\textbf{[PENDIENTE DE EVIDENCIA]}}}
-\newcommand{\pendienteColab}{\textcolor{riesgoalto}{\textbf{[PENDIENTE: corrida en Colab]}}}
 % Las capturas se regeneran desde el tag de entrega; hasta entonces su pie lo dice.
 \newcommand{\provisional}{\textit{Captura provisional: se regenera desde el tag de entrega.}}
+
+% La fecha de la portada es fija: recompilar no la cambia. Se pone la de entrega al cerrar.
+\newcommand{\fechaentrega}{30 de septiembre de 2026}
+
+% En cada página, como en el ejemplo del diplomado: los dos escudos, el diplomado y el autor.
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\raisebox{-0.32\height}{\includegraphics[height=0.95cm]{escudos/logo_unam.png}}\hspace{0.7em}\small Diplomado en Ciencia de Datos}
+\fancyhead[R]{\small Fernando Axel Ramírez Gómez\hspace{0.7em}\raisebox{-0.32\height}{\includegraphics[height=0.95cm]{escudos/logo_fes.png}}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
 
 \input{tables/cifras}
 
@@ -79,18 +93,25 @@
         \end{flushright}
     \end{minipage}
 
-    \vspace*{2cm}
+    \vspace*{0.6cm}
 
     \begin{center}
-        {\LARGE Facultad de Estudios Superiores Acatlán} \\[0.8cm]
-        {\LARGE Diplomado en Ciencia de Datos} \\[0.8cm]
-        {\LARGE Módulo V} \\[2cm]
-        {\Huge \textbf{Proyecto final}} \\[1cm]
-        {\Large NexPlay: señal de arrepentimiento temprano} \\[0.3cm]
-        {\Large antes de comprar un videojuego} \\[2.5cm]
-        {\LARGE \textbf{Fernando Axel Ramírez Gómez}} \\[0.8cm]
-        {\Large \today}
+        {\large Facultad de Estudios Superiores Acatlán} \\[0.25cm]
+        {\large Diplomado en Ciencia de Datos} \\[0.25cm]
+        {\normalsize Proyecto final \textperiodcentered{} Módulo V} \\[1.4cm]
+        % El logo trae el nombre del proyecto: hace de título.
+        \includegraphics[width=7.2cm]{logo-nexplay.png} \\[1cm]
+        {\LARGE Señal de arrepentimiento temprano} \\[0.25cm]
+        {\LARGE antes de comprar un videojuego}
+
+        \vfill
+
+        {\LARGE \textbf{Fernando Axel Ramírez Gómez}} \\[0.5cm]
+        {\large \fechaentrega} \\[1.2cm]
+        {\small Repositorio: \url{https://github.com/fernandoaxelramirezgomez-coder/nexplay}} \\[0.15cm]
+        {\small App en vivo: \url{https://nexplay-six.vercel.app}}
     \end{center}
+    \vspace*{0.4cm}
 \end{titlepage}
 
 \input{sections/00-resumen}

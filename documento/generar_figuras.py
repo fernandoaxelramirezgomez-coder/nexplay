@@ -17,7 +17,6 @@ import contextlib
 import csv
 import io
 import json
-import re
 import shutil
 import sqlite3
 import sys
@@ -185,7 +184,8 @@ def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> None:
     cifras.agregar("PRAUCModeloStd", decimal(modelo.std(), 4), fuente)
     cifras.agregar("PRAUCTrivial", decimal(trivial.mean(), 4), fuente + "; trivial = prevalencia de cada pliegue")
     cifras.agregar("PRAUCTrivialStd", decimal(trivial.std(), 4), fuente)
-    cifras.agregar("PRAUCCociente", decimal(modelo.mean() / trivial.mean(), 2), fuente)
+    # Un decimal: la variación entre folds no justifica centésimas. La prueba externa sigue la misma regla.
+    cifras.agregar("PRAUCCociente", decimal(modelo.mean() / trivial.mean(), 1), fuente)
     cifras.agregar("PliegosGanados", str(int((modelo > trivial).sum())), fuente + ": pliegues donde el modelo supera al trivial")
     cifras.agregar("Pliegues", str(len(modelo)), fuente)
 
@@ -209,7 +209,7 @@ def cifras_de_evidencia(cifras: Cifras) -> None:
     bootstrap = json.loads((EVIDENCIA / "bootstrap-prueba-externa.json").read_text())
     cifras.agregar("PRAUCExterno", decimal(externa["pr_auc_externo"], 4), "docs/evidencia/prueba-externa.json")
     cifras.agregar("PRAUCExternoTrivial", decimal(externa["pr_auc_trivial"], 4), "docs/evidencia/prueba-externa.json")
-    cifras.agregar("PRAUCExternoCociente", decimal(externa["pr_auc_externo"] / externa["pr_auc_trivial"], 2),
+    cifras.agregar("PRAUCExternoCociente", decimal(externa["pr_auc_externo"] / externa["pr_auc_trivial"], 1),
                    "docs/evidencia/prueba-externa.json")
     inf, sup = bootstrap["bootstrap"]["ic95_cociente"]
     cifras.agregar("ExternoICInf", decimal(inf, 2), "docs/evidencia/bootstrap-prueba-externa.json")
@@ -366,30 +366,32 @@ def guardar_figura(fig, nombre: str) -> Path:
 # --- tablas ----------------------------------------------------------------
 
 def tabla_de_releases(rutas: dict[str, Path]) -> Path:
+    """T2: un renglón por release, con lo que trae y para qué sirve. El sha256 completo va en el anexo."""
     publicacion = publicacion_de_releases()
+    juegos = {ref: conteos(rutas[ref]) for ref in ("data-v1", "data-v2", SERVIDO_REF)}
+    externos = juegos["data-v2"]["juegos"] - juegos["data-v1"]["juegos"]
+    para_que = {
+        "data-v1": "Entrenar, elegir las variables y fijar los umbrales.",
+        "data-v2": f"Suma {externos} juegos que el modelo no ve: la prueba externa.",
+        SERVIDO_REF: "data-v2 más los totales públicos de Steam por juego. Lo sirve la API.",
+    }
     filas = []
     for ref in ("data-v1", "data-v2", SERVIDO_REF):
-        c = conteos(rutas[ref])
-        for asset, datos in sorted(publicacion[ref]["assets"].items()):
-            nombre = asset.replace("_", "\\_\\allowbreak{}").replace(".", ".\\allowbreak{}")
-            filas.append(f"{ref} & {publicacion[ref]['publicado']} & \\texttt{{{nombre}}} & "
-                         f"{datos['bytes'] / 1e6:.1f} & \\texttt{{{datos['sha256'][:12]}…}} & "
-                         f"{entero(c['juegos'])} & {entero(c['resenas'])} \\\\")
+        mb = {asset: f"{datos['bytes'] / 1e6:.1f}" for asset, datos in publicacion[ref]["assets"].items()}
+        filas.append(f"{ref} & {publicacion[ref]['publicado']} & {entero(juegos[ref]['juegos'])} & "
+                     f"{entero(juegos[ref]['resenas'])} & {mb.get('nexplay_reproducible.db.xz', '---')} & "
+                     f"{mb.get('nexplay_extracto.parquet', '---')} & {para_que[ref]} \\\\")
     contenido = [
         "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{ll>{\\raggedright\\arraybackslash}Xrlrr}",
+        "\\begin{tabularx}{\\textwidth}{llrrrr>{\\raggedright\\arraybackslash}X}",
         "\\toprule",
-        "Release & Publicado & Asset & MB & sha256 & Juegos & Reseñas \\\\",
+        "Release & Publicado & Juegos & Reseñas & \\begin{tabular}[b]{@{}r@{}}Base\\\\(MB)\\end{tabular} & "
+        "\\begin{tabular}[b]{@{}r@{}}Extracto\\\\(MB)\\end{tabular} & Para qué \\\\",
         "\\midrule", *filas, "\\bottomrule", "\\end{tabularx}",
     ]
     ruta = TABLAS / "releases.tex"
     ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
     return ruta
-
-
-def codigo(texto: str) -> str:
-    """Los nombres de columna (los que llevan guion bajo) en monoespaciada, escapados para LaTeX."""
-    return re.sub(r"\w*_\w*", lambda m: "\\texttt{" + m.group(0).replace("_", "\\_\\allowbreak{}") + "}", texto)
 
 
 def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
@@ -418,28 +420,43 @@ def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     def fila(chequeo: str, resultado: str, decision: str) -> str:
         return f"{chequeo} & {resultado} & {decision} \\\\"
 
+    def grupo(titulo: str) -> str:
+        return f"\\multicolumn{{3}}{{l}}{{\\textit{{{titulo}}}}} \\\\"
+
+    # Los 2 casos de «es_gratis coherente con el precio» son los mismos juegos de pago sin precio: van en una fila.
+    incoherentes = int(blandas["es_gratis coherente con el precio"])
+    assert incoherentes == len(de_pago_sin_precio), "la gratuidad incoherente ya no son solo los de pago sin precio"
+    mas_minutos = int(blandas["playtime_at_review ≤ playtime_forever"])
+    nota = ("\\textsuperscript{a}~\\texttt{playtime\\_at\\_review} y \\texttt{playtime\\_forever}; "
+            "\\textsuperscript{b}~\\texttt{es\\_gratis} y \\texttt{precio\\_final}; "
+            "\\textsuperscript{c}~\\texttt{metacritic\\_disponible}; \\textsuperscript{d}~\\texttt{num\\_games\\_owned}.")
     filas = [
-        fila("Nulos en las reseñas", f"{int(esquema_resenas['nulos'].sum())} en {len(esquema_resenas)} columnas", "ninguna"),
-        fila("Llaves: reseña repetida, juego sin reseñas, reseña sin juego", f"{int(llaves['casos'].sum())} casos", "ninguna"),
-        fila(f"Rangos duros ({len(duras)} reglas: minutos ≥ 0, voto 0/1, fechas, precio, descuento, nota)",
-             f"{int(duras.sum())} casos", "ninguna"),
-        *(fila(codigo(regla), f"{int(casos)} {'caso' if casos == 1 else 'casos'}", "se conservan y se documentan")
-          for regla, casos in blandas.items()),
-        fila("Juegos de pago sin precio", f"{len(de_pago_sin_precio)}: {', '.join(de_pago_sin_precio)}",
-             "precio tomado como 0, con aviso (§\\ref{sec:procesamiento})"),
-        fila("Juegos sin nota de Metacritic", f"{sin_nota} de {len(juegos)}", "es un dato: variable " + codigo("metacritic_disponible")),
-        fila("Nota de Metacritic contra la tienda hoy (40 externos)", f"{coinciden} de {len(verificacion)} iguales", "ninguna"),
-        fila(f"Textos repetidos de {PALABRAS_DE_UNA_COPIA}+ palabras",
-             f"{copias['sobrantes en el mismo juego']:,} en el mismo juego; {copias['textos en 2+ juegos']:,} en 2+ juegos",
+        grupo("Sin hallazgos"),
+        fila("Nulos en las reseñas", f"{int(esquema_resenas['nulos'].sum())} en {len(esquema_resenas)} columnas", "nada que corregir"),
+        fila("Llaves: reseña repetida, juego sin reseñas, reseña sin juego", f"{int(llaves['casos'].sum())} casos", "nada que corregir"),
+        fila(f"Rangos imposibles ({len(duras)} reglas: minutos negativos, voto fuera de 0 y 1, fechas, precio, descuento, nota)",
+             f"{int(duras.sum())} casos", "nada que corregir"),
+        fila(f"Nota de Metacritic contra la de la tienda hoy ({len(verificacion)} juegos externos)",
+             f"{coinciden} de {len(verificacion)} iguales", "nada que corregir"),
+        "\\midrule",
+        grupo("Hallazgos y qué se hizo"),
+        fila("Más minutos al reseñar que en total\\textsuperscript{a}", f"{mas_minutos} {'caso' if mas_minutos == 1 else 'casos'}",
+             "se conserva: la señal no cambia con ninguno de los dos contadores"),
+        fila("Juegos de pago sin precio\\textsuperscript{b}", f"{len(de_pago_sin_precio)}: {', '.join(de_pago_sin_precio)}",
+             "precio tomado como 0, con aviso en la ficha (§\\ref{sec:procesamiento})"),
+        fila("Juegos sin nota de Metacritic", f"{sin_nota} de {len(juegos)}", "la falta de nota es una variable del modelo\\textsuperscript{c}"),
+        fila(f"Textos repetidos de {PALABRAS_DE_UNA_COPIA} palabras o más",
+             f"{copias['sobrantes en el mismo juego']:,} en el mismo juego; {copias['textos en 2+ juegos']:,} en 2 o más juegos",
              "se marcan, no se borran (§\\ref{sec:procesamiento})"),
         fila("Reseñas plantilla", f"{len(plantillas):,} ({100 * len(plantillas) / len(resenas):.2f}\\,\\%)", "se marcan, no se borran"),
-        fila(f"Perfil privado ({codigo('num_games_owned')} = 0)", f"{100 * privados:.1f}\\,\\% de las reseñas",
-             "bandera de privacidad, no biblioteca vacía"),
+        fila("Perfil privado: aparece con 0 juegos\\textsuperscript{d}", f"{100 * privados:.1f}\\,\\% de las reseñas",
+             "es una bandera de privacidad, no una biblioteca vacía"),
     ]
     contenido = [
         "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{4.2cm} >{\\raggedright\\arraybackslash}p{4.2cm}}",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{3.9cm} >{\\raggedright\\arraybackslash}p{4.4cm}}",
         "\\toprule", "Chequeo (data-v1) & Resultado & Qué se hizo \\\\", "\\midrule", *filas, "\\bottomrule",
+        f"\\multicolumn{{3}}{{>{{\\raggedright\\arraybackslash}}p{{\\dimexpr\\textwidth-2\\tabcolsep}}}}{{\\footnotesize Columnas: {nota}}} \\\\",
         "\\end{tabularx}",
     ]
     ruta = TABLAS / "calidad.tex"
@@ -472,6 +489,13 @@ def copiar_capturas() -> list[Path]:
     return copiadas
 
 
+def copiar_logo() -> Path:
+    """El logo de NexPlay para la portada, tal como lo sirve el frontend."""
+    destino = FIGURAS / "logo-nexplay.png"
+    shutil.copyfile(RAIZ / "frontend" / "public" / "logo-header.png", destino)
+    return destino
+
+
 def main() -> None:
     for carpeta in (CACHE, TABLAS, FIGURAS):
         carpeta.mkdir(parents=True, exist_ok=True)
@@ -489,6 +513,7 @@ def main() -> None:
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas)]
     capturas = copiar_capturas()
+    copiar_logo()
 
     print(f"{len(cifras.macros)} cifras en {ruta_cifras.relative_to(RAIZ)}")
     print(f"tablas: {', '.join(t.name for t in tablas)} · figuras: {', '.join(f.name for f in figuras)}")

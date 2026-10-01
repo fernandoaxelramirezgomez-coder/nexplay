@@ -1,19 +1,21 @@
 % Rúbrica: Descripción de los datos (fuente, calidad y relevancia para el problema).
 \section{Descripción de los datos}\label{sec:datos}
 
-Los datos son reseñas públicas de Steam y la ficha de cada juego en la misma tienda. Steam
-guarda, en cada reseña, si el voto fue negativo y cuántos minutos llevaba jugados quien la
-escribió, y con esas dos cosas se define la señal de arrepentimiento temprano
-(sección~\ref{sec:objetivo}). El modelo se entrena con \cifraJuegosEntrenamiento{}
-juegos y \cifraResenasEntrenamiento{} reseñas (data-v1), y el sitio sirve un catálogo de
-\cifraJuegosCatalogo{} juegos y \cifraResenasCatalogo{} reseñas (data-v3). No se usó Kaggle ni
-ningún conjunto de terceros.
+Los datos son reseñas públicas de Steam y la ficha de cada juego en la misma tienda. En cada
+reseña, Steam guarda si el voto fue negativo y cuántos minutos llevaba jugados quien la escribió;
+con esas dos cosas se define la señal de arrepentimiento temprano (sección~\ref{sec:objetivo}). El
+modelo se entrena con \cifraJuegosEntrenamiento{} juegos y \cifraResenasEntrenamiento{} reseñas
+(data-v1), y el sitio sirve un catálogo de \cifraJuegosCatalogo{} juegos y
+\cifraResenasCatalogo{} reseñas (data-v3). No se usó Kaggle ni ningún conjunto de terceros.
 
 \subsection{La API de Steam}\label{sec:datos-api}
 % NOTA (dueño, 2026-09-30): la ingesta pidió language=english, así que el 98.7 % mide qué tan bien
 % etiquetaron sus reseñas los autores, no el idioma de Steam en general. Decirlo donde se cite el 98.7 %.
 
-La ingesta usa dos servicios públicos de la tienda, sin clave:
+La ingesta, el proceso que bajó los datos de Steam, usa dos servicios públicos de la
+tienda\footnote{Una API (interfaz de programación) es una dirección web que devuelve datos en un
+formato que un programa puede leer, en lugar de una página pensada para personas. Estos dos
+servicios no piden clave.}:
 
 \begin{itemize}
   \item \texttt{appreviews}, por juego, da el voto, los minutos jugados al escribir y en total,
@@ -23,53 +25,61 @@ La ingesta usa dos servicios públicos de la tienda, sin clave:
   \cifraTopeIngesta{} por juego. Valve documenta este servicio en \textcite{valve_getreviews}.
   Al consultarla para este documento, la página lo marca como obsoleto y remite a
   \texttt{GetAppReviews} \parencite{valve_iuserreviews}. El proyecto no depende de volver a
-  bajarlo: los datos están congelados en releases (sección~\ref{sec:datos-releases}).
+  bajarlo: los datos quedaron congelados en releases (sección~\ref{sec:datos-releases}).
   \item \texttt{appdetails}, por juego, da el precio y el descuento en pesos mexicanos
   (\texttt{cc=mx}), los géneros, la fecha de lanzamiento, la descripción en español
-  (\texttt{l=spanish}) y la nota de Metacritic. Valve no lo documenta de forma oficial.
+  (\texttt{l=spanish}) y la nota de Metacritic\footnote{Metacritic es un sitio que promedia las
+  calificaciones de la crítica especializada en una nota de 0 a 100. Steam muestra esa nota en
+  la página de algunos juegos.}. Valve no documenta este servicio de forma oficial.
 \end{itemize}
 
 La nota de Metacritic se toma de la tienda; el proyecto nunca consulta Metacritic. En los
-\cifraJuegosExternos{} títulos externos se comparó la nota guardada con la de la tienda el 21
-de septiembre de 2026, y coinciden \cifraMetacriticVerificadoExternos{}
-(\texttt{docs/evidencia/verificacion-40-steam.csv}). Cuando la tienda no muestra nota, esa
-ausencia se guarda tal cual y el modelo la usa como una variable más.
+\cifraJuegosExternos{} títulos externos se comparó la nota guardada con la que mostraba la tienda
+el 21 de septiembre de 2026, y coinciden \cifraMetacriticVerificadoExternos{}\footnote{La
+comparación está en \texttt{docs/evidencia/verificacion-40-steam.csv}.}. Cuando la tienda no
+muestra nota, esa ausencia se guarda tal cual y el modelo la usa como una variable más.
 
 \subsection{Releases y su verificación}\label{sec:datos-releases}
 
-Cada corte de datos se publica como un release de GitHub con tag fijo. Cada archivo se baja y
-se compara con su sha256 antes de usarse (\texttt{backend/despliegue/utilidades.py}). La
-tabla~\ref{tab:releases} los resume.
+Cada corte de datos se publica como un release de GitHub con un tag fijo\footnote{Un release es
+una versión publicada del repositorio, con archivos adjuntos. Su tag es el nombre que la
+identifica, como \texttt{data-v1}, y no cambia: quien baje \texttt{data-v1} dentro de un año
+recibe exactamente los mismos archivos.}. Antes de usar un archivo, se compara su sha256 con el
+publicado\footnote{El sha256 es una huella de 64 caracteres que se calcula sobre el contenido de
+un archivo; si cambia un solo byte, cambia la huella. La comparación la hace
+\texttt{descargar\_verificado}, en \texttt{backend/despliegue/utilidades.py}.}. La
+tabla~\ref{tab:releases} resume los tres releases. Con data-v1 se toman todas las decisiones del
+modelo: las variables, el entrenamiento y los umbrales. El release data-v2 suma
+\cifraJuegosExternos{} juegos que el modelo nunca ve, y data-v3 es lo que sirve el sitio.
 
 \begin{table}[htbp]
   \centering\small
   \input{tables/releases}
-  \caption{Releases de datos. El sha256 va recortado; el completo está en el anexo. Fuente: API
-  de releases de GitHub y los archivos bajados.}
+  \caption{Releases de datos. La base es la copia reproducible de la base de datos
+  (\texttt{nexplay\_reproducible.db.xz}); el extracto, la tabla sin texto que lee el notebook 01
+  (\texttt{nexplay\_extracto.parquet}). Los sha256 completos están en el anexo. Fuente: API de
+  releases de GitHub y los archivos bajados.}
   \label{tab:releases}
 \end{table}
-
-\begin{itemize}
-  \item data-v1 guarda los \cifraJuegosEntrenamiento{} juegos de entrenamiento. Es el
-  corte científico: con él se eligen las variables, se entrena el modelo y se fijan los
-  umbrales.
-  \item data-v2 agrega \cifraJuegosExternos{} juegos que el modelo nunca ve. Sirven de
-  catálogo y de prueba externa.
-  \item data-v3 tiene los mismos \cifraJuegosCatalogo{} juegos y reseñas de data-v2,
-  más los totales públicos de Steam por juego (reseñas, positivas y negativas), que la API
-  necesita para su panorama. Es lo que sirve el sitio.
-\end{itemize}
 
 Ningún release guarda el identificador de Steam de quien escribió la reseña.
 
 \subsection{Periodo que cubren}\label{sec:datos-periodo}
 
 Las reseñas de data-v1 se bajaron el \cifraDescargaHastaEntrenamiento{}, y las de los juegos
-que agregó data-v2, hasta el \cifraDescargaHastaCatalogo{} (fechas en UTC). La ingesta pide las
-reseñas más recientes de cada juego hasta el tope, y \cifraJuegosEnElTope{} de los
-\cifraJuegosEntrenamiento{} juegos lo alcanzan. Un juego popular llena el tope en pocos días y
-uno de nicho necesita años: la muestra de cada juego cubre de \cifraDiasCubiertosMin{} a
-\cifraDiasCubiertosMax{} días, con una mediana de \cifraDiasCubiertosMediana{}.
+que agregó data-v2, hasta el \cifraDescargaHastaCatalogo{}, en UTC\footnote{UTC es el tiempo
+universal coordinado, la hora de referencia mundial. La Ciudad de México va seis horas
+atrás.}. La ingesta pide las reseñas más recientes de cada juego hasta llegar al tope, y
+\cifraJuegosEnElTope{} de los \cifraJuegosEntrenamiento{} juegos lo alcanzan. Un juego popular
+llena el tope en pocos días y uno de nicho necesita años: la muestra de cada juego cubre de
+\cifraDiasCubiertosMin{} a \cifraDiasCubiertosMax{} días, con una mediana de
+\cifraDiasCubiertosMediana{}.
+
+La figura~\ref{fig:resenas-por-mes} cuenta las reseñas de data-v1 por mes de publicación. Casi
+todas las barras se juntan a la derecha: el \cifraDesdeJulioEntrenamientoPorResena{} de las reseñas
+de entrenamiento es de julio de 2025 en adelante (\cifraDesdeJulioCatalogoPorResena{} en el
+catálogo), y a la izquierda queda una cola delgada que llega hasta el
+\cifraResenaMasAntiguaEntrenamiento{}.
 
 \begin{figure}[H]
   \centering
@@ -79,41 +89,51 @@ uno de nicho necesita años: la muestra de cada juego cubre de \cifraDiasCubiert
   \label{fig:resenas-por-mes}
 \end{figure}
 
-Por eso la muestra retrata el presente de cada juego (figura~\ref{fig:resenas-por-mes}). El \cifraDesdeJulioEntrenamientoPorResena{} de las reseñas
-de entrenamiento es de julio de 2025 en adelante (\cifraDesdeJulioCatalogoPorResena{} en el
-catálogo), y la cola llega hasta el \cifraResenaMasAntiguaEntrenamiento{}. En un juego viejo,
-la señal temprana viene de quien lo compra tarde: en una oferta o después de una
-actualización. Se reporta como limitación de la fuente (sección~\ref{sec:limitaciones}) y no se
-corrige con pesos, porque no hay forma de saber cómo era la mezcla de compradores en otra época.
+La muestra retrata, entonces, el presente de cada juego. En un juego viejo, la señal temprana
+viene de quien lo compra tarde, en una oferta o después de una actualización. Esto es una
+limitación de la fuente (sección~\ref{sec:limitaciones}) y no se corrige con pesos, porque no
+hay forma de saber cómo era la mezcla de compradores en otra época.
 
 \subsection{Calidad}\label{sec:datos-calidad}
-% NOTA (dueño, 2026-09-30): el tope de 1,500 reseñas por juego es una decisión de diseño: cada título pesa
-% casi igual. Decirlo aquí y en §9.4.
 
 Antes de explorar, el notebook \texttt{00\_exploracion} valida data-v1: tipos y nulos, llaves,
-rangos, textos repetidos y la partición de validación. La tabla~\ref{tab:calidad} resume lo que
-encontró y qué se hizo.
+rangos, textos repetidos y la partición de validación. La tabla~\ref{tab:calidad} separa los
+chequeos que no encontraron nada de los que sí, con lo que se hizo en cada caso.
 
 \begin{table}[htbp]
   \centering\small
   \input{tables/calidad}
-  \caption{Chequeos de calidad sobre data-v1. Fuente: \texttt{backend/analisis/exploracion.py}, las
-  mismas funciones que usa el bloque de validación del notebook 00.}
+  \caption{Chequeos de calidad sobre data-v1. Fuente: las funciones de
+  \texttt{backend/analisis/exploracion.py} que usa el bloque de validación del notebook 00.}
   \label{tab:calidad}
 \end{table}
 
 Las dos columnas que definen la señal, el voto y los minutos al reseñar, no tienen nulos ni
-valores fuera de rango, y las variables del juego se conocen antes de comprar. Quedan tres
-huecos, y ninguno se rellena en silencio:
+valores fuera de rango, y todas las variables del juego que usa el modelo se conocen antes de
+comprar. Tres hallazgos tocan al modelo, y ninguno se rellena en silencio. El precio de los
+\cifraPagoSinPrecioEntrenamiento{} juegos de pago que llegaron sin precio se toma como 0, y la
+ficha lo avisa. La falta de nota de los \cifraSinNotaEntrenamiento{} juegos sin Metacritic entra
+al modelo como una variable propia. Y el 0 de los perfiles privados\footnote{En Steam, cada
+persona decide si su perfil es público. Un perfil privado oculta la biblioteca, y la API lo
+reporta con 0 juegos.}, que son el \cifraPrivadosEntrenamientoPorResena{} de las reseñas, se trata
+como una bandera de privacidad y no como una biblioteca vacía. Los textos repetidos y las
+plantillas se marcan y se conservan; la sección~\ref{sec:procesamiento} explica por qué.
 
-\begin{itemize}
-  \item \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin precio. El modelo toma su precio
-  como 0 y la ficha lo avisa.
-  \item \cifraSinNotaEntrenamiento{} juegos sin nota de Metacritic. La falta de nota entra al
-  modelo como variable propia.
-  \item El \cifraPrivadosEntrenamientoPorResena{} de las reseñas viene de perfiles privados, que
-  aparecen con 0 juegos. Ese 0 es una bandera de privacidad, no una biblioteca vacía.
-\end{itemize}
+El tope de \cifraTopeIngesta{} reseñas por juego es una decisión de diseño: así cada título pesa
+casi lo mismo en el entrenamiento, y unos cuantos juegos muy populares no dominan la muestra.
+Tiene otra consecuencia, los empates de tamaño entre juegos, que la
+sección~\ref{sec:modelacion-validacion} trata al hablar de la validación.
 
-Los textos repetidos y las plantillas se marcan y se conservan; la
-sección~\ref{sec:procesamiento} explica por qué.
+\subsection{Por qué estos datos sirven para la pregunta}\label{sec:datos-relevancia}
+
+NexPlay quiere saber, antes de la compra, qué tan seguido un juego deja a sus compradores
+arrepentidos en las primeras horas. Estos datos sirven para eso. Las reseñas las escriben
+personas que tienen el juego, y cada una dice cuántos minutos llevaba jugados su autor al
+escribirla: con eso se sabe si cae dentro o fuera de la ventana de reembolso de dos horas. Por
+su lado, \texttt{appdetails} da lo que cualquiera ve en la tienda antes de pagar, como el
+precio, el descuento y la nota de la crítica, y de ahí salen las variables del modelo, todas
+conocidas antes de la compra.
+
+También tienen límites, que la sección~\ref{sec:limitaciones} desarrolla: las reseñas son en
+inglés y las escriben compradores de todo el mundo, mientras que los precios son los de la
+tienda de México y quien usa NexPlay compra desde México.
