@@ -147,6 +147,18 @@ CANONICAS = {
     "TasaExternosMedianaJuegos": "1.40" + PORCIENTO,
     "TasaEntrenamientoPromJuegos": "2.33" + PORCIENTO,
     "TasaExternosPromJuegos": "2.33" + PORCIENTO,
+    # procesamiento (§8), contrastadas con el 00, celdas 36, 40 a 54 y 56
+    "PalabrasDeUnaCopia": "8",
+    "TextosEntreJuegos": "57",
+    "CopiasEnFoldsDistintos": "52",
+    "DuplicadosQuitados": "483",
+    "VaciasQuitadas": "545",
+    "ResenasLimpias": "122,944",
+    "CortasPorResena": "22.7" + PORCIENTO,
+    "OtroIdioma": "1,637",
+    "PRAUCSinDuplicados": "0.0695",
+    "PRAUCSinVacias": "0.0696",
+    "PRAUCSinCortas": "0.0800",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")

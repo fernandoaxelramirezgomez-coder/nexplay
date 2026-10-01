@@ -16,11 +16,14 @@ a diferencia del intervalo más común, nunca baja de cero.}. La tasa va de
 \cifraTasaJuegoMinPorResena{} a \cifraTasaJuegoMaxPorResena{}. Hasta el juego con menos reseñas
 tiene \cifraResenasJuegoMin{}, así que los intervalos son cortos al lado de esa distancia.
 
-La diferencia entre juegos no es ruido. Si todos tuvieran la misma tasa, solo variarían por las
-reseñas que le tocaron a cada uno, y las diferencias observadas son \cifraSobredispersion{} veces
-más grandes que eso\footnote{Es la ji cuadrada de Pearson dividida entre sus grados de libertad,
-y vale cerca de 1 cuando todas las tasas son iguales y solo el muestreo las separa. Está en la
-función \texttt{sobredispersion} de \texttt{backend/analisis/exploracion.py}.}.
+La diferencia entre juegos no es ruido: la varianza de la tasa entre juegos es unas
+\cifraSobredispersion{} veces la esperada si todos tuvieran la misma tasa\footnote{Si todos los
+juegos tuvieran la misma tasa, la de cada uno variaría solo por las reseñas que le tocaron. Esa
+varianza esperada sale de la tasa global y del número de reseñas del juego, como en una
+binomial. El cociente divide la desviación al cuadrado de cada juego entre su varianza esperada
+y promedia sobre los juegos: es la ji cuadrada de Pearson entre sus grados de libertad, y vale
+cerca de 1 cuando solo el muestreo separa a los juegos. Está en la función
+\texttt{sobredispersion} de \texttt{backend/analisis/exploracion.py}.}.
 
 \begin{figure}[htbp]
   \centering
@@ -129,11 +132,9 @@ señal como proxy (sección~\ref{sec:objetivo-proxy}): quien escribe antes de la
 juego habla de reembolsos mucho más que el resto. No prueba que esas personas lo hayan pedido, y
 la mayoría de las negativas tempranas no lo menciona.
 
-«refund» no es una fuga\footnote{Hay fuga cuando un modelo usa información que no tendría en
-el momento de predecir.}. Lo escribe la persona en su propia reseña, y el modelo de riesgo ni
-siquiera lee texto: solo usa variables del juego. Por eso la palabra se queda en el texto. Quien
-sí lee el texto es la explicación de motivos del sitio, que es una heurística de palabras clave
-y no un modelo (sección~\ref{sec:interpretabilidad-motivos}).
+Este análisis del texto es descriptivo. El texto no entra al modelo de riesgo, que solo usa
+variables del juego. Quien sí lo lee es la explicación de motivos del sitio, que es una
+heurística de palabras clave y no un modelo (sección~\ref{sec:interpretabilidad-motivos}).
 
 \subsection{Los \cifraJuegosEntrenamiento{} contra los \cifraJuegosExternos{}}\label{sec:exploracion-externos}
 

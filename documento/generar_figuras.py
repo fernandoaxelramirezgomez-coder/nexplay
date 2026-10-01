@@ -411,12 +411,119 @@ def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     return coeficientes
 
 
-def conjunto_limpio(resenas: pd.DataFrame) -> pd.DataFrame:
+def conjunto_limpio(resenas: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """data-v1 con todas las reglas de limpieza: el mismo conjunto que guarda el notebook 00."""
-    limpio, _ = li.limpiar(resenas)
+    limpio, pasos = li.limpiar(resenas)
     if li.firma_del_conjunto(limpio) != li.FIRMA_LIMPIO_DATA_V1:
         raise ValueError("el conjunto limpio cambió: revisar las reglas o la versión de lingua")
-    return limpio
+    return limpio, pasos
+
+
+# Cómo se llama cada regla de backend/analisis/limpieza.py en la tabla y qué hace con las reseñas.
+REGLAS_DE_LIMPIEZA = {
+    "quitar_duplicados_exactos": (f"Texto idéntico de {li.PALABRAS_DE_UNA_COPIA} palabras o más", "se quitan; queda la más antigua"),
+    "quitar_vacias": ("Reseña vacía", "se quitan"),
+    "marcar_cortas": (f"Menos de {li.MINIMO_PALABRAS} palabras", "se marcan"),
+    "marcar_no_ingles": ("Otro idioma, según lingua", "se marcan"),
+    "marcar_plantillas": ("Plantilla de casillas", "se marcan"),
+    "normalizar_texto": ("Normalización del texto", "se agrega \\texttt{texto\\_norm}"),
+}
+
+
+def tabla_de_limpieza(cifras: Cifras, limpio: pd.DataFrame, pasos: list) -> Path:
+    """§8.2 (T4): la bitácora de la limpieza, regla por regla, como la del notebook 00 (celda 54)."""
+    bitacora = li.bitacora(pasos).set_index("regla")
+    if list(bitacora.index) != list(REGLAS_DE_LIMPIEZA):
+        raise ValueError("cambiaron las reglas de limpieza o su orden")
+    fuente = "data-v1: bitácora de li.limpiar"
+    cifras.agregar("DuplicadosQuitados", entero(int(bitacora.loc["quitar_duplicados_exactos", "afectadas"])), fuente)
+    cifras.agregar("VaciasQuitadas", entero(int(bitacora.loc["quitar_vacias", "afectadas"])), fuente)
+    cifras.agregar("ResenasLimpias", entero(len(limpio)), "conjunto limpio de data-v1: reseñas")
+    cifras.agregar("CortasPorResena", porcentaje(limpio["es_corta"].mean(), 1), "conjunto limpio: menos de 3 palabras")
+    otro_idioma = limpio["no_ingles"]
+    cifras.agregar("IdiomaInglesPorResena", porcentaje(1 - otro_idioma.mean(), 1),
+                   "conjunto limpio: en inglés o indeterminado según lingua")
+    cifras.agregar("OtroIdioma", entero(int(otro_idioma.sum())), "conjunto limpio: en otro idioma según lingua")
+    # El texto nombra los tres idiomas más frecuentes.
+    if limpio.loc[otro_idioma, "idioma_detectado"].value_counts().head(3).index.tolist() != ["russian", "spanish", "portuguese"]:
+        raise ValueError("cambiaron los idiomas más frecuentes entre las reseñas en otro idioma")
+
+    filas = []
+    for regla, f in bitacora.iterrows():
+        nombre, accion = REGLAS_DE_LIMPIEZA[regla]
+        afectadas = int(f["afectadas"])
+        filas.append(f"{nombre} & {accion} & {entero(afectadas)} ({porcentaje(afectadas / f['filas antes'], 1)}) & "
+                     f"{entero(int(f['filas después']))} \\\\")
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{4.4cm} rr}",
+        "\\toprule", "Regla, en orden & Qué se hace & Afectadas & Quedan \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "limpieza.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_de_validacion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> None:
+    """§8.1 y §8.2: copias de texto que cruzan folds, y qué le pasaría al modelo de riesgo si se
+    entrenara con la limpieza (00, celdas 36 y 56). La limpieza no se le aplica."""
+    folds = ex.leer_particion()
+    copias = ex.copias_de_texto(resenas, li.PALABRAS_DE_UNA_COPIA)
+    cifras.agregar("PalabrasDeUnaCopia", str(li.PALABRAS_DE_UNA_COPIA), "backend/analisis/limpieza.py: PALABRAS_DE_UNA_COPIA")
+    cifras.agregar("TextosEntreJuegos", entero(copias["textos en 2+ juegos"]),
+                   f"data-v1: textos idénticos de {li.PALABRAS_DE_UNA_COPIA}+ palabras en 2 o más juegos")
+    cifras.agregar("CopiasEnFoldsDistintos", entero(ex.copias_en_folds_distintos(resenas, copias["claves entre juegos"], folds)),
+                   "data-v1: de esos textos, los que caen en folds distintos de la partición congelada")
+
+    if decimal(ex.pr_auc_con_particion(ex.con_juego(resenas, juegos), folds).mean(), 4) != cifras.macros["PRAUCModelo"][0]:
+        raise ValueError("el PR-AUC con la partición congelada no coincide con el del modelo")
+    sin_cortas = resenas[~li.marcar_cortas(resenas)[0]["es_corta"]]
+    if ex.senal(sin_cortas).mean() <= ex.senal(resenas).mean():
+        raise ValueError("quitar las cortas ya no sube la prevalencia")
+    for nombre, filtrado in (("SinDuplicados", li.quitar_duplicados_exactos(resenas)[0]),
+                             ("SinVacias", li.quitar_vacias(resenas)[0]), ("SinCortas", sin_cortas)):
+        cifras.agregar(f"PRAUC{nombre}", decimal(ex.pr_auc_con_particion(ex.con_juego(filtrado, juegos), folds).mean(), 4),
+                       "data-v1 con una regla de limpieza, partición congelada (ex.pr_auc_con_particion)")
+
+
+# T8: cada candidata, cuándo se conoce y si entra al modelo de riesgo. Las del juego se comprueban
+# contra construir_features(conjunto="juego"); las del autor, contra conjunto="completo".
+VARIABLES_CANDIDATAS = [
+    ("\\texttt{es\\_gratis}, precio (en logaritmo) y descuento", "en la tienda, antes de comprar", "sí"),
+    ("Si tiene nota de Metacritic, y la nota", "en la tienda, antes de comprar",
+     "sí; la nota que falta se rellena con la mediana, junto a la bandera"),
+    ("\\texttt{num\\_games\\_owned}: juegos del autor", "en la reseña; en el sitio se declara «compras al año»",
+     "no: su aporte cabe en el ruido entre folds, y 0 es un perfil privado"),
+    ("\\texttt{num\\_reviews}: reseñas del autor", "al descargar; cambia con el tiempo", "no: describe al autor después de reseñar"),
+    ("\\texttt{steam\\_purchase}, \\texttt{received\\_for\\_free} y \\texttt{written\\_during\\_early\\_access}",
+     "en la reseña", "no: solo existen porque la reseña ya se escribió"),
+    ("\\texttt{playtime\\_at\\_review} y \\texttt{voted\\_up}", "en la reseña", "no: definen $Y$"),
+    ("Texto de la reseña", "en la reseña", "no: solo lo leen la exploración y los motivos"),
+]
+
+
+def tabla_de_variables(juegos: pd.DataFrame, resenas: pd.DataFrame) -> Path:
+    """§8.5 (T8): qué variables se conocen antes de comprar y cuáles entran al modelo de riesgo."""
+    df = ex.con_juego(resenas, juegos)
+    juego = list(construir_features(df, conjunto="juego")[0].columns)
+    if juego != ["es_gratis", "log_precio_final", "descuento", "metacritic_disponible", "metacritic"]:
+        raise ValueError(f"cambiaron las variables del modelo de riesgo: {juego}")
+    completo = set(construir_features(df, conjunto="completo")[0].columns)
+    del_autor = {"log_num_games_owned", "log_num_reviews", "steam_purchase", "received_for_free", "written_during_early_access"}
+    if not del_autor <= completo:
+        raise ValueError("cambiaron las variables del autor que se evaluaron")
+    filas = [f"{variable} & {cuando} & {entra} \\\\" for variable, cuando, entra in VARIABLES_CANDIDATAS]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{4.2cm} "
+        ">{\\raggedright\\arraybackslash}p{4.6cm}}",
+        "\\toprule", "Variable & Cuándo se conoce & ¿Entra al modelo de riesgo? \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "variables.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
 
 
 def cifras_del_texto(cifras: Cifras, limpio: pd.DataFrame) -> None:
@@ -710,9 +817,12 @@ def main() -> None:
     juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
     por_juego = cifras_por_juego(cifras, juegos_v1, resenas_v1)
     cifras_de_coeficientes(cifras, juegos_v1, resenas_v1)
-    cifras_del_texto(cifras, conjunto_limpio(resenas_v1))
+    limpio, pasos = conjunto_limpio(resenas_v1)
+    cifras_del_texto(cifras, limpio)
+    cifras_de_validacion(cifras, juegos_v1, resenas_v1)
     tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
-              tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas)]
+              tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
+              tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),

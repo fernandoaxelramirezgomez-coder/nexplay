@@ -1,17 +1,91 @@
-% Rúbrica: Procesamiento de datos. Fuentes y figuras: ver el plan del documento.
+% Rúbrica: Procesamiento de datos. Fuente: notebooks/00_exploracion.ipynb, bloques 1 y 2, §3.5, y
+% backend/analisis/limpieza.py.
 \section{Procesamiento de datos}\label{sec:procesamiento}
 
-\subsection{Validación}
-\pendiente{redacción}
+El procesamiento tiene dos destinos. El modelo de riesgo se entrena con data-v1 tal como se
+publicó, porque solo usa variables del juego y no lee texto. La limpieza produce otro conjunto,
+el limpio, que usan el análisis de texto (sección~\ref{sec:exploracion-texto}) y la medición de
+los motivos (sección~\ref{sec:interpretabilidad-motivos}).
+
+\subsection{Validación}\label{sec:procesamiento-validacion}
+
+Antes de todo, el notebook 00 corre los chequeos de la tabla~\ref{tab:calidad}
+(sección~\ref{sec:datos-calidad}). Los de rango que nunca deben fallar, como un minuto negativo
+o un voto distinto de 0 y 1, son aserciones\footnote{Una aserción es una comprobación dentro del
+código: si no se cumple, la ejecución se detiene con un error.}, así que el notebook no sigue si
+uno falla. También se revisan las copias que cruzan la partición: \cifraTextosEntreJuegos{}
+textos idénticos, de \cifraPalabrasDeUnaCopia{} palabras o más, aparecen en más de un juego, y
+\cifraCopiasEnFoldsDistintos{} de ellos quedan en folds distintos. Un modelo de texto podría
+verlos en entrenamiento y en prueba, y por eso la limpieza quita los duplicados. La partición
+misma está congelada en un archivo (sección~\ref{sec:modelacion-validacion}).
 
 \subsection{Limpieza: marcar, no borrar}\label{sec:procesamiento-limpieza}
-\pendiente{redacción}
 
-\subsection{Idioma}
-\pendiente{redacción}
+Cada regla es una función de \texttt{backend/analisis/limpieza.py}, y se aplican en el orden de
+la tabla~\ref{tab:limpieza}. Solo dos quitan filas: los textos idénticos, de los que se queda la
+reseña más antigua, y las reseñas vacías. Los duplicados quitan \cifraDuplicadosQuitados{}
+filas y las vacías \cifraVaciasQuitadas{}, y quedan \cifraResenasLimpias{} reseñas. Las demás reglas agregan
+una columna que marca la reseña y la dejan en su lugar. Las cortas, por ejemplo, son el
+\cifraCortasPorResena{} de las reseñas, y quitarlas cambiaría qué reseñas se estudian, no solo
+cuánto ruido hay. La normalización pasa el texto a minúsculas, quita el BBCode\footnote{El
+formato que Steam permite en las reseñas, con etiquetas como \texttt{[h1]} o
+\texttt{[spoiler]}.} y las direcciones web, y abre las contracciones: «don't» queda como «do
+not», y la negación, como palabra suelta.
 
-\subsection{Precio imputado}
-\pendiente{redacción}
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/limpieza}
+  \caption{Bitácora de la limpieza sobre data-v1. El porcentaje es sobre las reseñas que llegan a
+  cada regla; en la normalización, las afectadas son las que cambian de texto. Fuente:
+  \texttt{limpiar} de \texttt{backend/analisis/limpieza.py}.}
+  \label{tab:limpieza}
+\end{table}
 
-\subsection{Variables no disponibles al comprar}
-\pendiente{redacción}
+La limpieza no se aplica al modelo de riesgo. Se midió qué le pasaría con la misma partición
+congelada, para que la diferencia saliera de las filas y no del reparto de los juegos. Sin los
+duplicados, su PR-AUC pasa de \cifraPRAUCModelo{} a \cifraPRAUCSinDuplicados{}, y sin las
+vacías, a \cifraPRAUCSinVacias{}. Sin las cortas subiría a \cifraPRAUCSinCortas{}, pero sobre
+otra población y con más prevalencia, así que los dos números no se comparan. El modelo se queda
+con data-v1 tal cual. El conjunto limpio se guarda con un sha256 de su contenido, y quien lo
+rehaga puede comprobar que obtuvo el mismo.
+
+\subsection{Idioma}\label{sec:procesamiento-idioma}
+
+La ingesta pidió reseñas en inglés (\texttt{language=english}), y Steam entrega las que llevan
+esa etiqueta. Para revisarla se usó lingua\footnote{Una biblioteca de detección de idioma. Solo
+decide cuando tiene confianza; los textos muy cortos o sin sentido quedan como
+indeterminados.}: el \cifraIdiomaInglesPorResena{} de las reseñas limpias está en inglés o no se
+pudo determinar, y \cifraOtroIdioma{} están escritas en otro idioma, sobre todo ruso, español y
+portugués. Como el filtro lo aplicó Steam, esa cifra mide qué tan bien etiquetaron sus reseñas
+los autores, no qué idiomas se usan en la tienda. Las reseñas en otro idioma se marcan y se
+quedan. Al modelo de riesgo no le afectan, porque no lee texto, pero a los motivos sí, porque sus
+palabras clave están en inglés (sección~\ref{sec:interpretabilidad-motivos}).
+
+\subsection{Precio imputado}\label{sec:procesamiento-precio}
+
+Los \cifraPagoSinPrecioEntrenamiento{} juegos de pago que llegaron sin precio
+(tabla~\ref{tab:calidad}) entran al modelo con precio 0: la variable es el logaritmo de uno más
+el precio, y los faltantes se llenan con 0. El modelo los lee como si costaran 0, aunque no los
+marca como gratis, y como el coeficiente del precio es positivo, eso tiende a bajar su riesgo
+estimado. La ficha de esos juegos lo avisa (sección~\ref{sec:interpretabilidad-avisos}).
+
+\subsection{Variables que no se conocen al comprar}\label{sec:procesamiento-variables}
+
+Una variable solo puede entrar al modelo si se conoce antes de comprar. Si no, el modelo
+aprendería de algo que todavía no existe cuando la persona decide, y eso es una
+fuga\footnote{Hay fuga cuando un modelo usa información que no tendría en el momento de
+predecir. Sus métricas salen mejores de lo que serán en uso.}. La tabla~\ref{tab:variables}
+repasa las candidatas. Las del juego vienen de la tienda y entran. Las del autor de la reseña
+no: casi todas existen solo porque la reseña ya se escribió, y la biblioteca del autor, que sí
+podría declararse antes, se probó y su aporte cupo en el ruido entre folds
+(sección~\ref{sec:modelacion-bmas}). En el sitio, el perfil se declara en un formulario y sirve
+para la afinidad: no mueve el riesgo.
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/variables}
+  \caption{Variables candidatas: cuándo se conocen y si entran al modelo de riesgo. Fuente:
+  \texttt{construir\_features} de \texttt{backend/modelado/entrenar\_baseline.py} y la sección
+  «Variables del jugador» del notebook 00.}
+  \label{tab:variables}
+\end{table}
