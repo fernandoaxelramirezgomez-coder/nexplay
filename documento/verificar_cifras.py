@@ -8,6 +8,8 @@ acordadas el 2026-09-30:
 - el IC externo sale de docs/evidencia/bootstrap-prueba-externa.json;
 - veteranos contra novatos, con la definición prerregistrada sobre data-v1: la cifra anterior
   se retiró.
+Y una del 2026-10-01: el extremo superior del IC de «tiene nota» es −0.55 (vale −0.554932); el
+−0.56 anterior redondeaba dos veces el −0.555 que muestra el notebook.
 
 Falla (exit 1) si:
 - una macro de tables/cifras.tex no coincide con su valor canónico;
@@ -115,9 +117,36 @@ CANONICAS = {
     "RefundTempranasPorResena": "9.5" + PORCIENTO,
     "RefundPositivasPorResena": "0.2" + PORCIENTO,
     "CoefTieneNotaICInf": "−1.04",
-    "CoefTieneNotaICSup": "−0.56",
+    "CoefTieneNotaICSup": "−0.55",
     "CoefNotaICInf": "−0.56",
     "CoefNotaICSup": "−0.07",
+    # exploración (§7), contrastadas con el 00 §3.2, §3.4, §3.6 y §3.7
+    "TasaJuegoMinPorResena": "0.13" + PORCIENTO,
+    "TasaJuegoMaxPorResena": "27.13" + PORCIENTO,
+    "ResenasJuegoMin": "682",
+    "NivelDeConfianza": "95" + PORCIENTO,
+    "Sobredispersion": "107",
+    "TasaConNotaMedianaJuegos": "0.73" + PORCIENTO,
+    "TasaSinNotaMedianaJuegos": "2.13" + PORCIENTO,
+    "SpearmanTieneNota": "−0.40",
+    "SpearmanNota": "−0.42",
+    "SpearmanPrecio": "0.18",
+    "SpearmanPrecioP": "0.12",
+    "GratisEntrenamiento": "2",
+    "NegativasTardiasLimpias": "14,353",
+    "PositivasLimpias": "105,885",
+    "RefundTardiasPorResena": "2.9" + PORCIENTO,
+    "PalabrasMedianaTempranas": "22",
+    "PalabrasMedianaTardias": "27",
+    "PalabrasMedianaPositivas": "8",
+    "GratisExternos": "5",
+    "SinNotaExternos": "10",
+    "PrecioMedianoEntrenamiento": "400.00",
+    "PrecioMedianoExternos": "269.99",
+    "TasaEntrenamientoMedianaJuegos": "0.80" + PORCIENTO,
+    "TasaExternosMedianaJuegos": "1.40" + PORCIENTO,
+    "TasaEntrenamientoPromJuegos": "2.33" + PORCIENTO,
+    "TasaExternosPromJuegos": "2.33" + PORCIENTO,
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")

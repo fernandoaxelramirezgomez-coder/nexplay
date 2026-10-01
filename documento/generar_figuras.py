@@ -38,7 +38,7 @@ BACKEND = RAIZ / "backend"
 sys.path[:0] = [str(BACKEND), str(BACKEND / "modelado"), str(BACKEND / "calidad"), str(BACKEND / "analisis")]
 
 import exploracion as ex  # noqa: E402
-from limpieza import PALABRAS_DE_UNA_COPIA  # noqa: E402
+import limpieza as li  # noqa: E402
 
 from bootstrap_prueba_externa import RELEASES as RELEASES_V1_V2  # noqa: E402
 from despliegue.preparar_entorno import SERVIDO_REF, SERVIDO_SHA256  # noqa: E402
@@ -74,6 +74,11 @@ def entero(n: int) -> str:
 
 def decimal(x: float, decimales: int) -> str:
     return f"{x:.{decimales}f}"
+
+
+def con_signo(x: float, decimales: int) -> str:
+    """Con el signo menos tipográfico: −0.56, no -0.56."""
+    return decimal(x, decimales).replace("-", "−")
 
 
 def porcentaje(x: float, decimales: int = 2) -> str:
@@ -343,6 +348,200 @@ def figura_minutos_al_resenar(rutas: dict[str, Path]) -> Path:
     return guardar_figura(fig, "minutos-al-resenar")
 
 
+def cifras_por_juego(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> pd.DataFrame:
+    """§7.1 y §7.2: la tasa de señal de cada juego de data-v1 y qué tanto varía entre juegos."""
+    if (ex.variables_constantes_por_juego(ex.con_juego(resenas, juegos)) > 0).any():
+        raise ValueError("una variable del modelo cambia dentro de un juego")
+    por_juego = ex.tasa_por_juego(resenas, juegos)
+    con_nota = por_juego["metacritic"].notna()
+    fuente = "data-v1: tasa de señal de cada juego"
+    cifras.agregar("TasaJuegoMinPorResena", porcentaje(por_juego["tasa"].min()), fuente + ", la menor")
+    cifras.agregar("TasaJuegoMaxPorResena", porcentaje(por_juego["tasa"].max()), fuente + ", la mayor")
+    cifras.agregar("ResenasJuegoMin", entero(int(por_juego["reseñas"].min())), "data-v1: reseñas del juego con menos")
+    cifras.agregar("NivelDeConfianza", porcentaje(0.95, 0), "intervalos de Wilson (z = 1.96) y del bootstrap (percentiles 2.5 y 97.5)")
+    cifras.agregar("Sobredispersion", entero(round(ex.sobredispersion(por_juego))),
+                   "data-v1: ji cuadrada de Pearson entre sus grados de libertad (ex.sobredispersion)")
+    cifras.agregar("TasaConNotaMedianaJuegos", porcentaje(por_juego.loc[con_nota, "tasa"].median()),
+                   fuente + ", mediana de los que tienen nota de Metacritic")
+    cifras.agregar("TasaSinNotaMedianaJuegos", porcentaje(por_juego.loc[~con_nota, "tasa"].median()),
+                   fuente + ", mediana de los que no tienen nota")
+    return por_juego
+
+
+def tabla_de_correlaciones(cifras: Cifras, por_juego: pd.DataFrame) -> Path:
+    """§7.2: Spearman de la tasa por juego contra cada variable del juego (00 §3.4)."""
+    correlaciones = ex.correlaciones_del_juego(por_juego)
+    fuente = "data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)"
+    for nombre, variable in (("TieneNota", "tiene nota de la crítica"), ("Nota", "nota de la crítica (con nota)"),
+                             ("Precio", "precio (juegos de pago)")):
+        cifras.agregar(f"Spearman{nombre}", con_signo(correlaciones.loc[variable, "Spearman"], 2), fuente)
+    cifras.agregar("SpearmanPrecioP", decimal(correlaciones.loc["precio (juegos de pago)", "p"], 2), fuente + ": valor p")
+    cifras.agregar("GratisEntrenamiento", str(int(por_juego["es_gratis"].sum())), "data-v1: juegos gratis")
+
+    nombres = {"precio (juegos de pago)": "Precio (juegos de pago con precio)", "es gratis": "Es gratis",
+               "descuento": "Descuento", "tiene nota de la crítica": "Tiene nota de la crítica",
+               "nota de la crítica (con nota)": "Nota de la crítica (solo los que la tienen)"}
+    def valor_p(p: float) -> str:
+        return "<\\,0.001" if p < 0.001 else decimal(p, 3)
+
+    filas = [f"{nombres[variable]} & {int(f['juegos'])} & {con_signo(f['Spearman'], 2)} & {valor_p(f['p'])} \\\\"
+             for variable, f in correlaciones.iterrows()]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabular}{lrrr}", "\\toprule", "Variable del juego & Juegos & Spearman & p \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "correlaciones.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> pd.DataFrame:
+    """§7.2 y §9.5: los coeficientes del modelo B+ con su IC al 95 % por bootstrap sobre juegos."""
+    coeficientes = ex.coeficientes_con_bootstrap(ex.con_juego(resenas, juegos))
+    # Lo que dice el texto: con todo junto, solo la crítica se aleja del cero.
+    if coeficientes.loc[["metacritic_disponible", "metacritic"], "cruza el cero"].any():
+        raise ValueError("un coeficiente de la crítica ya cruza el cero")
+    if not coeficientes.loc[["log_precio_final", "descuento", "es_gratis"], "cruza el cero"].all():
+        raise ValueError("el precio, el descuento o la gratuidad ya no cruzan el cero")
+    fuente = "data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid"
+    for nombre, variable in (("TieneNota", "metacritic_disponible"), ("Nota", "metacritic")):
+        cifras.agregar(f"Coef{nombre}ICInf", con_signo(coeficientes.loc[variable, "IC 2.5 %"], 2), fuente)
+        cifras.agregar(f"Coef{nombre}ICSup", con_signo(coeficientes.loc[variable, "IC 97.5 %"], 2), fuente)
+    return coeficientes
+
+
+def conjunto_limpio(resenas: pd.DataFrame) -> pd.DataFrame:
+    """data-v1 con todas las reglas de limpieza: el mismo conjunto que guarda el notebook 00."""
+    limpio, _ = li.limpiar(resenas)
+    if li.firma_del_conjunto(limpio) != li.FIRMA_LIMPIO_DATA_V1:
+        raise ValueError("el conjunto limpio cambió: revisar las reglas o la versión de lingua")
+    return limpio
+
+
+def cifras_del_texto(cifras: Cifras, limpio: pd.DataFrame) -> None:
+    """§7.3: qué distingue el texto de una negativa temprana (00 §3.7), sobre el conjunto limpio."""
+    grupo = ex.grupo_de_resena(limpio)
+    conteo = grupo.value_counts()
+    refund = ex.menciones(limpio["texto"], grupo, r"\brefund")
+    palabras = ex.cuantiles_por_grupo(li.palabras(limpio["texto"]), grupo)["mediana"]
+    for corto, largo, g in (("Tempranas", "NegativasTempranas", "negativa temprana"),
+                            ("Tardias", "NegativasTardias", "negativa tardía"), ("Positivas", "Positivas", "positiva")):
+        cifras.agregar(f"{largo}Limpias", entero(int(conteo[g])), f"conjunto limpio de data-v1: reseñas {g}s")
+        cifras.agregar(f"Refund{corto}PorResena", porcentaje(refund[g], 1), f"conjunto limpio: {g}s que mencionan «refund»")
+        cifras.agregar(f"PalabrasMediana{corto}", entero(int(palabras[g])), f"conjunto limpio: mediana de palabras, {g}s")
+
+    # Las palabras que nombra el texto tienen que seguir entre las 15 que más distinguen a cada lado.
+    tempranas = limpio.loc[grupo == "negativa temprana", "texto_norm"]
+    contra_positivas = ex.log_odds_informativo(tempranas, limpio.loc[grupo == "positiva", "texto_norm"], li.STOPWORDS_SIN_NEGACIONES)
+    contra_tardias = ex.log_odds_informativo(tempranas, limpio.loc[grupo == "negativa tardía", "texto_norm"], li.STOPWORDS_SIN_NEGACIONES)
+    esperadas = ((contra_positivas.head(1), {"not"}), (contra_tardias.head(15), {"tutorial", "account", "login", "settings", "minutes"}),
+                 (contra_tardias.tail(15), {"hours", "boss", "mods", "dlc"}))
+    for tabla, del_texto in esperadas:
+        if not del_texto <= set(tabla["palabra"]):
+            raise ValueError(f"cambiaron las palabras que distinguen a las negativas tempranas: {sorted(del_texto)}")
+
+
+def tabla_de_externos(cifras: Cifras, rutas: dict[str, Path]) -> Path:
+    """§7.4: los 83 de entrenamiento contra los 40 externos (00 §3.6). Solo describe: no decide nada."""
+    juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
+    juegos_v2, resenas_v2 = ex.cargar_release(rutas["data-v2"])
+    externos = set(juegos_v2["appid"]) - set(juegos_v1["appid"])
+    juegos_ext = juegos_v2[juegos_v2["appid"].isin(externos)]
+    resenas_ext = resenas_v2[resenas_v2["appid"].isin(externos)]
+    if ex.llaves(juegos_ext, resenas_ext)["casos"].sum() or ex.resumen_de_rango(ex.casos_de_rango(juegos_ext, resenas_ext))["casos"].sum():
+        raise ValueError("los 40 externos ya no pasan las validaciones de llaves y rangos")
+
+    columnas = {}
+    for nombre, juegos, resenas in (("Entrenamiento", juegos_v1, resenas_v1), ("Externos", juegos_ext, resenas_ext)):
+        por_juego = ex.tasa_por_juego(resenas, juegos)
+        # Los gratis y los de pago sin precio no tienen precio_final: la mediana es la de los de pago con precio.
+        precio = decimal(por_juego["precio_final"].median() / 100, 2)
+        mediana, promedio = porcentaje(por_juego["tasa"].median()), porcentaje(por_juego["tasa"].mean())
+        gratis = str(int(por_juego["es_gratis"].sum()))
+        if nombre == "Externos":
+            cifras.agregar("GratisExternos", gratis, "los 40 externos: juegos gratis")
+            cifras.agregar("SinNotaExternos", str(int(por_juego["metacritic"].isna().sum())), "los 40 externos: juegos sin nota")
+        cifras.agregar(f"PrecioMediano{nombre}", precio, f"{nombre.lower()}: mediana de precio_final / 100, juegos de pago con precio")
+        cifras.agregar(f"Tasa{nombre}MedianaJuegos", mediana, f"{nombre.lower()}: mediana de las tasas por juego")
+        cifras.agregar(f"Tasa{nombre}PromJuegos", promedio, f"{nombre.lower()}: promedio de las tasas por juego")
+        columnas[nombre] = [
+            entero(len(por_juego)), entero(len(resenas)), str(int((por_juego["reseñas"] >= ex.TOPE_DE_LA_INGESTA).sum())),
+            gratis, str(int(por_juego["metacritic"].isna().sum())), str(int(por_juego["metacritic"].median())), precio,
+            porcentaje(ex.senal(resenas).mean()), mediana, promedio,
+        ]
+    renglones = ["Juegos", "Reseñas", f"Juegos con el tope de {entero(ex.TOPE_DE_LA_INGESTA)} reseñas", "Juegos gratis",
+                 "Juegos sin nota de la crítica", "Nota mediana (los que la tienen)", "Precio mediano de los de pago (pesos)",
+                 "Tasa de señal por reseña", "Tasa de señal por juego: mediana", "Tasa de señal por juego: promedio"]
+    filas = [f"{r} & {a} & {b} \\\\" for r, a, b in zip(renglones, columnas["Entrenamiento"], columnas["Externos"])]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabular}{lrr}", "\\toprule", " & Entrenamiento (data-v1) & Externos \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "externos.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def figura_tasa_por_juego(por_juego: pd.DataFrame, prevalencia: float) -> Path:
+    """F3: la tasa de señal de cada juego de data-v1, de menor a mayor, con su intervalo de Wilson."""
+    orden = por_juego.sort_values(["tasa", "nombre"]).reset_index()
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.7))
+    eje.errorbar(orden.index, 100 * orden["tasa"],
+                 yerr=[100 * (orden["tasa"] - orden["ic_bajo"]), 100 * (orden["ic_alto"] - orden["tasa"])],
+                 fmt="o", markersize=3.2, color=PALETA["serie"], ecolor=PALETA["tinta_suave"], elinewidth=0.7, capsize=0)
+    eje.axhline(100 * prevalencia, color=PALETA["tinta_suave"], linewidth=0.8, linestyle=(0, (3, 3)))
+    eje.annotate(f"prevalencia por reseña: {100 * prevalencia:.2f} %", xy=(len(orden) / 2, 100 * prevalencia), xytext=(0, 3),
+                 textcoords="offset points", ha="center", va="bottom", fontsize=7.5, color=PALETA["tinta"])
+    menor = orden[orden["tasa"] == orden["tasa"].min()]
+    mayor = orden.iloc[-1]
+    eje.annotate(f"{mayor['nombre'].replace('™', '')}: {100 * mayor['tasa']:.2f} %", xy=(orden.index[-1], 100 * mayor["tasa"]),
+                 xytext=(-8, 0), textcoords="offset points", ha="right", va="center", fontsize=7.5, color=PALETA["tinta"])
+    nombres = [n.replace("™", "") for n in menor["nombre"]]
+    if len(nombres) > 1:
+        texto = f"la más baja, {100 * orden['tasa'].min():.2f} %, empatada en {len(nombres)} juegos:\n" \
+                f"{', '.join(nombres[:-1])} y {nombres[-1]}"
+    else:
+        texto = f"la más baja: {nombres[0]}, {100 * orden['tasa'].min():.2f} %"
+    eje.annotate(texto, xy=(menor.index[-1] / 2, 100 * orden["tasa"].min()), xytext=(0, 52), textcoords="offset points",
+                 ha="left", va="bottom", fontsize=7.5, color=PALETA["tinta"], linespacing=1.3,
+                 arrowprops={"arrowstyle": "-", "color": PALETA["tinta_suave"], "linewidth": 0.6, "shrinkA": 1, "shrinkB": 3})
+    eje.set_xlim(-2, len(orden) + 1)
+    eje.set_xticks([])
+    eje.set_xlabel(f"los {len(orden)} juegos de data-v1, de menor a mayor tasa")
+    eje.set_ylabel("tasa de señal del juego")
+    eje.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.0f} %"))
+    return guardar_figura(fig, "tasa-por-juego")
+
+
+def figura_tasa_contra_nota(por_juego: pd.DataFrame) -> Path:
+    """F4: tasa de señal contra la nota de Metacritic, con los juegos sin nota en un panel aparte."""
+    con_nota = por_juego[por_juego["metacritic"].notna()]
+    sin_nota = por_juego[por_juego["metacritic"].isna()].sort_index()
+    fig, (izquierda, derecha) = plt.subplots(1, 2, figsize=(ANCHO_DE_TEXTO, 2.9), sharey=True,
+                                             gridspec_kw={"width_ratios": [1, 4], "wspace": 0.06})
+    # Dispersión horizontal fija (semilla 42) para que los puntos no se encimen y dos corridas den lo mismo.
+    dispersion = np.random.default_rng(42).uniform(-0.28, 0.28, len(sin_nota))
+    izquierda.scatter(dispersion, 100 * sin_nota["tasa"], s=14, color=PALETA["negativa"], linewidths=0)
+    mediana_sin = 100 * sin_nota["tasa"].median()
+    izquierda.hlines(mediana_sin, -0.4, 0.4, color=PALETA["tinta"], linewidth=1.2)
+    izquierda.annotate("mediana", xy=(-0.4, mediana_sin), xytext=(0, 2), textcoords="offset points", ha="left",
+                       va="bottom", fontsize=7, color=PALETA["tinta"])
+    izquierda.set_xlim(-0.5, 0.5)
+    izquierda.set_xticks([0], [f"sin nota ({len(sin_nota)})"])
+    derecha.scatter(con_nota["metacritic"], 100 * con_nota["tasa"], s=14, color=PALETA["serie"], linewidths=0)
+    derecha.set_xlabel(f"nota de Metacritic ({len(con_nota)} juegos con nota)")
+    derecha.tick_params(axis="y", left=False)
+    izquierda.set_yscale("log")
+    marcas = [0.1, 0.3, 1, 3, 10, 30]
+    izquierda.set_yticks(marcas, [f"{m:g} %" for m in marcas])
+    izquierda.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    izquierda.set_ylim(0.1, 35)
+    izquierda.set_ylabel("tasa de señal del juego (escala log)")
+    return guardar_figura(fig, "tasa-contra-nota")
+
+
 def estilo_de_figuras() -> None:
     plt.rcParams.update({
         "font.family": "Inter", "font.size": 8.5, "axes.titlesize": 9, "axes.labelsize": 8.5,
@@ -400,7 +599,7 @@ def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     esquema_resenas = ex.esquema(rutas["data-v1"], "resenas", resenas)
     llaves = ex.llaves(juegos, resenas)
     rango = ex.resumen_de_rango(ex.casos_de_rango(juegos, resenas))
-    copias = ex.copias_de_texto(resenas, PALABRAS_DE_UNA_COPIA)
+    copias = ex.copias_de_texto(resenas, li.PALABRAS_DE_UNA_COPIA)
     plantillas = ex.plantillas(resenas)
     privados = (resenas["num_games_owned"] == 0).mean()
     sin_precio = juegos[juegos["precio_final"].isna()]
@@ -445,7 +644,7 @@ def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
         fila("Juegos de pago sin precio\\textsuperscript{b}", f"{len(de_pago_sin_precio)}: {', '.join(de_pago_sin_precio)}",
              "precio tomado como 0, con aviso en la ficha (§\\ref{sec:procesamiento})"),
         fila("Juegos sin nota de Metacritic", f"{sin_nota} de {len(juegos)}", "la falta de nota es una variable del modelo\\textsuperscript{c}"),
-        fila(f"Textos repetidos de {PALABRAS_DE_UNA_COPIA} palabras o más",
+        fila(f"Textos repetidos de {li.PALABRAS_DE_UNA_COPIA} palabras o más",
              f"{copias['sobrantes en el mismo juego']:,} en el mismo juego; {copias['textos en 2+ juegos']:,} en 2 o más juegos",
              "se marcan, no se borran (§\\ref{sec:procesamiento})"),
         fila("Reseñas plantilla", f"{len(plantillas):,} ({100 * len(plantillas) / len(resenas):.2f}\\,\\%)", "se marcan, no se borran"),
@@ -508,10 +707,16 @@ def main() -> None:
     cifras_de_evidencia(cifras)
     cifras_del_periodo(cifras, rutas)
     sensibilidad = cifras_del_objetivo(cifras, rutas)
-    tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad)]
+    juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
+    por_juego = cifras_por_juego(cifras, juegos_v1, resenas_v1)
+    cifras_de_coeficientes(cifras, juegos_v1, resenas_v1)
+    cifras_del_texto(cifras, conjunto_limpio(resenas_v1))
+    tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
+              tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
-    figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas)]
+    figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),
+               figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego)]
     capturas = copiar_capturas()
     copiar_logo()
 
