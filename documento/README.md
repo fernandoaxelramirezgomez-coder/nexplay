@@ -17,7 +17,8 @@ localizable desde el índice.
 - `capturar_recorrido.py`: las capturas del recorrido (PAYDAY 3 contra Dead Space), provisionales
   hasta regenerarlas desde el tag de entrega.
 
-Compilar, desde la raíz:
+Compilar, desde la raíz: `make doc`. Hace estos pasos y copia el PDF a
+`documento/documento-entregafinal.pdf`, el único PDF de esta carpeta que se versiona:
 
 ```
 .venv/bin/python documento/generar_figuras.py

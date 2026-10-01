@@ -25,3 +25,6 @@ docs/historial/mockups/capturas/
 # lo que genera la compilación del documento y los releases que baja generar_figuras.py
 documento/build/
 documento/.cache/
+# de los PDF sueltos en documento/, solo se versiona el de entrega (lo deja make doc)
+documento/*.pdf
+!documento/documento-entregafinal.pdf

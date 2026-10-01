@@ -130,6 +130,7 @@ sequenceDiagram
 | make | GNU make | la opción A (Linux, macOS o WSL) |
 | Chrome | opcional | las gráficas del 00 en PNG y las capturas de la UI |
 | Clave de OpenAI | opcional | Nia con modelo; sin clave responde con reglas |
+| LaTeX (latexmk, LuaLaTeX y biber) | opcional | compilar el documento con `make doc` |
 
 No necesitas cuenta ni credenciales de Steam ni de GitHub: todo lo que se descarga es público. La instalación
 base con los datos ocupa algo más de 1 GB (`.venv` 575 MB, `node_modules` 366 MB y los datos 102 MB). Si
@@ -295,12 +296,14 @@ nexplay/
 │   └── requirements*.txt  uno por uso (ver backend/README.md)
 ├── frontend/            Angular: src/, public/, fuentes/ (la hoja de Nia) y scripts/
 ├── notebooks/           00_exploracion, 01_modelo_riesgo y 02_modelos_texto, con su ruta de ejecución
+├── documento/           el documento final en LaTeX (make doc)
 └── docs/                evidencia, capturas, diseño e historial
 ```
 
 Cada carpeta tiene un `README.md` corto que dice qué va ahí y qué no. Cuando corres el proyecto aparecen, sin
 versionarse, `backend/datos/`, `backend/modelo/`, `backend/extracto/` y `backend/registros/`. El documento
-final en LaTeX (`documento/`) llega cuando se fusione su rama; mientras tanto, `make doc` solo avisa.
+final está en LaTeX, en `documento/`: `make doc` genera sus figuras y cifras, lo compila y deja el PDF en
+`documento/documento-entregafinal.pdf`.
 
 ## 💾 Datos y releases
 

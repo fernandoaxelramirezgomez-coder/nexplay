@@ -82,13 +82,16 @@ notebooks: _venv
 
 # --- Documento ----------------------------------------------------------------
 
-## doc: compila el documento en LaTeX; hasta que se fusione la rama documento, solo avisa
-doc:
-	@if [ -d documento ]; then \
-		echo "documento/ ya está, pero su receta todavía no: agrégala aquí siguiendo documento/README.md."; \
-	else \
-		echo "documento/ todavía no está en esta rama: llega al fusionar la rama documento."; \
-	fi; exit 1
+## doc: genera figuras y cifras, compila el documento en LaTeX y deja documento/documento-entregafinal.pdf
+doc: _venv
+	@command -v latexmk >/dev/null || { \
+		echo "Falta LaTeX. En Ubuntu: sudo apt install latexmk texlive-luatex texlive-latex-extra texlive-lang-spanish texlive-bibtex-extra biber texlive-pictures fonts-inter"; exit 1; }
+	$(PY) -m pip install -q -r documento/requirements-documento.txt
+	$(PY) documento/generar_figuras.py
+	$(PY) documento/verificar_cifras.py
+	cd documento && latexmk
+	cp documento/build/main.pdf documento/documento-entregafinal.pdf
+	@echo "Listo: documento/documento-entregafinal.pdf"
 
 # --- Comprobaciones previas (no se listan en help) ----------------------------
 
