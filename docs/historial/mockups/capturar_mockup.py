@@ -1,4 +1,4 @@
-"""Captura un mockup de docs/plan/mockups/ en las tres resoluciones y los dos temas.
+"""Captura un mockup de docs/historial/mockups/ en las tres resoluciones y los dos temas.
 
 Las capturas no se versionan (pesan decenas de MB): se regeneran con esto. El mockup se
 mide a sí mismo —contraste de cada texto sobre la zona más clara de cada fondo y la letra
@@ -6,8 +6,8 @@ más chica— y aquí se imprime lo que midió, para no tener que abrir las imá
 si pasa.
 
 Uso:
-  python docs/plan/mockups/capturar_mockup.py                  # 6a-identidad.html
-  python docs/plan/mockups/capturar_mockup.py otro-mockup.html
+  python docs/historial/mockups/capturar_mockup.py                  # 6a-identidad.html
+  python docs/historial/mockups/capturar_mockup.py otro-mockup.html
 """
 
 import sys

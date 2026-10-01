@@ -20,7 +20,7 @@
    veredicto, que sigue siendo obligatorio en los 7, igual que el de GTA V Legacy.
 
 Es la puerta de aceptación de la ronda «explicar el riesgo»
-(docs/plan/mejoras/01-antes-del-reembolso.md, «Aparte»). La interfaz la cubren los specs de
+(docs/historial/mejoras/01-antes-del-reembolso.md, «Aparte»). La interfaz la cubren los specs de
 frontend/src/app/dominio/factores.ts y calidad/capturar_ui.py.
 
 El aporte se calcula aquí por separado —coeficiente × valor estandarizado, con el pipeline

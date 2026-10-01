@@ -1,6 +1,6 @@
 """Corta los sprites de la hoja de emociones de Nia y les quita el fondo.
 
-La hoja (docs/diseno/nia-hoja-emociones.png, 1536×1024) trae 12 emociones en una
+La hoja (frontend/fuentes/nia-hoja-emociones.png, 1536×1024) trae 12 emociones en una
 rejilla de 6×2 con 256 px por columna, cada una con su nombre escrito debajo y un
 fondo oscuro con resplandores de color distintos por celda. Este script saca solo
 las que usa la ficha y las deja con fondo transparente en frontend/public/nia/.
@@ -53,7 +53,7 @@ from PIL import Image, ImageFilter
 from scipy import ndimage
 
 _RAIZ = Path(__file__).resolve().parents[2]
-_HOJA = _RAIZ / "docs" / "diseno" / "nia-hoja-emociones.png"
+_HOJA = _RAIZ / "frontend" / "fuentes" / "nia-hoja-emociones.png"
 _SALIDA = _RAIZ / "frontend" / "public" / "nia"
 
 # Cajas en coordenadas de la hoja. El borde de abajo se corta justo antes del nombre

@@ -1,6 +1,6 @@
 """Pruebas A (anticipación) y B (confianza) de la mejora 01, «Antes de que cierre tu reembolso».
 
-Los criterios están en docs/plan/mejoras/01-antes-del-reembolso.md y se commitearon antes de
+Los criterios están en docs/historial/mejoras/01-antes-del-reembolso.md y se commitearon antes de
 correr esto (7b0ba52). Aquí solo se mide y se compara contra ellos; los números de
 CRITERIOS son los de la ficha, no se ajustan.
 

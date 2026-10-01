@@ -13,7 +13,7 @@ registros/
 docs/capturas/*
 !docs/capturas/captura-interfaz.png
 # Las capturas de los mockups pesan decenas de MB y salen del HTML con un comando.
-docs/plan/mockups/capturas/
+docs/historial/mockups/capturas/
 
 # herramienta local del túnel y carpetas de utilidades de agentes: nada de esto es del proyecto
 *.deb
