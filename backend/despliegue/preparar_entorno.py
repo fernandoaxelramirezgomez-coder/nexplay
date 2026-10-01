@@ -16,7 +16,7 @@ Son dos cortes de datos distintos, cada uno con su tag y su sha256:
 No usa la API publica de Steam (ingesta_steam.py) ni credenciales: el asset
 de datos ya paso por esa ingesta una vez y se publico en un GitHub Release
 con tag fijo (nunca "latest"), con su SHA-256 verificado antes de tocarlo -
-mismo patron que notebook/nexplay.ipynb.
+mismo patron que notebooks/01_modelo_riesgo.ipynb.
 
 Ese asset es una copia sanitizada de datos/nexplay.db (ver
 extracto_reproducible.py): mismas tablas 'juegos', 'resenas' y

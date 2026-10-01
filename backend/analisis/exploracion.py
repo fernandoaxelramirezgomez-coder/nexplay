@@ -1,4 +1,4 @@
-"""Las cuentas de notebook/00_exploracion.ipynb.
+"""Las cuentas de notebooks/00_exploracion.ipynb.
 
 Viven aquí para que el notebook importe en vez de copiar, y para que los modelos de texto
 (Parte A y Parte B) usen exactamente las mismas. Cada chequeo devuelve una tabla: el notebook

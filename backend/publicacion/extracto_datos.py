@@ -1,5 +1,5 @@
 """Genera un extracto minimo de datos/nexplay.db en Parquet, para publicar
-como asset de un GitHub Release y que notebook/nexplay.ipynb lo consuma sin
+como asset de un GitHub Release y que notebooks/01_modelo_riesgo.ipynb lo consuma sin
 tocar la base local ni el texto de las reseñas.
 
 Columnas incluidas, y por que estan:
