@@ -21,15 +21,20 @@ de una nota genérica. Es el proyecto del Módulo V del Diplomado en Ciencia de 
 - [Despliegue](#despliegue)
 - [Contenido de usuarios y moderación](#contenido-de-usuarios-y-moderación)
 - [Solución de problemas](#solución-de-problemas)
+- [Autor y datos](#autor-y-datos)
 
 ## Qué es NexPlay
 
-Steam devuelve el dinero de un juego si lo pides antes de jugar 120 minutos. NexPlay toma esa ventana
-como referencia: una reseña negativa escrita antes de los 120 minutos es una **señal de arrepentimiento
-temprano** (`Y = 1` si `playtime_at_review < 120` y `voted_up == 0`). Es una proxy. Steam no pregunta a
-nadie si se arrepintió, así que el proyecto nunca afirma que alguien lo hizo.
+Steam reembolsa una compra si la pides dentro de los 14 días posteriores a la compra y con menos de 2
+horas jugadas.
+NexPlay toma ese límite de 2 horas como referencia: una reseña negativa escrita antes de los 120 minutos de
+juego es una **señal de arrepentimiento temprano** (`Y = 1` si `playtime_at_review < 120` y
+`voted_up == 0`). Las reseñas no dicen cuándo se compró el juego, así que la señal no puede usar los 14
+días. Es una señal proxy: Steam no pregunta a nadie si se arrepintió, así que el proyecto nunca afirma
+que alguien lo hizo.
 
-- **Datos.** Reseñas de la API pública `appreviews` de Steam, publicadas en releases con tag fijo. El
+- **Datos.** De la API pública de Steam: las reseñas, de `appreviews`; el precio, la gratuidad y la nota de
+  Metacritic de cada juego, de `appdetails`. Todo se publica en releases con tag fijo. El
   modelo se entrena siempre con data-v1 (83 juegos, 123,972 reseñas). La app sirve 123 juegos (data-v3);
   los 40 que no están en data-v1 son prueba externa y nunca entran al entrenamiento.
 - **Modelo.** Una regresión logística con variables del juego: gratuidad, precio, descuento y cobertura y
@@ -49,7 +54,7 @@ modelo) y `01_modelo_riesgo` (el modelo). Ver [notebooks/README.md](notebooks/RE
 
 ```mermaid
 flowchart LR
-    steam["API appreviews<br/>de Steam"] -->|ingesta, ya hecha| releases["Releases con tag fijo<br/>data-v1 · data-v2 · data-v3<br/>cada asset con su sha256"]
+    steam["API pública de Steam<br/>appreviews · appdetails"] -->|ingesta, ya hecha| releases["Releases con tag fijo<br/>data-v1 · data-v2 · data-v3<br/>cada asset con su sha256"]
     releases -->|make data| datos[("backend/datos/<br/>nexplay.db (data-v3)<br/>nexplay_data-v1.db")]
     datos -->|make train| modelo["backend/modelo/<br/>nexplay.pkl"]
     datos --> api["API FastAPI<br/>backend/api<br/>scoring · catálogo · Nia"]
@@ -154,6 +159,11 @@ de un release. Todos los comandos de Python corren desde `backend/`.
 
 Abre cada uno y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag `codigo-v3` y baja
 los datos verificando su sha256, así que no necesita nada de lo anterior ni pide credenciales.
+
+Cada uno corrió en Colab el 2026-09-30 sin errores ni avisos; evidencia en
+[docs/evidencia/colab/](docs/evidencia/colab/README.md). Usaron el código de `codigo-v3` (`9b64795`). El 01
+guarda en `notebooks/` las salidas de esa corrida. El 00 guarda las de una corrida local, para que sus 18
+gráficas se vean también como PNG en GitHub; su versión de Colab está en esa misma carpeta.
 
 ## Configuración (.env)
 
@@ -287,11 +297,14 @@ poner los sha256 que imprime cada script en `backend/despliegue/preparar_entorno
 
 ## Despliegue
 
-- **API en Render**, como servicio Docker: Root Directory `backend`, Dockerfile Path
-  `despliegue/Dockerfile` y Docker Build Context `.`. El build instala `requirements.txt` y
-  `requirements-modelo.txt` (sin pyarrow), baja los datos, entrena y corre `verificar_bandas.py`. Los Build
-  Filters incluyen solo lo que copia el Dockerfile, así que un cambio en un README no dispara un deploy. URL:
-  https://nexplay-api-345o.onrender.com.
+- **API en Render**, como servicio Docker, en https://nexplay-api-345o.onrender.com. Su configuración:
+  - Root Directory: `backend`
+  - Dockerfile Path: `despliegue/Dockerfile`
+  - Docker Build Context Directory: `.` (un solo punto, la misma carpeta `backend/`)
+
+  El build instala `requirements.txt` y `requirements-modelo.txt` (sin pyarrow), baja los datos, entrena y
+  corre `verificar_bandas.py`. Los Build Filters incluyen solo lo que copia el Dockerfile, así que un cambio
+  en un README no dispara un deploy.
 - **Frontend en Vercel**, con Root Directory `frontend`. `frontend/vercel.json` reescribe toda ruta a
   `index.html`, y `frontend/src/environments/environment.ts` apunta a la API de Render. El origen de Vercel
   se agrega a la API con `NEXPLAY_CORS_ORIGENES`.
@@ -327,3 +340,10 @@ Desde `backend/`:
 | `make notebooks` lista celdas distintas | Las salidas guardadas salieron de otro entorno (Colab, otra versión de pandas). | Revisa el diff que imprime: si solo cambia cómo se escribe un tipo o el orden de un empate, no es una cifra distinta. No hace fallar el comando. |
 | El build de Render falla con «torch o sentence-transformers en la imagen» | Algo agregó un paquete de notebooks a los requirements de la API. | Esos paquetes van solo en `backend/requirements-notebooks.txt`. |
 | Vienes de la estructura anterior y la API no encuentra los datos | `datos/`, `modelo/`, `extracto/` y `registros/` ahora viven en `backend/`. | Muévelas: `mv datos modelo extracto registros backend/`. |
+
+## Autor y datos
+
+Fernando Axel Ramírez Gómez, Diplomado en Ciencia de Datos, FES Acatlán (UNAM).
+
+Los datos vienen de la API pública de Steam: las reseñas, de `appreviews`, y el precio, la gratuidad y la
+nota de Metacritic de cada juego, de `appdetails`. La nota de Metacritic es la que muestra Steam.

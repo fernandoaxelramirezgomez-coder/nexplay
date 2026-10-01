@@ -1,7 +1,7 @@
 """Ejecuta los dos notebooks con el código del último commit y compara sus salidas con las guardadas.
 
-No escribe nada en notebooks/: las salidas que se guardan en el repo salen de una corrida en Colab, después
-de crear el tag. Esto comprueba antes, en local, que los notebooks corren de punta a punta con el código de
+No escribe nada en notebooks/: las salidas que se guardan en el repo se eligen a mano (el 01 guarda las de
+Colab; el 00, las de una corrida local con PNG). Esto comprueba, en local, que los notebooks corren de punta a punta con el código de
 este checkout y dan las mismas cifras.
 
 Cómo lo hace:
@@ -15,7 +15,7 @@ Cómo lo hace:
 
 Sale con 1 si falta algo o si un notebook no termina (sus asserts, 34 en el 00 y 6 en el 01, detienen la
 ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff para
-revisarlas, pero no hacen fallar: las salidas guardadas salen de Colab, y otra versión de pandas escribe
+revisarlas, pero no hacen fallar: las salidas guardadas pueden venir de Colab, y otra versión de pandas escribe
 distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.
 
 Uso, desde backend/ (make notebooks, desde la raíz, instala antes lo que hace falta):

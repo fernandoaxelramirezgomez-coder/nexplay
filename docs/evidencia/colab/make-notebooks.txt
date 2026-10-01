@@ -1,0 +1,50 @@
+~/nexplay/.venv/bin/python -m pip install -q -r backend/requirements-notebooks.txt -r backend/requirements-dev.txt
+cd backend && ~/nexplay/.venv/bin/python calidad/correr_notebooks.py --carpeta "<carpeta temporal>"
+Aviso: hay cambios sin commit. Se ejecuta el último commit (HEAD), no el árbol de trabajo.
+Ejecutando con el commit 9b64795 en <carpeta temporal>
+00_exploracion: ejecutado en 248 s
+  00_exploracion: 63 celdas con la misma salida; de entorno (clon, versiones o gráficas): [6, 7]; distintas: [16, 17, 34, 46]
+    celda 16:
+      @@ -3 +3 @@
+      -recommendationid                   TEXT   object      0      0.0
+      +recommendationid                   TEXT      str      0      0.0
+      @@ -11,2 +11,2 @@
+      -idioma                             TEXT   object      0      0.0
+      -texto                              TEXT   object      0      0.0
+      +idioma                             TEXT      str      0      0.0
+      +texto                              TEXT      str      0      0.0
+      @@ -23 +23 @@
+      -descargado_en                      TEXT   object      0      0.0
+    celda 17:
+      @@ -4,3 +4,3 @@
+      -nombre                   TEXT   object      0     0.00
+      -tipo                     TEXT   object      0     0.00
+      -fecha_lanzamiento        TEXT   object      0     0.00
+      +nombre                   TEXT      str      0     0.00
+      +tipo                     TEXT      str      0     0.00
+      +fecha_lanzamiento        TEXT      str      0     0.00
+      @@ -12,5 +12,5 @@
+      -moneda                   TEXT   object      4     4.82
+      -generos                  TEXT   object      0     0.00
+    celda 34:
+      @@ -1 +1 @@
+      -Aviso: el GroupKFold de scikit-learn 1.6.1 reparte los juegos de otra forma (coincide en 12 de 83 juegos): 73 de los 83 tienen exactamente 1,500 rese
+      +El GroupKFold de scikit-learn 1.9.1 arma la misma partición que el CSV.
+    celda 46:
+      @@ -9,0 +10 @@
+      +german                 59
+      @@ -11 +11,0 @@
+      -german                 59
+    GroupKFold por appid 0.0694 0.0415
+01_modelo_riesgo: ejecutado en 28 s
+  01_modelo_riesgo: 20 celdas con la misma salida; de entorno (clon, versiones o gráficas): [5, 8]; distintas: [22]
+    celda 22:
+      @@ -4 +4,3 @@
+      -array(['Grand Theft Auto V Legacy', 'New World: Aeternum'], dtype=object)
+      +<ArrowStringArray>
+      +['Grand Theft Auto V Legacy', 'New World: Aeternum']
+      +Length: 2, dtype: str
+    PR-AUC GroupKFold del modelo de produccion ('juego'): 0.0694 +/- 0.0415 (3.2 veces el trivial)
+Los notebooks ejecutados quedaron en <carpeta temporal>; los de notebooks/ no cambiaron.
+5 celdas dan una salida distinta de la guardada: revisa el diff de arriba. Si solo cambia cómo se escribe un tipo o el orden de un empate, no es una cifra distinta.
+make notebooks exit=0
