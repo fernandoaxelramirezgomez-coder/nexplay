@@ -10,7 +10,9 @@ modelo, lo valida con juegos que no vio y explica cómo se convierte en lo que m
 \subsection{El modelo y sus conjuntos de variables}\label{sec:modelacion-conjuntos}
 
 El modelo es una regresión logística\footnote{Un modelo lineal de clasificación: le da un peso a
-cada variable, las suma y convierte el resultado en un score entre 0 y 1.} con las variables
+cada variable, las suma y convierte el resultado en un score entre 0 y 1.} de scikit-learn
+\parencite{pedregosa2011}, la misma biblioteca que da el GroupKFold de la validación
+(sección~\ref{sec:modelacion-validacion}), con las variables
 estandarizadas y pesos de clase balanceados\footnote{Con \texttt{class\_weight="balanced"}, las
 pocas reseñas con $Y = 1$ pesan en el ajuste tanto como todas las demás juntas, para que la clase
 rara no se pierda.}, sin ajuste de hiperparámetros\footnote{Los valores que fijan cómo aprende el modelo, como la
@@ -233,7 +235,7 @@ por una marca. Se compararon tres modelos: TF-IDF\footnote{Representa cada rese�
 y pares de palabras, con menos peso para las que aparecen en casi todas.} con Naive
 Bayes\footnote{Un clasificador que estima qué tan común es cada palabra en cada clase y suma esas
 evidencias como si las palabras fueran independientes.} (NB),
-TF-IDF con regresión logística (LR) y MiniLM, un modelo de lenguaje preentrenado y congelado, con
+TF-IDF con regresión logística (LR) y MiniLM \parencite{wang2020}, un modelo de lenguaje preentrenado y congelado, con
 la misma regresión logística.
 
 \begin{figure}[htbp]
@@ -252,7 +254,9 @@ contra \cifraPRAUCTextoTrivial{} del trivial, \cifraCocienteTextoLR{} veces, de
 \cifraPRAUCTextoRefund{}, le saca \cifraDiferenciaTextoLRRefund{}, de
 \cifraDiferenciaTextoLRRefundICInf{} a \cifraDiferenciaTextoLRRefundICSup{}, y en la comparación
 pareada también queda arriba de NB (\cifraPRAUCTextoNB{}) y de MiniLM (\cifraPRAUCTextoMiniLM{}).
-Es la rama \cifraRamaTexto{} del prerregistro: las quejas tempranas tienen lenguaje propio, más allá
+Es la rama \cifraRamaTexto{} del prerregistro, la que se cumple cuando el intervalo del cociente del
+mejor modelo contra el trivial no incluye el 1 y el de su diferencia pareada con la regla «refund»
+queda por encima de cero: las quejas tempranas tienen lenguaje propio, más allá
 de mencionar el reembolso. Se documenta TF-IDF + LR, que no se sirve en ningún lado.
 
 \paragraph{Lectura para negocio.} Se hizo después de la decisión, con los mismos scores fuera de

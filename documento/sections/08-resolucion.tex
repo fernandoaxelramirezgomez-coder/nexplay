@@ -51,9 +51,13 @@ guía sobre un juego concreto. Después recorre cinco vistas:
   \item \textbf{Perfil.} Declara cómo juega, y la ficha dice entonces qué tanto encaja cada juego con
   eso, sin cambiar el riesgo.
 \end{enumerate}
-El sitio tiene además el Historial de consultas, el Panorama del catálogo y una página que explica
-cómo se calcula la estimación. La sección~\ref{sec:estrategia-recorrido} sigue una consulta concreta
-con capturas.
+El historial de consultas está en el Perfil, en «Tu actividad». Lo que eran el Panorama del catálogo
+y la página de cómo se calcula la estimación quedó en el Inicio: «Antes de pagar, esto importa»
+cuenta los motivos sobre todo el catálogo, y «Ver metodología», en el pie, abre la metodología y las
+fuentes. A ese panel llevan las rutas \texttt{/panorama} y \texttt{/como-funciona} y el enlace
+«Cómo calculamos esta estimación» de la ficha, y \texttt{/historial} lleva a «Tu actividad»
+(\texttt{frontend/src/app/app.routes.ts}). La sección~\ref{sec:estrategia-recorrido} sigue una
+consulta concreta con capturas.
 
 \begin{figure}[htbp]
   \centering

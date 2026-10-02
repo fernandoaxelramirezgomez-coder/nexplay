@@ -30,7 +30,11 @@
 \appto{\bibsetup}{\raggedright}
 \DefineBibliographyExtras{spanish}{\protected\def\bibrangedash{\textendash\penalty\hyphenpenalty}}
 \DefineBibliographyStrings{spanish}{retrieved = {Recuperado}, from = {de}}
+% APA 7: coma antes de «&» en listas de tres o más nombres (los editores de un volumen, por ejemplo).
+\DefineBibliographyExtras{spanish}{\def\finalandcomma{\addcomma}}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={NexPlay: señal de arrepentimiento temprano antes de comprar un videojuego},
+            pdfauthor={Fernando Axel Ramírez Gómez}}
 \usepackage{fancyhdr}
 
 \graphicspath{{figures/}}

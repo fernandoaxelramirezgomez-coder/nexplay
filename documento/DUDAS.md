@@ -237,3 +237,31 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
     - Siguen 30 páginas: los flotantes se reacomodan, aunque la última queda a menos de la mitad. Con los recortes 3
       y 4 juntos (recorrido de 6 a 4 paneles y accionables solo con Comparar) quedan 29; probado en una copia, no
       aplicado.
+
+## Correcciones de la revisión (2026-10-02, noche)
+
+49. **§3: candado de neutralidad y limitación** (aprobados por el dueño).
+    - El estudio solo recibiría reportes de sus propios juegos, comparados con su género solo en agregado, sin ver los
+      de juegos ajenos.
+    - No podría modificar el score ni su presentación.
+    - El riesgo del jugador sale del mismo modelo para todos los títulos, paguen o no.
+    - Como compañía real, habría que revisar los términos de uso de la API de Steam antes de monetizar productos
+      derivados; aquí es un supuesto de la compañía ficticia.
+50. **§8.2 según `frontend/src/app/app.routes.ts`.**
+    - `/historial` lleva a «Tu actividad», en el Perfil.
+    - `/panorama` y `/como-funciona` llevan al panel «Ver metodología», en el pie del Inicio, al que también lleva
+      «Cómo calculamos esta estimación» desde la ficha.
+    - «Antes de pagar, esto importa» cuenta los motivos sobre todo el catálogo.
+51. **Tres referencias nuevas, verificadas antes de agregarlas.**
+    - Mantel y Haenszel (1959): Europe PMC, PMID 13655060, y el DOI en Crossref. Se cita en §2.
+    - Pedregosa et al. (2011): jmlr.org, con los 16 autores en la lista. Se cita en 7.1, junto al GroupKFold.
+    - Wang et al. (2020): la ficha BibTeX de NeurIPS, con los cinco editores. Se cita en 7.9.
+    - El volumen va en el título del libro («Advances in Neural Information Processing Systems 33»), porque
+      biblatex-apa pone las páginas antes del volumen.
+    - Para la coma antes de «&» en las listas de editores se define `\finalandcomma` en español.
+52. **7.9: la rama 3 se describe con la regla prerregistrada.** El intervalo del cociente contra el trivial no incluye
+    el 1, y el de la diferencia pareada con «refund» queda por encima de cero.
+53. **`\hypersetup` con `pdftitle` y `pdfauthor`.** Las referencias nuevas llevaron el documento a 31 páginas, así que
+    el párrafo «Los comandos» del anexo queda en una oración. Remite a «Puesta en marcha» del README y conserva
+    `make doc`, que el README no lista en esa sección.
+    - El README de master decía que `make notebooks` «ejecuta el 00 y el 01»; se corrige primero en master.
