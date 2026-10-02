@@ -159,5 +159,20 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
     de entrenamiento, no «tercios»** (del dueño). En el catálogo quedan 43, 37 y 43.
     - El generador lee esos percentiles del `np.percentile` de `backend/modelado/entrenar_modelo.py`
       (con `ast`) y corta con ellos, así que el texto y los umbrales siguen al código.
-    - «Tercios del catálogo» no estaba en el documento. Sí está en el frontend
-      (`panorama/panorama.html` y `dominio/conclusiones-panorama.ts`); se corrige desde master, no aquí.
+    - «Tercios del catálogo» no estaba en el documento. Estaba en el frontend y en Nia; **lo corrigió master**
+      en `54e1983` (`codigo-v7`), y `backend/calidad/verificar_niveles.py` vigila que no vuelva.
+
+## Ronda del 2026-10-02, madrugada: `codigo-v7`
+
+35. **`documento` se rebasó sobre master (`codigo-v7`, `54e1983`)** (del dueño), en lugar de otro merge.
+    - Los 34 commits propios se reaplicaron sin merges. Los conflictos fueron de rutas: `calidad/` pasó a
+      `backend/calidad/` en la reorganización (con `merge.directoryRenames=true`) y el README de la raíz. Se
+      resolvieron con la redacción del merge que el rebase descarta.
+    - El árbol final es idéntico al de fusionar master con el `documento` anterior (`git merge-tree`,
+      `dc638dce`). El `documento` anterior queda en la rama `respaldo-documento-antes-del-rebase`.
+36. **La evidencia de `verificar_nia.py --openai` se reemplazó por la corrida que sí usó `codigo-v7`.**
+    - La anterior se commiteó a las 03:25 y el tag se creó a las 03:29:33, así que no pudo correr sobre él.
+      La nueva corrió de 03:29:39 a 03:31:32 en un clon con `54e1983`.
+    - La macro `FechaCorridaNiaIA` sigue en «2 de octubre de 2026»: las dos corridas son de ese día, y la
+      fecha sale del nombre del archivo.
+37. **8.2 nombra el verificador de niveles** (del dueño), en el orden de `make test`.

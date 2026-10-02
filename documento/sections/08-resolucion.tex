@@ -81,14 +81,18 @@ pregunta trae algo que parece un correo o un teléfono, se borra antes de anotar
 Nia no guarda datos personales.
 
 \paragraph{Pruebas.} \texttt{make test} corre el verificador de bandas, el de Nia, el de los
-factores de la ficha, el de \texttt{preparar\_entorno.py} y las pruebas del frontend. Nia se probó,
+factores de la ficha, el de los niveles, el de \texttt{preparar\_entorno.py} y las pruebas del
+frontend. El de los niveles (\texttt{verificar\_niveles.py}) comprueba que la API, el frontend y
+Nia usan la misma definición de bajo, medio y alto, la de los percentiles de la
+sección~\ref{sec:modelacion-umbrales}, y que ningún texto de la API ni del frontend vuelve a la
+definición anterior, la de tercios del catálogo. Nia se probó,
 además, con su modelo de lenguaje: pasó \cifraPreguntasNiaAprobadas{} de las \cifraPreguntasNia{}
 preguntas de regresión, y en la corrida del \cifraFechaCorridaTrampas{} contra
 \cifraPreguntasTrampa{} preguntas trampa y legítimas quedaron \cifraTrampasPorRevisar{} casos por
 revisar\footnote{El detalle está en \texttt{docs/evidencia/nia-pruebas.md}. La corrida de trampas
 se repite sobre el tag de entrega.}. La prueba local del camino con IA es
 \texttt{verificar\_nia.py --openai}, que manda el recorrido de preguntas al modelo de lenguaje de
-OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre el código del tag \texttt{codigo-v7} y terminó
+OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre el código del tag \mbox{\texttt{codigo-v7}} y terminó
 sin problemas\footnote{La salida completa está en
 \texttt{docs/evidencia/verificar-nia-openai-2026-10-02.txt}.}.
 
