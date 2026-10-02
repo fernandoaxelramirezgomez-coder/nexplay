@@ -73,6 +73,9 @@ describe('textos de Nia', () => {
 
   it('el saludo de la ficha nombra el juego y su riesgo', () => {
     expect(saludoDeJuego('Hades', 'bajo')).toBe('¿Te explico por qué Hades tiene riesgo bajo? 🙂');
+    // El emoji va con el nivel: ninguna sonrisa junto a un riesgo alto.
+    expect(saludoDeJuego('Cyberpunk 2077', 'medio')).toBe('¿Te explico por qué Cyberpunk 2077 tiene riesgo medio? 🤔');
+    expect(saludoDeJuego('Amnesia: The Bunker', 'alto')).toBe('¿Te explico por qué Amnesia: The Bunker tiene riesgo alto? 😬');
   });
 
   it('el globito de Comparar dice cuántos juegos resume', () => {

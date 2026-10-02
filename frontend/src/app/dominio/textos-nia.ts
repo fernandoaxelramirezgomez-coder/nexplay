@@ -34,8 +34,12 @@ export const SALUDO_BURBUJA = '¡Hola! ¿Qué juego estás viendo? 👀';
 
 /** En la ficha, el primer mensaje del chat es de ese juego: invita a la pregunta que más
  * se hace, la del riesgo. */
+/** La cara según el nivel, la misma que usa Nia en el backend (EMOJI_DEL_NIVEL): ninguna
+ * sonrisa junto a un riesgo alto. */
+const EMOJI_DEL_NIVEL: Record<string, string> = { bajo: '🙂', medio: '🤔', alto: '😬' };
+
 export function saludoDeJuego(nombre: string, nivel: string): string {
-  return `¿Te explico por qué ${nombre} tiene riesgo ${nivel}? 🙂`;
+  return `¿Te explico por qué ${nombre} tiene riesgo ${nivel}? ${EMOJI_DEL_NIVEL[nivel] ?? '🤔'}`;
 }
 
 /** Fichas de arranque. «Sí, explícamelo» responde al saludo de la ficha. */
