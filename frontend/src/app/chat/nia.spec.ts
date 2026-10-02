@@ -27,7 +27,7 @@ const RESPUESTA: RespuestaNia = {
 
 const valores = signal<ValoresPerfil | null>(null);
 
-function montar() {
+function montar(respuesta: RespuestaNia = RESPUESTA) {
   const enviadas: SolicitudNia[] = [];
   TestBed.configureTestingModule({
     imports: [Nia],
@@ -38,7 +38,7 @@ function montar() {
         useValue: {
           preguntarANia: (solicitud: SolicitudNia) => {
             enviadas.push(solicitud);
-            return of(RESPUESTA);
+            return of(respuesta);
           },
         },
       },
@@ -81,5 +81,32 @@ describe('Nia: lo que viaja del perfil', () => {
 
     expect(enviadas).toHaveLength(1);
     expect('generos' in enviadas[0]).toBe(false);
+  });
+});
+
+describe('Nia: la respuesta final', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('no arrastra el texto de estado «Buscando en el catálogo…»', async () => {
+    const { fixture } = montar({
+      ...RESPUESTA,
+      respuesta: 'Sí, hay 7 juegos gratuitos 🎮 ¿Los ordeno por riesgo?',
+      pasos: ['Buscando en el catálogo…', 'Leyendo la ficha de Hades…'],
+    });
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Hay algo gratis?');
+    await fixture.whenStable();
+
+    const html = fixture.nativeElement as HTMLElement;
+    const mensajes = [...html.querySelectorAll('[data-testid="mensaje-nia"]')];
+    expect(mensajes).toHaveLength(1);
+    expect(mensajes[0].textContent).toContain('Sí, hay 7 juegos gratuitos');
+    expect(html.textContent).not.toContain('Buscando en el catálogo');
+    expect(html.textContent).not.toContain('Leyendo la ficha');
+    expect(html.querySelector('[data-testid="nia-escribiendo"]')).toBeNull();
   });
 });

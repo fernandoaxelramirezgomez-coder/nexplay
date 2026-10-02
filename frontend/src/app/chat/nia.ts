@@ -50,8 +50,6 @@ const DIAS_DE_RETENCION_NIA = 180;
 interface Extra {
   /** El id que la API le puso a la respuesta, para votarla. */
   id?: string;
-  /** Lo que consultó antes de responder. */
-  pasos?: string[];
   /** Los appids que puede pintar como tarjeta: la API ya los filtró. */
   juegos?: number[];
   /** Los appids que se pintan como «Sugerencia según tu perfil». */
@@ -123,9 +121,6 @@ interface Extra {
             <span class="quien meta mono">
               {{ mensaje.rol === 'usuario' ? 'Tú' : extra?.pideJuego ? 'Nia · necesito un juego' : 'Nia' }}
             </span>
-            @if (extra?.pasos?.length) {
-              <p class="pasos meta" data-testid="nia-pasos">{{ extra!.pasos!.join(' · ') }}</p>
-            }
             <p class="texto">{{ mensaje.contenido }}</p>
             @if (extra?.fueraDeTema && !extra?.pideJuego) {
               <p class="aviso-tema" data-testid="nia-aviso-tema">
@@ -400,12 +395,6 @@ interface Extra {
       font-size: 17px;
       line-height: 1.5;
       overflow-wrap: anywhere;
-    }
-    /* Lo que consultó antes de responder. Va arriba, en letra de dato: es el rastro de
-       de dónde salió lo que dice, no parte de la respuesta. */
-    .pasos {
-      margin: 0 0 var(--espacio-4);
-      font-size: var(--texto-caption);
     }
     .invitar {
       display: inline-flex;
@@ -918,7 +907,6 @@ export class Nia {
       { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },
       {
         id: respuesta.id,
-        pasos: respuesta.pasos,
         juegos: respuesta.juegos,
         sugerencias: respuesta.sugerencias ?? [],
         pideJuego: respuesta.pide_juego ?? false,
