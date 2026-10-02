@@ -86,7 +86,11 @@ además, con su modelo de lenguaje: pasó \cifraPreguntasNiaAprobadas{} de las \
 preguntas de regresión, y en la corrida del \cifraFechaCorridaTrampas{} contra
 \cifraPreguntasTrampa{} preguntas trampa y legítimas quedaron \cifraTrampasPorRevisar{} casos por
 revisar\footnote{El detalle está en \texttt{docs/evidencia/nia-pruebas.md}. La corrida de trampas
-se repite sobre el tag de entrega.}.
+se repite sobre el tag de entrega.}. La prueba local del camino con IA es
+\texttt{verificar\_nia.py --openai}, que manda el recorrido de preguntas al modelo de lenguaje de
+OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre el código del tag \texttt{codigo-v7} y terminó
+sin problemas\footnote{La salida completa está en
+\texttt{docs/evidencia/verificar-nia-openai-2026-10-02.txt}.}.
 
 \subsection{Cómo responde la pregunta}\label{sec:resolucion-pregunta}
 

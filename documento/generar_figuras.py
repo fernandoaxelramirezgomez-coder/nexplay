@@ -756,6 +756,12 @@ def cifras_de_nia(cifras: Cifras) -> None:
     cifras.agregar("PreguntasTrampa", str(trampas), "backend/calidad/preguntas_trampa.json: casos")
     cifras.agregar("TrampasPorRevisar", por_revisar, "docs/evidencia/nia-pruebas.md: última corrida de trampas")
     cifras.agregar("FechaCorridaTrampas", f"{dia} de septiembre de 2026", "docs/evidencia/nia-pruebas.md: última corrida de trampas")
+    # La prueba local del camino con IA: la fecha sale del nombre de su salida, que tiene que terminar limpia.
+    corrida = max(EVIDENCIA.glob("verificar-nia-openai-*.txt"))
+    if not corrida.read_text(encoding="utf-8").rstrip().endswith("sin problemas: 6 juegos × 3 preguntas"):
+        raise ValueError(f"{corrida.name} no termina sin problemas")
+    fecha = datetime.strptime(corrida.stem.removeprefix("verificar-nia-openai-"), "%Y-%m-%d")
+    cifras.agregar("FechaCorridaNiaIA", fecha_larga(fecha), f"docs/evidencia/{corrida.name}: verificar_nia.py --openai")
 
 
 def cifras_de_endpoints(cifras: Cifras) -> None:

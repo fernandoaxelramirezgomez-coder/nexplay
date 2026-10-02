@@ -19,7 +19,8 @@ Y del 2026-10-02:
 - el tag y el commit del código no son cifras canónicas: se comprueban contra los notebooks y git;
 - la Parte A (docs/evidencia/modelos-texto.json y el notebook 02) y la lectura para negocio del 01;
 - en 7.6, la tabla de bandas OOF del 01 reemplaza las tasas por banda y cobertura de crítica;
-- el anexo cita la corrida de los tres notebooks en Colab con codigo-v6 (2026-10-02).
+- el anexo cita la corrida de los tres notebooks en Colab con codigo-v6 (2026-10-02);
+- 8.2 cita la prueba local del camino con IA, verificar_nia.py --openai del 2026-10-02 sobre codigo-v7.
 
 Falla (exit 1) si:
 - una macro de tables/cifras.tex no coincide con su valor canónico;
@@ -266,6 +267,8 @@ CANONICAS = {
     "PreguntasTrampa": "48",
     "TrampasPorRevisar": "0",
     "FechaCorridaTrampas": "30 de septiembre de 2026",
+    # docs/evidencia/verificar-nia-openai-2026-10-02.txt: la prueba local del camino con IA
+    "FechaCorridaNiaIA": "2 de octubre de 2026",
     # datos (4.4): backend/analisis/diccionario.py, COLUMNAS
     "ColumnasDiccionario": "41",
     # anexo: docs/evidencia/colab/, la corrida de los tres con codigo-v6 (README y las tres descargas)

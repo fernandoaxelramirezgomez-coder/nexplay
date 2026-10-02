@@ -71,6 +71,10 @@ rutas de entonces.
   preguntas y las tres rondas de trampas y legítimas (`backend/calidad/preguntas_trampa.json`), con las
   respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos
   redactados: sin texto de respuestas ni de personas.
+- `verificar-nia-openai-2026-10-02.txt`: la prueba local del camino con IA, la salida completa de
+  `backend/calidad/verificar_nia.py --openai` con la clave del dueño, corrida el 2026-10-02 sobre el código del tag
+  `codigo-v7`. El recorrido va al modelo de lenguaje de verdad (lo que contesta y si salió del modelo o de las
+  reglas); el resto son las revisiones sin llamadas. Termina en «sin problemas».
 - `antes-del-reembolso.md` y `antes-del-reembolso.txt`: las pruebas A (anticipación) y B
   (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
   de correr (`docs/historial/mejoras/01-antes-del-reembolso.md`). Script:
