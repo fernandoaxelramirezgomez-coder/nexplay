@@ -101,6 +101,12 @@ def de_iso(texto: str) -> datetime:
     return datetime.fromisoformat(texto)
 
 
+def macros_usadas() -> set[str]:
+    """Las macros \\cifra… que aparecen en main.tex y en sections/."""
+    fuentes = [DOCUMENTO / "main.tex", *sorted((DOCUMENTO / "sections").glob("*.tex"))]
+    return {nombre for ruta in fuentes for nombre in re.findall(r"\\cifra([A-Za-z]+)", ruta.read_text(encoding="utf-8"))}
+
+
 class Cifras:
     """Junta las macros con su fuente y las escribe en tables/cifras.tex."""
 
@@ -115,9 +121,14 @@ class Cifras:
         self.macros[nombre] = (valor, fuente)
 
     def escribir(self) -> Path:
+        """Solo las macros que usa el texto. Las demás se calculan porque protegen una aserción, pero no van
+        al documento ni a la lista canónica."""
+        usadas = macros_usadas()
         lineas = ["% Generado por documento/generar_figuras.py. No se edita a mano.", ""]
         for nombre, (valor, fuente) in self.macros.items():
-            lineas.append(f"\\newcommand{{\\cifra{nombre}}}{{{valor}}}  % {fuente}")
+            if nombre in usadas:
+                lineas.append(f"\\newcommand{{\\cifra{nombre}}}{{{valor}}}  % {fuente}")
+        self.escritas = len(lineas) - 2
         ruta = TABLAS / "cifras.tex"
         ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
         return ruta
@@ -244,7 +255,8 @@ def cifras_de_evidencia(cifras: Cifras) -> None:
         cifras.agregar(f"{grupo.capitalize()}PromJuegos", porcentaje(g["prom_juegos_pct"] / 100),
                        "docs/evidencia/senal-por-biblioteca.json")
     estratificada = json.loads((EVIDENCIA / "senal-por-biblioteca-estratificada.json").read_text())
-    cifras.agregar("RazonMH", decimal(estratificada["razon_mh"], 2), "docs/evidencia/senal-por-biblioteca-estratificada.json")
+    # Un cociente: un decimal, como los cocientes contra el trivial. Los extremos de su intervalo, dos.
+    cifras.agregar("RazonMH", decimal(estratificada["razon_mh"], 1), "docs/evidencia/senal-por-biblioteca-estratificada.json")
     inf, sup = estratificada["bootstrap"]["ic95_razon_mh"]
     cifras.agregar("RazonMHICInf", decimal(inf, 2), "docs/evidencia/senal-por-biblioteca-estratificada.json")
     cifras.agregar("RazonMHICSup", decimal(sup, 2), "docs/evidencia/senal-por-biblioteca-estratificada.json")
@@ -276,35 +288,7 @@ def cifras_del_periodo(cifras: Cifras, rutas: dict[str, Path]) -> None:
     cifras.agregar("DiasCubiertosMediana", entero(int(round(dias.median()))), "data-v1: mediana de días cubiertos")
 
 
-def figura_resenas_por_mes(rutas: dict[str, Path]) -> Path:
-    """F1: reseñas de data-v1 por mes de publicación, con la frontera de julio de 2025."""
-    con = sqlite3.connect(f"file:{rutas['data-v1']}?mode=ro", uri=True)
-    creadas = pd.to_datetime([f[0] for f in con.execute("SELECT timestamp_created FROM resenas")], unit="s", utc=True)
-    con.close()
-    por_mes = pd.Series(1, index=creadas).resample("MS").sum()
-    julio = pd.Timestamp("2025-07-01", tz="UTC")
-    desde_julio = (creadas >= julio).mean()
-
-    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.6))
-    eje.bar(por_mes.index, por_mes.values, width=24, color=PALETA["serie"], edgecolor="white", linewidth=0.6)
-    eje.axvline(julio - pd.Timedelta(days=15), color=PALETA["tinta_suave"], linewidth=0.8, linestyle=(0, (3, 3)))
-    # A la izquierda de la línea, donde no hay barras; la flecha dice hacia dónde se cuenta.
-    eje.annotate(f"de julio de 2025 en adelante: {100 * desde_julio:.1f} % de las reseñas →",
-                 xy=(julio, por_mes.max() * 0.75), xytext=(-10, 0), textcoords="offset points", ha="right",
-                 va="center", color=PALETA["tinta"], fontsize=8)
-    primera = por_mes[por_mes > 0].index[0]
-    eje.annotate(f"la más antigua: {fecha_larga(creadas.min().to_pydatetime())}", xy=(primera, por_mes[primera]),
-                 xytext=(4, 34), textcoords="offset points", ha="left", color=PALETA["tinta"], fontsize=8,
-                 arrowprops={"arrowstyle": "-", "color": PALETA["tinta_suave"], "linewidth": 0.6, "shrinkA": 2,
-                             "shrinkB": 1})
-    marcas = [m for m in por_mes.index if m.month in (1, 7)]
-    eje.set_xticks(marcas, [f"{MESES_CORTOS[m.month - 1]} {m.year}" for m in marcas])
-    eje.set_ylabel("reseñas por mes")
-    eje.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
-    return guardar_figura(fig, "resenas-por-mes")
-
-
-def cifras_del_objetivo(cifras: Cifras, rutas: dict[str, Path]) -> pd.DataFrame:
+def cifras_del_objetivo(cifras: Cifras, rutas: dict[str, Path]) -> None:
     """§6: dónde caen las reseñas respecto a 120 minutos y qué tanto importa el umbral."""
     _, resenas = ex.cargar_release(rutas["data-v1"])
     minutos, voto = resenas["playtime_at_review"], resenas["voted_up"]
@@ -327,7 +311,6 @@ def cifras_del_objetivo(cifras: Cifras, rutas: dict[str, Path]) -> pd.DataFrame:
     otros = sensibilidad.drop(index=ex.UMBRAL_REEMBOLSO)["Spearman con 120"]
     cifras.agregar("SpearmanUmbralMin", decimal(otros.min(), 2), "Spearman del orden de los juegos con 60, 90 y 180 contra 120")
     cifras.agregar("SpearmanUmbralMax", decimal(otros.max(), 2), "Spearman del orden de los juegos con 60, 90 y 180 contra 120")
-    return sensibilidad
 
 
 def figura_minutos_al_resenar(rutas: dict[str, Path]) -> Path:
@@ -342,7 +325,7 @@ def figura_minutos_al_resenar(rutas: dict[str, Path]) -> Path:
         raise ValueError("un borde de la figura cae en 120 minutos")
     barras = ex.histograma_por_grupo(log_minutos, pulgar, bordes)
 
-    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.8))
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.35))
     for grupo, color in (("positivas", PALETA["serie"]), ("negativas", PALETA["negativa"])):
         porcentajes = barras.loc[barras["grupo"] == grupo, "%"].to_numpy()
         eje.step(bordes, np.append(porcentajes, porcentajes[-1]), where="post", color=color, linewidth=1.6, label=grupo)
@@ -382,32 +365,19 @@ def cifras_por_juego(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame
     return por_juego
 
 
-def tabla_de_correlaciones(cifras: Cifras, por_juego: pd.DataFrame) -> Path:
-    """§7.2: Spearman de la tasa por juego contra cada variable del juego (00 §3.4)."""
+def cifras_de_correlaciones(cifras: Cifras, por_juego: pd.DataFrame) -> None:
+    """§5.4: Spearman de la tasa por juego contra cada variable del juego (00 §3.4). El texto dice que solo
+    la crítica se aleja del azar, con valores p por debajo de una milésima."""
     correlaciones = ex.correlaciones_del_juego(por_juego)
+    critica = ["tiene nota de la crítica", "nota de la crítica (con nota)"]
+    if (correlaciones.loc[critica, "p"] >= 0.001).any() or (correlaciones.drop(index=critica)["p"] < 0.05).any():
+        raise ValueError("cambió qué variables del juego se alejan del azar")
     fuente = "data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)"
     for nombre, variable in (("TieneNota", "tiene nota de la crítica"), ("Nota", "nota de la crítica (con nota)"),
                              ("Precio", "precio (juegos de pago)")):
         cifras.agregar(f"Spearman{nombre}", con_signo(correlaciones.loc[variable, "Spearman"], 2), fuente)
     cifras.agregar("SpearmanPrecioP", decimal(correlaciones.loc["precio (juegos de pago)", "p"], 2), fuente + ": valor p")
     cifras.agregar("GratisEntrenamiento", str(int(por_juego["es_gratis"].sum())), "data-v1: juegos gratis")
-
-    nombres = {"precio (juegos de pago)": "Precio (juegos de pago con precio)", "es gratis": "Es gratis",
-               "descuento": "Descuento", "tiene nota de la crítica": "Tiene nota de la crítica",
-               "nota de la crítica (con nota)": "Nota de la crítica (solo los que la tienen)"}
-    def valor_p(p: float) -> str:
-        return "<\\,0.001" if p < 0.001 else decimal(p, 3)
-
-    filas = [f"{nombres[variable]} & {int(f['juegos'])} & {con_signo(f['Spearman'], 2)} & {valor_p(f['p'])} \\\\"
-             for variable, f in correlaciones.iterrows()]
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabular}{lrrr}", "\\toprule", "Variable del juego & Juegos & Spearman & p \\\\", "\\midrule",
-        *filas, "\\bottomrule", "\\end{tabular}",
-    ]
-    ruta = TABLAS / "correlaciones.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
 
 
 def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> pd.DataFrame:
@@ -513,8 +483,8 @@ MACROS_POR_BANDA = {("Entrenamiento", "Bajo"), ("Entrenamiento", "AltoSinNota"),
                     ("Externos", "AltoSinNota")}
 
 
-def tabla_por_banda(cifras: Cifras, rutas: dict[str, Path]) -> Path:
-    """§10.3: la tasa de señal por banda y cobertura de crítica en los 83 (descriptivo: el modelo los vio) y en
+def cifras_por_banda(cifras: Cifras, rutas: dict[str, Path]) -> None:
+    """§7.6: la tasa de señal por banda y cobertura de crítica en los 83 (descriptivo: el modelo los vio) y en
     los 40 externos, por reseña y como promedio por juego. Replica docs/evidencia/metacritic-por-banda.md con
     los releases y las bandas de referencia."""
     bandas = {int(appid): b["banda"] for appid, b in json.loads((BACKEND / "referencias" / "bandas_referencia.json").read_text())["bandas"].items()}
@@ -523,36 +493,20 @@ def tabla_por_banda(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     externos = set(juegos_v2["appid"]) - set(juegos_v1["appid"])
     cortes = {"Entrenamiento": ex.tasa_por_juego(resenas_v1, juegos_v1),
               "Externos": ex.tasa_por_juego(resenas_v2[resenas_v2["appid"].isin(externos)], juegos_v2[juegos_v2["appid"].isin(externos)])}
-    titulos = {"Entrenamiento": f"Los {len(cortes['Entrenamiento'])} de entrenamiento (descriptivo)",
-               "Externos": f"Los {len(cortes['Externos'])} externos"}
-    filas, alto_con_nota, alto_sin_nota = [], 0, 0
+    alto_con_nota, alto_sin_nota = 0, 0
     for corte, por_juego in cortes.items():
         por_juego = por_juego.assign(banda=por_juego.index.map(bandas), con_nota=por_juego["metacritic"].notna())
         if (~por_juego["con_nota"] & (por_juego["banda"] != "alto")).any():
             raise ValueError("hay juegos sin nota fuera de la banda alta")
-        filas += ["\\midrule", f"\\multicolumn{{5}}{{l}}{{\\textit{{{titulos[corte]}}}}} \\\\"]
         for banda, con_nota, nombre in GRUPOS_POR_BANDA:
             grupo = por_juego[(por_juego["banda"] == banda) & (por_juego["con_nota"] == con_nota)]
-            por_resena, promedio = grupo["y1"].sum() / grupo["reseñas"].sum(), grupo["tasa"].mean()
-            if (corte, nombre) in MACROS_POR_BANDA:
-                fuente = f"{corte.lower()}: banda {banda}, {'con' if con_nota else 'sin'} nota (bandas_referencia.json)"
-                cifras.agregar(f"Tasa{nombre}{corte}PorResena", porcentaje(por_resena), fuente)
-                cifras.agregar(f"Tasa{nombre}{corte}PromJuegos", porcentaje(promedio), fuente)
+            fuente = f"{corte.lower()}: banda {banda}, {'con' if con_nota else 'sin'} nota (bandas_referencia.json)"
+            cifras.agregar(f"Tasa{nombre}{corte}PorResena", porcentaje(grupo["y1"].sum() / grupo["reseñas"].sum()), fuente)
+            cifras.agregar(f"Tasa{nombre}{corte}PromJuegos", porcentaje(grupo["tasa"].mean()), fuente)
             alto_con_nota += len(grupo) if nombre == "AltoConNota" else 0
             alto_sin_nota += len(grupo) if nombre == "AltoSinNota" else 0
-            filas.append(f"{banda} & {'con nota' if con_nota else 'sin nota'} & {len(grupo)} & {porcentaje(por_resena)} & "
-                         f"{porcentaje(promedio)} \\\\")
     cifras.agregar("JuegosAltoConNota", str(alto_con_nota), "los 123: banda alta con nota de Metacritic")
     cifras.agregar("AltoSinNotaCatalogo", str(alto_sin_nota), "los 123: banda alta sin nota de Metacritic")
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabular}{llrrr}", "\\toprule",
-        "Banda & Crítica & Juegos & Tasa por reseña & Promedio por juego \\\\",
-        *filas, "\\bottomrule", "\\end{tabular}",
-    ]
-    ruta = TABLAS / "bandas.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
 
 
 def features_como_la_api(juegos: pd.DataFrame, mediana_metacritic: float) -> pd.DataFrame:
@@ -622,10 +576,14 @@ def flechas_que_contradicen(juegos: pd.DataFrame, aportes: pd.DataFrame, umbral:
     return contradicen
 
 
-def tabla_de_factores(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> Path:
-    """§11.1 a §11.3 (T10): cada factor de la ficha con su evidencia y contra qué se lee, las referencias del
-    catálogo y UMBRAL_TIPICO, con la comprobación de que ninguna flecha contradiga la cifra que se muestra."""
+def cifras_de_factores(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> None:
+    """§7.7: las referencias del catálogo contra las que se lee cada factor y UMBRAL_TIPICO, con la comprobación
+    de que ninguna flecha contradiga la cifra que muestra la ficha, y de que la evidencia de cada variable sea la
+    que dice el texto."""
     scoring = constantes_de_scoring()
+    solidas = {v for v, e in scoring["_EVIDENCIA_POR_VARIABLE"].items() if e == "SOLIDA"}
+    if solidas != {"metacritic_disponible", "metacritic"}:
+        raise ValueError("cambió qué variables tienen evidencia sólida")
     juegos = ex.cargar_release(rutas[SERVIDO_REF])[0].set_index("appid")
     # Como referencias_del_catalogo(): la nota, promedio de los que la tienen; el precio, mediana de los de pago.
     nota_promedio = round(float(juegos["metacritic"].dropna().mean()), 1)
@@ -638,7 +596,6 @@ def tabla_de_factores(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> P
     contradicen = flechas_que_contradicen(juegos, aportes, umbral, nota_promedio, precio_mediano)
     if contradicen:
         raise ValueError(f"con UMBRAL_TIPICO hay flechas que contradicen la cifra de la ficha: {contradicen}")
-
     fuente = "backend/api/scoring.py"
     cifras.agregar("UmbralTipico", decimal(umbral, 2), fuente + ": UMBRAL_TIPICO")
     cifras.agregar("NotaPromedioCatalogo", decimal(nota_promedio, 1), f"{SERVIDO_REF}: promedio de Metacritic de los juegos que la tienen")
@@ -646,36 +603,14 @@ def tabla_de_factores(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> P
     cifras.agregar("MediaNotaModelo", decimal(escalador.mean_[columnas.index("metacritic")], 2),
                    "media de metacritic del StandardScaler del modelo (data-v1, con la nota que falta imputada)")
 
-    evidencia = {"SOLIDA": "sólida", "DEBIL": "débil"}
-    contra_que = {
-        "metacritic_disponible": "si Steam muestra una nota",
-        "metacritic": f"el promedio del catálogo, {decimal(nota_promedio, 1)}",
-        "log_precio_final": f"la mediana de los de pago, {decimal(precio_mediano, 2)} pesos",
-        "descuento": "si hay descuento",
-        "es_gratis": "si es gratis; en los gratis suma el aporte del precio",
-    }
-    if set(contra_que) != set(columnas):
-        raise ValueError("cambiaron las variables del modelo")
-    filas = [f"{scoring['_ETIQUETAS_FEATURES'][v]} & {evidencia[scoring['_EVIDENCIA_POR_VARIABLE'][v]]} & {contra_que[v]} \\\\"
-             for v in sorted(columnas, key=lambda v: (scoring["_EVIDENCIA_POR_VARIABLE"][v] != "SOLIDA", columnas.index(v)))]
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X l >{\\raggedright\\arraybackslash}p{6.4cm}}",
-        "\\toprule", "Factor en la ficha & Evidencia & Contra qué se lee \\\\", "\\midrule",
-        *filas, "\\bottomrule", "\\end{tabularx}",
-    ]
-    ruta = TABLAS / "factores.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
-
 
 # Las categorías que nombra el texto de §11.5, en el orden de backend/analisis/motivos.py.
 CATEGORIAS_DE_MOTIVOS = ["rendimiento", "bugs", "dificultad", "controles", "contenido", "precio"]
 
 
-def cifras_de_motivos(cifras: Cifras, limpio: pd.DataFrame) -> pd.Series:
-    """§11.5: qué parte de las negativas tempranas del conjunto limpio menciona cada motivo de la lista de
-    palabras clave de /explicacion (00 §3.8), y «ninguno». Una reseña puede mencionar varios o ninguno."""
+def cifras_de_motivos(cifras: Cifras, limpio: pd.DataFrame) -> None:
+    """§7.8: qué parte de las negativas tempranas del conjunto limpio menciona algún motivo de la lista de
+    palabras clave de /explicacion (00 §3.8). Una reseña puede mencionar varios o ninguno."""
     if list(motivos.PALABRAS_CLAVE_POR_CATEGORIA) != CATEGORIAS_DE_MOTIVOS:
         raise ValueError("cambiaron las categorías de motivos")
     senal = limpio[ex.senal(limpio)]
@@ -693,65 +628,31 @@ def cifras_de_motivos(cifras: Cifras, limpio: pd.DataFrame) -> pd.Series:
     cifras.agregar("SinMotivoPorResena", porcentaje(1 - cobertura, 1), fuente.replace("con al menos un", "sin ningún"))
     cifras.agregar("CategoriasMotivos", str(len(CATEGORIAS_DE_MOTIVOS)), "backend/analisis/motivos.py: PALABRAS_CLAVE_POR_CATEGORIA")
     cifras.agregar("UmbralMinCasos", str(scoring["UMBRAL_MIN_CASOS"]), "backend/api/scoring.py: UMBRAL_MIN_CASOS")
-    return pd.concat([pd.Series({"ninguno": 1 - cobertura}), por_motivo]).rename(len(senal))
 
 
-def figura_de_motivos(barras: pd.Series) -> Path:
-    """F9: las negativas tempranas por motivo, con las que no mencionan ninguno."""
-    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.1))
-    colores = [PALETA["neutro"] if motivo == "ninguno" else PALETA["serie"] for motivo in barras.index]
-    eje.barh(barras.index, 100 * barras.values, color=colores, height=0.62)
-    for i, valor in enumerate(barras.values):
-        eje.annotate(f"{100 * valor:.1f} %", xy=(100 * valor, i), xytext=(3, 0), textcoords="offset points", va="center",
-                     fontsize=7.5, color=PALETA["tinta"])
-    eje.grid(axis="x", color=PALETA["rejilla"], linewidth=0.6)
-    eje.grid(axis="y", visible=False)
-    eje.set_xlim(0, 100 * barras.max() * 1.12)
-    eje.set_xlabel(f"% de las {entero(barras.name)} negativas tempranas del conjunto limpio")
-    eje.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.0f} %"))
-    return guardar_figura(fig, "motivos")
-
-
-# T11: los endpoints de backend/api/main.py por grupo, según el primer tramo de la ruta.
+# Los endpoints de backend/api/main.py por grupo, según el primer tramo de la ruta.
 GRUPOS_DE_ENDPOINTS = {
-    "Riesgo": (("catalogo", "perfil", "prediccion", "explicacion", "panorama"),
-               "buscar juegos; el perfil declarado; banda, factores y motivos de un título; el panorama"),
-    "Comunidad": (("valoraciones", "comentarios"), "calificaciones, comentarios y reacciones"),
-    "Nia": (("nia",), "el chat, sus opiniones del Inicio y los votos a sus respuestas"),
+    "Riesgo": ("catalogo", "perfil", "prediccion", "explicacion", "panorama"),
+    "Comunidad": ("valoraciones", "comentarios"),
+    "Nia": ("nia",),
 }
 
 
-def tabla_de_endpoints(cifras: Cifras) -> Path:
-    """§12.3 (T11): los endpoints de la API, leídos de backend/api/main.py sin importarlo."""
+def cifras_de_endpoints(cifras: Cifras) -> None:
+    """§8.1: cuántos endpoints tiene la API y cuántos de cada grupo, leídos de backend/api/main.py sin importarlo."""
     endpoints = []
     for nodo in ast.parse((BACKEND / "api" / "main.py").read_text(encoding="utf-8")).body:
         for decorador in getattr(nodo, "decorator_list", []):
             if isinstance(decorador, ast.Call) and getattr(decorador.func, "attr", "") in ("get", "post", "put", "delete"):
-                endpoints.append((decorador.func.attr.upper(), ast.literal_eval(decorador.args[0])))
-    filas, agrupados = [], 0
-    for grupo, (prefijos, descripcion) in GRUPOS_DE_ENDPOINTS.items():
-        # Una entrada por ruta, con sus métodos juntos: GET · PUT · DELETE /valoraciones/{appid}.
-        por_ruta: dict[str, list[str]] = {}
-        for metodo, ruta in endpoints:
-            if ruta.split("/")[1] in prefijos:
-                por_ruta.setdefault(ruta, []).append(metodo)
-        cuantos = sum(len(metodos) for metodos in por_ruta.values())
+                endpoints.append(ast.literal_eval(decorador.args[0]))
+    agrupados = 0
+    for grupo, prefijos in GRUPOS_DE_ENDPOINTS.items():
+        cuantos = sum(1 for ruta in endpoints if ruta.split("/")[1] in prefijos)
         agrupados += cuantos
-        lista = "; ".join(" · ".join(metodos) + " \\texttt{" + ruta.replace("_", "\\_").replace("{", "\\{").replace("}", "\\}") + "}"
-                          for ruta, metodos in por_ruta.items())
-        filas.append(f"{grupo} ({cuantos}) & {lista} & {descripcion} \\\\")
+        cifras.agregar(f"Endpoints{grupo}", str(cuantos), f"backend/api/main.py: rutas de {', '.join(prefijos)}")
     if agrupados != len(endpoints):
         raise ValueError("hay endpoints de backend/api/main.py que no caen en ningún grupo")
     cifras.agregar("Endpoints", str(len(endpoints)), "backend/api/main.py: rutas con @app.get/post/put/delete")
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}p{2.2cm} >{\\raggedright\\arraybackslash\\footnotesize}X "
-        ">{\\raggedright\\arraybackslash}p{3.7cm}}",
-        "\\toprule", "Grupo & Endpoints & Para qué \\\\", "\\midrule", *filas, "\\bottomrule", "\\end{tabularx}",
-    ]
-    ruta = TABLAS / "endpoints.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
 
 
 def figura_de_arquitectura() -> Path:
@@ -826,11 +727,14 @@ REGLAS_DE_LIMPIEZA = {
 }
 
 
-def tabla_de_limpieza(cifras: Cifras, limpio: pd.DataFrame, pasos: list) -> Path:
-    """§8.2 (T4): la bitácora de la limpieza, regla por regla, como la del notebook 00 (celda 54)."""
+def cifras_de_limpieza(cifras: Cifras, limpio: pd.DataFrame, pasos: list) -> None:
+    """§6: lo que quita y lo que marca cada regla de la limpieza (00, bloque 2), y el idioma."""
     bitacora = li.bitacora(pasos).set_index("regla")
     if list(bitacora.index) != list(REGLAS_DE_LIMPIEZA):
         raise ValueError("cambiaron las reglas de limpieza o su orden")
+    # El texto dice que solo las dos primeras reglas quitan filas.
+    if (bitacora["filas antes"] != bitacora["filas después"]).sum() != 2:
+        raise ValueError("cambió cuántas reglas de limpieza quitan filas")
     fuente = "data-v1: bitácora de li.limpiar"
     cifras.agregar("DuplicadosQuitados", entero(int(bitacora.loc["quitar_duplicados_exactos", "afectadas"])), fuente)
     cifras.agregar("VaciasQuitadas", entero(int(bitacora.loc["quitar_vacias", "afectadas"])), fuente)
@@ -843,22 +747,6 @@ def tabla_de_limpieza(cifras: Cifras, limpio: pd.DataFrame, pasos: list) -> Path
     # El texto nombra los tres idiomas más frecuentes.
     if limpio.loc[otro_idioma, "idioma_detectado"].value_counts().head(3).index.tolist() != ["russian", "spanish", "portuguese"]:
         raise ValueError("cambiaron los idiomas más frecuentes entre las reseñas en otro idioma")
-
-    filas = []
-    for regla, f in bitacora.iterrows():
-        nombre, accion = REGLAS_DE_LIMPIEZA[regla]
-        afectadas = int(f["afectadas"])
-        filas.append(f"{nombre} & {accion} & {entero(afectadas)} ({porcentaje(afectadas / f['filas antes'], 1)}) & "
-                     f"{entero(int(f['filas después']))} \\\\")
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{4.4cm} rr}",
-        "\\toprule", "Regla, en orden & Qué se hace & Afectadas & Quedan \\\\", "\\midrule",
-        *filas, "\\bottomrule", "\\end{tabularx}",
-    ]
-    ruta = TABLAS / "limpieza.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
 
 
 def cifras_de_validacion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> None:
@@ -945,8 +833,8 @@ def cifras_del_texto(cifras: Cifras, limpio: pd.DataFrame) -> None:
             raise ValueError(f"cambiaron las palabras que distinguen a las negativas tempranas: {sorted(del_texto)}")
 
 
-def tabla_de_externos(cifras: Cifras, rutas: dict[str, Path]) -> Path:
-    """§7.4: los 83 de entrenamiento contra los 40 externos (00 §3.6). Solo describe: no decide nada."""
+def cifras_de_externos(cifras: Cifras, rutas: dict[str, Path]) -> None:
+    """§5.6: los 83 de entrenamiento contra los 40 externos (00 §3.6). Solo describe: no decide nada."""
     juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
     juegos_v2, resenas_v2 = ex.cargar_release(rutas["data-v2"])
     externos = set(juegos_v2["appid"]) - set(juegos_v1["appid"])
@@ -954,43 +842,22 @@ def tabla_de_externos(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     resenas_ext = resenas_v2[resenas_v2["appid"].isin(externos)]
     if ex.llaves(juegos_ext, resenas_ext)["casos"].sum() or ex.resumen_de_rango(ex.casos_de_rango(juegos_ext, resenas_ext))["casos"].sum():
         raise ValueError("los 40 externos ya no pasan las validaciones de llaves y rangos")
-
-    columnas = {}
     for nombre, juegos, resenas in (("Entrenamiento", juegos_v1, resenas_v1), ("Externos", juegos_ext, resenas_ext)):
         por_juego = ex.tasa_por_juego(resenas, juegos)
-        # Los gratis y los de pago sin precio no tienen precio_final: la mediana es la de los de pago con precio.
-        precio = decimal(por_juego["precio_final"].median() / 100, 2)
-        mediana, promedio = porcentaje(por_juego["tasa"].median()), porcentaje(por_juego["tasa"].mean())
-        gratis = str(int(por_juego["es_gratis"].sum()))
         if nombre == "Externos":
-            cifras.agregar("GratisExternos", gratis, "los 40 externos: juegos gratis")
+            cifras.agregar("GratisExternos", str(int(por_juego["es_gratis"].sum())), "los 40 externos: juegos gratis")
             cifras.agregar("SinNotaExternos", str(int(por_juego["metacritic"].isna().sum())), "los 40 externos: juegos sin nota")
-        cifras.agregar(f"PrecioMediano{nombre}", precio, f"{nombre.lower()}: mediana de precio_final / 100, juegos de pago con precio")
-        cifras.agregar(f"Tasa{nombre}MedianaJuegos", mediana, f"{nombre.lower()}: mediana de las tasas por juego")
-        cifras.agregar(f"Tasa{nombre}PromJuegos", promedio, f"{nombre.lower()}: promedio de las tasas por juego")
-        columnas[nombre] = [
-            entero(len(por_juego)), entero(len(resenas)), str(int((por_juego["reseñas"] >= ex.TOPE_DE_LA_INGESTA).sum())),
-            gratis, str(int(por_juego["metacritic"].isna().sum())), str(int(por_juego["metacritic"].median())), precio,
-            porcentaje(ex.senal(resenas).mean()), mediana, promedio,
-        ]
-    renglones = ["Juegos", "Reseñas", f"Juegos con el tope de {entero(ex.TOPE_DE_LA_INGESTA)} reseñas", "Juegos gratis",
-                 "Juegos sin nota de la crítica", "Nota mediana (los que la tienen)", "Precio mediano de los de pago (pesos)",
-                 "Tasa de señal por reseña", "Tasa de señal por juego: mediana", "Tasa de señal por juego: promedio"]
-    filas = [f"{r} & {a} & {b} \\\\" for r, a, b in zip(renglones, columnas["Entrenamiento"], columnas["Externos"])]
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabular}{lrr}", "\\toprule", " & Entrenamiento (data-v1) & Externos \\\\", "\\midrule",
-        *filas, "\\bottomrule", "\\end{tabular}",
-    ]
-    ruta = TABLAS / "externos.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
+        # Los gratis y los de pago sin precio no tienen precio_final: la mediana es la de los de pago con precio.
+        cifras.agregar(f"PrecioMediano{nombre}", decimal(por_juego["precio_final"].median() / 100, 2),
+                       f"{nombre.lower()}: mediana de precio_final / 100, juegos de pago con precio")
+        cifras.agregar(f"Tasa{nombre}MedianaJuegos", porcentaje(por_juego["tasa"].median()), f"{nombre.lower()}: mediana de las tasas por juego")
+        cifras.agregar(f"Tasa{nombre}PromJuegos", porcentaje(por_juego["tasa"].mean()), f"{nombre.lower()}: promedio de las tasas por juego")
 
 
 def figura_tasa_por_juego(por_juego: pd.DataFrame, prevalencia: float) -> Path:
     """F3: la tasa de señal de cada juego de data-v1, de menor a mayor, con su intervalo de Wilson."""
     orden = por_juego.sort_values(["tasa", "nombre"]).reset_index()
-    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.7))
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.3))
     eje.errorbar(orden.index, 100 * orden["tasa"],
                  yerr=[100 * (orden["tasa"] - orden["ic_bajo"]), 100 * (orden["ic_alto"] - orden["tasa"])],
                  fmt="o", markersize=3.2, color=PALETA["serie"], ecolor=PALETA["tinta_suave"], elinewidth=0.7, capsize=0)
@@ -1007,7 +874,7 @@ def figura_tasa_por_juego(por_juego: pd.DataFrame, prevalencia: float) -> Path:
                 f"{', '.join(nombres[:-1])} y {nombres[-1]}"
     else:
         texto = f"la más baja: {nombres[0]}, {100 * orden['tasa'].min():.2f} %"
-    eje.annotate(texto, xy=(menor.index[-1] / 2, 100 * orden["tasa"].min()), xytext=(0, 52), textcoords="offset points",
+    eje.annotate(texto, xy=(menor.index[-1] / 2, 100 * orden["tasa"].min()), xytext=(0, 40), textcoords="offset points",
                  ha="left", va="bottom", fontsize=7.5, color=PALETA["tinta"], linespacing=1.3,
                  arrowprops={"arrowstyle": "-", "color": PALETA["tinta_suave"], "linewidth": 0.6, "shrinkA": 1, "shrinkB": 3})
     eje.set_xlim(-2, len(orden) + 1)
@@ -1022,7 +889,7 @@ def figura_tasa_contra_nota(por_juego: pd.DataFrame) -> Path:
     """F4: tasa de señal contra la nota de Metacritic, con los juegos sin nota en un panel aparte."""
     con_nota = por_juego[por_juego["metacritic"].notna()]
     sin_nota = por_juego[por_juego["metacritic"].isna()].sort_index()
-    fig, (izquierda, derecha) = plt.subplots(1, 2, figsize=(ANCHO_DE_TEXTO, 2.9), sharey=True,
+    fig, (izquierda, derecha) = plt.subplots(1, 2, figsize=(ANCHO_DE_TEXTO, 2.45), sharey=True,
                                              gridspec_kw={"width_ratios": [1, 4], "wspace": 0.06})
     # Dispersión horizontal fija (semilla 42) para que los puntos no se encimen y dos corridas den lo mismo.
     dispersion = np.random.default_rng(42).uniform(-0.28, 0.28, len(sin_nota))
@@ -1067,6 +934,42 @@ def guardar_figura(fig, nombre: str) -> Path:
 
 # --- tablas ----------------------------------------------------------------
 
+def tabla_descriptiva(rutas: dict[str, Path]) -> Path:
+    """§5.1: estadísticas descriptivas del corte de entrenamiento y del catálogo servido."""
+    columnas = []
+    for ref in ("data-v1", SERVIDO_REF):
+        juegos, resenas = ex.cargar_release(rutas[ref])
+        senal = ex.senal(resenas)
+        creadas = pd.to_datetime(resenas["timestamp_created"], unit="s", utc=True)
+        julio = pd.Timestamp("2025-07-01", tz="UTC")
+        de_pago = juegos.loc[(juegos["es_gratis"] == 0) & juegos["precio_final"].notna(), "precio_final"] / 100
+        notas = juegos["metacritic"].dropna()
+
+        def corta(momento: pd.Timestamp) -> str:
+            return f"{momento.day} {MESES_CORTOS[momento.month - 1]} {momento.year}"
+
+        columnas.append([
+            entero(len(juegos)), entero(len(resenas)), entero(int(senal.sum())), porcentaje(senal.mean()),
+            f"{corta(creadas.min())} a {corta(creadas.max())}", porcentaje((creadas >= julio).mean(), 1),
+            porcentaje((resenas["num_games_owned"] > 0).mean(), 1), str(int(juegos["es_gratis"].sum())),
+            f"{de_pago.median():,.2f} ({de_pago.min():,.2f} a {de_pago.max():,.2f})",
+            f"{notas.median():.0f} ({notas.min():.0f} a {notas.max():.0f})", str(int(juegos["metacritic"].isna().sum())),
+        ])
+    renglones = ["Juegos", "Reseñas", "Reseñas con la señal ($Y = 1$)", "Prevalencia por reseña", "Reseñas publicadas",
+                 "Publicadas desde julio de 2025", "Reseñas con perfil público", "Juegos gratis",
+                 "Precio de los de pago en pesos: mediana (mín.\\ a máx.)", "Nota de Metacritic: mediana (mín.\\ a máx.)",
+                 "Juegos sin nota de Metacritic"]
+    filas = [f"{r} & {a} & {b} \\\\" for r, a, b in zip(renglones, *columnas)]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X rr}", "\\toprule",
+        f" & Entrenamiento (data-v1) & Catálogo ({SERVIDO_REF}) \\\\", "\\midrule", *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "descriptiva.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
 def tabla_de_releases(rutas: dict[str, Path]) -> Path:
     """T2: un renglón por release, con lo que trae y para qué sirve. El sha256 completo va en el anexo."""
     publicacion = publicacion_de_releases()
@@ -1096,89 +999,27 @@ def tabla_de_releases(rutas: dict[str, Path]) -> Path:
     return ruta
 
 
-def tabla_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> Path:
-    """T3: los chequeos de validación del 00 (§1.2–1.5) sobre data-v1, con lo que se hizo."""
+def cifras_de_calidad(cifras: Cifras, rutas: dict[str, Path]) -> None:
+    """§4 y §6: los chequeos de validación del 00 (bloque 1) sobre data-v1. El texto dice que las llaves y
+    los rangos imposibles no tienen casos, y nombra los tres hallazgos que tocan al modelo."""
     juegos, resenas = ex.cargar_release(rutas["data-v1"])
-    esquema_resenas = ex.esquema(rutas["data-v1"], "resenas", resenas)
-    llaves = ex.llaves(juegos, resenas)
+    if ex.llaves(juegos, resenas)["casos"].sum():
+        raise ValueError("data-v1 ya tiene casos en las llaves")
     rango = ex.resumen_de_rango(ex.casos_de_rango(juegos, resenas))
-    copias = ex.copias_de_texto(resenas, li.PALABRAS_DE_UNA_COPIA)
-    plantillas = ex.plantillas(resenas)
-    privados = (resenas["num_games_owned"] == 0).mean()
+    if rango.loc[list(ex.REGLAS_DURAS), "casos"].sum():
+        raise ValueError("data-v1 ya tiene rangos imposibles")
     sin_precio = juegos[juegos["precio_final"].isna()]
-    de_pago_sin_precio = sin_precio[sin_precio["es_gratis"] == 0]["nombre"].tolist()
-    sin_nota = int(juegos["metacritic"].isna().sum())
+    de_pago_sin_precio = sin_precio[sin_precio["es_gratis"] == 0]
+    # La gratuidad incoherente son los mismos juegos de pago sin precio: el texto los cuenta una sola vez.
+    if int(rango.loc["es_gratis coherente con el precio", "casos"]) != len(de_pago_sin_precio):
+        raise ValueError("la gratuidad incoherente ya no son solo los de pago sin precio")
     verificacion = list(csv.DictReader(open(EVIDENCIA / "verificacion-40-steam.csv")))
     coinciden = sum(1 for f in verificacion if f["mc_guardado"] == f["mc_hoy"])
-    duras = rango.loc[list(ex.REGLAS_DURAS), "casos"]
-    blandas = rango.drop(index=list(ex.REGLAS_DURAS))["casos"]
-
-    cifras.agregar("PrivadosEntrenamientoPorResena", porcentaje(privados, 1), "data-v1: num_games_owned = 0")
-    cifras.agregar("SinNotaEntrenamiento", str(sin_nota), "data-v1: juegos sin nota de Metacritic")
+    cifras.agregar("PrivadosEntrenamientoPorResena", porcentaje((resenas["num_games_owned"] == 0).mean(), 1),
+                   "data-v1: num_games_owned = 0")
+    cifras.agregar("SinNotaEntrenamiento", str(int(juegos["metacritic"].isna().sum())), "data-v1: juegos sin nota de Metacritic")
     cifras.agregar("PagoSinPrecioEntrenamiento", str(len(de_pago_sin_precio)), "data-v1: juegos de pago sin precio")
-    cifras.agregar("MetacriticVerificadoExternos", f"{coinciden} de {len(verificacion)}",
-                   "docs/evidencia/verificacion-40-steam.csv")
-
-    def fila(chequeo: str, resultado: str, decision: str) -> str:
-        return f"{chequeo} & {resultado} & {decision} \\\\"
-
-    def grupo(titulo: str) -> str:
-        return f"\\multicolumn{{3}}{{l}}{{\\textit{{{titulo}}}}} \\\\"
-
-    # Los 2 casos de «es_gratis coherente con el precio» son los mismos juegos de pago sin precio: van en una fila.
-    incoherentes = int(blandas["es_gratis coherente con el precio"])
-    assert incoherentes == len(de_pago_sin_precio), "la gratuidad incoherente ya no son solo los de pago sin precio"
-    mas_minutos = int(blandas["playtime_at_review ≤ playtime_forever"])
-    nota = ("\\textsuperscript{a}~\\texttt{playtime\\_at\\_review} y \\texttt{playtime\\_forever}; "
-            "\\textsuperscript{b}~\\texttt{es\\_gratis} y \\texttt{precio\\_final}; "
-            "\\textsuperscript{c}~\\texttt{metacritic\\_disponible}; \\textsuperscript{d}~\\texttt{num\\_games\\_owned}.")
-    filas = [
-        grupo("Sin hallazgos"),
-        fila("Nulos en las reseñas", f"{int(esquema_resenas['nulos'].sum())} en {len(esquema_resenas)} columnas", "nada que corregir"),
-        fila("Llaves: reseña repetida, juego sin reseñas, reseña sin juego", f"{int(llaves['casos'].sum())} casos", "nada que corregir"),
-        fila(f"Rangos imposibles ({len(duras)} reglas: minutos negativos, voto fuera de 0 y 1, fechas, precio, descuento, nota)",
-             f"{int(duras.sum())} casos", "nada que corregir"),
-        fila(f"Nota de Metacritic contra la de la tienda hoy ({len(verificacion)} juegos externos)",
-             f"{coinciden} de {len(verificacion)} iguales", "nada que corregir"),
-        "\\midrule",
-        grupo("Hallazgos y qué se hizo"),
-        fila("Más minutos al reseñar que en total\\textsuperscript{a}", f"{mas_minutos} {'caso' if mas_minutos == 1 else 'casos'}",
-             "se conserva: la señal no cambia con ninguno de los dos contadores"),
-        fila("Juegos de pago sin precio\\textsuperscript{b}", f"{len(de_pago_sin_precio)}: {', '.join(de_pago_sin_precio)}",
-             "precio tomado como 0, con aviso en la ficha (§\\ref{sec:procesamiento})"),
-        fila("Juegos sin nota de Metacritic", f"{sin_nota} de {len(juegos)}", "la falta de nota es una variable del modelo\\textsuperscript{c}"),
-        fila(f"Textos repetidos de {li.PALABRAS_DE_UNA_COPIA} palabras o más",
-             f"{copias['sobrantes en el mismo juego']:,} en el mismo juego; {copias['textos en 2+ juegos']:,} en 2 o más juegos",
-             "se marcan, no se borran (§\\ref{sec:procesamiento})"),
-        fila("Reseñas plantilla", f"{len(plantillas):,} ({100 * len(plantillas) / len(resenas):.2f}\\,\\%)", "se marcan, no se borran"),
-        fila("Perfil privado: aparece con 0 juegos\\textsuperscript{d}", f"{100 * privados:.1f}\\,\\% de las reseñas",
-             "es una bandera de privacidad, no una biblioteca vacía"),
-    ]
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X >{\\raggedright\\arraybackslash}p{3.9cm} >{\\raggedright\\arraybackslash}p{4.4cm}}",
-        "\\toprule", "Chequeo (data-v1) & Resultado & Qué se hizo \\\\", "\\midrule", *filas, "\\bottomrule",
-        f"\\multicolumn{{3}}{{>{{\\raggedright\\arraybackslash}}p{{\\dimexpr\\textwidth-2\\tabcolsep}}}}{{\\footnotesize Columnas: {nota}}} \\\\",
-        "\\end{tabularx}",
-    ]
-    ruta = TABLAS / "calidad.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
-
-
-def tabla_de_umbrales(sensibilidad: pd.DataFrame) -> Path:
-    """T5: la señal con 60, 90, 120 y 180 minutos, y qué tanto se parece el orden de los juegos al de 120."""
-    filas = [f"{umbral} & {entero(int(f['Y=1']))} & {porcentaje(f['prevalencia'])} & {decimal(f['Spearman con 120'], 3)} \\\\"
-             for umbral, f in sensibilidad.iterrows()]
-    contenido = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabular}{rrrr}", "\\toprule",
-        "Umbral (min) & Reseñas con señal & Prevalencia por reseña & Spearman con 120 (por juego) \\\\",
-        "\\midrule", *filas, "\\bottomrule", "\\end{tabular}",
-    ]
-    ruta = TABLAS / "umbral.tex"
-    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
-    return ruta
+    cifras.agregar("MetacriticVerificadoExternos", f"{coinciden} de {len(verificacion)}", "docs/evidencia/verificacion-40-steam.csv")
 
 
 def copiar_capturas() -> list[Path]:
@@ -1209,31 +1050,34 @@ def main() -> None:
     cifras_de_bandas(cifras)
     cifras_de_evidencia(cifras)
     cifras_del_periodo(cifras, rutas)
-    sensibilidad = cifras_del_objetivo(cifras, rutas)
+    cifras_de_calidad(cifras, rutas)
+    cifras_del_objetivo(cifras, rutas)
     juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
     por_juego = cifras_por_juego(cifras, juegos_v1, resenas_v1)
+    cifras_de_correlaciones(cifras, por_juego)
     cifras_de_coeficientes(cifras, juegos_v1, resenas_v1)
     limpio, pasos = conjunto_limpio(resenas_v1)
     cifras_del_texto(cifras, limpio)
+    cifras_de_limpieza(cifras, limpio, pasos)
     cifras_de_validacion(cifras, juegos_v1, resenas_v1)
     cifras_de_la_particion(cifras, juegos_v1, resenas_v1)
-    tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
-              tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
-              tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1),
-              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1), tabla_por_banda(cifras, rutas),
-              tabla_de_factores(cifras, rutas, modelo), tabla_de_endpoints(cifras)]
-    motivos_por_resena = cifras_de_motivos(cifras, limpio)
+    cifras_de_externos(cifras, rutas)
+    cifras_por_banda(cifras, rutas)
     cifras_de_casos_al_filo(cifras, rutas, modelo)
+    cifras_de_factores(cifras, rutas, modelo)
+    cifras_de_motivos(cifras, limpio)
+    cifras_de_endpoints(cifras)
+    tablas = [tabla_de_releases(rutas), tabla_descriptiva(rutas), tabla_de_variables(juegos_v1, resenas_v1),
+              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
-    figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),
-               figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego),
-               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]), figura_de_motivos(motivos_por_resena),
+    figuras = [figura_minutos_al_resenar(rutas), figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()),
+               figura_tasa_contra_nota(por_juego), figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]),
                figura_de_arquitectura()]
     capturas = copiar_capturas()
     copiar_logo()
 
-    print(f"{len(cifras.macros)} cifras en {ruta_cifras.relative_to(RAIZ)}")
+    print(f"{len(cifras.macros)} cifras calculadas; {cifras.escritas} usadas en el texto, en {ruta_cifras.relative_to(RAIZ)}")
     print(f"tablas: {', '.join(t.name for t in tablas)} · figuras: {', '.join(f.name for f in figuras)}")
     print(f"{len(capturas)} capturas copiadas a {(FIGURAS / 'capturas').relative_to(RAIZ)}")
 

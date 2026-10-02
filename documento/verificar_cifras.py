@@ -8,15 +8,18 @@ acordadas el 2026-09-30:
 - el IC externo sale de docs/evidencia/bootstrap-prueba-externa.json;
 - veteranos contra novatos, con la definición prerregistrada sobre data-v1: la cifra anterior
   se retiró.
-Y una del 2026-10-01: el extremo superior del IC de «tiene nota» es −0.55 (vale −0.554932); el
-−0.56 anterior redondeaba dos veces el −0.555 que muestra el notebook.
+Y del 2026-10-01:
+- el extremo superior del IC de «tiene nota» es −0.55 (vale −0.554932); el −0.56 anterior
+  redondeaba dos veces el −0.555 que muestra el notebook;
+- la razón de Mantel-Haenszel va con un decimal (2.6), como todo cociente; sus extremos, con dos;
+- con el documento de 9 secciones, la lista solo guarda las cifras que el texto usa.
 
 Falla (exit 1) si:
 - una macro de tables/cifras.tex no coincide con su valor canónico;
 - se genera una macro que no está en la lista;
-- una sección trae un número con decimales o con % fuera de una macro.
-
-Las canónicas que todavía no se generan se listan como pendientes, sin fallar.
+- una canónica no se usa en main.tex ni en sections/, o el texto usa una que no se generó;
+- una sección trae un número con decimales o con % fuera de una macro. Las referencias a una
+  sección de un notebook («notebook 00, §3.4») no cuentan: no son cifras.
 
 Uso:
   .venv/bin/python documento/verificar_cifras.py
@@ -37,17 +40,11 @@ CANONICAS = {
     "PrevalenciaEntrenamientoPorResena": "2.19" + PORCIENTO,
     "JuegosCatalogo": "123",
     "ResenasCatalogo": "184,367",
-    "PositivosCatalogo": "4,126",
-    "PrevalenciaCatalogoPorResena": "2.24" + PORCIENTO,
     "JuegosExternos": "40",
-    "ResenasExternos": "60,395",
-    "PositivosExternos": "1,412",
-    "PrevalenciaExternosPorResena": "2.34" + PORCIENTO,
     # modelo: GroupKFold de 5 por appid sobre data-v1
     "PRAUCModelo": "0.0694",
     "PRAUCModeloStd": "0.0415",
     "PRAUCTrivial": "0.0219",
-    "PRAUCTrivialStd": "0.0037",
     # Los cocientes contra el trivial van con un decimal: la variación entre folds no justifica centésimas.
     "PRAUCCociente": "3.2",
     "PliegosGanados": "5",
@@ -68,23 +65,10 @@ CANONICAS = {
     "ExternoICSup": "2.33",
     "ExternoReplicasSinVentaja": "27",
     # veteranos contra novatos (data-v1, perfiles públicos)
-    "NovatosPorResena": "0.67" + PORCIENTO,
-    "VeteranosPorResena": "2.89" + PORCIENTO,
-    "NovatosPromJuegos": "0.97" + PORCIENTO,
-    "VeteranosPromJuegos": "2.72" + PORCIENTO,
-    "RazonMH": "2.62",
-    "RazonMHICInf": "1.84",
-    "RazonMHICSup": "4.12",
     # periodo y calidad (§5), contrastadas con el 00 §1 y §3.1
     "DesdeJulioEntrenamientoPorResena": "96.1" + PORCIENTO,
-    "DesdeJulioCatalogoPorResena": "97.1" + PORCIENTO,
     "ResenaMasAntiguaEntrenamiento": "8 de abril de 2023",
-    "ResenaMasRecienteEntrenamiento": "14 de septiembre de 2026",
-    "ResenaMasAntiguaCatalogo": "8 de abril de 2023",
-    "ResenaMasRecienteCatalogo": "21 de septiembre de 2026",
-    "DescargaDesdeEntrenamiento": "14 de septiembre de 2026",
     "DescargaHastaEntrenamiento": "14 de septiembre de 2026",
-    "DescargaDesdeCatalogo": "14 de septiembre de 2026",
     "DescargaHastaCatalogo": "21 de septiembre de 2026",
     "TopeIngesta": "1,500",
     "JuegosEnElTope": "81",
@@ -101,13 +85,8 @@ CANONICAS = {
     "PositivasAntesDelUmbralPorResena": "2.0" + PORCIENTO,
     "NegativasPorMinutoAntesDelUmbral": "11.9",
     "NegativasPorMinutoDespuesDelUmbral": "12.2",
-    "NegativasPorMinutoAntesDeTresHoras": "9.9",
-    "NegativasPorMinutoDesdeTresHoras": "12.4",
     "PositivasPorMinutoAntesDelUmbral": "17.4",
     "PositivasPorMinutoDespuesDelUmbral": "18.6",
-    "PositivasPorMinutoAntesDeTresHoras": "17.6",
-    "PositivasPorMinutoDesdeTresHoras": "81.7",
-    "JuegosSaltoTresHoras": "81",
     # del 00: se generan con las secciones 6 a 8
     "IdiomaInglesPorResena": "98.7" + PORCIENTO,
     "NegativasTempranasLimpias": "2,706",
@@ -136,11 +115,7 @@ CANONICAS = {
     "NegativasTardiasLimpias": "14,353",
     "PositivasLimpias": "105,885",
     "RefundTardiasPorResena": "2.9" + PORCIENTO,
-    "PalabrasMedianaTempranas": "22",
-    "PalabrasMedianaTardias": "27",
-    "PalabrasMedianaPositivas": "8",
     "GratisExternos": "5",
-    "SinNotaExternos": "10",
     "PrecioMedianoEntrenamiento": "400.00",
     "PrecioMedianoExternos": "269.99",
     "TasaEntrenamientoMedianaJuegos": "0.80" + PORCIENTO,
@@ -162,10 +137,7 @@ CANONICAS = {
     # modelación (§9), contrastadas con el 01 (celdas 31 a 35), el 00 (celdas 73, 74 y 90),
     # docs/evidencia/simulacion_123.txt y docs/evidencia/particion-alternativa.json. El conjunto
     # completo no tenía registro anterior: su cifra es la de evaluar_gkf con la partición congelada.
-    "PRAUCCompra": "0.0709",
-    "PRAUCCompraStd": "0.0270",
     "PRAUCCompleto": "0.0849",
-    "PRAUCCompletoStd": "0.0207",
     "DiferenciaCompraJuego": "0.0015",
     "FoldsCompraGana": "3",
     "ParticionesCompraGana": "16",
@@ -191,22 +163,16 @@ CANONICAS = {
     # evaluación (§10), contrastadas con el 01 (celda 31), docs/evidencia/metacritic-por-banda.md,
     # bootstrap-prueba-externa.json y README.md (casos al filo). Los promedios por juego no tenían
     # registro anterior: salen de las mismas tasas por juego de los releases.
-    "PRAUCFoldMin": "0.0367",
-    "PRAUCFoldMax": "0.1459",
     "CocienteFoldMin": "1.8",
     "CocienteFoldMax": "5.8",
     "ExternoReplicas": "2,000",
     "TasaBajoEntrenamientoPorResena": "0.66" + PORCIENTO,
-    "TasaBajoEntrenamientoPromJuegos": "0.66" + PORCIENTO,
     "TasaAltoSinNotaEntrenamientoPorResena": "5.37" + PORCIENTO,
-    "TasaAltoSinNotaEntrenamientoPromJuegos": "5.78" + PORCIENTO,
     "TasaBajoExternosPorResena": "1.86" + PORCIENTO,
     "TasaBajoExternosPromJuegos": "1.86" + PORCIENTO,
     "TasaMedioExternosPorResena": "1.63" + PORCIENTO,
-    "TasaMedioExternosPromJuegos": "1.61" + PORCIENTO,
     "TasaAltoSinNotaExternosPorResena": "3.66" + PORCIENTO,
     "TasaAltoSinNotaExternosPromJuegos": "3.64" + PORCIENTO,
-    "JuegosAltoConNota": "10",
     "AltoSinNotaCatalogo": "33",
     "ScoreHollowKnight": "0.2857",
     "ScoreWarframe": "0.3918",
@@ -222,12 +188,17 @@ CANONICAS = {
     "MediaNotaModelo": "86.97",
     # arquitectura (§12): las rutas de backend/api/main.py, como en el plan (T11, 17 endpoints)
     "Endpoints": "17",
+    "EndpointsRiesgo": "5",
+    "EndpointsComunidad": "8",
+    "EndpointsNia": "4",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")
 _COMENTARIO = re.compile(r"(?<!\\)%.*$")
 # Un decimal, o un número seguido de % con o sin el espacio fino de LaTeX («100\,\%»).
 _NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+|\d+(?:\s|\\,)*\\%")
+_SECCION_DE_NOTEBOOK = re.compile(r"notebook[ ~]0[01],?[ ~]*§\d+(?:\.\d+)*")
+_USO = re.compile(r"\\cifra([A-Za-z]+)")
 
 
 def macros_generadas() -> dict[str, str]:
@@ -241,24 +212,30 @@ def numeros_sueltos() -> list[str]:
     hallazgos = []
     for ruta in sorted((DOCUMENTO / "sections").glob("*.tex")):
         for n, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), 1):
-            sin_comentario = _COMENTARIO.sub("", linea)
+            sin_comentario = _SECCION_DE_NOTEBOOK.sub("", _COMENTARIO.sub("", linea))
             for m in _NUMERO_SUELTO.finditer(sin_comentario):
                 hallazgos.append(f"{ruta.name}:{n}: «{m.group(0)}» escrito a mano")
     return hallazgos
 
 
+def macros_usadas() -> set[str]:
+    fuentes = [DOCUMENTO / "main.tex", *sorted((DOCUMENTO / "sections").glob("*.tex"))]
+    return {n for ruta in fuentes for linea in ruta.read_text(encoding="utf-8").splitlines()
+            for n in _USO.findall(_COMENTARIO.sub("", linea))}
+
+
 def main() -> int:
     generadas = macros_generadas()
+    usadas = macros_usadas()
     fallas = [f"\\cifra{n}: generada «{v}», canónica «{CANONICAS[n]}»"
               for n, v in generadas.items() if n in CANONICAS and v != CANONICAS[n]]
     fallas += [f"\\cifra{n} = «{v}» no está en la lista canónica" for n, v in generadas.items() if n not in CANONICAS]
+    fallas += [f"\\cifra{n} es canónica pero el texto no la usa: sale de la lista" for n in CANONICAS if n not in usadas]
+    fallas += [f"\\cifra{n} se usa en el texto pero no se generó" for n in sorted(usadas - set(generadas))]
     fallas += numeros_sueltos()
-    pendientes = [n for n in CANONICAS if n not in generadas]
 
     coinciden = sum(1 for n, v in generadas.items() if CANONICAS.get(n) == v)
-    print(f"{len(generadas)} cifras generadas; {coinciden} coinciden con la lista canónica")
-    if pendientes:
-        print(f"pendientes de generar ({len(pendientes)}): {', '.join(pendientes)}")
+    print(f"{len(generadas)} cifras generadas; {coinciden} coinciden con la lista canónica; {len(usadas)} usadas en el texto")
     for falla in fallas:
         print("FALLA", falla)
     return 1 if fallas else 0

@@ -52,6 +52,9 @@
 
 % Lo que todavía no tiene texto o evidencia se ve en el PDF, nunca se rellena.
 \newcommand{\pendiente}[1]{\textcolor{riesgoalto}{\textbf{[PENDIENTE: #1]}}}
+% Reserva el espacio de un resultado que todavía no llega, para que el conteo de páginas ya lo incluya.
+\newcommand{\reservaPendiente}[2]{\par\noindent\fbox{\parbox[c][#1][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\centering
+  \textcolor{riesgoalto}{\textbf{[PENDIENTE DE EVIDENCIA: #2]}}}}\par}
 \newcommand{\pendienteEvidencia}{\textcolor{riesgoalto}{\textbf{[PENDIENTE DE EVIDENCIA]}}}
 % Las capturas se regeneran desde el tag de entrega; hasta entonces su pie lo dice.
 \newcommand{\provisional}{\textit{Captura provisional: se regenera desde el tag de entrega.}}
@@ -116,28 +119,20 @@
 
 \input{sections/00-resumen}
 
-% Solo secciones: el documento cabe en 35 páginas o menos.
+% Solo secciones, en la misma página que el resumen: el documento cabe en 28 páginas.
 \setcounter{tocdepth}{1}
 \tableofcontents
 \newpage
 
 \input{sections/01-introduccion}
 \input{sections/02-planteamiento}
-\input{sections/03-nicho}
-\input{sections/04-estrategia}
-\input{sections/05-datos}
-\input{sections/06-objetivo}
-\input{sections/07-exploracion}
-\input{sections/08-procesamiento}
-\input{sections/09-modelacion}
-\input{sections/10-evaluacion}
-\input{sections/11-interpretabilidad}
-\input{sections/12-arquitectura}
-\input{sections/13-interfaz}
-\input{sections/14-resolucion}
-\input{sections/15-limitaciones}
-\input{sections/16-conclusiones}
-\input{sections/17-siguientes-pasos}
+\input{sections/03-estrategia}
+\input{sections/04-datos}
+\input{sections/05-exploracion}
+\input{sections/06-procesamiento}
+\input{sections/07-modelacion}
+\input{sections/08-resolucion}
+\input{sections/09-conclusiones}
 
 \printbibliography[heading=bibintoc, title={Referencias}]
 

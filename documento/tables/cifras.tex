@@ -6,23 +6,15 @@
 \newcommand{\cifraPrevalenciaEntrenamientoPorResena}{2.19\,\%}  % data-v1
 \newcommand{\cifraJuegosCatalogo}{123}  % data-v3
 \newcommand{\cifraResenasCatalogo}{184,367}  % data-v3
-\newcommand{\cifraPositivosCatalogo}{4,126}  % data-v3: minutos < 120 y voto negativo
-\newcommand{\cifraPrevalenciaCatalogoPorResena}{2.24\,\%}  % data-v3
 \newcommand{\cifraJuegosExternos}{40}  % data-v3 sin los appids de data-v1
-\newcommand{\cifraResenasExternos}{60,395}  % data-v3 sin los appids de data-v1
-\newcommand{\cifraPositivosExternos}{1,412}  % data-v3 sin los appids de data-v1: minutos < 120 y voto negativo
-\newcommand{\cifraPrevalenciaExternosPorResena}{2.34\,\%}  % data-v3 sin los appids de data-v1
 \newcommand{\cifraPRAUCModelo}{0.0694}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraPRAUCModeloStd}{0.0415}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraPRAUCTrivial}{0.0219}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf); trivial = prevalencia de cada pliegue
-\newcommand{\cifraPRAUCTrivialStd}{0.0037}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraPRAUCCociente}{3.2}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraPliegosGanados}{5}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): pliegues donde el modelo supera al trivial
 \newcommand{\cifraPliegues}{5}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraUmbralMedio}{0.2858}  % percentil 33.3 de los scores fuera de pliegue
 \newcommand{\cifraUmbralAlto}{0.3916}  % percentil 66.7 de los scores fuera de pliegue
-\newcommand{\cifraPRAUCFoldMin}{0.0367}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): el fold más bajo
-\newcommand{\cifraPRAUCFoldMax}{0.1459}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): el fold más alto
 \newcommand{\cifraCocienteFoldMin}{1.8}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): modelo entre trivial, el fold más bajo
 \newcommand{\cifraCocienteFoldMax}{5.8}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): modelo entre trivial, el fold más alto
 \newcommand{\cifraBajoEntrenamiento}{30}  % backend/referencias/bandas_referencia.json
@@ -38,40 +30,26 @@
 \newcommand{\cifraExternoICSup}{2.33}  % docs/evidencia/bootstrap-prueba-externa.json
 \newcommand{\cifraExternoReplicasSinVentaja}{27}  % réplicas del bootstrap con cociente ≤ 1
 \newcommand{\cifraExternoReplicas}{2,000}  % docs/evidencia/bootstrap-prueba-externa.json
-\newcommand{\cifraNovatosPorResena}{0.67\,\%}  % docs/evidencia/senal-por-biblioteca.json
-\newcommand{\cifraNovatosPromJuegos}{0.97\,\%}  % docs/evidencia/senal-por-biblioteca.json
-\newcommand{\cifraVeteranosPorResena}{2.89\,\%}  % docs/evidencia/senal-por-biblioteca.json
-\newcommand{\cifraVeteranosPromJuegos}{2.72\,\%}  % docs/evidencia/senal-por-biblioteca.json
-\newcommand{\cifraRazonMH}{2.62}  % docs/evidencia/senal-por-biblioteca-estratificada.json
-\newcommand{\cifraRazonMHICInf}{1.84}  % docs/evidencia/senal-por-biblioteca-estratificada.json
-\newcommand{\cifraRazonMHICSup}{4.12}  % docs/evidencia/senal-por-biblioteca-estratificada.json
 \newcommand{\cifraDesdeJulioEntrenamientoPorResena}{96.1\,\%}  % data-v1: reseñas publicadas desde el 1 de julio de 2025 (UTC)
 \newcommand{\cifraResenaMasAntiguaEntrenamiento}{8 de abril de 2023}  % data-v1: timestamp_created mínimo
-\newcommand{\cifraResenaMasRecienteEntrenamiento}{14 de septiembre de 2026}  % data-v1: timestamp_created máximo
-\newcommand{\cifraDescargaDesdeEntrenamiento}{14 de septiembre de 2026}  % data-v1: resenas.descargado_en mínimo
 \newcommand{\cifraDescargaHastaEntrenamiento}{14 de septiembre de 2026}  % data-v1: resenas.descargado_en máximo
-\newcommand{\cifraDesdeJulioCatalogoPorResena}{97.1\,\%}  % data-v3: reseñas publicadas desde el 1 de julio de 2025 (UTC)
-\newcommand{\cifraResenaMasAntiguaCatalogo}{8 de abril de 2023}  % data-v3: timestamp_created mínimo
-\newcommand{\cifraResenaMasRecienteCatalogo}{21 de septiembre de 2026}  % data-v3: timestamp_created máximo
-\newcommand{\cifraDescargaDesdeCatalogo}{14 de septiembre de 2026}  % data-v3: resenas.descargado_en mínimo
 \newcommand{\cifraDescargaHastaCatalogo}{21 de septiembre de 2026}  % data-v3: resenas.descargado_en máximo
 \newcommand{\cifraTopeIngesta}{1,500}  % backend/ingesta/ingesta_steam.py: MAX_RESENAS_POR_JUEGO
 \newcommand{\cifraJuegosEnElTope}{81}  % data-v1: juegos con el tope de reseñas
 \newcommand{\cifraDiasCubiertosMin}{4}  % data-v1: días entre la primera y la última reseña
 \newcommand{\cifraDiasCubiertosMax}{1,252}  % data-v1: días entre la primera y la última reseña
 \newcommand{\cifraDiasCubiertosMediana}{64}  % data-v1: mediana de días cubiertos
+\newcommand{\cifraPrivadosEntrenamientoPorResena}{59.9\,\%}  % data-v1: num_games_owned = 0
+\newcommand{\cifraSinNotaEntrenamiento}{23}  % data-v1: juegos sin nota de Metacritic
+\newcommand{\cifraPagoSinPrecioEntrenamiento}{2}  % data-v1: juegos de pago sin precio
+\newcommand{\cifraMetacriticVerificadoExternos}{40 de 40}  % docs/evidencia/verificacion-40-steam.csv
 \newcommand{\cifraExactitudTrivialPorResena}{97.81\,\%}  % data-v1: aciertos de decir siempre «no»
 \newcommand{\cifraNegativasAntesDelUmbralPorResena}{15.6\,\%}  % data-v1: reseñas negativas escritas antes de 120 minutos
 \newcommand{\cifraPositivasAntesDelUmbralPorResena}{2.0\,\%}  % data-v1: reseñas positivas escritas antes de 120 minutos
 \newcommand{\cifraNegativasPorMinutoAntesDelUmbral}{11.9}  % data-v1: reseñas negativas por minuto entre 110 y 119
 \newcommand{\cifraNegativasPorMinutoDespuesDelUmbral}{12.2}  % data-v1: reseñas negativas por minuto entre 120 y 129
-\newcommand{\cifraNegativasPorMinutoAntesDeTresHoras}{9.9}  % data-v1: reseñas negativas por minuto entre 170 y 179
-\newcommand{\cifraNegativasPorMinutoDesdeTresHoras}{12.4}  % data-v1: reseñas negativas por minuto entre 180 y 189
 \newcommand{\cifraPositivasPorMinutoAntesDelUmbral}{17.4}  % data-v1: reseñas positivas por minuto entre 110 y 119
 \newcommand{\cifraPositivasPorMinutoDespuesDelUmbral}{18.6}  % data-v1: reseñas positivas por minuto entre 120 y 129
-\newcommand{\cifraPositivasPorMinutoAntesDeTresHoras}{17.6}  % data-v1: reseñas positivas por minuto entre 170 y 179
-\newcommand{\cifraPositivasPorMinutoDesdeTresHoras}{81.7}  % data-v1: reseñas positivas por minuto entre 180 y 189
-\newcommand{\cifraJuegosSaltoTresHoras}{81}  % data-v1: juegos con positivas entre 180 y 189 minutos
 \newcommand{\cifraSpearmanUmbralMin}{0.96}  % Spearman del orden de los juegos con 60, 90 y 180 contra 120
 \newcommand{\cifraSpearmanUmbralMax}{0.99}  % Spearman del orden de los juegos con 60, 90 y 180 contra 120
 \newcommand{\cifraTasaJuegoMinPorResena}{0.13\,\%}  % data-v1: tasa de señal de cada juego, la menor
@@ -81,6 +59,11 @@
 \newcommand{\cifraSobredispersion}{107}  % data-v1: ji cuadrada de Pearson entre sus grados de libertad (ex.sobredispersion)
 \newcommand{\cifraTasaConNotaMedianaJuegos}{0.73\,\%}  % data-v1: tasa de señal de cada juego, mediana de los que tienen nota de Metacritic
 \newcommand{\cifraTasaSinNotaMedianaJuegos}{2.13\,\%}  % data-v1: tasa de señal de cada juego, mediana de los que no tienen nota
+\newcommand{\cifraSpearmanTieneNota}{−0.40}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
+\newcommand{\cifraSpearmanNota}{−0.42}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
+\newcommand{\cifraSpearmanPrecio}{0.18}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
+\newcommand{\cifraSpearmanPrecioP}{0.12}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego): valor p
+\newcommand{\cifraGratisEntrenamiento}{2}  % data-v1: juegos gratis
 \newcommand{\cifraCoefTieneNotaICInf}{−1.04}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
 \newcommand{\cifraCoefTieneNotaICSup}{−0.55}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
 \newcommand{\cifraCoefNotaICInf}{−0.56}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
@@ -94,13 +77,16 @@
 \newcommand{\cifraCoefPrecioReplicasPositivas}{96.6\,\%}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid: réplicas con el coeficiente del precio mayor que cero
 \newcommand{\cifraNegativasTempranasLimpias}{2,706}  % conjunto limpio de data-v1: reseñas negativa tempranas
 \newcommand{\cifraRefundTempranasPorResena}{9.5\,\%}  % conjunto limpio: negativa tempranas que mencionan «refund»
-\newcommand{\cifraPalabrasMedianaTempranas}{22}  % conjunto limpio: mediana de palabras, negativa tempranas
 \newcommand{\cifraNegativasTardiasLimpias}{14,353}  % conjunto limpio de data-v1: reseñas negativa tardías
 \newcommand{\cifraRefundTardiasPorResena}{2.9\,\%}  % conjunto limpio: negativa tardías que mencionan «refund»
-\newcommand{\cifraPalabrasMedianaTardias}{27}  % conjunto limpio: mediana de palabras, negativa tardías
 \newcommand{\cifraPositivasLimpias}{105,885}  % conjunto limpio de data-v1: reseñas positivas
 \newcommand{\cifraRefundPositivasPorResena}{0.2\,\%}  % conjunto limpio: positivas que mencionan «refund»
-\newcommand{\cifraPalabrasMedianaPositivas}{8}  % conjunto limpio: mediana de palabras, positivas
+\newcommand{\cifraDuplicadosQuitados}{483}  % data-v1: bitácora de li.limpiar
+\newcommand{\cifraVaciasQuitadas}{545}  % data-v1: bitácora de li.limpiar
+\newcommand{\cifraResenasLimpias}{122,944}  % conjunto limpio de data-v1: reseñas
+\newcommand{\cifraCortasPorResena}{22.7\,\%}  % conjunto limpio: menos de 3 palabras
+\newcommand{\cifraIdiomaInglesPorResena}{98.7\,\%}  % conjunto limpio: en inglés o indeterminado según lingua
+\newcommand{\cifraOtroIdioma}{1,637}  % conjunto limpio: en otro idioma según lingua
 \newcommand{\cifraPalabrasDeUnaCopia}{8}  % backend/analisis/limpieza.py: PALABRAS_DE_UNA_COPIA
 \newcommand{\cifraTextosEntreJuegos}{57}  % data-v1: textos idénticos de 8+ palabras en 2 o más juegos
 \newcommand{\cifraCopiasEnFoldsDistintos}{52}  % data-v1: de esos textos, los que caen en folds distintos de la partición congelada
@@ -118,57 +104,37 @@
 \newcommand{\cifraPRAUCParticionAlternativa}{0.0692}  % docs/evidencia/particion-alternativa.json
 \newcommand{\cifraPRAUCParticionAlternativaStd}{0.0412}  % docs/evidencia/particion-alternativa.json
 \newcommand{\cifraPliegosGanadosAlternativa}{5}  % docs/evidencia/particion-alternativa.json
-\newcommand{\cifraPrivadosEntrenamientoPorResena}{59.9\,\%}  % data-v1: num_games_owned = 0
-\newcommand{\cifraSinNotaEntrenamiento}{23}  % data-v1: juegos sin nota de Metacritic
-\newcommand{\cifraPagoSinPrecioEntrenamiento}{2}  % data-v1: juegos de pago sin precio
-\newcommand{\cifraMetacriticVerificadoExternos}{40 de 40}  % docs/evidencia/verificacion-40-steam.csv
-\newcommand{\cifraSpearmanTieneNota}{−0.40}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
-\newcommand{\cifraSpearmanNota}{−0.42}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
-\newcommand{\cifraSpearmanPrecio}{0.18}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego)
-\newcommand{\cifraSpearmanPrecioP}{0.12}  % data-v1: Spearman de la tasa por juego (ex.correlaciones_del_juego): valor p
-\newcommand{\cifraGratisEntrenamiento}{2}  % data-v1: juegos gratis
 \newcommand{\cifraPrecioMedianoEntrenamiento}{400.00}  % entrenamiento: mediana de precio_final / 100, juegos de pago con precio
 \newcommand{\cifraTasaEntrenamientoMedianaJuegos}{0.80\,\%}  % entrenamiento: mediana de las tasas por juego
 \newcommand{\cifraTasaEntrenamientoPromJuegos}{2.33\,\%}  % entrenamiento: promedio de las tasas por juego
 \newcommand{\cifraGratisExternos}{5}  % los 40 externos: juegos gratis
-\newcommand{\cifraSinNotaExternos}{10}  % los 40 externos: juegos sin nota
 \newcommand{\cifraPrecioMedianoExternos}{269.99}  % externos: mediana de precio_final / 100, juegos de pago con precio
 \newcommand{\cifraTasaExternosMedianaJuegos}{1.40\,\%}  % externos: mediana de las tasas por juego
 \newcommand{\cifraTasaExternosPromJuegos}{2.33\,\%}  % externos: promedio de las tasas por juego
-\newcommand{\cifraDuplicadosQuitados}{483}  % data-v1: bitácora de li.limpiar
-\newcommand{\cifraVaciasQuitadas}{545}  % data-v1: bitácora de li.limpiar
-\newcommand{\cifraResenasLimpias}{122,944}  % conjunto limpio de data-v1: reseñas
-\newcommand{\cifraCortasPorResena}{22.7\,\%}  % conjunto limpio: menos de 3 palabras
-\newcommand{\cifraIdiomaInglesPorResena}{98.7\,\%}  % conjunto limpio: en inglés o indeterminado según lingua
-\newcommand{\cifraOtroIdioma}{1,637}  % conjunto limpio: en otro idioma según lingua
-\newcommand{\cifraPRAUCCompra}{0.0709}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto compra
-\newcommand{\cifraPRAUCCompraStd}{0.0270}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto compra
-\newcommand{\cifraPRAUCCompleto}{0.0849}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
-\newcommand{\cifraPRAUCCompletoStd}{0.0207}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
-\newcommand{\cifraDiferenciaCompraJuego}{0.0015}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): compra menos juego
-\newcommand{\cifraFoldsCompraGana}{3}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): folds donde compra supera a juego
-\newcommand{\cifraParticionesCompraGana}{16}  % docs/evidencia/simulacion_123.txt, data-v1
-\newcommand{\cifraParticionesSimuladas}{30}  % docs/evidencia/simulacion_123.txt, data-v1
 \newcommand{\cifraTasaBajoEntrenamientoPorResena}{0.66\,\%}  % entrenamiento: banda bajo, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaBajoEntrenamientoPromJuegos}{0.66\,\%}  % entrenamiento: banda bajo, con nota (bandas_referencia.json)
 \newcommand{\cifraTasaAltoSinNotaEntrenamientoPorResena}{5.37\,\%}  % entrenamiento: banda alto, sin nota (bandas_referencia.json)
-\newcommand{\cifraTasaAltoSinNotaEntrenamientoPromJuegos}{5.78\,\%}  % entrenamiento: banda alto, sin nota (bandas_referencia.json)
 \newcommand{\cifraTasaBajoExternosPorResena}{1.86\,\%}  % externos: banda bajo, con nota (bandas_referencia.json)
 \newcommand{\cifraTasaBajoExternosPromJuegos}{1.86\,\%}  % externos: banda bajo, con nota (bandas_referencia.json)
 \newcommand{\cifraTasaMedioExternosPorResena}{1.63\,\%}  % externos: banda medio, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaMedioExternosPromJuegos}{1.61\,\%}  % externos: banda medio, con nota (bandas_referencia.json)
 \newcommand{\cifraTasaAltoSinNotaExternosPorResena}{3.66\,\%}  % externos: banda alto, sin nota (bandas_referencia.json)
 \newcommand{\cifraTasaAltoSinNotaExternosPromJuegos}{3.64\,\%}  % externos: banda alto, sin nota (bandas_referencia.json)
-\newcommand{\cifraJuegosAltoConNota}{10}  % los 123: banda alta con nota de Metacritic
 \newcommand{\cifraAltoSinNotaCatalogo}{33}  % los 123: banda alta sin nota de Metacritic
+\newcommand{\cifraScoreHollowKnight}{0.2857}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
+\newcommand{\cifraScoreWarframe}{0.3918}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
 \newcommand{\cifraUmbralTipico}{0.10}  % backend/api/scoring.py: UMBRAL_TIPICO
 \newcommand{\cifraNotaPromedioCatalogo}{85.5}  % data-v3: promedio de Metacritic de los juegos que la tienen
 \newcommand{\cifraPrecioMedianoCatalogo}{349.88}  % data-v3: mediana de precio de los de pago con precio
 \newcommand{\cifraMediaNotaModelo}{86.97}  % media de metacritic del StandardScaler del modelo (data-v1, con la nota que falta imputada)
-\newcommand{\cifraEndpoints}{17}  % backend/api/main.py: rutas con @app.get/post/put/delete
 \newcommand{\cifraCoberturaMotivosPorResena}{34.0\,\%}  % conjunto limpio de data-v1: negativas tempranas con al menos un motivo (motivos.tabla_de_motivos)
 \newcommand{\cifraSinMotivoPorResena}{66.0\,\%}  % conjunto limpio de data-v1: negativas tempranas sin ningún motivo (motivos.tabla_de_motivos)
 \newcommand{\cifraCategoriasMotivos}{6}  % backend/analisis/motivos.py: PALABRAS_CLAVE_POR_CATEGORIA
 \newcommand{\cifraUmbralMinCasos}{5}  % backend/api/scoring.py: UMBRAL_MIN_CASOS
-\newcommand{\cifraScoreHollowKnight}{0.2857}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
-\newcommand{\cifraScoreWarframe}{0.3918}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
+\newcommand{\cifraEndpointsRiesgo}{5}  % backend/api/main.py: rutas de catalogo, perfil, prediccion, explicacion, panorama
+\newcommand{\cifraEndpointsComunidad}{8}  % backend/api/main.py: rutas de valoraciones, comentarios
+\newcommand{\cifraEndpointsNia}{4}  % backend/api/main.py: rutas de nia
+\newcommand{\cifraEndpoints}{17}  % backend/api/main.py: rutas con @app.get/post/put/delete
+\newcommand{\cifraPRAUCCompleto}{0.0849}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
+\newcommand{\cifraDiferenciaCompraJuego}{0.0015}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): compra menos juego
+\newcommand{\cifraFoldsCompraGana}{3}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): folds donde compra supera a juego
+\newcommand{\cifraParticionesCompraGana}{16}  % docs/evidencia/simulacion_123.txt, data-v1
+\newcommand{\cifraParticionesSimuladas}{30}  % docs/evidencia/simulacion_123.txt, data-v1

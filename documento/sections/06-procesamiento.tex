@@ -1,0 +1,88 @@
+% Rúbrica: Procesamiento de datos. Fuente: notebooks/00_exploracion.ipynb, bloques 1 y 2 y §3.5;
+% backend/analisis/limpieza.py y construir_features de backend/modelado/entrenar_baseline.py.
+\section{Procesamiento de datos}\label{sec:procesamiento}
+
+El procesamiento tiene dos destinos. El modelo de riesgo se entrena con data-v1 tal como se
+publicó, porque solo usa variables del juego y no lee texto. La limpieza produce otro conjunto,
+el limpio, que usan el análisis de texto (sección~\ref{sec:exploracion-texto}) y la medición de
+los motivos (sección~\ref{sec:interpretabilidad-motivos}).
+
+\subsection{Validación y limpieza}\label{sec:procesamiento-validacion}\label{sec:procesamiento-limpieza}
+
+\paragraph{Validación.} El notebook 00 corre primero los chequeos de la
+sección~\ref{sec:datos-calidad}, y los de rango que nunca deben fallar son
+aserciones\footnote{Comprobaciones dentro del código que detienen la ejecución si no se cumplen.}.
+Además, \cifraTextosEntreJuegos{} textos idénticos de \cifraPalabrasDeUnaCopia{} palabras o más
+aparecen en más de un juego, \cifraCopiasEnFoldsDistintos{} de ellos en folds distintos: un modelo
+de texto podría verlos en entrenamiento y en prueba, y por eso la limpieza quita los duplicados.
+
+\paragraph{Limpieza: marcar, no borrar.} Cada regla es una función de \texttt{limpieza.py}. Solo
+dos quitan filas: los textos idénticos, de los que se
+queda la reseña más antigua (\cifraDuplicadosQuitados{} filas), y las reseñas vacías
+(\cifraVaciasQuitadas{}); quedan \cifraResenasLimpias{} reseñas. Las demás agregan una columna que
+marca la reseña y la dejan en su lugar: las cortas, que son el \cifraCortasPorResena{} y cuya
+salida cambiaría qué reseñas se estudian; las escritas en otro idioma, y las plantillas. La
+normalización pasa el texto a minúsculas, quita el BBCode\footnote{El formato que Steam permite en
+las reseñas, con etiquetas como \texttt{[h1]} o \texttt{[spoiler]}.} y las direcciones web, y abre
+las contracciones para que la negación quede como palabra suelta (detalle en el notebook 00,
+bloque 2). La limpieza no se aplica al modelo de riesgo. Con la misma partición congelada, sin los
+duplicados su PR-AUC pasaría de \cifraPRAUCModelo{} a \cifraPRAUCSinDuplicados{}, y sin las vacías,
+a \cifraPRAUCSinVacias{}; sin las cortas subiría a \cifraPRAUCSinCortas{}, pero sobre otra
+población y con más prevalencia, así que no se compara. El conjunto limpio se guarda con un sha256
+de su contenido.
+
+\paragraph{Idioma.}\label{sec:procesamiento-idioma} La ingesta pidió reseñas en inglés. Según
+lingua\footnote{Una biblioteca de detección de idioma que solo decide cuando tiene confianza.}, el
+\cifraIdiomaInglesPorResena{} de las reseñas limpias está en inglés o no se pudo determinar, y
+\cifraOtroIdioma{} están en otro idioma, sobre todo ruso, español y portugués. Como el filtro lo
+aplicó Steam, esa cifra mide qué tan bien etiquetaron sus reseñas los autores. Las reseñas en otro
+idioma se marcan y se quedan; al modelo no le afectan, pero a los motivos sí, porque sus palabras
+clave están en inglés.
+
+\subsection{Variables, imputación, valores extremos y aumentación}\label{sec:procesamiento-precio}
+
+\paragraph{Ingeniería de variables.} El modelo usa cinco variables del juego. El precio entra como
+el logaritmo de uno más el precio, para que los juegos caros no dominen la escala; la nota de
+Metacritic entra junto con una bandera que dice si el juego la tiene, y las cinco se estandarizan
+dentro del modelo (sección~\ref{sec:modelacion}).
+
+\paragraph{Imputación.} La nota que falta se llena con la mediana de data-v1, pero siempre junto a
+la bandera, así que el hueco no se rellena en silencio. Los \cifraPagoSinPrecioEntrenamiento{}
+juegos de pago que llegaron sin precio entran con precio 0: el modelo los lee como si costaran 0,
+aunque no los marca como gratis, y como el coeficiente del precio es positivo, eso tiende a bajar
+su riesgo estimado. La ficha de esos juegos lo avisa (sección~\ref{sec:interpretabilidad}). El 0
+de los perfiles privados no se imputa como biblioteca vacía: es una bandera de privacidad, y además
+no entra al modelo.
+
+\paragraph{Valores extremos.} No se recorta ninguno. Los rangos imposibles no tienen casos
+(sección~\ref{sec:datos-calidad}), el precio ya entra en logaritmo, y de los minutos al reseñar
+solo importa si quedan antes o después de los 120, así que una reseña escrita tras miles de horas
+no pesa más que otra.
+
+\paragraph{Aumentación de datos.} No aplica. El desbalance de la clase se atiende con pesos de clase
+en el modelo y con una métrica que no lo esconde (sección~\ref{sec:objetivo-metrica}); además, lo
+que varía es el juego, y crear reseñas sintéticas no agregaría juegos.
+
+\subsection{Variables que no se conocen al comprar}\label{sec:procesamiento-variables}
+
+Una variable solo puede entrar al modelo si se conoce antes de comprar (tabla~\ref{tab:variables}).
+Las del juego vienen de la tienda y entran. Las del autor de la reseña, no:
+\texttt{num\_reviews} cambia con el tiempo y se lee al descargar, y \texttt{steam\_purchase},
+\texttt{received\_for\_free} y \texttt{written\_during\_early\_access} solo existen porque la
+reseña ya se escribió, así que ninguna está disponible al momento de la compra. La biblioteca del
+autor sí podría declararse antes; se probó, y su aporte cupo en el ruido entre folds
+(sección~\ref{sec:modelacion-bmas}). En el sitio, el perfil se declara en un formulario y sirve
+para la afinidad: no mueve el riesgo. El texto de la reseña es otro caso: tampoco existe al
+comprar, pero además sería una fuga\footnote{Hay fuga cuando las variables de un modelo ya
+contienen la respuesta que debe predecir. Sus métricas salen mejores de lo que serán en uso.},
+porque la señal $Y$ sale de esas mismas reseñas, de su voto y de sus minutos, y el texto acompaña a
+ese voto.
+
+\begin{table}[htbp]
+  \centering\footnotesize
+  \input{tables/variables}
+  \caption{Variables candidatas: cuándo se conocen y si entran al modelo de riesgo. Fuente:
+  \texttt{construir\_features} de \texttt{backend/modelado/entrenar\_baseline.py} y el
+  notebook 00, §3.5.}
+  \label{tab:variables}
+\end{table}

@@ -9,6 +9,8 @@ localizable desde el índice.
   `generar_figuras.py`: **ninguna cifra se escribe a mano**.
 - `figures/`: figuras que genera `generar_figuras.py` (PDF de matplotlib y el diagrama de arquitectura en
   TikZ), las capturas (copiadas de `docs/capturas/documento/`) y los escudos de la portada.
+- `DUDAS.md`: las decisiones que se tomaron sin preguntar al condensar el documento, con su porqué y su
+  alternativa.
 - `references.bib`: solo referencias abiertas y verificadas antes de citarlas.
 - `generar_figuras.py`: de los releases (verificados por sha256) y `docs/evidencia/` a `figures/` y
   `tables/`. Necesita `documento/requirements-documento.txt`.

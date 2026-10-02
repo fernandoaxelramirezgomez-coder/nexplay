@@ -1,0 +1,48 @@
+% Rúbrica: Resolución del problema (cómo el modelo aborda y resuelve el problema) e Interfaz de uso.
+% Fuente: backend/despliegue/, backend/modelado/verificar_bandas.py, backend/api/ (main.py, scoring.py y nia/),
+% frontend/ y README.md. La estructura del repo y el tag codigo-v3 van en el anexo.
+\section{Resolución del problema}\label{sec:resolucion}
+
+\subsection{Arquitectura y despliegue}\label{sec:arquitectura}\label{sec:arquitectura-flujo}\label{sec:arquitectura-build}
+
+La figura~\ref{fig:arquitectura} sigue el camino de los datos. La ingesta bajó las reseñas y las
+fichas de Steam y las publicó en releases con tag fijo (sección~\ref{sec:datos-releases}); de ahí
+en adelante nada vuelve a consultar Steam. Render construye la API con
+\texttt{backend/despliegue/Dockerfile}, y el build falla si algo no cuadra:
+\texttt{preparar\_entorno.py} se detiene si el sha256 de data-v3 o de data-v1 no es el publicado,
+entrena el modelo con data-v1 y la partición congelada, y \texttt{verificar\_bandas.py} compara la
+banda de los \cifraJuegosCatalogo{} juegos con la referencia validada, así que basta con que cambie
+una para que falle. El build también rechaza la imagen si le llega una biblioteca de modelos de
+texto, que deben calcularse fuera de la API.
+
+\begin{figure}[htbp]
+  \centering
+  \input{figures/arquitectura}
+  \caption{De la API de Steam a la interfaz. Después de la ingesta, ningún paso consulta Steam.
+  Fuente: \texttt{backend/despliegue/Dockerfile}, \texttt{preparar\_entorno.py} y
+  \texttt{frontend/vercel.json}.}
+  \label{fig:arquitectura}
+\end{figure}
+
+La API, hecha con FastAPI, expone \cifraEndpoints{} endpoints: \cifraEndpointsRiesgo{} de riesgo
+(\texttt{/catalogo}, \texttt{/perfil}, \texttt{/prediccion}, \texttt{/explicacion} y
+\texttt{/panorama}), \cifraEndpointsComunidad{} para calificaciones, comentarios y reacciones, y
+\cifraEndpointsNia{} de Nia, descritos en su página \texttt{/docs}\footnote{FastAPI arma esa página
+con el contrato OpenAPI de cada endpoint: qué recibe, qué devuelve y qué errores da.}. Todo lo que
+entra se valida con Pydantic\footnote{Una biblioteca de Python que revisa el tipo y el rango de cada
+dato de entrada y rechaza la solicitud si no cumple.}. \texttt{/prediccion} sigue recibiendo el
+perfil por compatibilidad, pero el riesgo que devuelve es del título y no cambia con él. El
+frontend, en Angular, es un sitio estático en Vercel.
+
+La API está en el plan gratis de Render: se duerme cuando nadie la usa, y la primera consulta
+después tarda en responder. Su disco es efímero, así que las calificaciones, los comentarios y los
+votos a Nia se borran al reiniciarse; el catálogo y el modelo vienen dentro de la imagen y no se
+pierden. Nia usa un modelo de lenguaje de OpenAI solo si el servidor tiene clave; si no, contesta
+por reglas, sin costo. Los comentarios, las reacciones y las consultas y votos a Nia tienen un
+límite por minuto, por usuario y por IP.
+
+\subsection{Interfaz de uso}\label{sec:interfaz}
+\pendiente{redacción (etapa 3)}
+
+\subsection{Cómo responde la pregunta}\label{sec:resolucion-pregunta}
+\pendiente{redacción (etapa 3)}

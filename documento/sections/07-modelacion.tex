@@ -1,0 +1,189 @@
+% Rúbrica: Modelación supervisada (selección del modelo y evaluación de su desempeño). Fuente:
+% notebooks/01_modelo_riesgo.ipynb, §5 a §8; 00, §3.2, §3.4 y §3.8; backend/modelado/, backend/api/scoring.py;
+% docs/evidencia/ (simulacion_123.txt, particion-alternativa.json, prueba-externa.json,
+% bootstrap-prueba-externa.json y metacritic-por-banda.md).
+\section{Modelación y evaluación}\label{sec:modelacion}
+
+\subsection{El modelo y sus conjuntos de variables}\label{sec:modelacion-conjuntos}
+
+El modelo es una regresión logística\footnote{Un modelo lineal de clasificación: le da un peso a
+cada variable, las suma y convierte el resultado en un score entre 0 y 1.} con las variables
+estandarizadas y pesos de clase balanceados\footnote{Con \texttt{class\_weight="balanced"}, las
+pocas reseñas con $Y = 1$ pesan en el ajuste tanto como todas las demás juntas, para que la clase
+rara no se pierda.}, sin ajuste de hiperparámetros. Se eligió por tres razones. Usa pocas
+variables, cinco y todas del juego. Sus coeficientes se leen directo, y son los que alimentan la
+ficha: cada factor que muestra el sitio es un coeficiente por el valor del juego
+(sección~\ref{sec:interpretabilidad}). Y aunque hay \cifraResenasEntrenamiento{} reseñas, lo que
+varía son \cifraJuegosEntrenamiento{} juegos, y con tan pocos un modelo más flexible tendría poco
+de dónde aprender sin memorizarlos. La comparación contra otros algoritmos viene de la Parte A, con
+los modelos de texto (sección~\ref{sec:modelacion-texto}). La misma función,
+\texttt{construir\_pipeline}, arma el modelo que sirve la API y el de los notebooks, y se probó con
+tres conjuntos de variables, siempre contra el clasificador trivial (tabla~\ref{tab:conjuntos}).
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/conjuntos}
+  \caption{PR-AUC del mismo modelo con cada conjunto de variables: media y desviación estándar de
+  los \cifraPliegues{} folds de la partición congelada. Fuente: \texttt{evaluar\_gkf} de
+  \texttt{backend/modelado/entrenar\_baseline.py} sobre data-v1.}
+  \label{tab:conjuntos}
+\end{table}
+
+El conjunto completo da el PR-AUC más alto, \cifraPRAUCCompleto{}, pero no se puede usar: sus
+variables posteriores a la reseña no están disponibles al momento de la compra
+(sección~\ref{sec:procesamiento-variables}). La comparación que importa es entre juego y compra.
+
+\subsection{La decisión B+: no forzar una personalización que los datos no justifican}\label{sec:modelacion-bmas}
+
+El proyecto se quedó con el conjunto juego, la variante que llamó B+, por dos razones. La primera
+es estadística. Compra le agrega al conjunto juego la biblioteca del autor, lo único del jugador
+que el sitio podría pedir en un formulario, y con eso el PR-AUC sube \cifraDiferenciaCompraJuego{},
+muy por debajo de la desviación entre folds del modelo (\cifraPRAUCModeloStd{}). Compra le gana a
+juego en \cifraFoldsCompraGana{} de los \cifraPliegues{} folds, y en \cifraParticionesCompraGana{}
+de \cifraParticionesSimuladas{} particiones distintas de los juegos: más o menos la mitad de las
+veces, como al azar. La segunda es de diseño. Cuando el sitio servía el conjunto compra, la
+variable \texttt{log\_num\_games\_owned} se llenaba con las compras al año que la persona declara
+en el formulario, pero el modelo la había aprendido del tamaño de la biblioteca de quien escribió
+la reseña; las compras declaradas por año eran un sustituto de ese dato que nunca se validó.
+
+Con el conjunto juego, el riesgo es del título y vale igual para cualquier persona: no depende de
+un dato que nadie verifica y se explica solo con propiedades del juego. El perfil que se declara
+en el sitio sirve para la afinidad, que dice qué tanto encaja un juego con quien lo declaró, y no
+mueve el riesgo.
+
+\subsection{Validación agrupada por juego}\label{sec:modelacion-validacion}
+
+Si las reseñas se repartieran al azar entre folds, el mismo modelo daría \cifraPRAUCKFold{}, con
+una desviación de apenas \cifraPRAUCKFoldStd{}, porque cada fold de prueba tendría juegos que el
+modelo ya vio (sección~\ref{sec:exploracion-juego}). Agrupando por \texttt{appid} da
+\cifraPRAUCModelo{}~$\pm$~\cifraPRAUCModeloStd{}, la cifra que vale para un juego nuevo. El reparto
+de los juegos también pesa: con \cifraParticionesAleatorias{} particiones por juego hechas al azar,
+el PR-AUC medio va de \cifraPRAUCParticionMin{} a \cifraPRAUCParticionMax{}. Por eso la partición
+está congelada en un archivo de \texttt{backend/referencias/}, y toda evaluación y los umbrales la
+leen de ahí. Hay otra razón: GroupKFold reparte los juegos según su número de reseñas,
+\cifraJuegosEmpatadosEnElTope{} de los \cifraJuegosEntrenamiento{} tienen exactamente el tope de
+\cifraTopeIngesta{}, y cada versión de scikit-learn desempata distinto. Con la
+\cifraVersionSklearnColab{}, la que trae Colab, solo \cifraJuegosMismoFoldColab{} juegos quedan en
+el mismo fold; aun así, el PR-AUC es
+\cifraPRAUCParticionAlternativa{}~$\pm$~\cifraPRAUCParticionAlternativaStd{} y el modelo le gana
+al trivial en \cifraPliegosGanadosAlternativa{} de \cifraPliegues{} folds, igual que con la
+congelada.
+
+\subsection{Coeficientes y bandas de riesgo}\label{sec:modelacion-bootstrap}\label{sec:modelacion-umbrales}
+
+Los coeficientes de la crítica están en la sección~\ref{sec:exploracion-critica}. Los demás cruzan
+el cero: el del precio va de \cifraCoefPrecioICInf{} a \cifraCoefPrecioICSup{}, el del descuento,
+de \cifraCoefDescuentoICInf{} a \cifraCoefDescuentoICSup{}, y el de la gratuidad, de
+\cifraCoefGratisICInf{} a \cifraCoefGratisICSup{}. El del precio es positivo en el
+\cifraCoefPrecioReplicasPositivas{} de las réplicas, pero con \cifraJuegosEntrenamiento{} juegos su
+intervalo no descarta el cero, y por eso su evidencia se marca como débil.
+
+El sitio no muestra el score: muestra una de tres bandas, bajo, medio o alto. Los cortes dividen en
+tercios los scores fuera de pliegue\footnote{El score fuera de pliegue de una reseña lo da un modelo
+entrenado sin el juego de esa reseña, con la misma partición congelada.} de las reseñas de data-v1:
+un juego pasa a medio desde \cifraUmbralMedio{} y a alto desde \cifraUmbralAlto{}. Los tercios son
+de reseñas, y cada juego se califica con el modelo entrenado con todo data-v1, así que los juegos no
+se reparten en partes iguales: los \cifraJuegosEntrenamiento{} quedan en \cifraBajoEntrenamiento{},
+\cifraMedioEntrenamiento{} y \cifraAltoEntrenamiento{}, y los \cifraJuegosCatalogo{} del catálogo,
+en \cifraBajoCatalogo{}, \cifraMedioCatalogo{} y \cifraAltoCatalogo{}. Por los pesos balanceados, el
+score no es una probabilidad calibrada: los cortes quedan muy por encima de la prevalencia, que es
+de \cifraPrevalenciaEntrenamientoPorResena{}. Sirve para ordenar títulos, no como la probabilidad
+de que una compra termine en la señal. Los umbrales salen solo de data-v1, y los
+\cifraJuegosExternos{} externos se clasifican con ellos sin ajustarlos.
+
+\subsection{Resultados por fold y prueba externa}\label{sec:evaluacion}\label{sec:evaluacion-folds}\label{sec:evaluacion-externa}
+
+La figura~\ref{fig:pr-auc-por-fold} muestra el PR-AUC de cada fold de la partición congelada. El
+modelo le gana al trivial en \cifraPliegosGanados{} de \cifraPliegues{} folds, pero por márgenes
+muy distintos, de \cifraCocienteFoldMin{} a \cifraCocienteFoldMax{} veces; en promedio llega a
+\cifraPRAUCModelo{} contra \cifraPRAUCTrivial{}, \cifraPRAUCCociente{} veces el trivial. Es una
+desviación grande al lado de la media: el resultado depende de qué juegos le tocan a cada fold.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{pr-auc-por-fold.pdf}
+  \caption{PR-AUC del modelo y del trivial en cada fold de la partición congelada (data-v1) y en
+  la prueba externa. Sobre cada barra, cuántas veces supera el modelo al trivial. Fuente:
+  \texttt{evaluar\_gkf} sobre data-v1 y \texttt{docs/evidencia/prueba-externa.json}.}
+  \label{fig:pr-auc-por-fold}
+\end{figure}
+
+Los \cifraJuegosExternos{} títulos que llegaron con data-v2 se califican con el modelo entrenado en
+data-v1, con sus umbrales y su mediana de Metacritic, igual que lo hace la API. Su PR-AUC es
+\cifraPRAUCExterno{} contra \cifraPRAUCExternoTrivial{} del trivial: \cifraPRAUCExternoCociente{}
+veces, la última pareja de la figura. Con los títulos remuestreados \cifraExternoReplicas{} veces,
+el intervalo al \cifraNivelDeConfianza{} del cociente va de \cifraExternoICInf{} a
+\cifraExternoICSup{}, y solo \cifraExternoReplicasSinVentaja{} réplicas quedan en 1 o menos. Hay
+señal fuera de muestra, pero es modesta: el extremo inferior queda cerca de 1. Entrenar con los
+\cifraJuegosCatalogo{} juntos bajaría el ruido entre folds, pero se perdería la única evaluación con
+juegos que el modelo no vio, y por eso el modelo se queda entrenado con data-v1.
+
+\subsection{Por qué cae fuera de muestra}\label{sec:evaluacion-caida}\label{sec:evaluacion-filo}
+
+Una parte de la caída se ve en la variable que más pesa, la crítica: de los \cifraAltoCatalogo{}
+juegos de riesgo alto del catálogo, \cifraAltoSinNotaCatalogo{} no tienen nota. Por reseña, en los
+de entrenamiento la banda alta sin nota tiene \cifraTasaAltoSinNotaEntrenamientoPorResena{} contra
+\cifraTasaBajoEntrenamientoPorResena{} de la baja, una tabla solo descriptiva porque el modelo ya
+vio esos juegos. En los externos la distancia se acorta, \cifraTasaAltoSinNotaExternosPorResena{}
+contra \cifraTasaBajoExternosPorResena{}, y la baja y la media se invierten
+(\cifraTasaBajoExternosPorResena{} contra \cifraTasaMedioExternosPorResena{}). Con el promedio por
+juego la lectura es la misma: \cifraTasaAltoSinNotaExternosPromJuegos{} contra
+\cifraTasaBajoExternosPromJuegos{} en los externos. La falta de nota sigue señalando más riesgo,
+pero separa menos en los títulos nuevos, que además traen otra mezcla
+(sección~\ref{sec:exploracion-externos}; detalle en \texttt{docs/evidencia/metacritic-por-banda.md}).
+
+Las bandas cortan un score continuo, y un juego cerca de un corte puede cambiar de banda con un
+cambio mínimo en los datos o en el reentrenamiento. Los dos más cercanos son Hollow Knight, con
+\cifraScoreHollowKnight{} contra el corte de \cifraUmbralMedio{}, en la banda baja, y Warframe,
+con \cifraScoreWarframe{} contra \cifraUmbralAlto{}, en la alta. Por eso no se usan como casos de
+demostración.
+
+\subsection{Cómo se explica el riesgo}\label{sec:interpretabilidad}\label{sec:interpretabilidad-factores}\label{sec:interpretabilidad-avisos}
+
+Para cada juego, la API calcula el aporte de cada variable al score, su coeficiente por su valor
+estandarizado\footnote{El aporte está en log-odds, la escala en la que la regresión suma: positivo
+sube el score y negativo lo baja.}, y la ficha muestra los tres de mayor aporte, aunque el primero
+tenga evidencia débil. Cada factor lleva su nivel de evidencia, según sus intervalos
+(sección~\ref{sec:modelacion-bootstrap}): sólida para la cobertura y la nota de la crítica, y débil
+para la gratuidad, el precio y el descuento, con la leyenda «evidencia débil: con
+\cifraJuegosEntrenamiento{} juegos no se distingue de cero». Junto a cada factor va la cifra del
+juego y su referencia: la nota contra el promedio del catálogo, \cifraNotaPromedioCatalogo{}, y el
+precio contra la mediana de los de pago, \cifraPrecioMedianoCatalogo{} pesos, que se parece más a
+la escala logarítmica del modelo que el promedio.
+
+Un factor con un aporte menor que \texttt{UMBRAL\_TIPICO}, \cifraUmbralTipico{}, se muestra sin
+flecha, como «cerca de lo típico del catálogo». Ese valor es una decisión de producto, no una
+propiedad estadística: no sale de un intervalo ni de una prueba. Se eligió para que ninguna flecha
+contradiga la cifra que tiene al lado, porque el modelo compara cada nota contra su media de
+entrenamiento, \cifraMediaNotaModelo{}, mientras que la ficha la compara contra el promedio del
+catálogo; una nota entre las dos aparece «por encima del promedio» y aun así recibe un aporte
+pequeño que sube el score. Con \cifraUmbralTipico{}, ningún factor con flecha cae en ese caso en
+los \cifraJuegosCatalogo{} juegos, y el generador de este documento lo comprueba.
+
+Dos casos llevan aviso. En un juego gratis, la gratuidad y el precio de 0 dicen lo mismo y tiran en
+sentidos opuestos, así que se muestran como un solo factor, y el aviso agrega que en el
+entrenamiento había solo \cifraGratisEntrenamiento{} juegos gratis y que, para ellos, el modelo
+extrapola. En los \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin precio, el aviso dice que
+la estimación es menos confiable, porque el modelo tomó el precio como 0.
+
+\subsection{Los motivos: una heurística de palabras clave}\label{sec:interpretabilidad-motivos}
+
+\texttt{/explicacion} no usa un modelo. Busca palabras clave en inglés de \cifraCategoriasMotivos{}
+categorías (rendimiento, bugs, dificultad, controles, contenido y precio) en las reseñas con la
+señal de cada juego, y una reseña puede caer en varias o en ninguna. Si el juego tiene menos de
+\cifraUmbralMinCasos{} reseñas con la señal, no muestra motivos, y cada porcentaje se calcula sobre
+las reseñas que sí cayeron en alguna categoría, cuyo número la ficha dice. El límite es la
+cobertura: de las \cifraNegativasTempranasLimpias{} negativas tempranas del conjunto limpio, el
+\cifraCoberturaMotivosPorResena{} menciona al menos un motivo de la lista, y el
+\cifraSinMotivoPorResena{} restante no menciona ninguno; rendimiento y bugs son los más frecuentes
+(detalle en el notebook 00, §3.8). Por eso los motivos se leen como las quejas de las reseñas que
+usan esas palabras, no como la causa de la señal en ese juego.
+
+\subsection{Modelos de texto (Parte A)}\label{sec:modelacion-texto}
+
+Los modelos que leen el texto de las reseñas, y con ellos la comparación entre algoritmos, se están
+haciendo en la rama \texttt{modelos-texto}, con prerregistro\footnote{Un prerregistro fija, antes
+de correr el análisis, qué se va a medir y qué resultado contará como éxito, para no acomodar la
+pregunta a los resultados.}. Su resultado entrará a este documento cuando esa rama llegue a master.
+
+\reservaPendiente{11cm}{resultado de la Parte A, de la rama \texttt{modelos-texto}}
