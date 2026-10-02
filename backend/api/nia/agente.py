@@ -290,6 +290,9 @@ Reglas que no puedes romper:
   pregunta por cuál; ordenar por un criterio que ya dieron sí se vale.
 - Si dices cuántos juegos cumplen algo, nombra todos los que muestras; si no caben, di
   cuántos más hay ("y 2 más en Explorar").
+- Los juegos que nombras y te devolvió una herramienta se pintan como tarjetas, cada una con
+  su riesgo: no digas el riesgo de cada uno ni los enumeres («bajo, bajo y alto,
+  respectivamente», «Hades (riesgo bajo)»). Si importa, di cuántos hay de cada nivel.
 - "Horas típicas" son las horas que llevaba jugadas, en la mediana, quien recomendó el
   juego. No es lo que dura: dilo así si preguntan cuánto dura.
 - Si piden negritas, viñetas o tablas, di en una frase que escribes en texto simple y
@@ -328,6 +331,27 @@ _BANDA = (
     # «¿Cuál es la tasa de abandono?»: el modelo repetía la palabra de la pregunta.
     (re.compile(r"\b([Aa])bandono\b"), lambda m: "arrepentimiento temprano" if m.group(1) == "a" else "Arrepentimiento temprano"),
 )
+
+
+# «Hades, Rust y Apex tienen riesgo bajo, alto y bajo, respectivamente», «Diablo® IV (riesgo
+# alto)»: con tarjetas, el riesgo de cada juego ya va en su píldora. El prompt lo pide y no
+# siempre se cumple, así que también se quita a la salida.
+_NIVEL = r"(?:bajo|medio|alto)"
+_RIESGOS_ENUMERADOS = (
+    re.compile(
+        rf",?\s+(?:que\s+)?(?:tienen|con|de)\s+(?:un\s+)?riesgos?(?:\s+de\s+arrepentimiento(?:\s+temprano)?)?\s+"
+        rf"{_NIVEL}(?:\s*,\s*{_NIVEL})*,?\s+y\s+{_NIVEL},?\s+respectivamente(?:,(?=\s))?",
+        re.IGNORECASE,
+    ),
+    re.compile(rf"\s*\((?:riesgo\s+)?(?:de\s+arrepentimiento\s+)?{_NIVEL}\)", re.IGNORECASE),
+)
+
+
+def sin_riesgos_enumerados(texto: str) -> str:
+    """Quita el riesgo dicho juego por juego; se usa solo cuando la respuesta trae tarjetas."""
+    for patron in _RIESGOS_ENUMERADOS:
+        texto = patron.sub("", texto)
+    return re.sub(r"\s+([.,;:])", r"\1", texto).strip()
 
 
 def palabras(texto: str) -> int:
@@ -968,6 +992,9 @@ def responder(
                 "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
                 else "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?"
             )
+            juegos = _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"])
+            if juegos:
+                texto = sin_riesgos_enumerados(texto)
             return _con_constancia(
                 {
                     "respuesta": texto,
@@ -975,7 +1002,7 @@ def responder(
                     "modelo": configuracion.nexplay_modelo_nia,
                     "aviso": None,
                     "pasos": salida["pasos"],
-                    "juegos": _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"]),
+                    "juegos": juegos,
                     "sugerencias": salida["sugerencias"],
                     "pide_juego": salida["pide_juego"],
                     "pide_perfil": salida["pide_perfil"],

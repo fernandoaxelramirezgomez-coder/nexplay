@@ -389,9 +389,11 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
         )
     candidatos = _nombrados(pregunta) or _ultima_lista(mensajes)
     if len(candidatos) >= 2:
-        partes = [f"{j.nombre} tiene riesgo {j.banda_riesgo.value} y {_cuesta(j)}" for j in candidatos[:3]]
+        # El riesgo de cada uno va en su tarjeta: aquí solo lo que no se ve en ella.
+        partes = [f"{j.nombre} {_cuesta(j)}" for j in candidatos[:3]]
         return _resultado(
-            f"Elegir es tuyo 🤔 En corto: {'; '.join(partes)}. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?",
+            f"Elegir es tuyo 🤔 En corto: {'; '.join(partes)}, y su riesgo va en cada tarjeta. ¿Qué pesa más para"
+            " ti: el precio, el riesgo o la crítica?",
             juegos=[j.appid for j in candidatos[:3]],
         )
     if len(candidatos) == 1:
@@ -425,8 +427,6 @@ def _compara(pregunta: str, appid: int | None) -> dict | None:
             )
         return _resultado("¿Cuáles comparo? 🤔 Dime dos juegos del catálogo, por ejemplo «compara Hades y Celeste».")
     juegos = juegos[:3]
-    riesgo = _lista([f"{juegos[0].nombre} sale con riesgo {juegos[0].banda_riesgo.value}"]
-                    + [f"{j.nombre} con {j.banda_riesgo.value}" for j in juegos[1:]])
     con_nota = [j for j in juegos if j.metacritic is not None]
     sin_nota = [j.nombre for j in juegos if j.metacritic is None]
     critica = []
@@ -440,10 +440,13 @@ def _compara(pregunta: str, appid: int | None) -> dict | None:
             precios.append(f"de {j.nombre} no hay precio, así que su estimación es menos confiable")
         else:
             precios.append(f"{j.nombre} {_cuesta(j)}")
-    frases = [f"{riesgo} 📊", f"{'; '.join(critica)}.", f"{_mayuscula(_lista(precios))}."]
+    # El riesgo de cada uno va en su tarjeta: el texto no lo repite juego por juego. Primero
+    # lo que las distingue, para que el resumen del hilo se quede con eso.
+    critica_, precio_ = f"{'; '.join(critica)} 📊", f"{_mayuscula(_lista(precios))}."
+    tarjetas = "El riesgo de cada uno va en su tarjeta."
     # Con tres títulos largos no cabe todo en 60 palabras: primero se quita el precio, luego la crítica.
-    for cuantas in (3, 2, 1):
-        texto = f"{' '.join(frases[:cuantas])} ¿Los abro lado a lado en Comparar?"
+    for frases in ((critica_, precio_, tarjetas), (critica_, tarjetas), (f"{tarjetas[:-1]} 📊",)):
+        texto = f"{' '.join(frases)} ¿Los abro lado a lado en Comparar?"
         if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
             break
     return _resultado(texto, juegos=[j.appid for j in juegos])

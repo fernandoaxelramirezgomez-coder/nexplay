@@ -250,8 +250,8 @@ def _revisar_lenguaje() -> list[str]:
     compara = nia.pulir(nia_reglas.responder(
         None, None, usuario("Compara Cyberpunk 2077 y Grand Theft Auto V Legacy"), [])["texto"])
     problemas += _sin_jerga(compara, "compara") + _voz(compara, "compara")
-    if not compara.startswith("Cyberpunk 2077 sale con riesgo"):
-        problemas.append(f"comparar no empieza por el riesgo de cada uno ({compara!r})")
+    if "crítica le dio 86 a Cyberpunk 2077" not in compara:
+        problemas.append(f"comparar no dice la crítica de cada uno ({compara!r})")
     if not problemas:
         print(f"lenguaje: {len(catalogo.buscar())} juegos × 6 preguntas sin etiquetas, jerga, porcentajes ni sonrisas"
               " con riesgo alto; «¿encaja conmigo?» dice qué géneros coinciden y cuáles no")
@@ -785,6 +785,48 @@ def _revisar_resumen_completo() -> list[str]:
     return problemas
 
 
+_NIVEL_SUELTO = re.compile(r"\b(?:bajo|medio|alto)\b")
+
+
+def _revisar_tarjetas_sin_riesgos() -> list[str]:
+    """Con tarjetas, Nia no enumera los riesgos en el texto («bajo, bajo y alto,
+    respectivamente»): cada tarjeta ya lleva su riesgo. Por reglas no los dice; lo que escribe
+    el modelo se limpia a la salida, y el prompt lo pide."""
+    problemas = []
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    for pregunta in ("Compara Cyberpunk 2077 y GTA V", "Compara Hades, Celeste y Rust", "¿Cuál me compro, Hades o Rust?"):
+        salida = nia_reglas.responder(None, None, usuario(pregunta), [])
+        texto = nia.pulir(salida["texto"])
+        if len(salida["juegos"]) < 2:
+            problemas.append(f"«{pregunta}» no trae las tarjetas ({salida['juegos']})")
+        if _NIVEL_SUELTO.search(texto):
+            problemas.append(f"«{pregunta}» enumera los riesgos que ya van en las tarjetas ({texto!r})")
+        problemas += _voz(texto, pregunta)
+    limpiar = getattr(nia, "sin_riesgos_enumerados", None)
+    if limpiar is None:
+        problemas.append("no hay filtro de salida para los riesgos enumerados del modelo")
+    else:
+        for del_modelo, esperado in (
+            ("Hay 3 de rol: Hades, Rust y Apex Legends™, que tienen riesgo bajo, alto y bajo, respectivamente. 🎮"
+             " ¿Te cuento de alguno?", "Hay 3 de rol: Hades, Rust y Apex Legends™. 🎮 ¿Te cuento de alguno?"),
+            ("Para jugar con amigos: Diablo® IV (riesgo alto), FINAL FANTASY XIV Online (medio) y Rust (alto) 🎮"
+             " ¿Los ordeno?", "Para jugar con amigos: Diablo® IV, FINAL FANTASY XIV Online y Rust 🎮 ¿Los ordeno?"),
+            ("Hades y Rust, con riesgo bajo y alto respectivamente, son de rol. ¿Te cuento?",
+             "Hades y Rust son de rol. ¿Te cuento?"),
+            # Un solo juego no es enumerar: se queda como está.
+            ("Hades tiene riesgo bajo y la crítica le dio 93. ¿Algo más?",
+             "Hades tiene riesgo bajo y la crítica le dio 93. ¿Algo más?"),
+        ):
+            if limpiar(del_modelo) != esperado:
+                problemas.append(f"el filtro deja {limpiar(del_modelo)!r} (se esperaba {esperado!r})")
+    if "respectivamente" not in nia._SISTEMA:
+        problemas.append("el prompt no pide dejar el riesgo de cada juego a su tarjeta")
+    if not problemas:
+        print("tarjetas: comparar y «¿cuál me compro?» no repiten el riesgo de cada tarjeta, y lo que el modelo"
+              " enumera se quita a la salida")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -835,6 +877,7 @@ def main() -> int:
     problemas += _revisar_lenguaje()
     problemas += _revisar_lo_que_recibe_openai()
     problemas += _revisar_resumen_completo()
+    problemas += _revisar_tarjetas_sin_riesgos()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
