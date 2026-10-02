@@ -1,7 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
+import { PerfilJugador } from '../api/contrato';
+import { NexplayApi } from '../api/nexplay-api';
 import { BarraLateral } from './barra-lateral';
 import { BarraStore } from '../estado/barra-store';
 import { CatalogoStore } from '../estado/catalogo-store';
@@ -25,6 +28,18 @@ const RUTAS = [
 /** El catálogo real saldría a la red; aquí basta con cuántos juegos hay. */
 const juegos = signal<unknown[]>([]);
 
+/** El perfil sí es el real (lee lo guardado); sin perfil pide el neutro, que aquí no sale a la red. */
+const PERFIL_NEUTRO: PerfilJugador = {
+  compras_al_anio: 4,
+  horas_por_semana: 6,
+  tolerancia_friccion: 'media',
+  tags_preferidos: [],
+  tags_rechazados: [],
+  plataforma: 'pc',
+  segmento: 'novato',
+  disponibilidad: 'media',
+};
+
 function crear() {
   const fixture = TestBed.createComponent(BarraLateral);
   return { fixture, html: fixture.nativeElement as HTMLElement };
@@ -38,7 +53,11 @@ describe('BarraLateral', () => {
     vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
     await TestBed.configureTestingModule({
       imports: [BarraLateral],
-      providers: [provideRouter(RUTAS), { provide: CatalogoStore, useValue: { juegos } }],
+      providers: [
+        provideRouter(RUTAS),
+        { provide: CatalogoStore, useValue: { juegos } },
+        { provide: NexplayApi, useValue: { crearPerfil: () => of(PERFIL_NEUTRO) } satisfies Partial<NexplayApi> },
+      ],
     }).compileComponents();
   });
 

@@ -1,14 +1,34 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
-import { PanoramaCatalogo } from './api/contrato';
+import { PanoramaCatalogo, PerfilJugador } from './api/contrato';
+import { NexplayApi } from './api/nexplay-api';
 import { App } from './app';
+import { juegoDePrueba } from './dominio/juego-prueba';
 import { BarraStore } from './estado/barra-store';
 import { PanoramaStore } from './estado/panorama-store';
 
 /** Solo lo que lee el pie: las fechas de descarga. */
 const panorama = signal<Pick<PanoramaCatalogo, 'descargas'> | undefined>(undefined);
+
+/** La barra lateral y la burbuja de Nia piden el catálogo y el perfil neutro: aquí no salen
+ * a la red, y cualquier otra llamada a la API falla en la prueba en vez de salir. */
+const PERFIL_NEUTRO: PerfilJugador = {
+  compras_al_anio: 4,
+  horas_por_semana: 6,
+  tolerancia_friccion: 'media',
+  tags_preferidos: [],
+  tags_rechazados: [],
+  plataforma: 'pc',
+  segmento: 'novato',
+  disponibilidad: 'media',
+};
+const API = {
+  catalogo: () => of([juegoDePrueba(), juegoDePrueba({ appid: 2, nombre: 'Portal 2', banda_riesgo: 'bajo' })]),
+  crearPerfil: () => of(PERFIL_NEUTRO),
+} satisfies Partial<NexplayApi>;
 
 describe('App (shell)', () => {
   beforeEach(async () => {
@@ -17,7 +37,11 @@ describe('App (shell)', () => {
     vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([]), { provide: PanoramaStore, useValue: { datos: panorama } }],
+      providers: [
+        provideRouter([]),
+        { provide: PanoramaStore, useValue: { datos: panorama } },
+        { provide: NexplayApi, useValue: API },
+      ],
     }).compileComponents();
     panorama.set(undefined);
   });
