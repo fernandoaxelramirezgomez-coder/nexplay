@@ -260,7 +260,7 @@ de pliegue del entrenamiento; en el catálogo quedan 43, 37 y 43.
 
 | Comando | Qué revisa |
 |---|---|
-| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `preparar_entorno --force` no pise bases ajenas y las 279 pruebas del frontend. |
+| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `preparar_entorno --force` no pise bases ajenas y las pruebas del frontend. |
 | `make notebooks` | Ejecuta el 00, el 01 y el 02 con el último commit y compara cada salida con la guardada, sin sobrescribirla. Falla si un notebook no termina; las celdas distintas las lista con su diff. |
 | `cd frontend && npx ng build` | El build de producción del frontend. |
 | `python calidad/capturar_ui.py`, desde `backend/` | Recorre la UI con Playwright (API y frontend corriendo), guarda capturas en `docs/capturas/angular/` y reporta problemas de texto y contraste. |
