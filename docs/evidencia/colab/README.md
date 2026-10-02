@@ -1,15 +1,54 @@
 # Corridas en Colab
 
-Tres corridas:
+Cuatro corridas:
 
-- **la vigente:** los tres notebooks el 2026-10-02 con `codigo-v6`, que agrega las gráficas para negocio, las nubes
-  con forma de control y la conclusión para negocio del 02 (la sección que sigue);
+- **la vigente:** los tres notebooks el 2026-10-02 con `codigo-v8`, el tag de entrega, que quita el aviso «Mean of empty
+  slice» del 01 (`construir_features` recibe la mediana de la nota; la sección que sigue);
+- los tres el 2026-10-02 con `codigo-v6`;
 - el 00 y el 01 el 2026-09-30 con `codigo-v3`;
 - el 02 el 2026-10-01 con `codigo-v4`.
 
-Las anteriores se quedan como historial: muestran que cada versión corrió, y sus archivos no cambian. Con `codigo-v8`,
-que quita el aviso «Mean of empty slice» del 01 (`construir_features` recibe la mediana de la nota), los tres están
-pendientes de correr en Colab.
+Las anteriores se quedan como historial: muestran que cada versión corrió, y sus archivos no cambian.
+
+## Los tres: 2026-10-02, `codigo-v8`
+
+Las tres descargas están aquí tal cual, byte por byte, sin corregir la metadata. Cada notebook se ejecutó entero en
+Colab (*Entorno de ejecución → Ejecutar todas*). Se descargaron a las 11:59 (00 y 01) y a las 12:06 (02), hora de la
+Ciudad de México.
+
+| | 00_exploracion | 01_modelo_riesgo | 02_modelos_texto |
+|---|---|---|---|
+| Archivo | `00_exploracion-colab-codigo-v8.ipynb` | `01_modelo_riesgo-colab-codigo-v8.ipynb` | `02_modelos_texto-colab-codigo-v8.ipynb` |
+| sha256 | `65c22f6df977487e7fcd2a3b497192657f60dec6be0c034073910babb35adec7` | `fbace8d1ae7e1f218e54656d89d50dcfb5c4d8336a6e9731ddf87cd015bf397c` | `1d102bcad223a70111dc467a827cf6629d73d213b77202e072f195169e85343f` |
+| Celdas de código ejecutadas | 69 de 69 | 28 de 28 | 24 de 24 |
+| Errores | 0 | 0 | 0 |
+| Salidas a stderr (avisos) | 0 | 0 | 0 |
+| Cifra principal | `GroupKFold por appid 0.0694 0.0415` | `PR-AUC GroupKFold del modelo de produccion ('juego'): 0.0694 +/- 0.0415 (3.2 veces el trivial)` | `Rama 3: se guarda TF-IDF + LR` |
+| Tiempo, medido con las mismas versiones de Colab, no en Colab | 184 s | 28 s | 378 s |
+
+**Que corrieron `codigo-v8`.** El código de las tres descargas es idéntico, celda por celda, al de `codigo-v8`, y las
+tres traen `CODIGO_REF = "codigo-v8"`. Su celda del clon no imprimió nada: con su lógica, eso solo pasa si clonó
+`CODIGO_REF` desde cero, sin error. El 01 lo muestra además en sus salidas: la celda de la prueba externa llama a
+`construir_features(..., mediana_metacritic=…)`, que solo existe desde `codigo-v8`, y dice `titulos evaluables: 40 de
+40` y `errores de inferencia: ninguno`. Con el código de `codigo-v7`, esa llamada fallaría en cada título.
+
+Lo que dicen sus salidas y su metadata:
+
+- **Sin avisos:** ninguna de las tres tiene salidas a stderr. En una copia local con las versiones de Colab, el 01 de
+  `codigo-v7` daba 10 avisos «Mean of empty slice» en esa celda, y el de `codigo-v8`, ninguno.
+- **Versiones:** Python 3.13.15, numpy 2.1.3, pandas 2.2.3 y scikit-learn 1.6.1 en los dos que las imprimen. El 02
+  imprime además torch 2.11.0+cu130 y sentence-transformers 5.7.0. El 00 no imprime versiones.
+- **GPU sin uso:** la metadata del 02 trae `accelerator: GPU` y `gpuType: T4`, pero los embeddings corren en CPU
+  (`texto.embeddings` fija `device="cpu"`).
+- **Metadata que no es de esta corrida:** `language_info.version` dice 3.14.4 en los tres, aunque las celdas
+  imprimen 3.13.15; viene de las corridas locales guardadas en `notebooks/`, que Colab conserva al abrir el
+  notebook. Solo el 01 trae `colab.name`.
+- **Las cifras del documento:** las celdas de las que `documento/generar_figuras.py` toma cifras (las bandas OOF, el
+  fold 1, las veces el trivial, la decisión de la Parte A, el 10 % superior y la cobertura de las palabras)
+  imprimen aquí lo mismo que en `codigo-v8`, y el generador lo comprueba.
+- **El tiempo** no lo guarda Colab: es el de una corrida en esta máquina con las mismas versiones (torch 2.11.0 para
+  CPU), en una carpeta vacía, contando el clon del tag y la descarga de los datos. Ahí, sin ipywidgets, el 00 y el
+  02 avisan de tqdm («IProgress not found»); en Colab no.
 
 ## Los tres: 2026-10-02, `codigo-v6`
 
