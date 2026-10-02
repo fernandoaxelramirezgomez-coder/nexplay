@@ -926,6 +926,39 @@ def _revisar_senal_fija() -> list[str]:
     return problemas
 
 
+_CONECTOR = re.compile(r"(También|En cambio,) lo (sube|baja) que")
+
+
+def _revisar_conectores() -> list[str]:
+    """En el porqué del riesgo, en los 123 juegos: «también» une factores que empujan hacia el
+    mismo lado y «en cambio» los que empujan al contrario; «otra pista confiable» solo después
+    de haber dicho una confiable."""
+    problemas = []
+    revisadas = 0
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        razones = [f for f in datos["factores"] if f["efecto"] is not None]
+        if not razones:
+            continue
+        texto = nia.pulir(nia_reglas.responder(datos, juego.appid, [MensajeChat(rol="usuario", contenido="¿Por qué tiene ese riesgo?")], [])["texto"])
+        anterior = razones[0]["efecto"]
+        for conector in _CONECTOR.finditer(texto):
+            mismo = conector.group(2) == anterior
+            if conector.group(1) == "También" and not mismo:
+                problemas.append(f"{juego.nombre}: «También lo {conector.group(2)}» tras un factor que lo {anterior}")
+            if conector.group(1) == "En cambio," and mismo:
+                problemas.append(f"{juego.nombre}: «En cambio» entre dos factores que lo {anterior}")
+            anterior = conector.group(2)
+        otra = texto.find("otra pista confiable")
+        if otra >= 0 and texto.find("pista más confiable") not in range(0, otra):
+            problemas.append(f"{juego.nombre}: «otra pista confiable» sin haber dicho antes una confiable")
+        revisadas += 1
+    if not problemas:
+        print(f"conectores: en {revisadas} juegos «también» y «en cambio» siguen la dirección de cada factor, y «otra"
+              " pista confiable» va después de una confiable")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -979,6 +1012,7 @@ def main() -> int:
     problemas += _revisar_tarjetas_sin_riesgos()
     problemas += _revisar_duracion()
     problemas += _revisar_senal_fija()
+    problemas += _revisar_conectores()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

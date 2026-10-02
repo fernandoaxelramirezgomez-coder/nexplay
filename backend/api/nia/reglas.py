@@ -950,13 +950,22 @@ def _porque_del_riesgo(datos: dict, cuantos: int) -> str:
     else:
         texto = (f"{nombre} tiene riesgo {banda} {emoji} Lo que más pesa es que {principal['idea']}, y eso"
                  f" {nia.efecto_hablado(principal)}; es {principal['pista']}.")
+    dichos = [principal]
     for otro in razones[1:]:
         if otro["imputado"]:
             # El precio que falta lo dice su aviso, que va al final y completo.
             continue
-        # «La más confiable» ya se dijo del primero: el segundo, si también es sólido, es otra.
-        firme = f", aunque es {otro['pista']}" if otro["debil"] else ", otra pista confiable"
-        texto += f" También lo {otro['efecto']} que {otro['idea']}{firme}."
+        # «También» une dos factores que empujan hacia el mismo lado; si empuja al contrario,
+        # «en cambio». «Otra pista confiable» solo si ya se dijo una confiable.
+        conector = "También lo" if otro["efecto"] == dichos[-1]["efecto"] else "En cambio, lo"
+        if otro["debil"]:
+            firme = f", aunque es {nia.PISTA_DEBIL}"
+        elif any(not dicho["debil"] for dicho in dichos):
+            firme = ", otra pista confiable"
+        else:
+            firme = f", {nia.PISTA_SOLIDA}"
+        texto += f" {conector} {otro['efecto']} que {otro['idea']}{firme}."
+        dichos.append(otro)
     return texto + "".join(f" {_mayuscula(a)}." for a in avisos)
 
 
