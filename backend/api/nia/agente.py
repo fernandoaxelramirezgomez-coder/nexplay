@@ -18,6 +18,7 @@ import logging
 import re
 import unicodedata
 import uuid
+from decimal import ROUND_HALF_UP, Decimal
 
 from .. import catalogo, scoring, valoraciones
 from ..config import configuracion
@@ -60,9 +61,15 @@ _IDEAS_SI_NO = {
 }
 
 
+def pesos_enteros(valor: float) -> int:
+    """Los pesos redondeados a la unidad, con 50 centavos hacia arriba (round() de Python
+    deja 282.50 en 282): así un precio se dice igual en todas las respuestas."""
+    return int(Decimal(str(valor)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
 def pesos_hablados(valor: float) -> str:
-    """$999 o $282.99: sin centavos cuando no los hay y sin «MXN», que en una frase sobra."""
-    return f"${valor:,.0f}" if float(valor).is_integer() else f"${valor:,.2f}"
+    """$283: en pesos enteros y sin «MXN», que en una frase sobra."""
+    return f"${pesos_enteros(valor):,}"
 
 
 def _frente_a_lo_normal(razon: float) -> str:
@@ -91,7 +98,7 @@ def precio_frente_al_catalogo(precio: float, mediano: float | None) -> str:
     """«cuesta $999, casi el triple de lo normal del catálogo ($350)»."""
     if not mediano:
         return f"cuesta {pesos_hablados(precio)}"
-    return f"cuesta {pesos_hablados(precio)}, {_frente_a_lo_normal(precio / mediano)} del catálogo (${mediano:,.0f})"
+    return f"cuesta {pesos_hablados(precio)}, {_frente_a_lo_normal(precio / mediano)} del catálogo ({pesos_hablados(mediano)})"
 
 
 def idea_de_factor(factor) -> str:
@@ -243,7 +250,8 @@ Reglas que no puedes romper:
   ni el emoji. Si el contexto no trae avisos, no hables de avisos.
 - La nota y el precio se comparan con lo normal del catálogo, con las cifras de la línea
   "Catálogo". Di el precio en palabras («casi el triple de lo normal del catálogo») además
-  de la cifra; no digas «precio mediano» ni hables de un promedio que use el modelo.
+  de la cifra, en pesos enteros como vienen («$283», nunca con centavos); no digas «precio
+  mediano» ni hables de un promedio que use el modelo.
 - El precio aparece en dos lugares distintos y no hay que confundirlos: como variable del
   modelo (en "Qué mueve su riesgo") y como queja en las reseñas (en "Quejas").
   Pueden apuntar en direcciones opuestas; si te preguntan por el precio, di de cuál hablas.
@@ -579,7 +587,7 @@ def _contexto_para_prompt(datos: dict, mencionados: list[str] | None = None, gen
     ref = _referencias_del_catalogo()
     bandas = " / ".join(f"{n} {b}" for b, n in ref["bandas"].items())
     lineas.append(
-        f"Catálogo ({ref['juegos']} juegos, para comparar): lo normal del precio es ${ref['precio_mediano']:,.0f} (la"
+        f"Catálogo ({ref['juegos']} juegos, para comparar): lo normal del precio es {pesos_hablados(ref['precio_mediano'])} (la"
         f" mediana de los {ref['de_pago_con_precio']} de pago con precio); la nota promedio es {ref['nota_promedio']}"
         f" entre los {ref['con_nota']} que tienen nota; riesgo de arrepentimiento {bandas}"
     )
@@ -845,7 +853,7 @@ def _contexto_del_catalogo(generos: list[str] | None = None) -> str:
     texto = (
         f"No hay ningún juego abierto: quien pregunta habla del catálogo entero, que son"
         f" {ref['juegos']} juegos de Steam, por riesgo de arrepentimiento: {bandas}. Lo normal del precio es"
-        f" ${ref['precio_mediano']:,.0f} (la mediana de los {ref['de_pago_con_precio']} de pago con precio) y la nota"
+        f" {pesos_hablados(ref['precio_mediano'])} (la mediana de los {ref['de_pago_con_precio']} de pago con precio) y la nota"
         f" promedio es {ref['nota_promedio']} entre los {ref['con_nota']} que tienen nota. Para cualquier dato concreto,"
         " usa las herramientas: no sabes de memoria qué juegos hay."
     )

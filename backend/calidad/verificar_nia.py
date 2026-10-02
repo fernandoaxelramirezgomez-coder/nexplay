@@ -175,10 +175,16 @@ def _consistente_con_la_ficha() -> list[str]:
     return problemas
 
 
+# Un precio con centavos: Nia los dice en pesos enteros («$283»), igual en todas.
+_CON_CENTAVOS = re.compile(r"\$\d[\d,]*\.\d")
+
+
 def _sin_jerga(texto: str, donde: str) -> list[str]:
     problemas = [f"{donde}: dice {jerga!r}" for jerga in _JERGA if jerga in texto]
     if "%" in texto:
         problemas.append(f"{donde}: da un porcentaje")
+    if _CON_CENTAVOS.search(texto):
+        problemas.append(f"{donde}: da un precio con centavos")
     if "riesgo alto" in texto and ("🙂" in texto or "😊" in texto):
         problemas.append(f"{donde}: sonríe junto a un riesgo alto")
     return problemas
@@ -222,6 +228,15 @@ def _revisar_lenguaje() -> list[str]:
             problemas.append("«¿Encaja conmigo?» sin géneros no invita a crear el perfil")
         if not nia_reglas.responder(None, None, usuario("¿Encaja conmigo?"), [], _GENEROS)["pide_juego"]:
             problemas.append("«¿Encaja conmigo?» sin juego no pregunta de cuál")
+    # Las listas con precio: los más baratos, los más caros y el más barato de una lista.
+    for pregunta in ("¿Cuáles son los juegos de acción más baratos?", "¿Cuáles son los juegos más caros?"):
+        texto = nia.pulir(nia_reglas.responder(None, None, usuario(pregunta), [])["texto"])
+        problemas += _sin_jerga(texto, pregunta) + _voz(texto, pregunta)
+    hilo = usuario("¿Qué juegos de rol tienen riesgo bajo?")
+    hilo.append(MensajeChat(rol="nia", contenido=nia_reglas.responder(None, None, hilo, [])["texto"]))
+    hilo += usuario("¿y cuál de esos es el más barato?")
+    texto = nia.pulir(nia_reglas.responder(None, None, hilo, [])["texto"])
+    problemas += _sin_jerga(texto, "el más barato de esos") + _voz(texto, "el más barato de esos")
     gratis = nia.pulir(nia_reglas.responder(None, None, usuario("¿Hay algo gratis?"), [])["texto"])
     if not gratis.startswith("Sí, hay") or "¿Los ordeno por precio?" in gratis:
         problemas.append(f"«¿Hay algo gratis?» no empieza por el sí o los ofrece ordenar por precio ({gratis!r})")
@@ -300,7 +315,7 @@ def _revisar_contexto(juego) -> list[str]:
         problemas.append(f"{juego.nombre}: el contexto no cita la nota promedio del catálogo")
     if ref["nota_promedio"] != round(ref["nota_promedio"], 1):
         problemas.append(f"la nota promedio no viene con un decimal ({ref['nota_promedio']})")
-    if f"lo normal del precio es ${ref['precio_mediano']:,.0f}" not in texto:
+    if f"lo normal del precio es {nia.pesos_hablados(ref['precio_mediano'])}" not in texto:
         problemas.append(f"{juego.nombre}: el contexto no cita lo normal del precio del catálogo")
     for prohibida in _REFERENCIAS_PROHIBIDAS:
         if prohibida in texto.lower():

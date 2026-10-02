@@ -71,7 +71,7 @@ def _precio(juego: JuegoCatalogo) -> str:
         return "gratis"
     if juego.precio_final is None:
         return "sin precio en los datos"
-    return f"${juego.precio_final:,.2f} MXN"
+    return nia.pesos_hablados(juego.precio_final)
 
 
 def _cuesta(juego: JuegoCatalogo) -> str:
@@ -671,7 +671,7 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
             f"de {genero}" if genero else "",
             f"con riesgo {banda}" if banda else "",
             "gratuitos" if gratis else "",
-            f"de ${precio_max:,.0f} o menos" if precio_max else "",
+            f"de {nia.pesos_hablados(precio_max)} o menos" if precio_max else "",
             f"que se recomiendan con {HORAS_DE_SESION_CORTA} h o menos" if poco_tiempo else "",
             "donde lo que más se menciona es la dificultad" if dificil else "",
             "lanzados de 2024 en adelante" if nuevo else "",

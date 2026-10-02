@@ -40,9 +40,9 @@ DISCO_ELYSIUM, DIABLO_IV = 632470, 2344520
 
 # La lista que mandaría el navegador con un perfil de Rol entre $200 y $500.
 SUGERENCIAS = [
-    {"appid": HADES, "razones": ["Coincide en Rol.", "$282.99 · en tu rango"]},
-    {"appid": DISCO_ELYSIUM, "razones": ["Coincide en Rol.", "$459.00 · en tu rango"]},
-    {"appid": DIABLO_IV, "razones": ["Coincide en Rol.", "$249.75 · en tu rango"]},
+    {"appid": HADES, "razones": ["coincide en Rol", "cuesta $283, dentro de lo que dijiste pagar"]},
+    {"appid": DISCO_ELYSIUM, "razones": ["coincide en Rol", "cuesta $459, dentro de lo que dijiste pagar"]},
+    {"appid": DIABLO_IV, "razones": ["coincide en Rol", "cuesta $250, dentro de lo que dijiste pagar"]},
 ]
 
 
@@ -85,7 +85,7 @@ PREGUNTAS = [
     {"n": 14, "pregunta": "¿Qué me recomiendas?", "sugerencias": True, "espera": [_sugiere()]},
     {"n": 15, "pregunta": "¿Qué me recomiendas?", "espera": [_bandera("pide_perfil")]},
     {"n": 16, "pregunta": "es bueno el juego?", "appid": A_SHORT_HIKE, "espera": [_contiene("A Short Hike")]},
-    {"n": 17, "pregunta": "¿Cuánto cuesta?", "appid": HADES, "espera": [_contiene("282.99")]},
+    {"n": 17, "pregunta": "¿Cuánto cuesta?", "appid": HADES, "espera": [_contiene("$283")]},
     {"n": 18, "pregunta": "¿Qué dice la crítica?", "appid": HADES, "espera": [_contiene("93")]},
     {"n": 19, "pregunta": "se parece al mario bros o sonic?", "appid": CUPHEAD, "espera": [_contiene("catálogo")]},
     {"n": 20, "pregunta": "lo que dijiste antes, más corto", "sigue": 3, "espera": [_contiene("25", "Dead Cells", "gratis")]},

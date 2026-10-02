@@ -46,6 +46,13 @@ def _horas_tipicas() -> dict[int, float]:
     return {f.appid: f.horas_al_recomendar for f in panorama.resumen().por_juego if f.horas_al_recomendar is not None}
 
 
+def _precio_redondeado(es_gratis: bool, precio: float | None) -> str | int | None:
+    """El precio en pesos enteros, como Nia lo dice en todas sus respuestas («$283»)."""
+    if es_gratis:
+        return "gratis"
+    return None if precio is None else nia.pesos_enteros(precio)
+
+
 def _resumen_de_juego(juego: JuegoCatalogo) -> dict:
     """Lo justo para nombrarlo y compararlo. Sin descripción ni URLs: el frontend arma la
     tarjeta con el appid desde su propio catálogo."""
@@ -53,7 +60,7 @@ def _resumen_de_juego(juego: JuegoCatalogo) -> dict:
         "appid": juego.appid,
         "nombre": juego.nombre,
         "riesgo": juego.banda_riesgo.value,
-        "precio": "gratis" if juego.es_gratis else juego.precio_final,
+        "precio": _precio_redondeado(juego.es_gratis, juego.precio_final),
         "metacritic": juego.metacritic,
         "generos": juego.generos,
         "lanzamiento": juego.fecha_lanzamiento,
@@ -162,7 +169,7 @@ def ficha_juego(appid: int) -> dict:
         "avisos": datos["avisos_hablados"],
         "generos": datos["generos"],
         "metacritic": datos["metacritic"],
-        "precio": "gratis" if datos["es_gratis"] else datos["precio"],
+        "precio": _precio_redondeado(datos["es_gratis"], datos["precio"]),
         "lanzamiento": datos["lanzamiento"],
         "horas_tipicas": datos["horas_tipicas"],
         "resenas_con_senal": datos["n_casos"],
