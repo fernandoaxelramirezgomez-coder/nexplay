@@ -1388,12 +1388,15 @@ _AFIRMATIVAS = frozenset(
 # cualquier cosa que no pida otra cosa («si te me lo acabas de preguntar», «dale pues»).
 _SI_FUERTE = re.compile(
     r"^(?:s+i+p?|s+e+p|z+i+|si+m|simon|va+|vale|da+le+|ok+(?:ay|ey|is?)?|okey|claro|sale|andale|orale|bueno"
-    r"|perfecto|adelante|porfa(?:vor)?|cuentame(?:lo|los)?|platicame|explicame(?:lo)?|muestramel[oa]s?"
-    r"|muestrame|hazlo|obvio|venga|yes|yep)$"
+    r"|perfecto|adelante|porfa(?:vor)?|obvio|venga|yes|yep)$"
 )
-# Arranques que también abren otras frases («de esos…», «me gusta…»): solo son un sí si todo
-# el mensaje son palabras de afirmación («de acuerdo», «por favor», «me interesa», «a ver»).
-_ARRANQUES = frozenset("de por me a".split())
+# Arranques que también abren pedidos («cuéntame de este juego», «me gusta…», «de esos…»): solo
+# son un sí si todo el mensaje son palabras de afirmación («cuéntame más sobre eso»,
+# «explícamelo», «de acuerdo», «me interesa»).
+_ARRANQUES = frozenset(
+    "de por me a cuentame cuentamelo cuentamelos platicame explicame explicamelo muestramelos muestramelo"
+    " muestrame hazlo".split()
+)
 # Lo que convierte un «sí, …» en otra pregunta: un tema concreto («sí, ¿cuánto cuesta?»).
 _PIDE_OTRA_COSA = frozenset("""
     precio precios cuesta cuestan cuanto critica criticas nota metacritic resena resenas motivos quejas riesgo

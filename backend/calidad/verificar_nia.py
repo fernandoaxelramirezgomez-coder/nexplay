@@ -1497,10 +1497,13 @@ def _revisar_ficha_abierta() -> list[str]:
     problemas = []
     juego = next(j for j in catalogo.buscar() if j.nombre == "A Short Hike")
     datos = nia.contexto(juego.appid)
-    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    # Como lo manda el chat de la ficha: el saludo con su oferta va primero.
+    usuario = lambda texto: [_saludo_de_la_ficha(juego), MensajeChat(rol="usuario", contenido=texto)]
     for pregunta in (*_DE_LA_CRITICA, *_DEL_JUEGO_ABIERTO):
         texto = nia.pulir(nia_reglas.responder(datos, juego.appid, usuario(pregunta), [])["texto"])
-        esperado = f"Metacritic {juego.metacritic}" if pregunta in _DE_LA_CRITICA else f"{juego.nombre} tiene riesgo"
+        # El resumen dice el precio; explicar el riesgo (lo que ofrece el saludo) no.
+        esperado = f"Metacritic {juego.metacritic}" if pregunta in _DE_LA_CRITICA else (
+            f"{juego.nombre} tiene riesgo {juego.banda_riesgo.value} {nia.EMOJI_DEL_NIVEL[juego.banda_riesgo.value]} Cuesta")
         if esperado not in texto or _NO_ENTENDIO.search(texto):
             problemas.append(f"ficha de {juego.nombre}, «{pregunta}» por reglas: le falta «{esperado}»: {texto[:80]}…")
         for appid, ficha in ((juego.appid, datos), (None, None)):
@@ -1556,10 +1559,11 @@ def _revisar_saludo_en_el_hilo() -> list[str]:
 
 
 _SON_UN_SI = ("sí", "Si te me lo acabas de preguntar", "Sí, explícamelo", "va", "dale pues", "si cuentame mas sobre eso",
-              "sii", "sip", "dalee", "okis", "claro que sí", "de acuerdo", "por favor", "simón", "órale pues", "¿Va?")
+              "sii", "sip", "dalee", "okis", "claro que sí", "de acuerdo", "por favor", "simón", "órale pues", "¿Va?",
+              "explícamelo", "cuéntame más sobre eso")
 _NO_SON_UN_SI = ("sí, ¿cuánto cuesta?", "sí, ¿y la crítica?", "si juego poco, ¿me conviene?", "me gusta el rendimiento",
                  "de esos, ¿cuál es gratis?", "Si, ¿por qué?", "Sí, compara Hades y Celeste", "si, explícame el riesgo",
-                 "no gracias", "sí, Hades")
+                 "no gracias", "sí, Hades", "cuéntame de este juego", "explícame cómo se calcula")
 
 
 def _como_respuesta(salida: dict) -> dict:
