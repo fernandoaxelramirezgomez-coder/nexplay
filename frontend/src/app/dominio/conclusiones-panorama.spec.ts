@@ -50,9 +50,9 @@ function mapa(filas: JuegoPanorama[]): Map<number, JuegoPanorama> {
 }
 
 describe('conclusiones de Panorama', () => {
-  it('reparto: tercios, un nivel que pesa más y un corte de un solo nivel', () => {
+  it('reparto: casi parejos, un nivel que pesa más y un corte de un solo nivel', () => {
     const catalogo = [...varios(43, 'bajo'), ...varios(37, 'medio'), ...varios(43, 'alto')];
-    expect(texto(conclusionReparto(catalogo))).toBe('Tres tercios: 43 en bajo, 37 en medio y 43 en alto.');
+    expect(texto(conclusionReparto(catalogo))).toBe('Casi parejos: 43 en bajo, 37 en medio y 43 en alto.');
     expect(texto(conclusionReparto([...varios(2, 'bajo'), ...varios(8, 'alto')]))).toBe(
       'Pesa más el riesgo alto: 2 en bajo, ninguno en medio y 8 en alto.',
     );

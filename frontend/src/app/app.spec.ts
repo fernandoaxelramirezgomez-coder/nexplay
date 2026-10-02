@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { PanoramaCatalogo, PerfilJugador } from './api/contrato';
 import { NexplayApi } from './api/nexplay-api';
 import { App } from './app';
+import { CORTES_DE_NIVEL } from './dominio/etiqueta-riesgo';
 import { juegoDePrueba } from './dominio/juego-prueba';
 import { BarraStore } from './estado/barra-store';
 import { PanoramaStore } from './estado/panorama-store';
@@ -73,8 +74,9 @@ describe('App (shell)', () => {
     expect(boton.getAttribute('aria-expanded')).toBe('true');
     expect(html.querySelector('footer #metodologia [data-testid="metodologia"]')).not.toBeNull();
     expect(html.querySelector('footer #metodologia [data-testid="fuentes"]')).not.toBeNull();
-    expect(html.querySelector('footer [data-testid="metodologia-tercios"]')?.textContent?.trim()).toBe(
-      'Los niveles bajo/medio/alto son tercios del score del modelo.',
+    // La única definición de los niveles, con los dos juegos del catálogo de prueba (uno alto y uno bajo).
+    expect(html.querySelector('footer [data-testid="metodologia-niveles"]')?.textContent?.trim()).toBe(
+      `${CORTES_DE_NIVEL}; en el catálogo quedan 1, 0 y 1.`,
     );
   });
 

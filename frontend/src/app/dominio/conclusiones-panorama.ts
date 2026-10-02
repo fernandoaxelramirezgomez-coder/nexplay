@@ -57,7 +57,7 @@ export function conclusionReparto(juegos: readonly JuegoCatalogo[]): string {
   const cuentas = lista(tajadas.map((t) => `${t.cuantos || 'ninguno'} en ${t.banda}`));
   const fracciones = tajadas.map((t) => t.fraccion);
   if (con.length === 3 && Math.max(...fracciones) - Math.min(...fracciones) <= 0.1) {
-    return `Tres tercios: ${cuentas}.`;
+    return `Casi parejos: ${cuentas}.`;
   }
   const mayor = Math.max(...tajadas.map((t) => t.cuantos));
   const primeras = tajadas.filter((t) => t.cuantos === mayor);

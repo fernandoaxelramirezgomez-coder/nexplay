@@ -81,8 +81,7 @@
             fuente="el modelo de NexPlay, con datos de Steam (appdetails)"
           >
             <p ayuda>
-              Los tres niveles de {{ rotulo.toLowerCase() }} son tercios del catálogo: siempre hay juegos en los tres. El
-              nivel es relativo al catálogo, no una probabilidad.
+              {{ niveles() }} El nivel no es una probabilidad.
             </p>
             <app-grafica-barras [segmentos]="reparto()" idPrueba="barras-bandas" />
           </app-tarjeta-grafica>

@@ -17,7 +17,7 @@ import {
   conclusionSinCritica,
 } from '../dominio/conclusiones-panorama';
 import { ORDEN_BANDAS } from '../dominio/estantes';
-import { ROTULO_RIESGO } from '../dominio/etiqueta-riesgo';
+import { ROTULO_RIESGO, definicionDeNiveles } from '../dominio/etiqueta-riesgo';
 import { numero, porcentaje, porcentajeFino, rangoDeFechas, textoPrecio } from '../dominio/formato';
 import {
   gratuitosPorBanda,
@@ -50,6 +50,8 @@ export class Panorama {
   protected readonly panorama = inject(PanoramaStore);
 
   protected readonly rotulo = ROTULO_RIESGO;
+  /** Con el catálogo entero, no con el corte que se mira: los cortes no cambian con los filtros. */
+  protected readonly niveles = computed(() => definicionDeNiveles(this.catalogo.juegos()));
   protected readonly bandas = ORDEN_BANDAS;
   protected readonly minimoGenero = MINIMO_POR_GENERO;
 

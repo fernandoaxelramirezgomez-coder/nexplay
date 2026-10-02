@@ -70,6 +70,7 @@ test: _modelo _frontend
 	cd $(BACKEND) && $(PY) modelado/verificar_bandas.py
 	cd $(BACKEND) && $(PY) calidad/verificar_nia.py
 	cd $(BACKEND) && $(PY) calidad/verificar_factores.py
+	cd $(BACKEND) && $(PY) calidad/verificar_niveles.py
 	cd $(BACKEND) && $(PY) calidad/verificar_preparar_entorno.py
 	cd $(FRONTEND) && npx ng test --watch=false
 

@@ -57,6 +57,22 @@ EXPLICACION_SENAL = (
 # La cara de Nia según el nivel: ninguna sonrisa junto a un riesgo alto.
 EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
 
+# Cómo se cortan los niveles, la única definición del sitio: la misma que CORTES_DE_NIVEL en
+# frontend/src/app/dominio/etiqueta-riesgo.ts. Los cortes los fija modelado/entrenar_modelo.py;
+# calidad/verificar_niveles.py revisa que ningún texto diga otra cosa.
+CORTES_DE_NIVEL = (
+    "Los cortes entre bajo, medio y alto están en los percentiles 33.3 y 66.7 de las estimaciones fuera de pliegue"
+    " del entrenamiento"
+)
+
+
+def definicion_de_los_niveles() -> str:
+    """Los cortes y cuántos juegos del catálogo quedan en cada nivel (hoy 43, 37 y 43)."""
+    cuantos = {nivel: 0 for nivel in EMOJI_DEL_NIVEL}
+    for juego in catalogo.buscar():
+        cuantos[juego.banda_riesgo.value] += 1
+    return f"{CORTES_DE_NIVEL}; en el catálogo quedan {cuantos['bajo']}, {cuantos['medio']} y {cuantos['alto']}."
+
 # La pregunta con que cierra una comparación, la escriban las reglas o el modelo.
 CIERRE_DE_COMPARAR = "¿Te cuento de qué se queja la gente en cada uno?"
 

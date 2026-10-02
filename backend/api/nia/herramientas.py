@@ -210,13 +210,17 @@ Se entrenó con el corte data-v1. __CIFRAS__ Se validó con GroupKFold
 agrupando por appid para que generalice a juegos que no vio, y se optimizó a PR-AUC porque
 la clase está desbalanceada. En los 40 títulos que nunca vio sacó PR-AUC 0.0356 contra
 0.0234 de un clasificador trivial: hay señal, y es modesta.
-El riesgo de arrepentimiento (bajo, medio, alto) reparte el catálogo en tres niveles:
-compara un juego con los demás y no es una probabilidad. Es del juego, no de quien pregunta."""
+El riesgo de arrepentimiento (bajo, medio, alto) no es una probabilidad. __NIVELES__
+Es del juego, no de quien pregunta."""
 
 
 def metodologia() -> dict:
     # Las cifras salen de la misma fuente que «¿De dónde salen estos datos?» por reglas.
-    return {"texto": _METODOLOGIA.replace("__CIFRAS__", nia.cifras_habladas())}
+    return {
+        "texto": _METODOLOGIA.replace("__CIFRAS__", nia.cifras_habladas()).replace(
+            "__NIVELES__", nia.definicion_de_los_niveles()
+        )
+    }
 
 
 # Lo que se le describe al modelo. Los nombres y las descripciones son parte del contrato:

@@ -6,7 +6,7 @@ import { TarjetaGrafica } from './tarjeta-grafica';
 @Component({
   imports: [TarjetaGrafica],
   template: `
-    <app-tarjeta-grafica idPrueba="prueba" titulo="Cómo se reparte" conclusion="Tres tercios." fuente="Steam">
+    <app-tarjeta-grafica idPrueba="prueba" titulo="Cómo se reparte" conclusion="Casi parejos." fuente="Steam">
       <p ayuda>El texto largo.</p>
       <span class="grafica">barras</span>
     </app-tarjeta-grafica>
@@ -21,7 +21,7 @@ describe('TarjetaGrafica', () => {
     const html = fixture.nativeElement as HTMLElement;
     const tarjeta = html.querySelector('[data-testid="prueba"]')!;
     expect(tarjeta.querySelector('h3')?.textContent?.trim()).toBe('Cómo se reparte');
-    expect(tarjeta.querySelector('[data-testid="tarjeta-conclusion"]')?.textContent?.trim()).toBe('Tres tercios.');
+    expect(tarjeta.querySelector('[data-testid="tarjeta-conclusion"]')?.textContent?.trim()).toBe('Casi parejos.');
     expect(tarjeta.querySelector('[data-testid="tarjeta-fuente"]')?.textContent?.trim()).toBe('Fuente: Steam');
     expect(tarjeta.querySelector('[data-testid="tarjeta-cuerpo"] .grafica')).not.toBeNull();
 

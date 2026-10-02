@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+
+import { definicionDeNiveles } from '../dominio/etiqueta-riesgo';
+import { CatalogoStore } from '../estado/catalogo-store';
 
 /** La metodología en tres frases, con el texto completo plegado. Vive en el panel del pie
  * (se abre desde cualquier vista) y la reúsa Cómo funciona. Lleva su propio contenedor:
@@ -10,7 +13,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   template: `
     <section class="metodologia" data-testid="metodologia" aria-labelledby="titulo-metodologia">
       <h2 class="rotulo" id="titulo-metodologia">Metodología</h2>
-      <p class="tercios" data-testid="metodologia-tercios">Los niveles bajo/medio/alto son tercios del score del modelo.</p>
+      <p class="niveles" data-testid="metodologia-niveles">{{ niveles() }}</p>
       <ul class="hechos" data-testid="metodologia-hechos">
         <li>
           <strong>Una señal, no un sentimiento</strong>
@@ -22,7 +25,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         </li>
         <li>
           <strong>Ordena, no predice</strong>
-          <span>Es un nivel relativo al catálogo, no una probabilidad. Es del juego, no tuyo.</span>
+          <span>Es un nivel, no una probabilidad. Es del juego, no tuyo.</span>
         </li>
       </ul>
       <details class="completa" data-testid="metodologia-completa">
@@ -69,7 +72,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-    .tercios {
+    .niveles {
       margin: 0;
       padding: 10px 14px;
       border-inline-start: 3px solid var(--t-neutro);
@@ -131,4 +134,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export class Metodologia {
   /** En Cómo funciona va en su propio panel; en el pie, el panel ya lo pone el pie. */
   readonly enmarcada = input(true);
+
+  private readonly catalogo = inject(CatalogoStore);
+  protected readonly niveles = computed(() => definicionDeNiveles(this.catalogo.juegos()));
 }

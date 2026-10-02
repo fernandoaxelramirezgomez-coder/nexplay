@@ -89,9 +89,10 @@ plataforma; ningún dato suyo mueve el score.
 }
 ```
 
-`nivel` (`bajo`/`medio`/`alto`) viene de terciles de la distribución de scores de
-validación, no de un umbral de probabilidad fijo: `class_weight="balanced"` hace que
-`riesgo` ordene riesgo relativo, no sea una probabilidad calibrada.
+`nivel` (`bajo`/`medio`/`alto`): los cortes entre bajo, medio y alto están en los percentiles 33.3 y
+66.7 de las estimaciones fuera de pliegue del entrenamiento; en el catálogo quedan 43, 37 y 43. No es
+un umbral de probabilidad fijo: `class_weight="balanced"` hace que `riesgo` ordene, no que sea una
+probabilidad calibrada.
 
 `factores`: las tres variables del modelo con mayor contribución absoluta al score
 (coeficiente × valor estandarizado), en lenguaje claro. `contribucion` está en unidades
