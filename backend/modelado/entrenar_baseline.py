@@ -74,14 +74,19 @@ def cargar_datos(db_path: Path = DB_PATH) -> pd.DataFrame:
     return df
 
 
-def construir_features(df: pd.DataFrame, conjunto: str = "completo") -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+def construir_features(df: pd.DataFrame, conjunto: str = "completo",
+                       mediana_metacritic: float | None = None) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     """conjunto='completo': todo lo estructurado que ya tenemos (incluye
     columnas que solo existen porque el autor ya reseño, ej. num_reviews).
     conjunto='compra': solo lo que se conoce ANTES de que el jugador juegue,
     es decir lo que el formulario de alta podria llegar a declarar o el
     catalogo ya sabe del juego.
     conjunto='juego': solo el lado del juego, nada del jugador — el piso de
-    lo que transfiere sin depender de ningun dato de perfil."""
+    lo que transfiere sin depender de ningun dato de perfil.
+
+    mediana_metacritic: con que se imputa la nota que falta. Por omision, la mediana del propio df, que al
+    entrenar es la de data-v1. Para calificar titulos que el modelo no vio se pasa la de data-v1, como la API:
+    la de un solo titulo sin nota no existe."""
     y = ((df["playtime_at_review"] < 120) & (df["voted_up"] == 0)).astype(int)
     grupos = df["appid"]
 
@@ -112,7 +117,8 @@ def construir_features(df: pd.DataFrame, conjunto: str = "completo") -> tuple[pd
     X["log_precio_final"] = np.log1p(df["precio_final"].fillna(0))
     X["descuento"] = df["descuento"].fillna(0)
     X["metacritic_disponible"] = df["metacritic"].notna().astype(int)
-    mediana_metacritic = df["metacritic"].median()
+    if mediana_metacritic is None:
+        mediana_metacritic = df["metacritic"].median()
     X["metacritic"] = df["metacritic"].fillna(mediana_metacritic)
 
     return X, y, grupos
