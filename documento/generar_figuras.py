@@ -21,6 +21,7 @@ import json
 import re
 import shutil
 import sqlite3
+import subprocess
 import sys
 import urllib.request
 from datetime import datetime, timezone
@@ -1044,6 +1045,61 @@ def tabla_descriptiva(rutas: dict[str, Path]) -> Path:
     return ruta
 
 
+# Cómo se llama cada archivo de un release en las tablas del anexo; el pie de la de releases da el nombre completo.
+NOMBRE_DE_ASSET = {"nexplay_reproducible.db.xz": "base", "nexplay_extracto.parquet": "extracto"}
+
+
+def tabla_de_sha256() -> Path:
+    """Anexo: el sha256 de cada archivo de los releases, según la API de GitHub. Se comprueba contra el que
+    usa el código: las bases, contra RELEASES; los extractos, contra el notebook 01."""
+    publicacion = publicacion_de_releases()
+    notebook = (RAIZ / "notebooks" / "01_modelo_riesgo.ipynb").read_text(encoding="utf-8")
+    del_notebook = dict(re.findall(r'(PARQUET_\w+_SHA256)\s*=\s*\\"([0-9a-f]{64})\\"', notebook))
+    esperados = {("data-v1", "nexplay_extracto.parquet"): del_notebook["PARQUET_ENTRENAMIENTO_SHA256"],
+                 ("data-v2", "nexplay_extracto.parquet"): del_notebook["PARQUET_PRUEBA_SHA256"]}
+    esperados.update({(ref, "nexplay_reproducible.db.xz"): sha for ref, sha in RELEASES.items()})
+    filas = []
+    for ref in ("data-v1", "data-v2", SERVIDO_REF):
+        for asset, datos in sorted(publicacion[ref]["assets"].items()):
+            if esperados.get((ref, asset)) != datos["sha256"]:
+                raise ValueError(f"el sha256 de {ref}/{asset} en GitHub no es el que usa el código")
+            filas.append(f"{ref} & {NOMBRE_DE_ASSET[asset]} & \\texttt{{{datos['sha256']}}} \\\\")
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabular}{lll}", "\\toprule", "Release & Archivo & sha256 \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "sha256.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_de_reproducibilidad(cifras: Cifras) -> None:
+    """Anexo: el commit del tag que clonan los notebooks y la corrida en Colab, según
+    docs/evidencia/colab/README.md, que se comprueba contra el tag y contra particion-alternativa.json."""
+    commit = subprocess.run(["git", "rev-parse", "--short", "codigo-v3^{commit}"], cwd=RAIZ, capture_output=True,
+                            text=True, check=True).stdout.strip()
+    colab = (EVIDENCIA / "colab" / "README.md").read_text(encoding="utf-8")
+    completo = re.search(r"switching to '([0-9a-f]{40})'`, que es `codigo-v3`", colab)[1]
+    if not completo.startswith(commit):
+        raise ValueError("la corrida en Colab no clonó el commit del tag codigo-v3")
+    celdas = re.search(r"\| Celdas de código ejecutadas \| (\d+ de \d+) \| (\d+ de \d+) \|", colab).groups()
+    tiempos = re.search(r"\| Tiempo, medido con las mismas versiones de Colab, no en Colab \| (\d+) s \| (\d+) s \|", colab).groups()
+    versiones = dict(re.findall(r"(Python|numpy|pandas|scikit-learn) ([\d.]+)", colab.split("**Versiones**")[1].split("\n")[0]))
+    if versiones["scikit-learn"] != cifras.macros["VersionSklearnColab"][0]:
+        raise ValueError("la versión de scikit-learn de Colab no cuadra entre la evidencia")
+    fuente = "docs/evidencia/colab/README.md"
+    cifras.agregar("CommitCodigo", commit, "git: el commit al que apunta el tag codigo-v3")
+    fecha = re.search(r"^# La corrida final en Colab, (\d{4}-\d{2}-\d{2})", colab, re.M)[1]
+    cifras.agregar("FechaColab", fecha_larga(datetime.fromisoformat(fecha)), fuente + ": título")
+    cifras.agregar("CeldasCero", celdas[0], fuente + ": 00_exploracion")
+    cifras.agregar("CeldasUno", celdas[1], fuente + ": 01_modelo_riesgo")
+    cifras.agregar("TiempoCero", tiempos[0], fuente + ": segundos del 00, con las versiones de Colab")
+    cifras.agregar("TiempoUno", tiempos[1], fuente + ": segundos del 01, con las versiones de Colab")
+    for nombre, paquete in (("Python", "Python"), ("Numpy", "numpy"), ("Pandas", "pandas")):
+        cifras.agregar(f"Version{nombre}Colab", versiones[paquete], fuente)
+
+
 def tabla_de_releases(rutas: dict[str, Path]) -> Path:
     """T2: un renglón por release, con lo que trae y para qué sirve. El sha256 completo va en el anexo."""
     publicacion = publicacion_de_releases()
@@ -1143,7 +1199,8 @@ def main() -> None:
     cifras_de_motivos(cifras, limpio)
     cifras_de_endpoints(cifras)
     cifras_de_nia(cifras)
-    tablas = [tabla_de_releases(rutas), tabla_descriptiva(rutas), tabla_de_variables(juegos_v1, resenas_v1),
+    cifras_de_reproducibilidad(cifras)
+    tablas = [tabla_de_releases(rutas), tabla_de_sha256(), tabla_descriptiva(rutas), tabla_de_variables(juegos_v1, resenas_v1),
               tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()

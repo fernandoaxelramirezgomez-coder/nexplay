@@ -1,14 +1,49 @@
-% Commit, releases con sha256 y comandos para reproducir cada cifra.
+% Commit, releases con sha256 y comandos para reproducir cada cifra. Fuente: documento/generar_figuras.py,
+% docs/evidencia/colab/README.md, el Makefile y la API de releases de GitHub.
 \section{Reproducibilidad}\label{sec:anexo}
 
-% NOTA (2026-09-30), qué lleva el anexo:
-%  - La corrida en Colab del 2026-09-30, como hecho: los dos notebooks sin errores ni avisos (69 de 69 y 23
-%    de 23 celdas), Python 3.13.15, scikit-learn 1.6.1, numpy 2.1.3 y pandas 2.2.3, clonando codigo-v3
-%    (9b64795). Evidencia: docs/evidencia/colab/ (README, las dos descargas y la comparación con make notebooks).
-%    Los tiempos (229 s y 26 s) se midieron con las mismas versiones de Colab, no en Colab.
-%  - La estructura del repo (backend/, frontend/, notebooks/, documento/, docs/) y el tag codigo-v3, que apunta a
-%    9b64795 y es el código que clonan los notebooks. Las salidas finales de los notebooks llegaron después
-%    (d1f4a65) y no están en el tag, a propósito. (Venía de una NOTA de §12.)
-%  - Los sha256 completos de cada asset de los releases (la tabla de §5.2 los recorta y remite aquí).
-%  - Los comandos: make setup, data, train, test, notebooks y doc.
-\pendiente{redacción}
+Cada cifra de este documento sale de un release con tag fijo o de \texttt{docs/evidencia/}, a través
+de \texttt{documento/generar\_figuras.py}, y \texttt{make doc} lo reconstruye todo. La
+tabla~\ref{tab:releases} resume los releases y la tabla~\ref{tab:sha256} da el sha256 de cada
+archivo, que el código compara antes de usarlo.
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/releases}
+  \caption{Releases de datos. La base es la copia reproducible de la base de datos
+  (\texttt{nexplay\_reproducible.db.xz}); el extracto, la tabla sin texto que lee el notebook 01
+  (\texttt{nexplay\_extracto.parquet}). Fuente: API de releases de GitHub y los archivos bajados.}
+  \label{tab:releases}
+\end{table}
+
+\begin{table}[htbp]
+  \centering\scriptsize
+  \input{tables/sha256}
+  \caption{El sha256 de cada archivo de los releases, según GitHub. El generador falla si no es el
+  mismo que usa el código.}
+  \label{tab:sha256}
+\end{table}
+
+\paragraph{El código.} Todo el Python vive en \texttt{backend/}: la API, el modelado, el análisis,
+las referencias, el despliegue, los verificadores, la ingesta, la publicación y la operación. El
+frontend vive en \texttt{frontend/}, los notebooks en \texttt{notebooks/}, este documento en
+\texttt{documento/}, y la evidencia, las capturas y el historial en \texttt{docs/}. Los notebooks
+clonan el tag \texttt{codigo-v3}, el commit \texttt{\cifraCommitCodigo}. Sus salidas finales
+llegaron después y no están en el tag, a propósito: el tag fija el código que se ejecuta, no lo que
+imprimió.
+
+\paragraph{La corrida en Colab.} Los dos notebooks corrieron completos en un Colab limpio el
+\cifraFechaColab{}: \cifraCeldasCero{} celdas de código en el 00 y \cifraCeldasUno{} en el 01, sin
+errores ni avisos, con Python \cifraVersionPythonColab{}, scikit-learn \cifraVersionSklearnColab{},
+numpy \cifraVersionNumpyColab{} y pandas \cifraVersionPandasColab{}. Las dos descargas están en
+\texttt{docs/evidencia/colab/}. Con esas mismas versiones, fuera de Colab, el 00 tarda
+\cifraTiempoCero{} segundos y el 01, \cifraTiempoUno{}.
+
+\paragraph{Los comandos.} Desde la raíz del repositorio, \texttt{make setup} crea el entorno de
+Python e instala el frontend; \texttt{make data} baja data-v3 y data-v1 y verifica su sha256;
+\texttt{make train} entrena el modelo con data-v1 y compara las \cifraJuegosCatalogo{} bandas con la
+referencia; \texttt{make api} y \texttt{make web} levantan la API y el frontend en local;
+\texttt{make test} corre los verificadores del backend y las pruebas del frontend;
+\texttt{make notebooks} ejecuta los dos notebooks en una carpeta temporal y compara sus salidas con
+las guardadas, sin tocarlas, y \texttt{make doc} genera las cifras, las tablas y las figuras, y
+compila este documento.

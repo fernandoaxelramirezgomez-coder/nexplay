@@ -225,6 +225,16 @@ CANONICAS = {
     "PreguntasTrampa": "48",
     "TrampasPorRevisar": "0",
     "FechaCorridaTrampas": "30 de septiembre de 2026",
+    # anexo: git (codigo-v3) y docs/evidencia/colab/README.md
+    "CommitCodigo": "9b64795",
+    "FechaColab": "30 de septiembre de 2026",
+    "CeldasCero": "69 de 69",
+    "CeldasUno": "23 de 23",
+    "TiempoCero": "229",
+    "TiempoUno": "26",
+    "VersionPythonColab": "3.13.15",
+    "VersionNumpyColab": "2.1.3",
+    "VersionPandasColab": "2.2.3",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")

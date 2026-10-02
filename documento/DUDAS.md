@@ -92,3 +92,22 @@ la alternativa.
 19. **«Qué se concluye» repite la frase de la sobredispersión que aprobó el dueño para la sección 5**:
     la varianza es unas 107 veces la esperada si todos los juegos tuvieran la misma tasa.
     - Por qué: «veces más de lo que daría el azar» fue la formulación que el dueño pidió cambiar.
+
+## Etapa 4: referencias, anexo y resumen
+
+20. **El total quedó en 25 páginas, tres por debajo de la meta.**
+    - Por qué: se condensó lo escrito y se escribió lo que faltaba dentro de cada presupuesto, sin
+      agregar contenido nuevo para llenar.
+    - Alternativa: devolver al documento alguna tabla que se fue al notebook, como la de 83 contra
+      40 o la de correlaciones.
+21. **El anexo lleva el sha256 de cada archivo tal como lo publica GitHub.**
+    - Por qué: el generador lo compara con el que usa el código (las bases contra `RELEASES` y los
+      extractos contra el notebook 01) y falla si no coincide. En la tabla, los archivos se llaman
+      «base» y «extracto»; el pie de la tabla de releases da su nombre completo.
+    - Alternativa: el nombre completo del archivo en cada renglón, que no cabe a lo ancho.
+22. **El commit del tag `codigo-v3` sale de git (`codigo-v3^{commit}`).**
+    - Por qué: el tag es anotado, y `git rev-parse codigo-v3` da el objeto del tag (`37cdc56`), no el
+      commit (`9b64795`). El generador comprueba que la corrida de Colab clonó ese mismo commit.
+    - Alternativa: escribir el commit a mano, lo que la regla de las cifras no permite.
+23. **`\fechaentrega` sigue en el 30 de septiembre de 2026.**
+    - Por qué: fijarla a la fecha de entrega es un pendiente de cierre.

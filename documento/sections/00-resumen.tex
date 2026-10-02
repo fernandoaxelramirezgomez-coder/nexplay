@@ -1,5 +1,14 @@
-% Rúbrica: Introducción (abstract para un público general). Se escribe al final.
+% Rúbrica: Introducción (abstract claro y conciso, en lenguaje accesible para un público general).
 \section*{Resumen}
 \addcontentsline{toc}{section}{Resumen}
 
-\pendiente{redacción}
+Steam deja devolver un videojuego si se ha jugado menos de dos horas. NexPlay usa ese límite para
+ayudar antes de comprar: cuenta, en cada juego, las reseñas negativas escritas antes de las dos
+horas, una señal de que el juego decepcionó pronto. Con \cifraResenasEntrenamiento{} reseñas de
+\cifraJuegosEntrenamiento{} juegos se entrenó un modelo sencillo que estima qué juegos dejan más
+de esa señal usando solo lo que cualquiera ve en la tienda antes de pagar: si el juego es gratis,
+su precio, su descuento y la nota de la crítica. El modelo distingue a esos juegos mejor que el
+azar, también en \cifraJuegosExternos{} juegos que no vio, aunque la ventaja es modesta. El sitio
+no da probabilidades: da una banda de riesgo, bajo, medio o alto; explica qué la mueve y de qué se
+quejan las reseñas; deja comparar juegos y preguntarle a un asistente, y recuerda la ventana de
+reembolso. El riesgo es del juego, el mismo para cualquier persona.
