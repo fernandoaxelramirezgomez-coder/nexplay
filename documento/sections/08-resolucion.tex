@@ -1,6 +1,6 @@
 % Rúbrica: Resolución del problema (cómo el modelo aborda y resuelve el problema) e Interfaz de uso.
 % Fuente: backend/despliegue/, backend/modelado/verificar_bandas.py, backend/api/ (main.py, scoring.py y nia/),
-% frontend/ y README.md. La estructura del repo y el tag codigo-v3 van en el anexo.
+% frontend/ y README.md. La estructura del repo y el tag del código van en el anexo.
 \section{Resolución del problema}\label{sec:resolucion}
 
 \subsection{Arquitectura y despliegue}\label{sec:arquitectura}\label{sec:arquitectura-flujo}\label{sec:arquitectura-build}
@@ -75,7 +75,9 @@ calificaciones ni los comentarios de la gente. Cada juego que menciona tiene que
 herramientas, y la respuesta se valida contra ellas antes de mostrarse. Las preguntas que deben
 contestarse siempre igual, como «¿por qué tiene ese riesgo?», un juego fuera del catálogo o
 cualquier tema ajeno a los juegos, van por reglas aunque haya modelo, y sin clave de OpenAI todo va
-por reglas. Si la pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
+por reglas. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
+modelo de lenguaje y «Sin IA» si fueron las reglas (\texttt{frontend/src/app/chat/nia.ts}). Si la
+pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
 Nia no guarda datos personales.
 
 \paragraph{Pruebas.} \texttt{make test} corre el verificador de bandas, el de Nia, el de los
@@ -100,6 +102,8 @@ modesta.
 La pregunta de producto era cómo mostrarlo sin prometer una probabilidad. El sitio da una banda con
 palabras, la explica con factores que dicen su evidencia, y suma los motivos de las reseñas, que son
 una heurística de palabras clave con su cobertura a la vista (sección~\ref{sec:interpretabilidad}).
+Por la Parte A, esos motivos se pueden presentar como quejas propias de las primeras horas y no
+como quejas generales (sección~\ref{sec:modelacion-texto}).
 Con eso la persona decide: si compra, si compara antes con otro juego, si busca una alternativa de
 riesgo bajo en el mismo género, o si compra y usa las dos primeras horas para probar justo lo que más
 se queja la gente, mientras todavía puede pedir el reembolso. El riesgo es el mismo para cualquier

@@ -13,11 +13,20 @@ Y del 2026-10-01:
   redondeaba dos veces el −0.555 que muestra el notebook;
 - la razón de Mantel-Haenszel va con un decimal (2.6), como todo cociente; sus extremos, con dos;
 - con el documento de 9 secciones, la lista solo guarda las cifras que el texto usa.
+Y del 2026-10-02:
+- todo PR-AUC con tres cifras significativas, y su desviación, su intervalo o su diferencia con los
+  decimales de su estimación (el fold 1 pasa de 0.1459 a 0.146);
+- el tag y el commit del código no son cifras canónicas: se comprueban contra los notebooks y git;
+- la Parte A (docs/evidencia/modelos-texto.json y el notebook 02) y la lectura para negocio del 01;
+- en 7.6, la tabla de bandas OOF del 01 reemplaza las tasas por banda y cobertura de crítica;
+- el anexo cita la corrida de los tres notebooks en Colab con codigo-v6 (2026-10-02).
 
 Falla (exit 1) si:
 - una macro de tables/cifras.tex no coincide con su valor canónico;
 - se genera una macro que no está en la lista;
 - una canónica no se usa en main.tex ni en sections/, o el texto usa una que no se generó;
+- un PR-AUC no tiene tres cifras significativas, o su desviación o intervalo no lleva sus decimales;
+- la macro TagCodigo no es el CODIGO_REF de los notebooks, o CommitCodigo no es su commit;
 - una sección trae un número con decimales o con % fuera de una macro. Las referencias a una
   sección de un notebook («notebook 00, §3.4») y las medidas de diseño («0.49\textwidth») no
   cuentan: no son cifras.
@@ -27,6 +36,7 @@ Uso:
 """
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -50,6 +60,8 @@ CANONICAS = {
     "PRAUCCociente": "3.2",
     "PliegosGanados": "5",
     "Pliegues": "5",
+    "PercentilMedio": "33.3",
+    "PercentilAlto": "66.7",
     "UmbralMedio": "0.2858",
     "UmbralAlto": "0.3916",
     "BajoEntrenamiento": "30",
@@ -162,19 +174,48 @@ CANONICAS = {
     "CoefGratisICSup": "0.79",
     "CoefPrecioReplicasPositivas": "96.6" + PORCIENTO,
     # evaluación (§10), contrastadas con el 01 (celda 31), docs/evidencia/metacritic-por-banda.md,
-    # bootstrap-prueba-externa.json y README.md (casos al filo). Los promedios por juego no tenían
-    # registro anterior: salen de las mismas tasas por juego de los releases.
+    # bootstrap-prueba-externa.json y README.md (casos al filo).
     "CocienteFoldMin": "1.8",
     "CocienteFoldMax": "5.8",
     "ExternoReplicas": "2,000",
-    "TasaBajoEntrenamientoPorResena": "0.66" + PORCIENTO,
-    "TasaAltoSinNotaEntrenamientoPorResena": "5.37" + PORCIENTO,
-    "TasaBajoExternosPorResena": "1.86" + PORCIENTO,
-    "TasaBajoExternosPromJuegos": "1.86" + PORCIENTO,
-    "TasaMedioExternosPorResena": "1.63" + PORCIENTO,
-    "TasaAltoSinNotaExternosPorResena": "3.66" + PORCIENTO,
-    "TasaAltoSinNotaExternosPromJuegos": "3.64" + PORCIENTO,
     "AltoSinNotaCatalogo": "33",
+    # lectura para negocio del 01 (7.1, 7.5 y 7.6), contrastadas con sus salidas guardadas en codigo-v6:
+    # «fold 1: 0.1459 · media de los otros cuatro: 0.0503 · el fold 1 es el 42% de la suma» y la tabla de
+    # bandas con 6.29× y 1.93×. Las «veces el trivial» (3.1704 y 3.2380) las comprueba el generador en la tabla 9.
+    "PRAUCFoldUno": "0.146",
+    "PRAUCOtrosFolds": "0.0503",
+    "FoldUnoParteDeLaSuma": "42" + PORCIENTO,
+    "BajoOOF": "27",
+    "MedioOOF": "27",
+    "AltoOOF": "29",
+    "AltoSobreBajoOOF": "6.3",
+    "AltoSobreBajoExternos": "1.9",
+    # Parte A (7.9), contrastadas con docs/evidencia/modelos-texto.json y con las salidas guardadas del 02
+    # en codigo-v6 (tabla_top_k: 0.430 y 2.676; cobertura_del_sitio: 35 de 40).
+    "NegativasTexto": "16,836",
+    "TempranasTexto": "2,670",
+    "PrevalenciaTextoPorResena": "15.86" + PORCIENTO,
+    "DuracionesEnmascaradas": "2,442",
+    "PrerregistroTexto": "6bbcea6",
+    "CodigoTexto": "59694a6",
+    "PRAUCTextoTrivial": "0.161",
+    "PRAUCTextoRefund": "0.185",
+    "PRAUCTextoNB": "0.226",
+    "PRAUCTextoMiniLM": "0.323",
+    "PRAUCTextoLR": "0.369",
+    "PRAUCTextoLRICInf": "0.288",
+    "PRAUCTextoLRICSup": "0.421",
+    "CocienteTextoLR": "2.3",
+    "CocienteTextoLRICInf": "2.05",
+    "CocienteTextoLRICSup": "2.53",
+    "DiferenciaTextoLRRefund": "0.184",
+    "DiferenciaTextoLRRefundICInf": "0.137",
+    "DiferenciaTextoLRRefundICSup": "0.205",
+    "RamaTexto": "3",
+    "TopDiezTempranasPorResena": "43.0" + PORCIENTO,
+    "TopDiezVeces": "2.7",
+    "PalabrasTopTemprana": "40",
+    "PalabrasSinCategoria": "35",
     "ScoreHollowKnight": "0.2857",
     "ScoreWarframe": "0.3918",
     # interpretabilidad (§11), contrastadas con el 00 (celda 110), backend/api/scoring.py (UMBRAL_TIPICO,
@@ -225,13 +266,16 @@ CANONICAS = {
     "PreguntasTrampa": "48",
     "TrampasPorRevisar": "0",
     "FechaCorridaTrampas": "30 de septiembre de 2026",
-    # anexo: git (codigo-v3) y docs/evidencia/colab/README.md
-    "CommitCodigo": "9b64795",
-    "FechaColab": "30 de septiembre de 2026",
+    # datos (4.4): backend/analisis/diccionario.py, COLUMNAS
+    "ColumnasDiccionario": "41",
+    # anexo: docs/evidencia/colab/, la corrida de los tres con codigo-v6 (README y las tres descargas)
+    "FechaColab": "2 de octubre de 2026",
     "CeldasCero": "69 de 69",
-    "CeldasUno": "23 de 23",
-    "TiempoCero": "229",
-    "TiempoUno": "26",
+    "CeldasUno": "28 de 28",
+    "CeldasDos": "24 de 24",
+    "TiempoCero": "192",
+    "TiempoUno": "34",
+    "TiempoDos": "400",
     "VersionPythonColab": "3.13.15",
     "VersionNumpyColab": "2.1.3",
     "VersionPandasColab": "2.2.3",
@@ -245,6 +289,11 @@ _NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+(?![\d.,])(?!\s*(?:cm|mm|pt|
                             r"|\d+(?:\s|\\,)*\\%")
 _SECCION_DE_NOTEBOOK = re.compile(r"notebook[ ~]0[01],?[ ~]*§\d+(?:\.\d+)*")
 _USO = re.compile(r"\\cifra([A-Za-z]+)")
+# Se comprueban contra los notebooks y git, no contra un valor fijo: siguen al tag de entrega.
+IDENTIFICADORES = ("TagCodigo", "CommitCodigo")
+# Diferencias de PR-AUC que llevan los decimales de su estimación.
+DIFERENCIAS = {"DiferenciaCompraJuego": "PRAUCModelo", "DiferenciaTextoLRRefund": "PRAUCTextoLR",
+               "DiferenciaTextoLRRefundICInf": "PRAUCTextoLR", "DiferenciaTextoLRRefundICSup": "PRAUCTextoLR"}
 
 
 def macros_generadas() -> dict[str, str]:
@@ -270,12 +319,47 @@ def macros_usadas() -> set[str]:
             for n in _USO.findall(_COMENTARIO.sub("", linea))}
 
 
+def decimales(valor: str) -> int:
+    return len(valor.split(".")[1]) if "." in valor else 0
+
+
+def pr_auc_fuera_de_regla(generadas: dict[str, str]) -> list[str]:
+    """Todo PR-AUC con tres cifras significativas; su desviación, intervalo o diferencia, con sus decimales."""
+    fallas = []
+    for nombre, valor in generadas.items():
+        es_pr_auc = nombre.startswith("PRAUC") and "Cociente" not in nombre  # un cociente lleva un decimal
+        base = DIFERENCIAS.get(nombre) or (re.sub(r"(Std|ICInf|ICSup)$", "", nombre) if es_pr_auc else None)
+        if base is None:
+            continue
+        if base != nombre:
+            if base in generadas and decimales(valor) != decimales(generadas[base]):
+                fallas.append(f"\\cifra{nombre} = «{valor}» no lleva los decimales de \\cifra{base} = «{generadas[base]}»")
+        elif len(valor.replace(".", "").lstrip("0")) != 3:
+            fallas.append(f"\\cifra{nombre} = «{valor}» no tiene tres cifras significativas")
+    return fallas
+
+
+def identificadores_incorrectos(generadas: dict[str, str]) -> list[str]:
+    raiz = DOCUMENTO.parent
+    tags = {re.search(r'CODIGO_REF = \\"([^"\\]+)\\"', ruta.read_text(encoding="utf-8"))[1]
+            for ruta in sorted((raiz / "notebooks").glob("0*.ipynb"))}
+    tag = generadas.get("TagCodigo")
+    fallas = [] if tags == {tag} else [f"\\cifraTagCodigo = «{tag}», pero los notebooks clonan {sorted(tags)}"]
+    commit = subprocess.run(["git", "rev-parse", "--short", f"{tag}^{{commit}}"], cwd=raiz, capture_output=True, text=True)
+    if commit.returncode != 0 or commit.stdout.strip() != generadas.get("CommitCodigo"):
+        fallas.append(f"\\cifraCommitCodigo = «{generadas.get('CommitCodigo')}» no es el commit de {tag}")
+    return fallas
+
+
 def main() -> int:
     generadas = macros_generadas()
     usadas = macros_usadas()
     fallas = [f"\\cifra{n}: generada «{v}», canónica «{CANONICAS[n]}»"
               for n, v in generadas.items() if n in CANONICAS and v != CANONICAS[n]]
-    fallas += [f"\\cifra{n} = «{v}» no está en la lista canónica" for n, v in generadas.items() if n not in CANONICAS]
+    fallas += [f"\\cifra{n} = «{v}» no está en la lista canónica" for n, v in generadas.items()
+               if n not in CANONICAS and n not in IDENTIFICADORES]
+    fallas += pr_auc_fuera_de_regla(generadas)
+    fallas += identificadores_incorrectos(generadas)
     fallas += [f"\\cifra{n} es canónica pero el texto no la usa: sale de la lista" for n in CANONICAS if n not in usadas]
     fallas += [f"\\cifra{n} se usa en el texto pero no se generó" for n in sorted(usadas - set(generadas))]
     fallas += numeros_sueltos()

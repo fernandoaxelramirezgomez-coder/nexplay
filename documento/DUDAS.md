@@ -81,6 +81,8 @@ la alternativa.
       de cierre que se arregla desde master), así que un conteo de `ng test` hoy dependería de tener
       la API levantada. Las cifras de Nia sí salen del repo y de `docs/evidencia/nia-pruebas.md`.
     - Alternativa: correr `ng test` con la API y citar el conteo.
+    - **Resuelta en master** (`d936f9a`): las pruebas simulan el catálogo y el perfil, y ya no
+      dependen de la API. El texto sigue sin dar el conteo.
 17. **La corrida de trampas de Nia se cita como la del 30 de septiembre**, con una nota de que se
     repite sobre el tag de entrega.
     - Por qué: es la última que hay, y `correr_trampas.py` con clave es un pendiente de cierre.
@@ -105,9 +107,57 @@ la alternativa.
       extractos contra el notebook 01) y falla si no coincide. En la tabla, los archivos se llaman
       «base» y «extracto»; el pie de la tabla de releases da su nombre completo.
     - Alternativa: el nombre completo del archivo en cada renglón, que no cabe a lo ancho.
-22. **El commit del tag `codigo-v3` sale de git (`codigo-v3^{commit}`).**
+22. **El commit del tag `codigo-v3` sale de git (`codigo-v3^{commit}`).** Desde el 2026-10-02, el tag
+    sale del `CODIGO_REF` de los notebooks (entrada 25).
     - Por qué: el tag es anotado, y `git rev-parse codigo-v3` da el objeto del tag (`37cdc56`), no el
       commit (`9b64795`). El generador comprueba que la corrida de Colab clonó ese mismo commit.
     - Alternativa: escribir el commit a mano, lo que la regla de las cifras no permite.
 23. **`\fechaentrega` sigue en el 30 de septiembre de 2026.**
     - Por qué: fijarla a la fecha de entrega es un pendiente de cierre.
+
+## Ronda del 2026-10-02: la Parte A y la lectura para negocio
+
+Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; las demás las decidí yo.
+
+24. **Todo PR-AUC con tres cifras significativas** (del dueño). Su desviación, intervalo o diferencia
+    llevan los decimales de la estimación. Los scores y los umbrales de banda siguen con cuatro.
+    - Por qué: con tres decimales, 0.069 / 0.022 da 3.1 contra el 3.2× publicado. Con la regla solo
+      cambia el fold 1, de 0.1459 a 0.146. `verificar_cifras.py` la comprueba en cada macro `PRAUC*`.
+    - Alternativa: tres decimales fijos, con los cocientes descuadrados.
+25. **El tag y el commit del anexo son identificadores, no cifras canónicas** (del dueño).
+    - Por qué: salen del `CODIGO_REF` de los tres notebooks y de `git rev-parse`, así que siguen al
+      tag de entrega. `verificar_cifras.py` los compara con los notebooks y con git, no con un valor
+      fijo.
+    - Alternativa: escribir `codigo-v6` en la lista canónica, que habría que cambiar en cada tag.
+26. **En 7.6, la tabla de bandas OOF del 01 reemplaza la comparación por cobertura de crítica** (del
+    dueño). Se quedan los 33 de 43 sin nota y los casos al filo.
+    - El título dice OOF, y una oración explica por qué sus bandas de data-v1 (27, 27 y 29) no son
+      las servidas (30, 23 y 30).
+27. **Las tres figuras nuevas salen de las salidas guardadas en el tag, no de las de Colab.**
+    - Por qué: en Colab el 02 apaga la exportación y sus gráficas quedan como HTML, sin PNG. El
+      generador comprueba que cada celda de la que toma una cifra imprimió en Colab el mismo texto
+      que en el tag. Solo difieren celdas que el documento no usa: el entorno, los tipos de pandas y
+      el cuarto decimal de MiniLM por fold.
+    - Alternativa: rehacer las figuras, lo que el dueño descartó.
+28. **El anexo cita solo la corrida vigente de Colab, la de `codigo-v6`.**
+    - Por qué: es la del código entregado. Las de `codigo-v3` y `codigo-v4` se quedan en
+      `docs/evidencia/colab/` como historial. El generador falla si el commit de esa corrida no es el
+      que clonan los notebooks, así que un tag de entrega nuevo obliga a correrlos otra vez en Colab.
+    - Alternativa: citar también las anteriores, que no prueban nada que la vigente no pruebe.
+29. **Nia: solo el mecanismo de la etiqueta «Con IA» / «Sin IA»** (del dueño). La evidencia llega
+    después: la salida de `verificar_nia.py --openai` y una captura de producción.
+30. **El aviso «Mean of empty slice» no se menciona** (del dueño). En Colab no aparece (0 salidas a
+    stderr); solo salía en una copia local.
+31. **Las 35 de 40 palabras van en 7.9; la limitación de 9.1 remite ahí sin repetir la cifra.**
+    - Por qué: la regla de remitir a la sección 7 cuando las conclusiones tocan lo que ya mostró.
+32. **«La décima parte de las negativas», no «el 10 %».**
+    - Por qué: es el corte, no una cifra del análisis, y escrito con dígitos sería un número a mano.
+    - Alternativa: una macro para el corte.
+33. **En 7.4, «fuera de pliegue» pasa a «fuera de fold (OOF)».** Es el término de la tabla de 7.6 y
+    de los notebooks.
+34. **Los cortes de las bandas son los percentiles 33.3 y 66.7 de los scores fuera de fold de las reseñas
+    de entrenamiento, no «tercios»** (del dueño). En el catálogo quedan 43, 37 y 43.
+    - El generador lee esos percentiles del `np.percentile` de `backend/modelado/entrenar_modelo.py`
+      (con `ast`) y corta con ellos, así que el texto y los umbrales siguen al código.
+    - «Tercios del catálogo» no estaba en el documento. Sí está en el frontend
+      (`panorama/panorama.html` y `dominio/conclusiones-panorama.ts`); se corrige desde master, no aquí.

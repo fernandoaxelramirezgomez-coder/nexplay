@@ -1,6 +1,6 @@
 % Rúbrica: Conclusiones (sólidas, basadas en los resultados, con los hallazgos clave y su relevancia).
-% Colab no es una limitación: los dos notebooks corrieron ahí el 2026-09-30 sin errores ni avisos
-% (docs/evidencia/colab/), y va en el anexo.
+% Colab no es una limitación: los tres notebooks corrieron ahí el 2026-10-02 con codigo-v6, sin errores ni
+% avisos (docs/evidencia/colab/), y va en el anexo.
 \section{Conclusiones}\label{sec:conclusiones}
 
 \subsection{Limitaciones}\label{sec:limitaciones}
@@ -16,12 +16,15 @@
   cambia mucho de un fold a otro. Con solo \cifraGratisEntrenamiento{} juegos gratis, el modelo
   extrapola en los gratis, y los \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin precio
   entran con precio 0; los dos casos llevan aviso en la ficha.
+  \item \textbf{En un título nuevo, solo la banda alta se sostiene.} En los externos, la banda media
+  no deja más señal que la baja (sección~\ref{sec:evaluacion-caida}).
   \item \textbf{El orden por score también lo arrastra el precio 0.} En el estante de riesgo bajo de
   Acción, los primeros lugares son de un juego sin precio y de dos gratis, todos con aviso; la
   primera alternativa sin aviso es la tercera tarjeta (sección~\ref{sec:estrategia-recorrido}).
   \item \textbf{Los motivos son palabras clave en inglés.} Solo el \cifraCoberturaMotivosPorResena{}
   de las \cifraNegativasTempranasLimpias{} negativas tempranas del conjunto limpio menciona alguno
-  (sección~\ref{sec:interpretabilidad-motivos}).
+  (sección~\ref{sec:interpretabilidad-motivos}), y la mayoría de las palabras que más empujan hacia
+  temprana no cae en ninguna categoría (sección~\ref{sec:modelacion-texto}).
   \item \textbf{Representatividad.} Las reseñas son en inglés y las escriben compradores de todo el
   mundo, mientras que los precios son de la tienda de México y el usuario objetivo compra desde
   México. Tampoco hay datos de PlayStation ni de Xbox.
@@ -46,15 +49,18 @@ representaba en el sitio no estaba validado. Por eso el riesgo es del título y 
 cualquier persona. El aporte del proyecto es convertir esa ventaja en algo que sirve antes de
 pagar: una banda con palabras y no una probabilidad, factores que dicen qué tan firme es su
 evidencia, motivos con su cobertura a la vista y acciones concretas, como comparar, buscar una
-alternativa o aprovechar la ventana de reembolso. Lo que no hace es decirle a nadie qué tan probable
+alternativa o aprovechar la ventana de reembolso. El texto de las reseñas agrega algo que el modelo
+de riesgo no da: las quejas tempranas tienen un lenguaje propio, más allá de mencionar el reembolso
+(sección~\ref{sec:modelacion-texto}), y eso respalda presentar los motivos como quejas de las
+primeras horas. Lo que no hace es decirle a nadie qué tan probable
 es que se arrepienta, ni explicar con certeza por qué un juego decepciona.
 
 \subsection{Siguientes pasos}\label{sec:siguientes}
 
-La Parte A, los modelos que leen el texto de las reseñas y la comparación entre algoritmos, sigue en
-la rama \texttt{modelos-texto} con su prerregistro, y entrará a este documento cuando llegue a
-master (sección~\ref{sec:modelacion-texto}). La Parte B parte de la cobertura de los motivos: probar
-si un modelo que lee el texto completo asigna motivos a más negativas tempranas que las palabras
-clave, contra un conjunto de referencia etiquetado a mano y con la regla de decisión fijada antes de
-mirar. Más allá de eso, el modelo ganaría con más juegos, en especial gratis, y con una prueba de la
+La Parte B es trabajo futuro y no ha empezado. Arranca de la cobertura de los motivos: probar si un
+modelo que lee el texto completo asigna motivos a más negativas tempranas que las palabras clave,
+contra un conjunto de referencia etiquetado a mano, con su propio prerregistro. El notebook 02
+propone un paso más corto, ampliar las categorías con lo que hoy queda fuera, como la cuenta y el
+acceso o los primeros pasos, y también lo deja para un prerregistro propio, porque cambia lo que ve
+la gente. Más allá de eso, el modelo ganaría con más juegos, en especial gratis, y con una prueba de la
 interfaz con personas que no la conocen.

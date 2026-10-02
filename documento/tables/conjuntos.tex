@@ -1,11 +1,11 @@
 % Generado por documento/generar_figuras.py. No se edita a mano.
-\begin{tabularx}{\textwidth}{l >{\raggedright\arraybackslash}X rrr}
+\begin{tabularx}{\textwidth}{l >{\raggedright\arraybackslash}X rrrr}
 \toprule
-Conjunto & Variables & Cuántas & PR-AUC & Desv. entre folds \\
+Conjunto & Variables & Cuántas & PR-AUC & \begin{tabular}[b]{@{}r@{}}Desv. entre\\folds\end{tabular} & \begin{tabular}[b]{@{}r@{}}Veces el\\trivial\end{tabular} \\
 \midrule
-Trivial & ninguna & 0 & 0.0219 & 0.0037 \\
-Juego (el del sitio) & gratuidad, precio, descuento y crítica & 5 & 0.0694 & 0.0415 \\
-Compra & las de juego y los juegos del autor & 6 & 0.0709 & 0.0270 \\
-Completo & las de compra, la bandera de perfil privado y las posteriores a la reseña & 11 & 0.0849 & 0.0207 \\
+Trivial & ninguna & 0 & 0.0219 & 0.0037 & 1.0× \\
+Juego (el del sitio) & gratuidad, precio, descuento y crítica & 5 & 0.0694 & 0.0415 & 3.2× \\
+Compra & las de juego y los juegos del autor & 6 & 0.0709 & 0.0270 & 3.2× \\
+Completo & las de compra, la bandera de perfil privado y las posteriores a la reseña & 11 & 0.0849 & 0.0207 & 3.9× \\
 \bottomrule
 \end{tabularx}

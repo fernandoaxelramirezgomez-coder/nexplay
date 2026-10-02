@@ -83,7 +83,10 @@ modelo con juegos que no vio.} el modelo llega a \cifraPRAUCModelo{}, \cifraPRAU
 ese piso (sección~\ref{sec:evaluacion}). Esos cocientes contra el trivial llevan un decimal, porque
 el PR-AUC cambia bastante de un fold a otro y una centésima más no diría nada; los extremos de un
 intervalo llevan dos, porque ahí importa qué tan cerca quedan del 1, el valor en el que el modelo no
-ordena mejor que el trivial.
+ordena mejor que el trivial. Todo PR-AUC lleva tres cifras significativas, y su desviación, su
+intervalo o una diferencia, los mismos decimales que él. Los scores y los umbrales de las bandas
+llevan cuatro decimales, porque los juegos al filo de un corte se distinguen justo en el cuarto
+(sección~\ref{sec:evaluacion-filo}).
 
 \subsection{La tasa varía por juego}\label{sec:exploracion-juego}
 
@@ -165,7 +168,8 @@ una de sus formas, contra el \cifraRefundTardiasPorResena{} de las tardías y el
 \cifraRefundPositivasPorResena{} de las positivas: encaja con la lectura de la señal como proxy,
 aunque no prueba que esas personas pidieran el reembolso, y la mayoría no lo menciona. El análisis
 es descriptivo: el texto no entra al modelo de riesgo, y solo lo lee la explicación de motivos,
-una heurística de palabras clave (sección~\ref{sec:interpretabilidad-motivos}).
+una heurística de palabras clave (sección~\ref{sec:interpretabilidad-motivos}). La Parte A prueba
+si ese lenguaje distingue de verdad a las tempranas (sección~\ref{sec:modelacion-texto}).
 
 \subsection{Los \cifraJuegosEntrenamiento{} contra los \cifraJuegosExternos{}}\label{sec:exploracion-externos}
 

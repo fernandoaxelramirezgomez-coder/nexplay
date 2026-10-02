@@ -1,5 +1,5 @@
 % Commit, releases con sha256 y comandos para reproducir cada cifra. Fuente: documento/generar_figuras.py,
-% docs/evidencia/colab/README.md, el Makefile y la API de releases de GitHub.
+% docs/evidencia/colab/ (README.md y las tres descargas con codigo-v6), el Makefile y la API de releases de GitHub.
 \section{Reproducibilidad}\label{sec:anexo}
 
 Cada cifra de este documento sale de un release con tag fijo o de \texttt{docs/evidencia/}, a través
@@ -27,23 +27,27 @@ archivo, que el código compara antes de usarlo.
 \paragraph{El código.} Todo el Python vive en \texttt{backend/}: la API, el modelado, el análisis,
 las referencias, el despliegue, los verificadores, la ingesta, la publicación y la operación. El
 frontend vive en \texttt{frontend/}, los notebooks en \texttt{notebooks/}, este documento en
-\texttt{documento/}, y la evidencia, las capturas y el historial en \texttt{docs/}. Los notebooks
-clonan el tag \texttt{codigo-v3}, el commit \texttt{\cifraCommitCodigo}. Sus salidas finales
-llegaron después y no están en el tag, a propósito: el tag fija el código que se ejecuta, no lo que
-imprimió.
+\texttt{documento/}, y la evidencia, las capturas y el historial en \texttt{docs/}. Los tres
+notebooks clonan el tag \mbox{\texttt{\cifraTagCodigo}}, el commit \texttt{\cifraCommitCodigo}, y en ese tag
+guardan las salidas de una corrida local, para que sus gráficas se vean también en GitHub. De esas
+salidas, sin recalcular, salen la tabla~\ref{tab:bandas-oof} y las
+figuras~\ref{fig:texto-pr-auc} y~\ref{fig:texto-nubes}.
 
-\paragraph{La corrida en Colab.} Los dos notebooks corrieron completos en un Colab limpio el
-\cifraFechaColab{}: \cifraCeldasCero{} celdas de código en el 00 y \cifraCeldasUno{} en el 01, sin
-errores ni avisos, con Python \cifraVersionPythonColab{}, scikit-learn \cifraVersionSklearnColab{},
-numpy \cifraVersionNumpyColab{} y pandas \cifraVersionPandasColab{}. Las dos descargas están en
-\texttt{docs/evidencia/colab/}. Con esas mismas versiones, fuera de Colab, el 00 tarda
-\cifraTiempoCero{} segundos y el 01, \cifraTiempoUno{}.
+\paragraph{La corrida en Colab.} Los tres notebooks corrieron completos en Colab el
+\cifraFechaColab{}, con ese mismo tag: \cifraCeldasCero{} celdas de código en el 00,
+\cifraCeldasUno{} en el 01 y \cifraCeldasDos{} en el 02, sin errores ni avisos, con Python
+\cifraVersionPythonColab{}, scikit-learn \cifraVersionSklearnColab{}, numpy
+\cifraVersionNumpyColab{} y pandas \cifraVersionPandasColab{}. Las tres descargas están en
+\texttt{docs/evidencia/colab/}. El generador de este documento comprueba su sha256 y que cada celda
+de la que toma una cifra haya impreso en Colab lo mismo que en el tag. Con esas versiones, fuera de
+Colab, el 00 tarda \cifraTiempoCero{} segundos; el 01, \cifraTiempoUno{}, y el 02,
+\cifraTiempoDos{}.
 
 \paragraph{Los comandos.} Desde la raíz del repositorio, \texttt{make setup} crea el entorno de
 Python e instala el frontend; \texttt{make data} baja data-v3 y data-v1 y verifica su sha256;
 \texttt{make train} entrena el modelo con data-v1 y compara las \cifraJuegosCatalogo{} bandas con la
 referencia; \texttt{make api} y \texttt{make web} levantan la API y el frontend en local;
 \texttt{make test} corre los verificadores del backend y las pruebas del frontend;
-\texttt{make notebooks} ejecuta los dos notebooks en una carpeta temporal y compara sus salidas con
+\texttt{make notebooks} ejecuta los tres notebooks en una carpeta temporal y compara sus salidas con
 las guardadas, sin tocarlas, y \texttt{make doc} genera las cifras, las tablas y las figuras, y
 compila este documento.

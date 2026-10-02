@@ -15,8 +15,8 @@ variables, cinco y todas del juego. Sus coeficientes se leen directo, y son los 
 ficha: cada factor que muestra el sitio es un coeficiente por el valor del juego
 (sección~\ref{sec:interpretabilidad}). Y aunque hay \cifraResenasEntrenamiento{} reseñas, lo que
 varía son \cifraJuegosEntrenamiento{} juegos, y con tan pocos un modelo más flexible tendría poco
-de dónde aprender sin memorizarlos. La comparación contra otros algoritmos viene de la Parte A, con
-los modelos de texto (sección~\ref{sec:modelacion-texto}). La misma función,
+de dónde aprender sin memorizarlos. La comparación entre algoritmos está en la Parte A, sobre el
+texto de las reseñas (sección~\ref{sec:modelacion-texto}). La misma función,
 \texttt{construir\_pipeline}, arma el modelo que sirve la API y el de los notebooks, y se probó con
 tres conjuntos de variables, siempre contra el clasificador trivial (tabla~\ref{tab:conjuntos}).
 
@@ -24,8 +24,9 @@ tres conjuntos de variables, siempre contra el clasificador trivial (tabla~\ref{
   \centering\small
   \input{tables/conjuntos}
   \caption{PR-AUC del mismo modelo con cada conjunto de variables: media y desviación estándar de
-  los \cifraPliegues{} folds de la partición congelada. Fuente: \texttt{evaluar\_gkf} de
-  \texttt{backend/modelado/entrenar\_baseline.py} sobre data-v1.}
+  los \cifraPliegues{} folds de la partición congelada, y cuántas veces la media supera a la del
+  trivial. Fuente: \texttt{evaluar\_gkf} de \texttt{backend/modelado/entrenar\_baseline.py} sobre
+  data-v1.}
   \label{tab:conjuntos}
 \end{table}
 
@@ -78,14 +79,17 @@ de \cifraCoefDescuentoICInf{} a \cifraCoefDescuentoICSup{}, y el de la gratuidad
 \cifraCoefPrecioReplicasPositivas{} de las réplicas, pero con \cifraJuegosEntrenamiento{} juegos su
 intervalo no descarta el cero, y por eso su evidencia se marca como débil.
 
-El sitio no muestra el score: muestra una de tres bandas, bajo, medio o alto. Los cortes dividen en
-tercios los scores fuera de pliegue\footnote{El score fuera de pliegue de una reseña lo da un modelo
-entrenado sin el juego de esa reseña, con la misma partición congelada.} de las reseñas de data-v1:
-un juego pasa a medio desde \cifraUmbralMedio{} y a alto desde \cifraUmbralAlto{}. Los tercios son
-de reseñas, y cada juego se califica con el modelo entrenado con todo data-v1, así que los juegos no
-se reparten en partes iguales: los \cifraJuegosEntrenamiento{} quedan en \cifraBajoEntrenamiento{},
-\cifraMedioEntrenamiento{} y \cifraAltoEntrenamiento{}, y los \cifraJuegosCatalogo{} del catálogo,
-en \cifraBajoCatalogo{}, \cifraMedioCatalogo{} y \cifraAltoCatalogo{}. Por los pesos balanceados, el
+El sitio no muestra el score: muestra una de tres bandas, bajo, medio o alto. Los cortes son los
+percentiles \cifraPercentilMedio{} y \cifraPercentilAlto{} de los scores fuera de
+fold\footnote{El score fuera de fold (OOF) de una reseña lo da un modelo entrenado sin el juego de
+esa reseña, con la misma partición congelada.} de las reseñas de entrenamiento, las de data-v1
+(\texttt{backend/modelado/entrenar\_modelo.py}): un juego pasa a medio desde \cifraUmbralMedio{} y
+a alto desde \cifraUmbralAlto{}. Los percentiles se toman sobre reseñas, no sobre juegos ni sobre el
+catálogo, y cada juego se califica después con el modelo entrenado con todo data-v1, así que los
+juegos no se reparten en partes iguales: los \cifraJuegosEntrenamiento{} de entrenamiento quedan en
+\cifraBajoEntrenamiento{}, \cifraMedioEntrenamiento{} y \cifraAltoEntrenamiento{}, y los
+\cifraJuegosCatalogo{} del catálogo, en \cifraBajoCatalogo{} de riesgo bajo, \cifraMedioCatalogo{}
+de medio y \cifraAltoCatalogo{} de alto. Por los pesos balanceados, el
 score no es una probabilidad calibrada: los cortes quedan muy por encima de la prevalencia, que es
 de \cifraPrevalenciaEntrenamientoPorResena{}. Sirve para ordenar títulos, no como la probabilidad
 de que una compra termine en la señal. Los umbrales salen solo de data-v1, y los
@@ -96,8 +100,11 @@ de que una compra termine en la señal. Los umbrales salen solo de data-v1, y lo
 La figura~\ref{fig:pr-auc-por-fold} muestra el PR-AUC de cada fold de la partición congelada. El
 modelo le gana al trivial en \cifraPliegosGanados{} de \cifraPliegues{} folds, pero por márgenes
 muy distintos, de \cifraCocienteFoldMin{} a \cifraCocienteFoldMax{} veces; en promedio llega a
-\cifraPRAUCModelo{} contra \cifraPRAUCTrivial{}, \cifraPRAUCCociente{} veces el trivial. Es una
-desviación grande al lado de la media: el resultado depende de qué juegos le tocan a cada fold.
+\cifraPRAUCModelo{} contra \cifraPRAUCTrivial{}, \cifraPRAUCCociente{} veces el trivial. Esa media
+la carga el fold 1: su PR-AUC, \cifraPRAUCFoldUno{}, es el \cifraFoldUnoParteDeLaSuma{} de la suma
+de los cinco, y los otros cuatro promedian \cifraPRAUCOtrosFolds{}, cada uno todavía por encima de
+su trivial. De ahí la desviación tan grande
+al lado de la media: el resultado depende de qué juegos le tocan a cada fold.
 
 \begin{figure}[htbp]
   \centering
@@ -120,17 +127,30 @@ juegos que el modelo no vio, y por eso el modelo se queda entrenado con data-v1.
 
 \subsection{Por qué cae fuera de muestra}\label{sec:evaluacion-caida}\label{sec:evaluacion-filo}
 
+La tabla~\ref{tab:bandas-oof} da la tasa de la señal en cada banda. En data-v1, cada juego se
+clasifica con su score fuera de fold, el de un modelo que no lo vio, y por eso sus bandas tienen
+\cifraBajoOOF{}, \cifraMedioOOF{} y \cifraAltoOOF{} juegos y no los \cifraBajoEntrenamiento{},
+\cifraMedioEntrenamiento{} y \cifraAltoEntrenamiento{} de la banda que sirve el sitio, que sale del
+modelo entrenado con todo data-v1. Los externos se clasifican con ese modelo final, que tampoco los
+vio, así que su banda es la servida. Con el score fuera de fold, la tasa de la banda alta es
+\cifraAltoSobreBajoOOF{} veces la de la baja; en los externos, \cifraAltoSobreBajoExternos{} veces,
+y la media no se separa de la baja. En un título nuevo, lo que se sostiene es la banda alta.
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/bandas_oof}
+  \caption{La señal por banda de riesgo. En data-v1 la banda sale del score fuera de fold (OOF) y
+  no es la que sirve el sitio; en los externos es la servida. La tasa es la parte de las reseñas con
+  la señal, y «veces la base» la compara con la tasa de todo el conjunto. Fuente: la salida
+  guardada de \texttt{lr.tabla\_de\_bandas} en el notebook 01 (\mbox{\texttt{\cifraTagCodigo}}), sin
+  recalcular.}
+  \label{tab:bandas-oof}
+\end{table}
+
 Una parte de la caída se ve en la variable que más pesa, la crítica: de los \cifraAltoCatalogo{}
-juegos de riesgo alto del catálogo, \cifraAltoSinNotaCatalogo{} no tienen nota. Por reseña, en los
-de entrenamiento la banda alta sin nota tiene \cifraTasaAltoSinNotaEntrenamientoPorResena{} contra
-\cifraTasaBajoEntrenamientoPorResena{} de la baja, una tabla solo descriptiva porque el modelo ya
-vio esos juegos. En los externos la distancia se acorta, \cifraTasaAltoSinNotaExternosPorResena{}
-contra \cifraTasaBajoExternosPorResena{}, y la baja y la media se invierten
-(\cifraTasaBajoExternosPorResena{} contra \cifraTasaMedioExternosPorResena{}). Con el promedio por
-juego la lectura es la misma: \cifraTasaAltoSinNotaExternosPromJuegos{} contra
-\cifraTasaBajoExternosPromJuegos{} en los externos. La falta de nota sigue señalando más riesgo,
-pero separa menos en los títulos nuevos, que además traen otra mezcla
-(sección~\ref{sec:exploracion-externos}; detalle en \texttt{docs/evidencia/metacritic-por-banda.md}).
+juegos de riesgo alto del catálogo, \cifraAltoSinNotaCatalogo{} no tienen nota, y en los títulos
+nuevos, que traen otra mezcla, la falta de nota separa menos (sección~\ref{sec:exploracion-externos};
+detalle en \texttt{docs/evidencia/metacritic-por-banda.md}).
 
 Las bandas cortan un score continuo, y un juego cerca de un corte puede cambiar de banda con un
 cambio mínimo en los datos o en el reentrenamiento. Los dos más cercanos son Hollow Knight, con
@@ -181,9 +201,71 @@ usan esas palabras, no como la causa de la señal en ese juego.
 
 \subsection{Modelos de texto (Parte A)}\label{sec:modelacion-texto}
 
-Los modelos que leen el texto de las reseñas, y con ellos la comparación entre algoritmos, se están
-haciendo en la rama \texttt{modelos-texto}, con prerregistro\footnote{Un prerregistro fija, antes
-de correr el análisis, qué se va a medir y qué resultado contará como éxito, para no acomodar la
-pregunta a los resultados.}. Su resultado entrará a este documento cuando esa rama llegue a master.
+Los motivos de la ficha se cuentan en las negativas tempranas. Para presentarlos como quejas de las
+primeras horas, y no como quejas generales, esas reseñas tendrían que hablar distinto de las
+tardías. La Parte A lo pone a prueba con modelos que leen el texto: entre las negativas, ¿se
+distinguen las tempranas de las tardías? Es un análisis aparte del modelo de
+riesgo, y su resultado no entra al score: la señal sale de esas mismas reseñas, y usar su texto
+para estimarla sería fuga.
 
-\reservaPendiente{11cm}{resultado de la Parte A, de la rama \texttt{modelos-texto}}
+\paragraph{El prerregistro.} Los modelos, la métrica y la regla de decisión se fijaron por
+escrito\footnote{Un prerregistro fija, antes de correr el análisis, qué se va a medir y qué
+resultado contará como éxito, para no acomodar la pregunta a los resultados.} en el commit
+\texttt{\cifraPrerregistroTexto}, anterior al del código, \texttt{\cifraCodigoTexto}, y el resultado
+salió con el árbol de git limpio (\texttt{docs/evidencia/modelos-texto.json}). La regla descarta el
+mejor modelo si el intervalo de su cociente contra el trivial incluye el 1, y también si no le gana a
+una regla de una sola palabra: marcar las reseñas que dicen «refund». Esa palabra salió de mirar
+estos mismos datos (sección~\ref{sec:exploracion-texto}), así que la referencia es optimista.
+
+\paragraph{Datos y modelos.} Son las \cifraNegativasTexto{} reseñas negativas en inglés de los
+\cifraJuegosEntrenamiento{} juegos de \mbox{data-v1}, con la partición congelada; \cifraTempranasTexto{}
+son tempranas, el \cifraPrevalenciaTextoPorResena{}. Una reseña que dice cuánto jugó repite la
+etiqueta, así que en las \cifraDuracionesEnmascaradas{} que escriben una duración esta se cambia
+por una marca. Se compararon tres modelos: TF-IDF\footnote{Representa cada reseña por sus palabras
+y pares de palabras, con menos peso para las que aparecen en casi todas.} con Naive Bayes (NB),
+TF-IDF con regresión logística (LR) y MiniLM, un modelo de lenguaje preentrenado y congelado, con
+la misma regresión logística.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.75\textwidth]{notebooks/02-pr-auc-con-ic.png}
+  \caption{PR-AUC de los modelos de texto: media de los \cifraPliegues{} folds de la partición
+  congelada, con su intervalo al \cifraNivelDeConfianza{} por bootstrap sobre juegos. La línea
+  punteada es el trivial. Fuente: la salida guardada del notebook 02 en \mbox{\texttt{\cifraTagCodigo}}.}
+  \label{fig:texto-pr-auc}
+\end{figure}
+
+\paragraph{Resultado.} TF-IDF + LR es el mejor (figura~\ref{fig:texto-pr-auc}): llega a
+\cifraPRAUCTextoLR{}, con un intervalo de \cifraPRAUCTextoLRICInf{} a \cifraPRAUCTextoLRICSup{},
+contra \cifraPRAUCTextoTrivial{} del trivial, \cifraCocienteTextoLR{} veces, de
+\cifraCocienteTextoLRICInf{} a \cifraCocienteTextoLRICSup{}. A la regla «refund», que llega a
+\cifraPRAUCTextoRefund{}, le saca \cifraDiferenciaTextoLRRefund{}, de
+\cifraDiferenciaTextoLRRefundICInf{} a \cifraDiferenciaTextoLRRefundICSup{}, y en la comparación
+pareada también queda arriba de NB (\cifraPRAUCTextoNB{}) y de MiniLM (\cifraPRAUCTextoMiniLM{}).
+Es la rama \cifraRamaTexto{} del prerregistro: las quejas tempranas tienen lenguaje propio, más allá
+de mencionar el reembolso. Se documenta TF-IDF + LR, que no se sirve en ningún lado.
+
+\paragraph{Lectura para negocio.} Se hizo después de la decisión, con los mismos scores fuera de
+fold, y es descriptiva. Si alguien leyera solo la décima parte de las negativas, las que TF-IDF + LR
+señala primero, el \cifraTopDiezTempranasPorResena{} serían tempranas, \cifraTopDiezVeces{} veces la
+prevalencia. Las nubes (figura~\ref{fig:texto-nubes}) dicen de qué se habla de cada lado. Hacia
+temprana pesan el reembolso, lo que pasa al abrir el juego (el tutorial, la cuenta, el inicio de
+sesión) y el rendimiento; hacia tardía, lo de quien ya jugó mucho: los mods, las actualizaciones,
+los jefes. De las \cifraPalabrasTopTemprana{} palabras que más empujan hacia temprana,
+\cifraPalabrasSinCategoria{} no caen en ninguna de las \cifraCategoriasMotivos{} categorías de
+motivos del sitio.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth,trim=140 21 141 66,clip]{notebooks/02-nube-temprana.png}\caption{Hacia temprana}\end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth,trim=140 21 141 66,clip]{notebooks/02-nube-tardia.png}\caption{Hacia tardía}\end{subfigure}
+  \caption{Las palabras que empujan a TF-IDF + LR hacia cada clase en los \cifraPliegues{} folds; el
+  tamaño sigue a su coeficiente medio. Son asociaciones del modelo, no causas. Fuente: la salida
+  guardada del notebook 02 en \mbox{\texttt{\cifraTagCodigo}}.}
+  \label{fig:texto-nubes}
+\end{figure}
+
+\paragraph{Lo que no dice.} Es la señal en el texto de quien escribió pronto, no un arrepentimiento
+confirmado. Que el modelo distinga las tempranas tampoco prueba qué categorías de motivos funcionan:
+eso es la Parte B (sección~\ref{sec:siguientes}). El análisis cubre solo reseñas en inglés de
+data-v1, y su intervalo no incluye la variación que daría reentrenar.

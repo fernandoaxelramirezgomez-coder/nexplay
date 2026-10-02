@@ -14,10 +14,13 @@ sigue siendo el publicado.
 """
 
 import ast
+import base64
 import contextlib
 import csv
+import hashlib
 import io
 import json
+import math
 import re
 import shutil
 import sqlite3
@@ -83,6 +86,21 @@ def decimal(x: float, decimales: int) -> str:
 def con_signo(x: float, decimales: int) -> str:
     """Con el signo menos tipográfico: −0.56, no -0.56."""
     return decimal(x, decimales).replace("-", "−")
+
+
+def decimales_pr_auc(x: float) -> int:
+    return 2 - math.floor(math.log10(abs(x)))
+
+
+def pr_auc(x: float) -> str:
+    """Todo PR-AUC con tres cifras significativas: 0.0694, 0.146, 0.369. Así los cocientes que publica el
+    documento salen de las mismas cifras que muestra, también con prevalencias cercanas al 2 %."""
+    return decimal(x, decimales_pr_auc(x))
+
+
+def junto_a(x: float, estimacion: float) -> str:
+    """Una desviación, un extremo de intervalo o una diferencia, con los decimales de su PR-AUC."""
+    return decimal(x, decimales_pr_auc(estimacion))
 
 
 def porcentaje(x: float, decimales: int = 2) -> str:
@@ -193,6 +211,22 @@ def cifras_de_datos(cifras: Cifras, rutas: dict[str, Path]) -> None:
         cifras.agregar(f"Prevalencia{nombre}PorResena", porcentaje(c["prevalencia"]), ref)
 
 
+def percentiles_de_los_cortes() -> list[float]:
+    """Los percentiles con que entrenar_modelo.py corta las bandas, leídos de su código: el segundo argumento de
+    cada np.percentile, una expresión de constantes como «100 / 3»."""
+    arbol = ast.parse((BACKEND / "modelado" / "entrenar_modelo.py").read_text(encoding="utf-8"))
+    llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "percentile"]
+    percentiles = []
+    for llamada in llamadas:
+        expresion = llamada.args[1]
+        if not all(isinstance(n, (ast.Constant, ast.BinOp, ast.operator)) for n in ast.walk(expresion)):
+            raise ValueError(f"el percentil de entrenar_modelo.py no es una expresión de constantes: {ast.unparse(expresion)}")
+        percentiles.append(float(eval(compile(ast.Expression(expresion), "entrenar_modelo.py", "eval"), {"__builtins__": {}})))
+    if len(percentiles) != 2:
+        raise ValueError(f"entrenar_modelo.py tiene {len(percentiles)} cortes por percentil, no dos")
+    return sorted(percentiles)
+
+
 def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> dict:
     """El PR-AUC por fold del modelo y del trivial, los cortes de las bandas y el modelo entrenado con todo
     data-v1, como lo arma entrenar_modelo.py."""
@@ -202,22 +236,26 @@ def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> dict:
         modelo = evaluar_gkf(construir_pipeline(), X, y, grupos, "juego")
         trivial = evaluar_gkf(DummyClassifier(strategy="prior"), X, y, grupos, "trivial")
     fuente = "GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)"
-    cifras.agregar("PRAUCModelo", decimal(modelo.mean(), 4), fuente)
-    cifras.agregar("PRAUCModeloStd", decimal(modelo.std(), 4), fuente)
-    cifras.agregar("PRAUCTrivial", decimal(trivial.mean(), 4), fuente + "; trivial = prevalencia de cada pliegue")
-    cifras.agregar("PRAUCTrivialStd", decimal(trivial.std(), 4), fuente)
+    cifras.agregar("PRAUCModelo", pr_auc(modelo.mean()), fuente)
+    cifras.agregar("PRAUCModeloStd", junto_a(modelo.std(), modelo.mean()), fuente)
+    cifras.agregar("PRAUCTrivial", pr_auc(trivial.mean()), fuente + "; trivial = prevalencia de cada pliegue")
+    cifras.agregar("PRAUCTrivialStd", junto_a(trivial.std(), trivial.mean()), fuente)
     # Un decimal: la variación entre folds no justifica centésimas. La prueba externa sigue la misma regla.
     cifras.agregar("PRAUCCociente", decimal(modelo.mean() / trivial.mean(), 1), fuente)
     cifras.agregar("PliegosGanados", str(int((modelo > trivial).sum())), fuente + ": pliegues donde el modelo supera al trivial")
     cifras.agregar("Pliegues", str(len(modelo)), fuente)
 
-    cortes = np.percentile(_scores_oof(X, y, grupos), [100 / 3, 200 / 3])
-    cifras.agregar("UmbralMedio", decimal(cortes[0], 4), "percentil 33.3 de los scores fuera de pliegue")
-    cifras.agregar("UmbralAlto", decimal(cortes[1], 4), "percentil 66.7 de los scores fuera de pliegue")
+    percentiles = percentiles_de_los_cortes()
+    cortes = np.percentile(_scores_oof(X, y, grupos), percentiles)
+    fuente_cortes = "backend/modelado/entrenar_modelo.py: np.percentile de los scores fuera de fold de las reseñas"
+    cifras.agregar("PercentilMedio", decimal(percentiles[0], 1), fuente_cortes)
+    cifras.agregar("PercentilAlto", decimal(percentiles[1], 1), fuente_cortes)
+    cifras.agregar("UmbralMedio", decimal(cortes[0], 4), fuente_cortes + ", con el percentil del corte medio")
+    cifras.agregar("UmbralAlto", decimal(cortes[1], 4), fuente_cortes + ", con el percentil del corte alto")
 
     cocientes = modelo / trivial
-    cifras.agregar("PRAUCFoldMin", decimal(modelo.min(), 4), fuente + ": el fold más bajo")
-    cifras.agregar("PRAUCFoldMax", decimal(modelo.max(), 4), fuente + ": el fold más alto")
+    cifras.agregar("PRAUCFoldMin", pr_auc(modelo.min()), fuente + ": el fold más bajo")
+    cifras.agregar("PRAUCFoldMax", pr_auc(modelo.max()), fuente + ": el fold más alto")
     cifras.agregar("CocienteFoldMin", decimal(cocientes.min(), 1), fuente + ": modelo entre trivial, el fold más bajo")
     cifras.agregar("CocienteFoldMax", decimal(cocientes.max(), 1), fuente + ": modelo entre trivial, el fold más alto")
     return {"modelo": modelo, "trivial": trivial, "cortes": cortes, "pipeline": construir_pipeline().fit(X, y),
@@ -237,8 +275,8 @@ def cifras_de_bandas(cifras: Cifras) -> None:
 def cifras_de_evidencia(cifras: Cifras) -> None:
     externa = json.loads((EVIDENCIA / "prueba-externa.json").read_text())["resumen"]
     bootstrap = json.loads((EVIDENCIA / "bootstrap-prueba-externa.json").read_text())
-    cifras.agregar("PRAUCExterno", decimal(externa["pr_auc_externo"], 4), "docs/evidencia/prueba-externa.json")
-    cifras.agregar("PRAUCExternoTrivial", decimal(externa["pr_auc_trivial"], 4), "docs/evidencia/prueba-externa.json")
+    cifras.agregar("PRAUCExterno", pr_auc(externa["pr_auc_externo"]), "docs/evidencia/prueba-externa.json")
+    cifras.agregar("PRAUCExternoTrivial", pr_auc(externa["pr_auc_trivial"]), "docs/evidencia/prueba-externa.json")
     cifras.agregar("PRAUCExternoCociente", decimal(externa["pr_auc_externo"] / externa["pr_auc_trivial"], 1),
                    "docs/evidencia/prueba-externa.json")
     inf, sup = bootstrap["bootstrap"]["ic95_cociente"]
@@ -401,7 +439,7 @@ def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     return coeficientes
 
 
-def tabla_de_conjuntos(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> Path:
+def tabla_de_conjuntos(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame, trivial: np.ndarray) -> Path:
     """§9.1 y §9.2 (T9): el mismo modelo con los conjuntos juego, compra y completo, contra el trivial
     (01, celdas 31 a 33, y docs/evidencia/simulacion_123.txt para las 30 particiones)."""
     df = ex.con_juego(resenas, juegos)
@@ -412,13 +450,13 @@ def tabla_de_conjuntos(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFra
             resultados[conjunto] = evaluar_gkf(construir_pipeline(), X, y, grupos, conjunto)
         variables[conjunto] = X.shape[1]
     juego, compra = resultados["juego"], resultados["compra"]
-    if decimal(juego.mean(), 4) != cifras.macros["PRAUCModelo"][0]:
+    if pr_auc(juego.mean()) != cifras.macros["PRAUCModelo"][0]:
         raise ValueError("el conjunto juego ya no da el PR-AUC del modelo")
     fuente = "GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)"
     for conjunto in ("compra", "completo"):
-        cifras.agregar(f"PRAUC{conjunto.capitalize()}", decimal(resultados[conjunto].mean(), 4), fuente + f", conjunto {conjunto}")
-        cifras.agregar(f"PRAUC{conjunto.capitalize()}Std", decimal(resultados[conjunto].std(), 4), fuente + f", conjunto {conjunto}")
-    cifras.agregar("DiferenciaCompraJuego", decimal(compra.mean() - juego.mean(), 4), fuente + ": compra menos juego")
+        cifras.agregar(f"PRAUC{conjunto.capitalize()}", pr_auc(resultados[conjunto].mean()), fuente + f", conjunto {conjunto}")
+        cifras.agregar(f"PRAUC{conjunto.capitalize()}Std", junto_a(resultados[conjunto].std(), resultados[conjunto].mean()), fuente + f", conjunto {conjunto}")
+    cifras.agregar("DiferenciaCompraJuego", junto_a(compra.mean() - juego.mean(), juego.mean()), fuente + ": compra menos juego")
     cifras.agregar("FoldsCompraGana", str(int((compra > juego).sum())), fuente + ": folds donde compra supera a juego")
 
     # Las 30 particiones no se recalculan aquí (tardan minutos); se lee la evidencia y se comprueba que
@@ -433,15 +471,22 @@ def tabla_de_conjuntos(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFra
 
     descripcion = {"juego": "gratuidad, precio, descuento y crítica", "compra": "las de juego y los juegos del autor",
                    "completo": "las de compra, la bandera de perfil privado y las posteriores a la reseña"}
-    filas = [f"Trivial & ninguna & 0 & {cifras.macros['PRAUCTrivial'][0]} & {cifras.macros['PRAUCTrivialStd'][0]} \\\\"]
+    trivial_media = trivial.mean()
+    filas = [f"Trivial & ninguna & 0 & {cifras.macros['PRAUCTrivial'][0]} & {cifras.macros['PRAUCTrivialStd'][0]} & "
+             f"{decimal(1, 1)}× \\\\"]
     for conjunto in ("juego", "compra", "completo"):
         nombre = "Juego (el del sitio)" if conjunto == "juego" else conjunto.capitalize()
-        filas.append(f"{nombre} & {descripcion[conjunto]} & {variables[conjunto]} & {decimal(resultados[conjunto].mean(), 4)} & "
-                     f"{decimal(resultados[conjunto].std(), 4)} \\\\")
+        veces = decimal(resultados[conjunto].mean() / trivial_media, 1)
+        if conjunto != "completo" and veces != cifras.macros[f"VecesTrivial{conjunto.capitalize()}"][0]:
+            raise ValueError(f"las veces el trivial de {conjunto} no son las que imprime el 01")
+        filas.append(f"{nombre} & {descripcion[conjunto]} & {variables[conjunto]} & {pr_auc(resultados[conjunto].mean())} & "
+                     f"{junto_a(resultados[conjunto].std(), resultados[conjunto].mean())} & "
+                     f"{veces}× \\\\")
     contenido = [
         "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tabularx}{\\textwidth}{l >{\\raggedright\\arraybackslash}X rrr}", "\\toprule",
-        "Conjunto & Variables & Cuántas & PR-AUC & Desv. entre folds \\\\", "\\midrule",
+        "\\begin{tabularx}{\\textwidth}{l >{\\raggedright\\arraybackslash}X rrrr}", "\\toprule",
+        "Conjunto & Variables & Cuántas & PR-AUC & \\begin{tabular}[b]{@{}r@{}}Desv. entre\\\\folds\\end{tabular} & "
+        "\\begin{tabular}[b]{@{}r@{}}Veces el\\\\trivial\\end{tabular} \\\\", "\\midrule",
         *filas, "\\bottomrule", "\\end{tabularx}",
     ]
     ruta = TABLAS / "conjuntos.tex"
@@ -455,18 +500,18 @@ def cifras_de_la_particion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     df = ex.con_juego(resenas, juegos)
     aleatorio = ex.kfold_contra_groupkfold(df).loc["KFold aleatorio (fuga)"]
     fuente = "data-v1: KFold de 5 sobre reseñas, sin agrupar por juego (ex.kfold_contra_groupkfold)"
-    cifras.agregar("PRAUCKFold", decimal(aleatorio["PR-AUC media"], 4), fuente)
-    cifras.agregar("PRAUCKFoldStd", decimal(aleatorio["std entre folds"], 4), fuente)
+    cifras.agregar("PRAUCKFold", pr_auc(aleatorio["PR-AUC media"]), fuente)
+    cifras.agregar("PRAUCKFoldStd", junto_a(aleatorio["std entre folds"], aleatorio["PR-AUC media"]), fuente)
     particiones = ex.sensibilidad_a_la_particion(df)
     fuente = "data-v1: GroupKFold con los juegos repartidos al azar (ex.sensibilidad_a_la_particion)"
     cifras.agregar("ParticionesAleatorias", str(len(particiones)), fuente)
-    cifras.agregar("PRAUCParticionMin", decimal(particiones.min(), 4), fuente)
-    cifras.agregar("PRAUCParticionMax", decimal(particiones.max(), 4), fuente)
+    cifras.agregar("PRAUCParticionMin", pr_auc(particiones.min()), fuente)
+    cifras.agregar("PRAUCParticionMax", pr_auc(particiones.max()), fuente)
     cifras.agregar("JuegosEmpatadosEnElTope", str(int((resenas.groupby("appid").size() == ex.TOPE_DE_LA_INGESTA).sum())),
                    "data-v1: juegos con exactamente el tope de reseñas")
 
     evidencia = json.loads((EVIDENCIA / "particion-alternativa.json").read_text())
-    if decimal(evidencia["resumen"]["congelada"]["pr_auc_media"], 4) != cifras.macros["PRAUCModelo"][0]:
+    if pr_auc(evidencia["resumen"]["congelada"]["pr_auc_media"]) != cifras.macros["PRAUCModelo"][0]:
         raise ValueError("docs/evidencia/particion-alternativa.json ya no corresponde al modelo")
     congelada = ex.leer_particion()
     alternativa = {int(appid): fold for appid, fold in evidencia["particiones"]["alternativa"]["fold_por_appid"].items()}
@@ -475,8 +520,8 @@ def cifras_de_la_particion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     cifras.agregar("JuegosMismoFoldColab", str(sum(1 for appid, fold in alternativa.items() if congelada[appid] == fold)),
                    fuente + ": juegos con el mismo fold que la partición congelada")
     resumen = evidencia["resumen"]["alternativa"]
-    cifras.agregar("PRAUCParticionAlternativa", decimal(resumen["pr_auc_media"], 4), fuente)
-    cifras.agregar("PRAUCParticionAlternativaStd", decimal(resumen["pr_auc_std"], 4), fuente)
+    cifras.agregar("PRAUCParticionAlternativa", pr_auc(resumen["pr_auc_media"]), fuente)
+    cifras.agregar("PRAUCParticionAlternativaStd", junto_a(resumen["pr_auc_std"], resumen["pr_auc_media"]), fuente)
     cifras.agregar("PliegosGanadosAlternativa", str(resumen["folds_donde_gana_el_modelo"]), fuente)
 
 
@@ -732,14 +777,16 @@ def cifras_de_endpoints(cifras: Cifras) -> None:
 
 def figura_de_arquitectura() -> Path:
     """F10: de la API de Steam a la interfaz, en TikZ. Los tags salen del código: los releases, de
-    preparar_entorno.py; el del código, de CODIGO_REF en el notebook 01."""
-    codigo = re.search(r'CODIGO_REF = \\"([^"\\]+)\\"', (RAIZ / "notebooks" / "01_modelo_riesgo.ipynb").read_text(encoding="utf-8"))[1]
+    preparar_entorno.py; el del código, del CODIGO_REF de los notebooks, que también dan sus números."""
+    codigo = tag_de_codigo()
+    numeros = sorted(ruta.name[:2] for ruta in (RAIZ / "notebooks").glob("0*.ipynb"))
+    notebooks = f"{', '.join(numeros[:-1])} y {numeros[-1]}"
     cajas = {
         "steam": (0, 0, "API de Steam\\\\\\texttt{appreviews}\\\\y \\texttt{appdetails}", "neutro"),
         "ingesta": (3.95, 0, "Ingesta\\\\\\texttt{ingesta\\_steam.py}", "neutro"),
         "releases": (7.9, 0, f"Releases con tag fijo\\\\{ENTRENAMIENTO_REF} y {SERVIDO_REF}\\\\con su sha256", "neutro"),
         "build": (11.85, 0, f"Build en Render\\\\entrena con {ENTRENAMIENTO_REF}\\\\y compara las bandas", "neutro"),
-        "notebooks": (3.95, -1.9, f"Notebooks 00 y 01\\\\código del tag {codigo}", "neutro"),
+        "notebooks": (3.95, -1.9, f"Notebooks {notebooks}\\\\código del tag {codigo}", "neutro"),
         "frontend": (7.9, -1.9, "Frontend Angular\\\\en Vercel", "acento"),
         "api": (11.85, -1.9, "API FastAPI\\\\en Render", "acento"),
     }
@@ -835,14 +882,14 @@ def cifras_de_validacion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataF
     cifras.agregar("CopiasEnFoldsDistintos", entero(ex.copias_en_folds_distintos(resenas, copias["claves entre juegos"], folds)),
                    "data-v1: de esos textos, los que caen en folds distintos de la partición congelada")
 
-    if decimal(ex.pr_auc_con_particion(ex.con_juego(resenas, juegos), folds).mean(), 4) != cifras.macros["PRAUCModelo"][0]:
+    if pr_auc(ex.pr_auc_con_particion(ex.con_juego(resenas, juegos), folds).mean()) != cifras.macros["PRAUCModelo"][0]:
         raise ValueError("el PR-AUC con la partición congelada no coincide con el del modelo")
     sin_cortas = resenas[~li.marcar_cortas(resenas)[0]["es_corta"]]
     if ex.senal(sin_cortas).mean() <= ex.senal(resenas).mean():
         raise ValueError("quitar las cortas ya no sube la prevalencia")
     for nombre, filtrado in (("SinDuplicados", li.quitar_duplicados_exactos(resenas)[0]),
                              ("SinVacias", li.quitar_vacias(resenas)[0]), ("SinCortas", sin_cortas)):
-        cifras.agregar(f"PRAUC{nombre}", decimal(ex.pr_auc_con_particion(ex.con_juego(filtrado, juegos), folds).mean(), 4),
+        cifras.agregar(f"PRAUC{nombre}", pr_auc(ex.pr_auc_con_particion(ex.con_juego(filtrado, juegos), folds).mean()),
                        "data-v1 con una regla de limpieza, partición congelada (ex.pr_auc_con_particion)")
 
 
@@ -1074,30 +1121,256 @@ def tabla_de_sha256() -> Path:
     return ruta
 
 
-def cifras_de_reproducibilidad(cifras: Cifras) -> None:
-    """Anexo: el commit del tag que clonan los notebooks y la corrida en Colab, según
-    docs/evidencia/colab/README.md, que se comprueba contra el tag y contra particion-alternativa.json."""
-    commit = subprocess.run(["git", "rev-parse", "--short", "codigo-v3^{commit}"], cwd=RAIZ, capture_output=True,
-                            text=True, check=True).stdout.strip()
-    colab = (EVIDENCIA / "colab" / "README.md").read_text(encoding="utf-8")
-    completo = re.search(r"switching to '([0-9a-f]{40})'`, que es `codigo-v3`", colab)[1]
-    if not completo.startswith(commit):
-        raise ValueError("la corrida en Colab no clonó el commit del tag codigo-v3")
-    celdas = re.search(r"\| Celdas de código ejecutadas \| (\d+ de \d+) \| (\d+ de \d+) \|", colab).groups()
-    tiempos = re.search(r"\| Tiempo, medido con las mismas versiones de Colab, no en Colab \| (\d+) s \| (\d+) s \|", colab).groups()
-    versiones = dict(re.findall(r"(Python|numpy|pandas|scikit-learn) ([\d.]+)", colab.split("**Versiones**")[1].split("\n")[0]))
+def cifras_de_reproducibilidad(cifras: Cifras, tag: str) -> None:
+    """Anexo: el tag que clonan los notebooks, su commit y la corrida vigente en Colab. Las celdas, los errores, los
+    avisos y las versiones se cuentan en las tres descargas, cuyo sha256 debe ser el de docs/evidencia/colab/README.md.
+    Falla si esa corrida no clonó el mismo commit que los notebooks: el anexo dice que el código entregado corrió
+    en Colab."""
+
+    def commit_de(etiqueta: str) -> str:
+        return subprocess.run(["git", "rev-parse", "--short", f"{etiqueta}^{{commit}}"], cwd=RAIZ, capture_output=True,
+                              text=True, check=True).stdout.strip()
+
+    commit = commit_de(tag)
+    cifras.agregar("TagCodigo", tag, "CODIGO_REF de los tres notebooks")
+    cifras.agregar("CommitCodigo", commit, "git: el commit al que apunta el tag que clonan los notebooks")
+
+    carpeta = EVIDENCIA / "colab"
+    fuente = "docs/evidencia/colab/README.md"
+    leeme = (carpeta / "README.md").read_text(encoding="utf-8")
+    fecha, tag_colab = re.search(r"^## Los tres: (\d{4}-\d{2}-\d{2}), `([\w-]+)`", leeme, re.M).groups()
+    if commit_de(tag_colab) != commit:
+        raise ValueError(f"la corrida vigente en Colab clonó {tag_colab} y los notebooks clonan {tag} ({commit}): "
+                         "falta correrlos en Colab con ese tag")
+    vigente = leeme.split("\n## Los tres:")[1].split("\n## ")[0]
+
+    def fila(titulo: str) -> list[str]:
+        return [c.strip(" `") for c in re.search(rf"^\| {titulo} \|(.+)\|$", vigente, re.M)[1].split("|")]
+
+    archivos, huellas, celdas, tiempos = (fila("Archivo"), fila("sha256"), fila("Celdas de código ejecutadas"),
+                                          fila("Tiempo, medido con las mismas versiones de Colab, no en Colab"))
+    for nombre, archivo, huella, celdas_leeme, tiempo in zip(("Cero", "Uno", "Dos"), archivos, huellas, celdas, tiempos):
+        contenido = (carpeta / archivo).read_bytes()
+        if hashlib.sha256(contenido).hexdigest() != huella:
+            raise ValueError(f"{archivo} no tiene el sha256 que da {fuente}")
+        codigo = [c for c in json.loads(contenido)["cells"] if c["cell_type"] == "code"]
+        salidas = [s for c in codigo for s in c.get("outputs", [])]
+        ejecutadas = f"{sum(c.get('execution_count') is not None for c in codigo)} de {len(codigo)}"
+        refs = {m[1] for c in codigo if (m := re.search(r'CODIGO_REF\s*=\s*"([^"]+)"', "".join(c["source"])))}
+        if ejecutadas != celdas_leeme or refs != {tag_colab}:
+            raise ValueError(f"{archivo}: {ejecutadas} celdas y CODIGO_REF {sorted(refs)}, no lo que dice {fuente}")
+        if any(s["output_type"] == "error" or s.get("name") == "stderr" for s in salidas):
+            raise ValueError(f"{archivo} trae errores o avisos")
+        cifras.agregar(f"Celdas{nombre}", ejecutadas, f"docs/evidencia/colab/{archivo}: celdas de código ejecutadas")
+        cifras.agregar(f"Tiempo{nombre}", tiempo.removesuffix(" s"), fuente + ": segundos, con las versiones de Colab")
+
+    uno = json.loads((carpeta / archivos[1]).read_bytes())
+    entorno = texto_de(celda_con(uno, "Constancia del entorno"))
+    versiones = dict(re.findall(r"^(python|numpy|pandas|scikit-learn)\s+([\d.]+)$", entorno, re.M))
     if versiones["scikit-learn"] != cifras.macros["VersionSklearnColab"][0]:
         raise ValueError("la versión de scikit-learn de Colab no cuadra entre la evidencia")
-    fuente = "docs/evidencia/colab/README.md"
-    cifras.agregar("CommitCodigo", commit, "git: el commit al que apunta el tag codigo-v3")
-    fecha = re.search(r"^# La corrida final en Colab, (\d{4}-\d{2}-\d{2})", colab, re.M)[1]
-    cifras.agregar("FechaColab", fecha_larga(datetime.fromisoformat(fecha)), fuente + ": título")
-    cifras.agregar("CeldasCero", celdas[0], fuente + ": 00_exploracion")
-    cifras.agregar("CeldasUno", celdas[1], fuente + ": 01_modelo_riesgo")
-    cifras.agregar("TiempoCero", tiempos[0], fuente + ": segundos del 00, con las versiones de Colab")
-    cifras.agregar("TiempoUno", tiempos[1], fuente + ": segundos del 01, con las versiones de Colab")
-    for nombre, paquete in (("Python", "Python"), ("Numpy", "numpy"), ("Pandas", "pandas")):
-        cifras.agregar(f"Version{nombre}Colab", versiones[paquete], fuente)
+    for archivo, (nombre, marcas) in zip(archivos[1:], CELDAS_CON_CIFRAS.items()):
+        corrida, guardado = json.loads((carpeta / archivo).read_bytes()), notebook_en(tag, nombre)
+        for marca in marcas:
+            if texto_de(celda_con(corrida, marca)).strip() != texto_de(celda_con(guardado, marca)).strip():
+                raise ValueError(f"la celda con «{marca}» imprimió en Colab otra cosa que en {tag}:notebooks/{nombre}")
+    cifras.agregar("FechaColab", fecha_larga(datetime.fromisoformat(fecha)), fuente + ": la corrida vigente")
+    for nombre, paquete in (("Python", "python"), ("Numpy", "numpy"), ("Pandas", "pandas")):
+        cifras.agregar(f"Version{nombre}Colab", versiones[paquete], f"docs/evidencia/colab/{archivos[1]}: su entorno")
+
+
+# --- lo que se toma de los notebooks del tag, sin recalcular ---------------
+
+# Las celdas de las que el documento toma cifras: su texto en el tag debe ser el que imprimió la corrida en Colab.
+CELDAS_CON_CIFRAS = {
+    "01_modelo_riesgo": ("lr.figura_pr_auc_por_fold(", "lr.tabla_comparativa(", "lr.tabla_de_bandas("),
+    "02_modelos_texto": ("tx.decidir(", "lt.tabla_top_k(", "lt.cobertura_del_sitio("),
+}
+
+def tag_de_codigo() -> str:
+    """El tag que clonan los notebooks (su CODIGO_REF), el mismo en los tres. De él salen el tag y el commit del
+    anexo, y de sus notebooks, las figuras y cifras que el documento toma tal como se guardaron."""
+    tags = {re.search(r'CODIGO_REF = \\"([^"\\]+)\\"', ruta.read_text(encoding="utf-8"))[1]
+            for ruta in sorted((RAIZ / "notebooks").glob("0*.ipynb"))}
+    if len(tags) != 1:
+        raise ValueError(f"los notebooks no clonan el mismo tag: {sorted(tags)}")
+    return tags.pop()
+
+
+def notebook_en(tag: str, nombre: str) -> dict:
+    salida = subprocess.run(["git", "show", f"{tag}:notebooks/{nombre}.ipynb"], cwd=RAIZ, capture_output=True,
+                            text=True, check=True).stdout
+    return json.loads(salida)
+
+
+def celda_con(notebook: dict, marca: str) -> dict:
+    """La única celda de código que contiene `marca`."""
+    celdas = [c for c in notebook["cells"] if c["cell_type"] == "code" and marca in "".join(c["source"])]
+    if len(celdas) != 1:
+        raise ValueError(f"«{marca}» está en {len(celdas)} celdas de código, no en una")
+    return celdas[0]
+
+
+def texto_de(celda: dict) -> str:
+    return "\n".join("".join(s.get("data", {}).get("text/plain") or s.get("text") or "") for s in celda.get("outputs", []))
+
+
+def pngs_de(celda: dict) -> list[bytes]:
+    return [base64.b64decode(s["data"]["image/png"]) for s in celda.get("outputs", []) if "image/png" in s.get("data", {})]
+
+
+def figuras_de_los_notebooks(tag: str) -> list[Path]:
+    """Las barras de PR-AUC con IC y las dos nubes del 02, los PNG tal como los guardó el notebook en el tag."""
+    notebook = notebook_en(tag, "02_modelos_texto")
+    barras = pngs_de(celda_con(notebook, "lt.figura_pr_auc_con_ic("))
+    nubes = pngs_de(celda_con(notebook, "lt.para_las_nubes("))
+    if len(barras) != 1 or len(nubes) != 2:
+        raise ValueError("cambiaron las figuras guardadas del 02")
+    destino = FIGURAS / "notebooks"
+    destino.mkdir(exist_ok=True)
+    rutas = []
+    # La celda de las nubes muestra primero la de temprana y después la de tardía.
+    for nombre, png in (("02-pr-auc-con-ic", barras[0]), ("02-nube-temprana", nubes[0]), ("02-nube-tardia", nubes[1])):
+        ruta = destino / f"{nombre}.png"
+        ruta.write_bytes(png)
+        rutas.append(ruta)
+    return rutas
+
+
+def cifras_de_la_parte_a(cifras: Cifras, tag: str) -> None:
+    """§7.9: los modelos de texto, de docs/evidencia/modelos-texto.json, y la lectura para negocio del 02 (§6), de
+    sus salidas guardadas en el tag. El notebook tiene que decir que coincide con el JSON."""
+    registro = json.loads((EVIDENCIA / "modelos-texto.json").read_text(encoding="utf-8"))
+    notebook = notebook_en(tag, "02_modelos_texto")
+    prerregistro, codigo = registro["prerregistro"]["commit"], registro["codigo"]["commit"]
+    if f"Coincide con docs/evidencia/modelos-texto.json (código {codigo})" not in texto_de(celda_con(notebook, "tx.decidir(")):
+        raise ValueError("el notebook 02 del tag no coincide con docs/evidencia/modelos-texto.json")
+    # El prerregistro se commiteó antes que el código, y el JSON salió con el árbol limpio.
+    if subprocess.run(["git", "merge-base", "--is-ancestor", prerregistro, codigo], cwd=RAIZ).returncode != 0:
+        raise ValueError("el prerregistro no es anterior al código de los modelos de texto")
+    if not registro["codigo"]["arbol_limpio"]:
+        raise ValueError("modelos-texto.json no salió de un árbol limpio")
+    datos, modelos, decision = registro["datos"], registro["modelos"], registro["decision"]
+    if str(datos["juegos"]) != cifras.macros["JuegosEntrenamiento"][0]:
+        raise ValueError("los modelos de texto no usan los juegos de data-v1")
+    if (decision["rama"], decision["mejor"], decision["elegido"]) != (3, "tfidf_lr", "tfidf_lr"):
+        raise ValueError("cambió la decisión de la Parte A")
+    fuente = "docs/evidencia/modelos-texto.json"
+    cifras.agregar("NegativasTexto", entero(datos["negativas"]), fuente + ": negativas en inglés")
+    cifras.agregar("TempranasTexto", entero(datos["tempranas"]), fuente + ": negativas tempranas")
+    cifras.agregar("PrevalenciaTextoPorResena", porcentaje(datos["tempranas"] / datos["negativas"]), fuente)
+    cifras.agregar("DuracionesEnmascaradas", entero(datos["con_duracion_enmascarada"]), fuente + ": con duración escrita")
+    cifras.agregar("RamaTexto", str(decision["rama"]), fuente + ": rama de la regla prerregistrada")
+    cifras.agregar("PrerregistroTexto", prerregistro, fuente + ": commit del prerregistro")
+    cifras.agregar("CodigoTexto", codigo, fuente + ": commit del código que lo corrió")
+    for clave, nombre in (("trivial", "Trivial"), ("refund", "Refund"), ("tfidf_nb", "NB"), ("minilm_lr", "MiniLM"),
+                          ("tfidf_lr", "LR")):
+        cifras.agregar(f"PRAUCTexto{nombre}", pr_auc(modelos[clave]["PR-AUC media"]), fuente + f": {clave}, media de 5 folds")
+    lr = modelos["tfidf_lr"]
+    media = lr["PR-AUC media"]
+    cifras.agregar("PRAUCTextoLRICInf", junto_a(lr["IC media"][0], media), fuente + ": IC 95 % de la media")
+    cifras.agregar("PRAUCTextoLRICSup", junto_a(lr["IC media"][1], media), fuente + ": IC 95 % de la media")
+    cifras.agregar("CocienteTextoLR", decimal(lr["cociente"], 1), fuente + ": TF-IDF + LR entre el trivial")
+    cifras.agregar("CocienteTextoLRICInf", decimal(lr["IC cociente"][0], 2), fuente)
+    cifras.agregar("CocienteTextoLRICSup", decimal(lr["IC cociente"][1], 2), fuente)
+    cifras.agregar("DiferenciaTextoLRRefund", junto_a(lr["− refund"], media), fuente + ": TF-IDF + LR menos «refund»")
+    cifras.agregar("DiferenciaTextoLRRefundICInf", junto_a(lr["IC − refund"][0], media), fuente)
+    cifras.agregar("DiferenciaTextoLRRefundICSup", junto_a(lr["IC − refund"][1], media), fuente)
+
+    fuente = f"notebooks/02_modelos_texto.ipynb en {tag}, salida guardada"
+    top = re.search(r"10% con score más alto\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)",
+                    texto_de(celda_con(notebook, "lt.tabla_top_k(")))
+    if decimal(float(top[1]), 3) != cifras.macros["PRAUCTextoTrivial"][0]:
+        raise ValueError("la prevalencia del 10 % superior no es la del JSON")
+    cifras.agregar("TopDiezTempranasPorResena", porcentaje(float(top[3]), 1), fuente + ": TF-IDF + LR, 10 % con score más alto")
+    cifras.agregar("TopDiezVeces", decimal(float(top[5]), 1), fuente + ": veces la prevalencia")
+    cobertura = re.search(r"de las (\d+) palabras que más empujan hacia temprana, (\d+) no caen",
+                          texto_de(celda_con(notebook, "lt.cobertura_del_sitio(")))
+    cifras.agregar("PalabrasTopTemprana", cobertura[1], fuente + ": las que más empujan hacia temprana")
+    cifras.agregar("PalabrasSinCategoria", cobertura[2], fuente + ": las que no caen en ninguna categoría del sitio")
+    # Las palabras que nombra el texto son las del «Qué vemos» de las nubes.
+    que_vemos = next("".join(c["source"]) for c in notebook["cells"]
+                     if c["cell_type"] == "markdown" and "Hacia tardía pesan" in "".join(c["source"]))
+    if not all(f"`{palabra}`" in que_vemos for palabra in ("refunded", "tutorial", "account", "login", "mods", "update", "boss")):
+        raise ValueError("cambiaron las palabras que pesan en las nubes del 02")
+
+
+def cifras_de_la_lectura_del_01(cifras: Cifras, tag: str, modelo: dict) -> Path:
+    """§7.1, §7.5 y §7.6: la lectura para negocio del 01, de sus salidas guardadas en el tag. La tabla de bandas
+    se arma con los valores que imprimió el notebook, sin recalcular, y se comprueba contra los releases."""
+    notebook = notebook_en(tag, "01_modelo_riesgo")
+    fuente = f"notebooks/01_modelo_riesgo.ipynb en {tag}, salida guardada"
+    folds = re.search(r"fold 1: ([\d.]+) · media de los otros cuatro: ([\d.]+) · el fold 1 es el (\d+)% de la suma",
+                      texto_de(celda_con(notebook, "lr.figura_pr_auc_por_fold(")))
+    por_fold = modelo["modelo"]
+    if (decimal(por_fold[0], 4), decimal(por_fold[1:].mean(), 4)) != (folds[1], folds[2]):
+        raise ValueError("el PR-AUC por fold del 01 ya no es el del modelo")
+    cifras.agregar("PRAUCFoldUno", pr_auc(float(folds[1])), fuente + ": fold 1")
+    cifras.agregar("PRAUCOtrosFolds", pr_auc(float(folds[2])), fuente + ": media de los otros cuatro folds")
+    cifras.agregar("FoldUnoParteDeLaSuma", f"{folds[3]}\\,\\%", fuente + ": parte de la suma de los cinco")
+    veces = dict(re.findall(r"^(juego|compra)\s+[\d.]+\s+[\d.]+\s+([\d.]+)\s*$", texto_de(celda_con(notebook, "lr.tabla_comparativa(")), re.M))
+    for conjunto in ("juego", "compra"):
+        cifras.agregar(f"VecesTrivial{conjunto.capitalize()}", decimal(float(veces[conjunto]), 1), fuente + f": {conjunto} entre el trivial")
+
+    salida = texto_de(celda_con(notebook, "lr.tabla_de_bandas("))
+    filas, conjunto = [], None
+    for linea in salida.splitlines():
+        m = re.match(r"^(data-v1 \(OOF\)|externos \(\d+\))?\s+(bajo|medio|alto)\s+(\d+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s*$", linea)
+        if m:
+            conjunto = m[1] or conjunto
+            filas.append((conjunto, m[2], int(m[3]), int(m[4]), int(m[5]), float(m[6]), float(m[7])))
+    if len(filas) != 6:
+        raise ValueError("cambió la tabla de bandas del 01")
+    # Los totales de cada conjunto son los de su release, y las bandas externas, las de prueba-externa.json.
+    externa = json.loads((EVIDENCIA / "prueba-externa.json").read_text())["resumen"]
+    for prefijo, resenas, positivos in (("data-v1", "ResenasEntrenamiento", "PositivosEntrenamiento"),
+                                        ("externos", "ResenasExternos", "PositivosExternos")):
+        del_conjunto = [f for f in filas if f[0].startswith(prefijo)]
+        if (entero(sum(f[3] for f in del_conjunto)), entero(sum(f[4] for f in del_conjunto))) != \
+                (cifras.macros[resenas][0], cifras.macros[positivos][0]):
+            raise ValueError(f"la tabla de bandas del 01 no suma las reseñas de {prefijo}")
+    if {f[1]: f[2] for f in filas if f[0].startswith("externos")} != externa["bandas"]:
+        raise ValueError("las bandas externas del 01 no son las de prueba-externa.json")
+    for f in filas:
+        if f[0].startswith("externos") and f[1] in ("bajo", "medio"):
+            if porcentaje(f[5]) != cifras.macros[f"Tasa{f[1].capitalize()}ExternosPorResena"][0]:
+                raise ValueError("la tasa externa del 01 no es la de las bandas de referencia")
+    alto_sobre_bajo = re.search(r"data-v1 \(OOF\): ([\d.]+)× · externos \(\d+\): ([\d.]+)×", salida)
+    for nombre, impreso, prefijo in (("AltoSobreBajoOOF", alto_sobre_bajo[1], "data-v1"), ("AltoSobreBajoExternos", alto_sobre_bajo[2], "externos")):
+        tasa = {f[1]: f[4] / f[3] for f in filas if f[0].startswith(prefijo)}
+        if decimal(tasa["alto"] / tasa["bajo"], 2) != impreso:
+            raise ValueError("la razón alta entre baja impresa no cuadra con los conteos")
+        cifras.agregar(nombre, decimal(float(impreso), 1), fuente + f": tasa de la banda alta entre la baja, {prefijo}")
+    for f in filas:
+        if f[0].startswith("data-v1"):
+            cifras.agregar(f"{f[1].capitalize()}OOF", str(f[2]), fuente + f": juegos de data-v1 en la banda {f[1]} con score fuera de fold")
+
+    nombres = {"data-v1 (OOF)": "data-v1, OOF", **{f[0]: f"{f[0].split()[1][1:-1]} externos" for f in filas if f[0].startswith("externos")}}
+    renglones, anterior = [], None
+    for f in filas:
+        if anterior is not None and f[0] != anterior:
+            renglones.append("\\midrule")
+        renglones.append(f"{nombres[f[0]] if f[0] != anterior else ''} & {f[1]} & {f[2]} & {entero(f[3])} & {entero(f[4])} & "
+                         f"{porcentaje(f[5])} & {decimal(f[6], 1)}× \\\\")
+        anterior = f[0]
+    contenido = [
+        "% Generado por documento/generar_figuras.py con la salida guardada del 01; no se recalcula.",
+        "\\begin{tabular}{llrrrrr}", "\\toprule",
+        "Conjunto & Banda & Juegos & Reseñas & \\begin{tabular}[b]{@{}r@{}}Con\\\\señal\\end{tabular} & "
+        "\\begin{tabular}[b]{@{}r@{}}Tasa de\\\\señal\\end{tabular} & \\begin{tabular}[b]{@{}r@{}}Veces\\\\la base\\end{tabular} \\\\",
+        "\\midrule",
+        *renglones, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "bandas_oof.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_del_diccionario(cifras: Cifras) -> None:
+    """§4.4: cuántas columnas describe backend/analisis/diccionario.py, el diccionario del 00 (§1.2)."""
+    arbol = ast.parse((BACKEND / "analisis" / "diccionario.py").read_text(encoding="utf-8"))
+    columnas = next(len(n.value.keys) for n in arbol.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "COLUMNAS")
+    cifras.agregar("ColumnasDiccionario", str(columnas), "backend/analisis/diccionario.py: COLUMNAS")
 
 
 def tabla_de_releases(rutas: dict[str, Path]) -> Path:
@@ -1199,14 +1472,18 @@ def main() -> None:
     cifras_de_motivos(cifras, limpio)
     cifras_de_endpoints(cifras)
     cifras_de_nia(cifras)
-    cifras_de_reproducibilidad(cifras)
+    cifras_del_diccionario(cifras)
+    tag = tag_de_codigo()
+    cifras_de_reproducibilidad(cifras, tag)
+    cifras_de_la_parte_a(cifras, tag)
+    # La lectura del 01 va antes de la tabla de conjuntos, que comprueba sus «veces el trivial» contra el notebook.
     tablas = [tabla_de_releases(rutas), tabla_de_sha256(), tabla_descriptiva(rutas), tabla_de_variables(juegos_v1, resenas_v1),
-              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
+              cifras_de_la_lectura_del_01(cifras, tag, modelo), tabla_de_conjuntos(cifras, juegos_v1, resenas_v1, modelo["trivial"])]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_minutos_al_resenar(rutas), figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()),
                figura_tasa_contra_nota(por_juego), figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]),
-               figura_de_arquitectura()]
+               figura_de_arquitectura(), *figuras_de_los_notebooks(tag)]
     capturas = copiar_capturas()
     copiar_logo()
 

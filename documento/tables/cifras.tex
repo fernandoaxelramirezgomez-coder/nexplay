@@ -13,8 +13,10 @@
 \newcommand{\cifraPRAUCCociente}{3.2}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
 \newcommand{\cifraPliegosGanados}{5}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): pliegues donde el modelo supera al trivial
 \newcommand{\cifraPliegues}{5}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)
-\newcommand{\cifraUmbralMedio}{0.2858}  % percentil 33.3 de los scores fuera de pliegue
-\newcommand{\cifraUmbralAlto}{0.3916}  % percentil 66.7 de los scores fuera de pliegue
+\newcommand{\cifraPercentilMedio}{33.3}  % backend/modelado/entrenar_modelo.py: np.percentile de los scores fuera de fold de las reseñas
+\newcommand{\cifraPercentilAlto}{66.7}  % backend/modelado/entrenar_modelo.py: np.percentile de los scores fuera de fold de las reseñas
+\newcommand{\cifraUmbralMedio}{0.2858}  % backend/modelado/entrenar_modelo.py: np.percentile de los scores fuera de fold de las reseñas, con el percentil del corte medio
+\newcommand{\cifraUmbralAlto}{0.3916}  % backend/modelado/entrenar_modelo.py: np.percentile de los scores fuera de fold de las reseñas, con el percentil del corte alto
 \newcommand{\cifraCocienteFoldMin}{1.8}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): modelo entre trivial, el fold más bajo
 \newcommand{\cifraCocienteFoldMax}{5.8}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): modelo entre trivial, el fold más alto
 \newcommand{\cifraBajoEntrenamiento}{30}  % backend/referencias/bandas_referencia.json
@@ -119,13 +121,6 @@
 \newcommand{\cifraPrecioMedianoExternos}{269.99}  % externos: mediana de precio_final / 100, juegos de pago con precio
 \newcommand{\cifraTasaExternosMedianaJuegos}{1.40\,\%}  % externos: mediana de las tasas por juego
 \newcommand{\cifraTasaExternosPromJuegos}{2.33\,\%}  % externos: promedio de las tasas por juego
-\newcommand{\cifraTasaBajoEntrenamientoPorResena}{0.66\,\%}  % entrenamiento: banda bajo, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaAltoSinNotaEntrenamientoPorResena}{5.37\,\%}  % entrenamiento: banda alto, sin nota (bandas_referencia.json)
-\newcommand{\cifraTasaBajoExternosPorResena}{1.86\,\%}  % externos: banda bajo, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaBajoExternosPromJuegos}{1.86\,\%}  % externos: banda bajo, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaMedioExternosPorResena}{1.63\,\%}  % externos: banda medio, con nota (bandas_referencia.json)
-\newcommand{\cifraTasaAltoSinNotaExternosPorResena}{3.66\,\%}  % externos: banda alto, sin nota (bandas_referencia.json)
-\newcommand{\cifraTasaAltoSinNotaExternosPromJuegos}{3.64\,\%}  % externos: banda alto, sin nota (bandas_referencia.json)
 \newcommand{\cifraAltoSinNotaCatalogo}{33}  % los 123: banda alta sin nota de Metacritic
 \newcommand{\cifraScoreHollowKnight}{0.2857}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
 \newcommand{\cifraScoreWarframe}{0.3918}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
@@ -163,15 +158,51 @@
 \newcommand{\cifraPreguntasTrampa}{48}  % backend/calidad/preguntas_trampa.json: casos
 \newcommand{\cifraTrampasPorRevisar}{0}  % docs/evidencia/nia-pruebas.md: última corrida de trampas
 \newcommand{\cifraFechaCorridaTrampas}{30 de septiembre de 2026}  % docs/evidencia/nia-pruebas.md: última corrida de trampas
-\newcommand{\cifraCommitCodigo}{9b64795}  % git: el commit al que apunta el tag codigo-v3
-\newcommand{\cifraFechaColab}{30 de septiembre de 2026}  % docs/evidencia/colab/README.md: título
-\newcommand{\cifraCeldasCero}{69 de 69}  % docs/evidencia/colab/README.md: 00_exploracion
-\newcommand{\cifraCeldasUno}{23 de 23}  % docs/evidencia/colab/README.md: 01_modelo_riesgo
-\newcommand{\cifraTiempoCero}{229}  % docs/evidencia/colab/README.md: segundos del 00, con las versiones de Colab
-\newcommand{\cifraTiempoUno}{26}  % docs/evidencia/colab/README.md: segundos del 01, con las versiones de Colab
-\newcommand{\cifraVersionPythonColab}{3.13.15}  % docs/evidencia/colab/README.md
-\newcommand{\cifraVersionNumpyColab}{2.1.3}  % docs/evidencia/colab/README.md
-\newcommand{\cifraVersionPandasColab}{2.2.3}  % docs/evidencia/colab/README.md
+\newcommand{\cifraColumnasDiccionario}{41}  % backend/analisis/diccionario.py: COLUMNAS
+\newcommand{\cifraTagCodigo}{codigo-v6}  % CODIGO_REF de los tres notebooks
+\newcommand{\cifraCommitCodigo}{94838c2}  % git: el commit al que apunta el tag que clonan los notebooks
+\newcommand{\cifraCeldasCero}{69 de 69}  % docs/evidencia/colab/00_exploracion-colab-codigo-v6.ipynb: celdas de código ejecutadas
+\newcommand{\cifraTiempoCero}{192}  % docs/evidencia/colab/README.md: segundos, con las versiones de Colab
+\newcommand{\cifraCeldasUno}{28 de 28}  % docs/evidencia/colab/01_modelo_riesgo-colab-codigo-v6.ipynb: celdas de código ejecutadas
+\newcommand{\cifraTiempoUno}{34}  % docs/evidencia/colab/README.md: segundos, con las versiones de Colab
+\newcommand{\cifraCeldasDos}{24 de 24}  % docs/evidencia/colab/02_modelos_texto-colab-codigo-v6.ipynb: celdas de código ejecutadas
+\newcommand{\cifraTiempoDos}{400}  % docs/evidencia/colab/README.md: segundos, con las versiones de Colab
+\newcommand{\cifraFechaColab}{2 de octubre de 2026}  % docs/evidencia/colab/README.md: la corrida vigente
+\newcommand{\cifraVersionPythonColab}{3.13.15}  % docs/evidencia/colab/01_modelo_riesgo-colab-codigo-v6.ipynb: su entorno
+\newcommand{\cifraVersionNumpyColab}{2.1.3}  % docs/evidencia/colab/01_modelo_riesgo-colab-codigo-v6.ipynb: su entorno
+\newcommand{\cifraVersionPandasColab}{2.2.3}  % docs/evidencia/colab/01_modelo_riesgo-colab-codigo-v6.ipynb: su entorno
+\newcommand{\cifraNegativasTexto}{16,836}  % docs/evidencia/modelos-texto.json: negativas en inglés
+\newcommand{\cifraTempranasTexto}{2,670}  % docs/evidencia/modelos-texto.json: negativas tempranas
+\newcommand{\cifraPrevalenciaTextoPorResena}{15.86\,\%}  % docs/evidencia/modelos-texto.json
+\newcommand{\cifraDuracionesEnmascaradas}{2,442}  % docs/evidencia/modelos-texto.json: con duración escrita
+\newcommand{\cifraRamaTexto}{3}  % docs/evidencia/modelos-texto.json: rama de la regla prerregistrada
+\newcommand{\cifraPrerregistroTexto}{6bbcea6}  % docs/evidencia/modelos-texto.json: commit del prerregistro
+\newcommand{\cifraCodigoTexto}{59694a6}  % docs/evidencia/modelos-texto.json: commit del código que lo corrió
+\newcommand{\cifraPRAUCTextoTrivial}{0.161}  % docs/evidencia/modelos-texto.json: trivial, media de 5 folds
+\newcommand{\cifraPRAUCTextoRefund}{0.185}  % docs/evidencia/modelos-texto.json: refund, media de 5 folds
+\newcommand{\cifraPRAUCTextoNB}{0.226}  % docs/evidencia/modelos-texto.json: tfidf_nb, media de 5 folds
+\newcommand{\cifraPRAUCTextoMiniLM}{0.323}  % docs/evidencia/modelos-texto.json: minilm_lr, media de 5 folds
+\newcommand{\cifraPRAUCTextoLR}{0.369}  % docs/evidencia/modelos-texto.json: tfidf_lr, media de 5 folds
+\newcommand{\cifraPRAUCTextoLRICInf}{0.288}  % docs/evidencia/modelos-texto.json: IC 95 % de la media
+\newcommand{\cifraPRAUCTextoLRICSup}{0.421}  % docs/evidencia/modelos-texto.json: IC 95 % de la media
+\newcommand{\cifraCocienteTextoLR}{2.3}  % docs/evidencia/modelos-texto.json: TF-IDF + LR entre el trivial
+\newcommand{\cifraCocienteTextoLRICInf}{2.05}  % docs/evidencia/modelos-texto.json
+\newcommand{\cifraCocienteTextoLRICSup}{2.53}  % docs/evidencia/modelos-texto.json
+\newcommand{\cifraDiferenciaTextoLRRefund}{0.184}  % docs/evidencia/modelos-texto.json: TF-IDF + LR menos «refund»
+\newcommand{\cifraDiferenciaTextoLRRefundICInf}{0.137}  % docs/evidencia/modelos-texto.json
+\newcommand{\cifraDiferenciaTextoLRRefundICSup}{0.205}  % docs/evidencia/modelos-texto.json
+\newcommand{\cifraTopDiezTempranasPorResena}{43.0\,\%}  % notebooks/02_modelos_texto.ipynb en codigo-v6, salida guardada: TF-IDF + LR, 10 % con score más alto
+\newcommand{\cifraTopDiezVeces}{2.7}  % notebooks/02_modelos_texto.ipynb en codigo-v6, salida guardada: veces la prevalencia
+\newcommand{\cifraPalabrasTopTemprana}{40}  % notebooks/02_modelos_texto.ipynb en codigo-v6, salida guardada: las que más empujan hacia temprana
+\newcommand{\cifraPalabrasSinCategoria}{35}  % notebooks/02_modelos_texto.ipynb en codigo-v6, salida guardada: las que no caen en ninguna categoría del sitio
+\newcommand{\cifraPRAUCFoldUno}{0.146}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: fold 1
+\newcommand{\cifraPRAUCOtrosFolds}{0.0503}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: media de los otros cuatro folds
+\newcommand{\cifraFoldUnoParteDeLaSuma}{42\,\%}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: parte de la suma de los cinco
+\newcommand{\cifraAltoSobreBajoOOF}{6.3}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: tasa de la banda alta entre la baja, data-v1
+\newcommand{\cifraAltoSobreBajoExternos}{1.9}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: tasa de la banda alta entre la baja, externos
+\newcommand{\cifraBajoOOF}{27}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: juegos de data-v1 en la banda bajo con score fuera de fold
+\newcommand{\cifraMedioOOF}{27}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: juegos de data-v1 en la banda medio con score fuera de fold
+\newcommand{\cifraAltoOOF}{29}  % notebooks/01_modelo_riesgo.ipynb en codigo-v6, salida guardada: juegos de data-v1 en la banda alto con score fuera de fold
 \newcommand{\cifraPRAUCCompleto}{0.0849}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
 \newcommand{\cifraDiferenciaCompraJuego}{0.0015}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): compra menos juego
 \newcommand{\cifraFoldsCompraGana}{3}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): folds donde compra supera a juego
