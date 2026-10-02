@@ -3,6 +3,9 @@
 % frontend/ y README.md. La estructura del repo y el tag del código van en el anexo.
 \section{Resolución del problema}\label{sec:resolucion}
 
+Con el modelo y sus límites claros, esta sección cuenta cómo llegan al sitio: la arquitectura que lo
+sirve, la interfaz que lo muestra y cómo responde a las preguntas del proyecto.
+
 \subsection{Arquitectura y despliegue}\label{sec:arquitectura}\label{sec:arquitectura-flujo}\label{sec:arquitectura-build}
 
 La figura~\ref{fig:arquitectura} sigue el camino de los datos. La ingesta bajó las reseñas y las
@@ -10,8 +13,8 @@ fichas de Steam y las publicó en releases con tag fijo (sección~\ref{sec:datos
 en adelante nada vuelve a consultar Steam. Render construye la API con
 \texttt{backend/despliegue/Dockerfile}, y el build falla si algo no cuadra:
 \texttt{preparar\_entorno.py} se detiene si el sha256 de data-v3 o de data-v1 no es el publicado,
-entrena el modelo con data-v1 y la partición congelada, y \texttt{verificar\_bandas.py} compara la
-banda de los \cifraJuegosCatalogo{} juegos con la referencia validada, así que basta con que cambie
+entrena el modelo con data-v1 y la partición congelada, y \texttt{verificar\_bandas.py} compara el
+nivel de los \cifraJuegosCatalogo{} juegos con la referencia validada, así que basta con que cambie
 una para que falle. El build también rechaza la imagen si le llega una biblioteca de modelos de
 texto, que deben calcularse fuera de la API.
 
@@ -31,33 +34,34 @@ La API, hecha con FastAPI, expone \cifraEndpoints{} endpoints: \cifraEndpointsRi
 con el contrato OpenAPI de cada endpoint: qué recibe, qué devuelve y qué errores da.}. Todo lo que
 entra se valida con Pydantic\footnote{Una biblioteca de Python que revisa el tipo y el rango de cada
 dato de entrada y rechaza la solicitud si no cumple.}. \texttt{/prediccion} sigue recibiendo el
-perfil por compatibilidad, pero el riesgo que devuelve es del título y no cambia con él. El
+perfil por compatibilidad, sin que el riesgo cambie (sección~\ref{sec:modelacion-bmas}). El
 frontend, en Angular, es un sitio estático en Vercel.
 
 La API está en el plan gratis de Render: se duerme cuando nadie la usa, y la primera consulta
 después tarda en responder. Su disco es efímero, así que las calificaciones, los comentarios y los
 votos a Nia se borran al reiniciarse; el catálogo y el modelo vienen dentro de la imagen y no se
-pierden. Nia usa un modelo de lenguaje de OpenAI solo si el servidor tiene clave; si no, contesta
-por reglas, sin costo. Los comentarios, las reacciones y las consultas y votos a Nia tienen un
+pierden. Los comentarios, las reacciones y las consultas y votos a Nia tienen un
 límite por minuto, por usuario y por IP.
 
 \subsection{Interfaz de uso}\label{sec:interfaz}
 
-Una consulta sigue estos pasos:
+La interfaz sigue el orden de la demostración. Primero, la idea: la persona llega con la pregunta
+guía sobre un juego concreto. Después recorre cinco vistas:
 \begin{enumerate}
-  \item En el Inicio, la persona escribe el nombre de un juego en el buscador.
-  \item La ficha del juego da la banda con su frase, los tres factores que la mueven con su
-  evidencia, los motivos más frecuentes con el número de reseñas detrás y el precio al corte de
-  datos, con el enlace a Steam. Si la persona llenó su perfil, la ficha dice además qué tanto encaja
-  el juego con él; eso no cambia la banda.
-  \item Desde la ficha agrega el juego a Comparar, que lo pone junto a otros.
-  \item En Explorar recorre los estantes por banda y filtra por género para buscar alternativas.
-  \item A Nia le pregunta lo que no encuentra en la ficha, como por qué un juego tiene esa banda o
-  cuál de dos le conviene.
+  \item \textbf{Inicio.} Escribe el nombre del juego en el buscador y abre su ficha: el riesgo de
+  arrepentimiento con su frase, los tres factores que lo mueven con su evidencia, los motivos más
+  frecuentes con el número de reseñas detrás y el precio al corte de datos, con el enlace a Steam.
+  \item \textbf{Explorar.} Recorre los estantes por nivel de riesgo y filtra por género para buscar
+  alternativas.
+  \item \textbf{Nia.} Le pregunta lo que no encuentra en la ficha, como por qué un juego tiene ese
+  riesgo o en qué se distinguen dos juegos.
+  \item \textbf{Comparar.} Pone lado a lado los juegos que eligió.
+  \item \textbf{Perfil.} Declara cómo juega, y la ficha dice entonces qué tanto encaja cada juego con
+  eso, sin cambiar el riesgo.
 \end{enumerate}
-El sitio tiene además el Perfil, el Historial de consultas, el Panorama del catálogo y una página
-que explica cómo se calcula la estimación. La sección~\ref{sec:estrategia-recorrido} muestra estos
-pasos con capturas.
+El sitio tiene además el Historial de consultas, el Panorama del catálogo y una página que explica
+cómo se calcula la estimación. La sección~\ref{sec:estrategia-recorrido} sigue una consulta concreta
+con capturas.
 
 \begin{figure}[htbp]
   \centering
@@ -70,21 +74,23 @@ pasos con capturas.
   \label{fig:nia}
 \end{figure}
 
-Nia es el asistente del sitio (figura~\ref{fig:nia}). Con un modelo de lenguaje, no recibe el
+Nia es el asistente del sitio (figura~\ref{fig:nia}). Usa un modelo de lenguaje de OpenAI solo si
+el servidor tiene clave; si no, contesta por reglas, sin costo. Con el modelo, no recibe el
 catálogo en el texto de la conversación: usa \cifraNiaHerramientas{} herramientas que leen lo mismo
 que sirve la API, como buscar juegos, abrir la ficha de uno o consultar el panorama, y nunca las
 calificaciones ni los comentarios de la gente. Cada juego que menciona tiene que salir de esas
-herramientas, y la respuesta se valida contra ellas antes de mostrarse. Las preguntas que deben
-contestarse siempre igual, como «¿por qué tiene ese riesgo?», un juego fuera del catálogo o
-cualquier tema ajeno a los juegos, van por reglas aunque haya modelo, y sin clave de OpenAI todo va
-por reglas. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
+herramientas, y la respuesta se valida contra ellas antes de mostrarse. Como el resto del sitio,
+no le dice a nadie qué comprar: a «¿cuál me compro?» contesta que elegir es de la persona y ofrece
+comparar. Las preguntas que deben contestarse siempre igual, como «¿por qué tiene ese riesgo?», un
+juego fuera del catálogo o cualquier tema ajeno a los juegos, van por reglas aunque haya modelo. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
 modelo de lenguaje y «Sin IA» si fueron las reglas (\texttt{frontend/src/app/chat/nia.ts};
 figura~\ref{fig:nia}). Si la
 pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
 Nia no guarda datos personales.
 
-\paragraph{Pruebas.} \texttt{make test} corre el verificador de bandas, el de Nia, el de los
-factores de la ficha, el de los niveles, el de \texttt{preparar\_entorno.py} y las pruebas del
+\paragraph{Pruebas.} \texttt{make test} corre \texttt{verificar\_bandas.py}, que compara el nivel de
+cada juego con la referencia, el verificador de Nia, el de los factores de la ficha, el de los
+niveles, el de \texttt{preparar\_entorno.py} y las pruebas del
 frontend. El de los niveles (\texttt{verificar\_niveles.py}) comprueba que la API, el frontend y
 Nia usan la misma definición de bajo, medio y alto, la de los percentiles de la
 sección~\ref{sec:modelacion-umbrales}, y que ningún texto de la API ni del frontend vuelve a la
@@ -99,19 +105,17 @@ OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre el código del tag \mbox{\tex
 sin problemas\footnote{La salida completa está en
 \texttt{docs/evidencia/verificar-nia-openai-2026-10-02.txt}.}.
 
-\subsection{Cómo responde la pregunta}\label{sec:resolucion-pregunta}
+\subsection{Cómo responde las preguntas del proyecto}\label{sec:resolucion-pregunta}
 
 La pregunta de datos era qué tienen en común los juegos que dejan más señal y si se puede anticipar
 antes de comprar. La respuesta es sí, en parte. La señal cambia mucho de un juego a otro
 (sección~\ref{sec:exploracion-juego}), y lo que mejor la acompaña es la crítica: no tener nota de
 Metacritic, o tener una baja (sección~\ref{sec:exploracion-critica}). Con eso, el modelo ordena los
-juegos que no vio \cifraPRAUCCociente{} veces mejor que el trivial en la validación agrupada y
-\cifraPRAUCExternoCociente{} veces mejor en la prueba externa, con un intervalo de
-\cifraExternoICInf{} a \cifraExternoICSup{} (sección~\ref{sec:evaluacion}). Hay señal, y es
-modesta.
+juegos que no vio mejor que el trivial, en la validación agrupada y en la prueba externa
+(sección~\ref{sec:evaluacion}). Hay señal, y es modesta.
 
-La pregunta de producto era cómo mostrarlo sin prometer una probabilidad. El sitio da una banda con
-palabras, la explica con factores que dicen su evidencia, y suma los motivos de las reseñas, que son
+La pregunta de producto era cómo mostrarlo sin prometer una probabilidad. El sitio da un nivel de
+riesgo con palabras, la explica con factores que dicen su evidencia, y suma los motivos de las reseñas, que son
 una heurística de palabras clave con su cobertura a la vista (sección~\ref{sec:interpretabilidad}).
 Por la Parte A, esos motivos se pueden presentar como quejas propias de las primeras horas y no
 como quejas generales (sección~\ref{sec:modelacion-texto}).
@@ -119,4 +123,4 @@ Con eso la persona decide: si compra, si compara antes con otro juego, si busca 
 riesgo bajo en el mismo género, o si compra y usa las dos primeras horas para probar justo lo que más
 se queja la gente, mientras todavía puede pedir el reembolso. El riesgo es el mismo para cualquier
 persona; lo que cambia de una a otra es qué quejas le afectan y qué tanto encaja el juego con lo que
-declaró.
+declaró. La sección~\ref{sec:conclusiones} junta estas respuestas en la de la pregunta guía.

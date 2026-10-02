@@ -1,0 +1,42 @@
+{
+  "para_que": "Las cifras de contexto de mercado de la sección 2 del documento. Cada valor tiene que aparecer en su cita textual; documento/generar_figuras.py lo comprueba y escribe las macros.",
+  "consultado": "2026-10-02",
+  "cifras": {
+    "lanzamientos_2025": {
+      "valor": 19008,
+      "corte": "2025-12-12",
+      "cita": "Taken from SteamDB, we can see from their data that there's been 19,008 games for 2025.",
+      "fuente": "Squires-Hand, L. (2025, 12 de diciembre). GamingOnLinux, con datos de SteamDB",
+      "url": "https://www.gamingonlinux.com/2025/12/over-19000-games-have-released-on-steam-in-2025-with-nearly-half-seeing-fewer-than-10-reviews/",
+      "nota": "SteamDB (steamdb.info/stats/releases) responde 403 a la consulta automática; se cita por la nota que la nombra. La cuenta es al día de la nota, no del año completo."
+    },
+    "lanzamientos_10_resenas_o_menos": {
+      "valor": 9269,
+      "corte": "2025-12-12",
+      "cita": "Of the 19,008 from this year, a whopping 9,269 games have 10 or fewer reviews.",
+      "fuente": "Squires-Hand, L. (2025, 12 de diciembre). GamingOnLinux, con datos de SteamDB",
+      "url": "https://www.gamingonlinux.com/2025/12/over-19000-games-have-released-on-steam-in-2025-with-nearly-half-seeing-fewer-than-10-reviews/",
+      "nota": "Son 10 reseñas o menos, no menos de 10."
+    },
+    "ingresos_brutos_2025_miles_de_millones_usd": {
+      "valor": 17.7,
+      "corte": "2025-12-19",
+      "cita": "Steam has already generated revenues of $17.7 billion this year",
+      "fuente": "Elliott, R. (2025, 19 de diciembre). Alinea Analytics",
+      "url": "https://alineaanalytics.substack.com/p/the-top-new-2025-games-by-players",
+      "nota": "Estimación de ingresos brutos de los juegos en Steam, al 19 de diciembre de 2025. Las notas de segunda mano con otras cifras del año no coinciden entre sí y no se usan."
+    }
+  },
+  "sin_cifra": {
+    "reembolsos": {
+      "cita": "within two weeks of purchase and with less than two hours of playtime",
+      "fuente": "Valve Corporation (2024, 23 de abril). Steam Refunds",
+      "url": "https://store.steampowered.com/steam_refunds/"
+    },
+    "filtro_por_horas": {
+      "cita": "You can choose minimums like one hour, ten hours, or 100 hours, or run a custom filter for anything up to triple digit hour counts.",
+      "fuente": "Bailey, D. (2019, 26 de septiembre). PCGamesN",
+      "url": "https://www.pcgamesn.com/steam/review-playtime"
+    }
+  }
+}

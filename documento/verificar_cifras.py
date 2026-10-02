@@ -269,6 +269,13 @@ CANONICAS = {
     "FechaCorridaTrampas": "30 de septiembre de 2026",
     # docs/evidencia/verificar-nia-openai-2026-10-02.txt: la prueba local del camino con IA
     "FechaCorridaNiaIA": "2 de octubre de 2026",
+    # contexto de mercado (sección 2): docs/evidencia/contexto-mercado.json, con la cita textual de cada fuente,
+    # verificadas el 2026-10-02 (GamingOnLinux con datos de SteamDB; Alinea Analytics)
+    "LanzamientosSteam": "19,008",
+    "LanzamientosPocasResenas": "9,269",
+    "FechaCorteLanzamientos": "12 de diciembre de 2025",
+    "IngresosSteam": "17.7 mil millones",
+    "FechaCorteIngresos": "19 de diciembre de 2025",
     # datos (4.4): backend/analisis/diccionario.py, COLUMNAS
     "ColumnasDiccionario": "41",
     # anexo: docs/evidencia/colab/, la corrida de los tres con codigo-v6 (README y las tres descargas)

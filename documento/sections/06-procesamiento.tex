@@ -2,10 +2,11 @@
 % backend/analisis/limpieza.py y construir_features de backend/modelado/entrenar_baseline.py.
 \section{Procesamiento de datos}\label{sec:procesamiento}
 
-El procesamiento tiene dos destinos. El modelo de riesgo se entrena con data-v1 tal como se
-publicó, porque solo usa variables del juego y no lee texto. La limpieza produce otro conjunto,
-el limpio, que usan el análisis de texto (sección~\ref{sec:exploracion-texto}) y la medición de
-los motivos (sección~\ref{sec:interpretabilidad-motivos}).
+Las dos tareas que dejó la exploración llevan a dos destinos. El modelo de riesgo se entrena con
+data-v1 tal como se publicó, porque solo usa variables del juego y no lee texto. La limpieza
+produce otro conjunto, el limpio, que usan el análisis de texto (sección~\ref{sec:exploracion-texto}),
+la medición de los motivos (sección~\ref{sec:interpretabilidad-motivos}) y los modelos de texto de
+la Parte A (sección~\ref{sec:modelacion-texto}).
 
 \subsection{Validación y limpieza}\label{sec:procesamiento-validacion}\label{sec:procesamiento-limpieza}
 
@@ -25,7 +26,7 @@ salida cambiaría qué reseñas se estudian; las escritas en otro idioma, y las 
 normalización pasa el texto a minúsculas, quita el BBCode\footnote{El formato que Steam permite en
 las reseñas, con etiquetas como \texttt{[h1]} o \texttt{[spoiler]}.} y las direcciones web, y abre
 las contracciones para que la negación quede como palabra suelta (detalle en el notebook 00,
-bloque 2). La limpieza no se aplica al modelo de riesgo. Con la misma partición congelada, sin los
+§2). La limpieza no se aplica al modelo de riesgo. Con la misma partición congelada, sin los
 duplicados su PR-AUC pasaría de \cifraPRAUCModelo{} a \cifraPRAUCSinDuplicados{}, y sin las vacías,
 a \cifraPRAUCSinVacias{}; sin las cortas subiría a \cifraPRAUCSinCortas{}, pero sobre otra
 población y con más prevalencia, así que no se compara. El conjunto limpio se guarda con un sha256
@@ -65,19 +66,6 @@ que varía es el juego, y crear reseñas sintéticas no agregaría juegos.
 
 \subsection{Variables que no se conocen al comprar}\label{sec:procesamiento-variables}
 
-Una variable solo puede entrar al modelo si se conoce antes de comprar (tabla~\ref{tab:variables}).
-Las del juego vienen de la tienda y entran. Las del autor de la reseña, no:
-\texttt{num\_reviews} cambia con el tiempo y se lee al descargar, y \texttt{steam\_purchase},
-\texttt{received\_for\_free} y \texttt{written\_during\_early\_access} solo existen porque la
-reseña ya se escribió, así que ninguna está disponible al momento de la compra. La biblioteca del
-autor sí podría declararse antes; se probó, y su aporte cupo en el ruido entre folds
-(sección~\ref{sec:modelacion-bmas}). En el sitio, el perfil se declara en un formulario y sirve
-para la afinidad: no mueve el riesgo. El texto de la reseña es otro caso: tampoco existe al
-comprar, pero además sería una fuga\footnote{Hay fuga cuando las variables de un modelo ya
-contienen la respuesta que debe predecir. Sus métricas salen mejores de lo que serán en uso.},
-porque la señal $Y$ sale de esas mismas reseñas, de su voto y de sus minutos, y el texto acompaña a
-ese voto.
-
 \begin{table}[htbp]
   \centering\footnotesize
   \input{tables/variables}
@@ -86,3 +74,17 @@ ese voto.
   notebook 00, §3.5.}
   \label{tab:variables}
 \end{table}
+
+Una variable solo puede entrar al modelo si se conoce antes de comprar (tabla~\ref{tab:variables}).
+Las del juego vienen de la tienda y entran. Las del autor de la reseña, no:
+\texttt{num\_reviews} cambia con el tiempo y se lee al descargar, y \texttt{steam\_purchase},
+\texttt{received\_for\_free} y \texttt{written\_during\_early\_access} solo existen porque la
+reseña ya se escribió, así que ninguna está disponible al momento de la compra. La biblioteca del
+autor sí podría declararse antes; se probó, y su aporte cupo en el ruido entre folds
+(sección~\ref{sec:modelacion-bmas}). El texto de la reseña es otro caso: tampoco existe al
+comprar, pero además sería una fuga\footnote{Hay fuga cuando las variables de un modelo ya
+contienen la respuesta que debe predecir. Sus métricas salen mejores de lo que serán en uso.},
+porque la señal $Y$ sale de esas mismas reseñas, de su voto y de sus minutos, y el texto acompaña a
+ese voto. Con las cinco variables del juego y el conjunto limpio, la
+sección~\ref{sec:modelacion} arma el modelo y mide qué tan bien ordena juegos que no vio.
+

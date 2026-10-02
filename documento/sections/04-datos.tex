@@ -1,7 +1,8 @@
 % Rúbrica: Descripción de los datos (fuente, calidad y relevancia para el problema).
 \section{Descripción de los datos}\label{sec:datos}
 
-Los datos son reseñas públicas de Steam y la ficha de cada juego en la misma tienda. En cada
+La estrategia necesita saber, juego por juego, qué pasa en las dos primeras horas. Los datos son
+reseñas públicas de Steam y la ficha de cada juego en la misma tienda. En cada
 reseña, Steam guarda si el voto fue negativo y cuántos minutos llevaba jugados quien la escribió;
 con esas dos cosas se define la señal de arrepentimiento temprano (sección~\ref{sec:objetivo}). El
 modelo se entrena con \cifraJuegosEntrenamiento{} juegos y \cifraResenasEntrenamiento{} reseñas
@@ -76,10 +77,12 @@ Tiene otra consecuencia, los empates de tamaño entre juegos, que se trata con l
 
 \subsection{Por qué estos datos sirven para la pregunta}\label{sec:datos-relevancia}
 
-NexPlay quiere saber, antes de la compra, qué tan seguido un juego deja a sus compradores
-arrepentidos en las primeras horas. Las reseñas las escriben personas que tienen el juego, y cada
+NexPlay quiere saber, antes de la compra, qué tan seguido un juego deja la señal de
+arrepentimiento temprano. Las reseñas las escriben personas que tienen el juego, y cada
 una dice cuántos minutos llevaba jugados su autor: con eso se sabe si cae dentro o fuera de la
 ventana de reembolso de dos horas. \texttt{appdetails} da lo que cualquiera ve en la tienda antes
 de pagar, como el precio, el descuento y la nota de la crítica, y de ahí salen las variables del
 modelo. También tienen límites (sección~\ref{sec:limitaciones}): las reseñas son en inglés y las
 escriben compradores de todo el mundo, mientras que los precios son los de la tienda de México.
+La sección~\ref{sec:exploracion} define con estos datos qué se predice y se queda con lo que la
+exploración cambió del modelo.

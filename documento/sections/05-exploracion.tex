@@ -1,8 +1,9 @@
 % Rúbrica: Análisis exploratorio de datos. Fuente: notebooks/00_exploracion.ipynb, §3.1 a §3.7.
 \section{Análisis exploratorio}\label{sec:exploracion}
 
-La sección define primero qué se predice y con qué métrica se mide. Después se queda con los
-hallazgos del notebook 00 que cambiaron una decisión; el resto del análisis está en el notebook.
+Con los datos de la sección~\ref{sec:datos}, esta sección define primero qué se predice y con qué
+métrica se mide. Después se queda con los hallazgos del notebook 00 que cambiaron una decisión; el
+resto del análisis está en el notebook.
 
 \subsection{La variable objetivo}\label{sec:objetivo}\label{sec:objetivo-formula}
 
@@ -34,8 +35,7 @@ tabla~\ref{tab:descriptiva} resume los dos cortes de datos.
 arrepentimiento: registra que alguien votó en contra y cuánto había jugado al escribir, así que la
 señal es una proxy\footnote{Una medida que sí se puede observar y que se usa en lugar de otra que
 no se puede observar directamente.}. Los 120 minutos vienen de la política de reembolsos de la
-tienda: se puede pedir el reembolso dentro de las dos semanas posteriores a la compra y con menos
-de dos horas de juego \parencite{steam_reembolsos}. Una reseña negativa escrita dentro de esa
+tienda (sección~\ref{sec:planteamiento}). Una reseña negativa escrita dentro de esa
 ventana es lo más cercano que dejan los datos a «esto no era para mí, y me di cuenta pronto». Por
 eso el sitio y este documento la llaman señal y nunca dicen que alguien se arrepintió. La señal deja
 fuera a quien se arrepiente y no escribe, a quien pide el reembolso sin reseñar y a quien reseña
@@ -78,8 +78,9 @@ pesan poco y la curva puede verse bien aunque el modelo señale muchos casos de 
 \parencite{saito2015,davis2006}. El PR-AUC de un clasificador que no sabe nada, que da a todos los
 casos la misma calificación, es la prevalencia: \cifraPRAUCTrivial{}. Ese es el piso, y por eso el
 PR-AUC del modelo siempre va junto al del trivial. En la validación agrupada por
-juego\footnote{GroupKFold reparte juegos completos entre entrenamiento y prueba, así que mide al
-modelo con juegos que no vio.} el modelo llega a \cifraPRAUCModelo{}, \cifraPRAUCCociente{} veces
+juego\footnote{La validación cruzada parte los datos en partes, los \emph{folds}: entrena con todas
+menos una y evalúa con la que quedó fuera, una vez por cada parte. GroupKFold reparte juegos
+completos entre folds, así que mide al modelo con juegos que no vio.} el modelo llega a \cifraPRAUCModelo{}, \cifraPRAUCCociente{} veces
 ese piso (sección~\ref{sec:evaluacion}). Esos cocientes contra el trivial llevan un decimal, porque
 el PR-AUC cambia bastante de un fold a otro y una centésima más no diría nada; los extremos de un
 intervalo llevan dos, porque ahí importa qué tan cerca quedan del 1, el valor en el que el modelo no
@@ -92,9 +93,8 @@ llevan cuatro decimales, porque los juegos al filo de un corte se distinguen jus
 
 ¿La señal es parecida en todos los juegos, o depende del juego? La
 figura~\ref{fig:tasa-por-juego} ordena los \cifraJuegosEntrenamiento{} juegos de data-v1 según su
-tasa de señal, la proporción de sus reseñas con $Y = 1$, con su intervalo de Wilson\footnote{Un
-intervalo de confianza marca entre qué valores es razonable que esté la tasa real. El de
-\textcite{wilson1927} nunca baja de cero, y por eso sirve con tasas bajas.}. La tasa va de
+tasa de señal, la proporción de sus reseñas con $Y = 1$, con su intervalo de Wilson\footnote{El
+intervalo de \textcite{wilson1927} nunca baja de cero, y por eso sirve con tasas bajas.}. La tasa va de
 \cifraTasaJuegoMinPorResena{} a \cifraTasaJuegoMaxPorResena{}, y como hasta el juego con menos
 reseñas tiene \cifraResenasJuegoMin{}, los intervalos son cortos al lado de esa distancia. No es
 ruido: la varianza de la tasa entre juegos es unas \cifraSobredispersion{} veces la esperada si
@@ -167,7 +167,7 @@ normalización conserva las negaciones. Frente a las tardías aparece lo que pas
 una de sus formas, contra el \cifraRefundTardiasPorResena{} de las tardías y el
 \cifraRefundPositivasPorResena{} de las positivas: encaja con la lectura de la señal como proxy,
 aunque no prueba que esas personas pidieran el reembolso, y la mayoría no lo menciona. El análisis
-es descriptivo: el texto no entra al modelo de riesgo, y solo lo lee la explicación de motivos,
+es descriptivo: el texto no entra al modelo de riesgo, y en el sitio solo lo lee la explicación de motivos,
 una heurística de palabras clave (sección~\ref{sec:interpretabilidad-motivos}). La Parte A prueba
 si ese lenguaje distingue de verdad a las tempranas (sección~\ref{sec:modelacion-texto}).
 
@@ -181,4 +181,6 @@ y una tasa mediana por juego más alta (\cifraTasaExternosMedianaJuegos{} contra
 \cifraTasaEntrenamientoPromJuegos{} y \cifraTasaExternosPromJuegos{}
 (detalle en el notebook 00, §3.6). No se decidió nada con esto: los externos nunca entran a elegir
 variables, a entrenar ni a fijar umbrales. Sí cambia cómo se lee la prueba externa, que mide al
-modelo con una mezcla de juegos distinta (sección~\ref{sec:evaluacion-externa}).
+modelo con una mezcla de juegos distinta (sección~\ref{sec:evaluacion-externa}). Lo que cambió una
+decisión deja dos tareas para la sección~\ref{sec:procesamiento}: limpiar el texto para el
+análisis de las quejas y fijar qué variables puede usar el modelo.

@@ -3,31 +3,54 @@
 % frontend/src/app/ y las cifras de data-v3 que da generar_figuras.py (cifras_del_recorrido).
 \section{Estrategia}\label{sec:estrategia}
 
-\subsection{Usuarios y necesidades}\label{sec:estrategia-usuarios}
+Con el nicho de la sección~\ref{sec:planteamiento}, esta sección dice a quién sirve NexPlay, cómo
+se sostendría y qué acciones permite; el recorrido de la sección~\ref{sec:estrategia-recorrido} lo
+muestra con un caso.
 
-Quien usa NexPlay está por comprar un juego en Steam desde México. Necesita tres cosas: saber
-antes de pagar si el juego tiende a decepcionar pronto, entender por qué, y decidir entre opciones
-con eso a la vista. El sitio le pide un perfil corto, que se declara en un formulario: compras al
-año, horas por semana, tolerancia a la fricción, las etiquetas de Steam que prefiere o rechaza y la
-plataforma. Ese perfil sirve para la afinidad, que dice qué tanto encaja un juego con quien lo
-declaró; no mueve el riesgo, que es del título (sección~\ref{sec:modelacion-bmas}).
+\subsection{Propuesta de valor y usuarios}\label{sec:estrategia-usuarios}
+
+NexPlay ofrece una segunda opinión antes de pagar: el riesgo de arrepentimiento bajo, medio o alto
+de un juego, con lo que lo mueve y de qué se quejan sus reseñas.
+
+\paragraph{Segmento principal: el jugador casual y semi-core.} Es el que el sitio ya atiende: compra
+en Steam desde México unos pocos juegos al año, juega pocas horas por semana y no quiere gastar la
+ventana de reembolso en un juego que no le iba a servir. Se define por esa conducta de compra, no por
+su experiencia (sección~\ref{sec:planteamiento}). Necesita tres cosas: saber antes de pagar si el
+juego tiende a decepcionar pronto, entender por qué, y decidir entre opciones con eso a la vista.
+El sitio le pide un perfil corto, que se declara en un formulario: compras al año, horas por
+semana, tolerancia a la fricción, las etiquetas de Steam que prefiere o rechaza y la plataforma.
+Ese perfil sirve para la afinidad, que dice qué tanto encaja un juego con quien lo declaró; no
+mueve el riesgo, que es del título (sección~\ref{sec:modelacion-bmas}).
+
+\paragraph{Segmento secundario potencial: estudios y publishers.} Es una extensión que no está
+construida. Las negativas tempranas de un juego, y el lenguaje propio que encontró la Parte A (la
+cuenta, el inicio de sesión y el tutorial; sección~\ref{sec:modelacion-texto}), señalan la fricción
+de su primera hora, justo la que un estudio puede corregir con una actualización. Un reporte por
+juego, comparado con los de su género, sería para un estudio lo que la ficha es para el jugador.
+El sitio de hoy solo sirve al jugador.
+
+\paragraph{Modelo de negocio.} NexPlay es una compañía ficticia con un modelo dual. Para el
+jugador, la consulta es gratis y sin anuncios. Los ingresos vendrían de suscripciones de estudios y
+publishers al reporte de fricción temprana, cuando exista. NexPlay no cobraría comisión por venta ni
+usaría enlaces de afiliado: si ganara cuando alguien compra, dejaría de ser una segunda opinión
+neutral.
 
 \subsection{Accionables}\label{sec:estrategia-accionables}
 
 Cada resultado del proyecto lleva a una acción concreta en el sitio:
 \begin{itemize}
-  \item \textbf{Comparar antes de decidir.} Comparar pone lado a lado la banda de riesgo, el motivo
+  \item \textbf{Comparar antes de decidir.} Comparar pone lado a lado el riesgo de arrepentimiento, el motivo
   principal, el precio y la crítica de los juegos elegidos (figura~\ref{fig:accionables}a).
   \item \textbf{Revisar si las quejas son de las que le afectan.} Los motivos dicen de qué se
   quejan las reseñas con la señal; un juego cuyas quejas son de rendimiento pesa distinto para
   quien tiene un equipo de sobra que para quien no (figura~\ref{fig:recorrido}e y f).
-  \item \textbf{Preguntarle a Nia,} que contesta con los datos del catálogo y explica la banda de
+  \item \textbf{Preguntarle a Nia,} que contesta con los datos del catálogo y explica el riesgo de
   un juego (sección~\ref{sec:interfaz}).
   \item \textbf{Planear las dos primeras horas.} El Inicio recuerda la ventana de reembolso y lo
   que más mencionan las negativas tempranas, para probar eso primero mientras el juego todavía se
   puede devolver; Steam decide cada solicitud, y el sitio lo dice (figura~\ref{fig:accionables}c).
   \item \textbf{Buscar alternativas del mismo género con riesgo bajo.} Explorar agrupa el catálogo
-  en estantes por banda y se filtra por género (figura~\ref{fig:accionables}b).
+  en estantes por nivel de riesgo y se filtra por género (figura~\ref{fig:accionables}b).
 \end{itemize}
 
 \subsection{Recorrido: PAYDAY 3 contra Dead Space}\label{sec:estrategia-recorrido}
@@ -40,7 +63,9 @@ esos días. El recorrido tiene cinco pasos:
 \begin{enumerate}
   \item En el Inicio busca los dos. La ficha de PAYDAY 3 dice riesgo alto y la de Dead Space, riesgo
   bajo, cada una con su frase (figura~\ref{fig:recorrido}a y b). Dead Space es uno de los
-  \cifraJuegosExternos{} juegos que el modelo no vio al entrenar.
+  \cifraJuegosExternos{} juegos que el modelo no vio al entrenar, y en esos títulos el riesgo bajo
+  no se distingue del medio (sección~\ref{sec:evaluacion-caida}): en este contraste pesa más el
+  riesgo alto de PAYDAY 3 que el bajo de Dead Space.
   \item «Qué mueve esta estimación» da los factores (figura~\ref{fig:recorrido}c y d). PAYDAY 3
   tiene una nota de Metacritic de \cifraPaydayMetacritic{}, por debajo del promedio del catálogo, y
   eso sube su riesgo estimado; Dead Space tiene \cifraDeadSpaceMetacritic{}. El descuento de Dead
@@ -52,8 +77,8 @@ esos días. El recorrido tiene cinco pasos:
   Space es el rendimiento, en el \cifraDeadSpaceMotivoPrincipal{} de \cifraDeadSpaceClasificadas{},
   de \cifraDeadSpaceCasos{}. Las quejas de rendimiento pesan según el equipo de quien juega; las de
   contenido, no.
-  \item Comparar los pone lado a lado (figura~\ref{fig:accionables}a), y Nia puede explicar la
-  banda de cualquiera de los dos.
+  \item Comparar los pone lado a lado (figura~\ref{fig:accionables}a), y Nia puede explicar el
+  riesgo de cualquiera de los dos.
   \item Si quiere otro juego de acción con riesgo bajo, Explorar muestra un estante de
   \cifraEstanteAccionBajo{} (figura~\ref{fig:accionables}b). Va del score más bajo al más alto, y
   el precio 0 empuja al frente a los gratis y a los que no tienen precio: Grand Theft Auto V Legacy
@@ -69,8 +94,8 @@ esos días. El recorrido tiene cinco pasos:
   \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/04-deadspace-factores.png}\caption{}\end{subfigure}
   \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/02-payday-motivos.png}\caption{}\end{subfigure}\hfill
   \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/04-deadspace-motivos.png}\caption{}\end{subfigure}
-  \caption{El recorrido en la ficha: PAYDAY 3 a la izquierda y Dead Space a la derecha. La banda
-  (a, b), lo que mueve la estimación (c, d) y los motivos más frecuentes (e, f). Capturas
+  \caption{El recorrido en la ficha: PAYDAY 3 a la izquierda y Dead Space a la derecha. El nivel de
+  riesgo (a, b), lo que mueve la estimación (c, d) y los motivos más frecuentes (e, f). Capturas
   provisionales del sitio: se regeneran desde el tag de entrega.}
   \label{fig:recorrido}
 \end{figure}
@@ -88,11 +113,13 @@ esos días. El recorrido tiene cinco pasos:
 
 \subsection{Usabilidad}\label{sec:estrategia-usabilidad}
 
-La banda se dice con palabras y color, no con un porcentaje: el score no es una probabilidad
-calibrada (sección~\ref{sec:modelacion-umbrales}), y un porcentaje se leería como una. La ficha
-explica la banda con sus tres factores principales, cada uno con su nivel de evidencia, y los
+El riesgo se dice con palabras y color, no con un porcentaje: el score\footnote{El número entre 0 y
+1 que el modelo le da a cada juego. Sirve para ordenarlos, no como probabilidad.} no es una
+probabilidad calibrada (sección~\ref{sec:modelacion-umbrales}), y un porcentaje se leería como una.
+La ficha explica el riesgo con sus tres factores principales, cada uno con su nivel de evidencia, y los
 motivos con el número de reseñas sobre el que se calcularon, para que una cifra sobre pocas reseñas
 no parezca más firme de lo que es. Todo lo que muestra el riesgo es igual para cualquier persona,
 así que dos personas que consultan el mismo juego ven lo mismo. Los controles pequeños miden al
 menos \cifraObjetivoTactil{} píxeles de alto, para tocarlos con el dedo en un teléfono, y el sitio tiene tema claro y
-oscuro.
+oscuro. Para sostener esta estrategia hacen falta datos que digan, juego por juego, qué pasa en las
+dos primeras horas; la sección~\ref{sec:datos} los describe.

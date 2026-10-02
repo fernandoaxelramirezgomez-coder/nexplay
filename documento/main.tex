@@ -25,6 +25,11 @@
 \usetikzlibrary{arrows.meta, positioning}
 \usepackage[style=apa, backend=biber]{biblatex}
 \addbibresource{references.bib}
+% APA 7: la lista va alineada a la izquierda (así las URL no se estiran), los rangos de páginas con guion largo
+% (biblatex en español pone guion corto) y la fecha de consulta como «Recuperado el …, de».
+\appto{\bibsetup}{\raggedright}
+\DefineBibliographyExtras{spanish}{\protected\def\bibrangedash{\textendash\penalty\hyphenpenalty}}
+\DefineBibliographyStrings{spanish}{retrieved = {Recuperado}, from = {de}}
 \usepackage[hidelinks]{hyperref}
 \usepackage{fancyhdr}
 
@@ -61,6 +66,8 @@
 
 % La fecha de la portada es fija: recompilar no la cambia. Se pone la de entrega al cerrar.
 \newcommand{\fechaentrega}{30 de septiembre de 2026}
+% La pregunta guía: la misma redacción en el resumen, en la introducción y en las conclusiones.
+\newcommand{\preguntaguia}{«¿Este juego me va a decepcionar en las primeras dos horas, antes de pagarlo?»}
 
 % En cada página, como en el ejemplo del diplomado: los dos escudos, el diplomado y el autor.
 \pagestyle{fancy}
@@ -99,6 +106,7 @@
     \vspace*{0.6cm}
 
     \begin{center}
+        {\large Universidad Nacional Autónoma de México} \\[0.25cm]
         {\large Facultad de Estudios Superiores Acatlán} \\[0.25cm]
         {\large Diplomado en Ciencia de Datos} \\[0.25cm]
         {\normalsize Proyecto final \textperiodcentered{} Módulo V} \\[1.4cm]

@@ -71,6 +71,10 @@ rutas de entonces.
   preguntas y las tres rondas de trampas y legítimas (`backend/calidad/preguntas_trampa.json`), con las
   respuestas por modelo separadas de las respuestas por reglas. Solo conteos y ejemplos
   redactados: sin texto de respuestas ni de personas.
+- `contexto-mercado.json`: las cifras de contexto de mercado de la sección 2 del documento (lanzamientos en Steam en
+  2025 según SteamDB vía GamingOnLinux, e ingresos brutos estimados por Alinea Analytics), cada una con su fuente, su
+  URL, su fecha de corte y su cita textual, consultadas el 2026-10-02. `documento/generar_figuras.py` comprueba que
+  cada valor esté en su cita.
 - `verificar-nia-openai-2026-10-02.txt`: la prueba local del camino con IA, la salida completa de
   `backend/calidad/verificar_nia.py --openai` con la clave del dueño, corrida el 2026-10-02 de 03:29:39 a 03:31:32
   en un clon con `codigo-v7` (`54e1983`), seis segundos después de crear el tag. Reemplaza una corrida anterior del

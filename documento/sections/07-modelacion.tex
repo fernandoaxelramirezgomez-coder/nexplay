@@ -4,13 +4,17 @@
 % bootstrap-prueba-externa.json y metacritic-por-banda.md).
 \section{Modelación y evaluación}\label{sec:modelacion}
 
+Con las cinco variables del juego de la sección~\ref{sec:procesamiento}, esta sección arma el
+modelo, lo valida con juegos que no vio y explica cómo se convierte en lo que muestra el sitio.
+
 \subsection{El modelo y sus conjuntos de variables}\label{sec:modelacion-conjuntos}
 
 El modelo es una regresión logística\footnote{Un modelo lineal de clasificación: le da un peso a
 cada variable, las suma y convierte el resultado en un score entre 0 y 1.} con las variables
 estandarizadas y pesos de clase balanceados\footnote{Con \texttt{class\_weight="balanced"}, las
 pocas reseñas con $Y = 1$ pesan en el ajuste tanto como todas las demás juntas, para que la clase
-rara no se pierda.}, sin ajuste de hiperparámetros. Se eligió por tres razones. Usa pocas
+rara no se pierda.}, sin ajuste de hiperparámetros\footnote{Los valores que fijan cómo aprende el modelo, como la
+fuerza de su regularización. Se dejan los de la biblioteca, sin buscarlos con los datos.}. Se eligió por tres razones. Usa pocas
 variables, cinco y todas del juego. Sus coeficientes se leen directo, y son los que alimentan la
 ficha: cada factor que muestra el sitio es un coeficiente por el valor del juego
 (sección~\ref{sec:interpretabilidad}). Y aunque hay \cifraResenasEntrenamiento{} reseñas, lo que
@@ -79,8 +83,11 @@ de \cifraCoefDescuentoICInf{} a \cifraCoefDescuentoICSup{}, y el de la gratuidad
 \cifraCoefPrecioReplicasPositivas{} de las réplicas, pero con \cifraJuegosEntrenamiento{} juegos su
 intervalo no descarta el cero, y por eso su evidencia se marca como débil.
 
-El sitio no muestra el score: muestra una de tres bandas, bajo, medio o alto. Los cortes son los
-percentiles \cifraPercentilMedio{} y \cifraPercentilAlto{} de los scores fuera de
+El sitio no muestra el score: muestra el riesgo de arrepentimiento en tres niveles, bajo, medio o
+alto. Aquí a cada nivel se le llama banda, porque corta un tramo del score. Los cortes son los
+percentiles \cifraPercentilMedio{} y \cifraPercentilAlto{}\footnote{Debajo del primero queda un
+tercio de los scores, y debajo del segundo, dos tercios: son los terciles de los scores de las
+reseñas, no del catálogo.} de los scores fuera de
 fold\footnote{El score fuera de fold (OOF) de una reseña lo da un modelo entrenado sin el juego de
 esa reseña, con la misma partición congelada.} de las reseñas de entrenamiento, las de data-v1
 (\texttt{backend/modelado/entrenar\_modelo.py}): un juego pasa a medio desde \cifraUmbralMedio{} y
@@ -217,12 +224,15 @@ mejor modelo si el intervalo de su cociente contra el trivial incluye el 1, y ta
 una regla de una sola palabra: marcar las reseñas que dicen «refund». Esa palabra salió de mirar
 estos mismos datos (sección~\ref{sec:exploracion-texto}), así que la referencia es optimista.
 
-\paragraph{Datos y modelos.} Son las \cifraNegativasTexto{} reseñas negativas en inglés de los
-\cifraJuegosEntrenamiento{} juegos de \mbox{data-v1}, con la partición congelada; \cifraTempranasTexto{}
+\paragraph{Datos y modelos.} Son las \cifraNegativasTexto{} reseñas negativas en inglés del conjunto
+limpio (sección~\ref{sec:procesamiento-limpieza}), de los \cifraJuegosEntrenamiento{} juegos de
+\mbox{data-v1}, con la partición congelada; \cifraTempranasTexto{}
 son tempranas, el \cifraPrevalenciaTextoPorResena{}. Una reseña que dice cuánto jugó repite la
 etiqueta, así que en las \cifraDuracionesEnmascaradas{} que escriben una duración esta se cambia
 por una marca. Se compararon tres modelos: TF-IDF\footnote{Representa cada reseña por sus palabras
-y pares de palabras, con menos peso para las que aparecen en casi todas.} con Naive Bayes (NB),
+y pares de palabras, con menos peso para las que aparecen en casi todas.} con Naive
+Bayes\footnote{Un clasificador que estima qué tan común es cada palabra en cada clase y suma esas
+evidencias como si las palabras fueran independientes.} (NB),
 TF-IDF con regresión logística (LR) y MiniLM, un modelo de lenguaje preentrenado y congelado, con
 la misma regresión logística.
 
@@ -268,4 +278,5 @@ motivos del sitio.
 \paragraph{Lo que no dice.} Es la señal en el texto de quien escribió pronto, no un arrepentimiento
 confirmado. Que el modelo distinga las tempranas tampoco prueba qué categorías de motivos funcionan:
 eso es la Parte B (sección~\ref{sec:siguientes}). El análisis cubre solo reseñas en inglés de
-data-v1, y su intervalo no incluye la variación que daría reentrenar.
+data-v1, y su intervalo no incluye la variación que daría reentrenar. La
+sección~\ref{sec:resolucion} cuenta cómo llegan el modelo y sus explicaciones al sitio.

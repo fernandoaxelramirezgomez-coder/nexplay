@@ -187,3 +187,44 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
       se descartó.
     - A diferencia de las demás capturas, esta no se regenera desde el tag de entrega: es la evidencia de
       producción.
+
+## Pasada editorial final (2026-10-02)
+
+39. **El modelo de negocio es dual** (elegido por el dueño entre tres opciones):
+    - **dual, la elegida:** consulta gratis y sin anuncios para el jugador, e ingresos B2B por suscripciones de estudios y
+      publishers a un reporte de fricción temprana, marcado como extensión no construida;
+    - **freemium al jugador:** alertas, historial ampliado y comparaciones de más juegos, sin ingresos de estudios;
+    - **sin fines de lucro:** sostenido con la infraestructura gratuita y patrocinio no ligado a ningún juego.
+    - Se descartaron la comisión por venta y los enlaces de afiliado, porque romperían la neutralidad (segunda opinión,
+      nunca recomendación de compra).
+40. **Operación: catálogo mensual y modelo anual, con reentrenamiento adelantado por deriva** (del dueño).
+    - El monitoreo compara la prevalencia de negativas tempranas en las reseñas nuevas con la del entrenamiento.
+    - Va como propuesta y sin umbral numérico: fijarlo es parte del primer prerregistro de reentrenamiento. El
+      monitoreo todavía no existe y el texto lo dice.
+41. **La frase del hueco se corrigió.** Steam sí deja filtrar las reseñas por horas jugadas (Bailey, 2019, PCGamesN).
+    - El hueco es que no resume qué parte de las negativas llega dentro de la ventana de reembolso, ni lo compara
+      entre juegos.
+    - Alternativa: «Steam no muestra si las negativas ocurren dentro de la ventana», que sería falso.
+42. **Las cifras de mercado salen de `docs/evidencia/contexto-mercado.json`, con la cita textual de cada fuente.**
+    - SteamDB responde 403 a la consulta automática, así que los lanzamientos se citan por GamingOnLinux
+      (Squires-Hand, 2025), que la nombra: 19,008 al 12 de diciembre de 2025 y 9,269 con 10 reseñas o menos (no
+      «menos de 10»).
+    - Los ingresos son los de Alinea (Elliott, 2025): 17.7 mil millones de dólares brutos al 19 de diciembre. Las
+      cifras de segunda mano del año completo no coinciden entre sí y no se usan.
+43. **La pregunta guía es una macro (`\preguntaguia` en `main.tex`)**, para que la redacción sea idéntica en el resumen,
+    §1 y §9.2. La respuesta de §9.2 dice que la pregunta es personal y la respuesta es del título.
+44. **Términos.**
+    - Para el usuario: «riesgo de arrepentimiento bajo, medio o alto» y «nivel», como en el sitio.
+    - En §5–§7: «banda» como nombre técnico, definido en 7.4, y «proxy» solo en 5.1.
+    - En §8 queda «banda» solo dentro del nombre `verificar_bandas.py`.
+45. **Correcciones de contradicciones y repeticiones C1–C15** (lista en el plan de la pasada).
+    - C6: Dead Space es un título externo, y su riesgo bajo pesa menos que el alto de PAYDAY 3 (7.6).
+    - C2: Nia no elige; a «¿cuál me compro?» contesta que elegir es de la persona (evidencia de `verificar_nia --openai`).
+    - C16 (`codigo-v6` en el anexo contra `codigo-v7` en 8.2) queda para la ronda del tag de entrega.
+46. **Notas al pie nuevas:** fold (junto a GroupKFold), score, intervalo de confianza (en §2, y la de Wilson ya no lo
+    repite), terciles, Naive Bayes e hiperparámetros.
+47. **Portada:** se agrega «Universidad Nacional Autónoma de México». **APA 7:**
+    - `langid = english` para el *sentence case*;
+    - el sitio con `organization`;
+    - sin la nota duplicada «Consultada…»;
+    - tres referencias nuevas, citadas en §2.

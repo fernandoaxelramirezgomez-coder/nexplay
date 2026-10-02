@@ -1,15 +1,15 @@
 % Rúbrica: Introducción. Incluye la tabla que lleva cada criterio de la rúbrica a su sección.
 \section{Introducción}\label{sec:introduccion}
 
-Comprar un videojuego en Steam tiene una salida: se puede pedir el reembolso dentro de las dos
-semanas posteriores a la compra, si se ha jugado menos de dos horas \parencite{steam_reembolsos}.
-Esa ventana es corta. Quien descubre que un juego no era lo que buscaba tiene un par de horas para
-darse cuenta y actuar, y si no lo hace, se queda con un gasto que no quería.
+\preguntaguia{} Esa es la pregunta de quien está por comprar un videojuego en Steam, y la que guía
+este documento. Comprar tiene una salida: Steam reembolsa un juego que se haya jugado menos de dos
+horas (sección~\ref{sec:planteamiento}). Esa ventana es corta. Quien descubre que un juego no era
+lo que buscaba tiene un par de horas para darse cuenta y actuar, y si no lo hace, se queda con un
+gasto que no quería.
 
-NexPlay estima, antes de pagar, qué tan seguido un juego deja a sus compradores arrepentidos en
-las primeras horas. No observa el arrepentimiento: usa una señal que sí está en los datos, las
-reseñas negativas escritas antes de las dos horas de juego, y la llama \emph{señal de
-arrepentimiento temprano} (sección~\ref{sec:objetivo}). El proyecto responde dos preguntas. La de
+NexPlay estima, antes de pagar, qué tan seguido un juego deja la \emph{señal de arrepentimiento
+temprano}: no observa el arrepentimiento, sino una señal que sí está en los datos, las reseñas
+negativas escritas antes de las dos horas de juego (sección~\ref{sec:objetivo}). El proyecto responde dos preguntas. La de
 datos: ¿qué tienen en común los juegos que dejan más señal, y se puede anticipar con lo que se sabe
 del juego antes de comprarlo? La de producto: ¿cómo se le muestra eso a quien duda entre dos juegos,
 sin prometerle una probabilidad que el modelo no da?
@@ -17,8 +17,10 @@ sin prometerle una probabilidad que el modelo no da?
 Entrega un modelo de riesgo por título, entrenado con \cifraJuegosEntrenamiento{} juegos de Steam y
 probado con \cifraJuegosExternos{} que no vio (sección~\ref{sec:modelacion}); un sitio con el
 catálogo, la ficha de cada juego, una comparación y un asistente, Nia
-(sección~\ref{sec:resolucion}); tres notebooks que corren en Colab (anexo~\ref{sec:anexo}), y este
-documento. La tabla~\ref{tab:rubrica} lleva cada criterio de la rúbrica a la sección que lo cubre.
+(sección~\ref{sec:resolucion}); tres notebooks que corren en Colab (anexo~\ref{sec:anexo}), el
+00 de exploración, el 01 del modelo de riesgo y el 02 de los modelos de texto, y este documento. La
+tabla~\ref{tab:rubrica} lleva cada criterio de la rúbrica a la sección que lo cubre, y la
+sección~\ref{sec:planteamiento} parte de la pregunta guía para plantear el problema.
 
 \begin{table}[htbp]
   \centering\small

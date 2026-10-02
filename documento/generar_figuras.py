@@ -1372,6 +1372,26 @@ def cifras_de_la_lectura_del_01(cifras: Cifras, tag: str, modelo: dict) -> Path:
     return ruta
 
 
+def cifras_del_contexto(cifras: Cifras) -> None:
+    """§2: el contexto de mercado, de docs/evidencia/contexto-mercado.json. Cada valor tiene que estar en su cita
+    textual, tal como la publicó la fuente, y su fecha de corte sale del mismo archivo."""
+    contexto = json.loads((EVIDENCIA / "contexto-mercado.json").read_text(encoding="utf-8"))["cifras"]
+    fuente = "docs/evidencia/contexto-mercado.json"
+    for clave, nombre in (("lanzamientos_2025", "LanzamientosSteam"), ("lanzamientos_10_resenas_o_menos", "LanzamientosPocasResenas")):
+        dato = contexto[clave]
+        if entero(dato["valor"]) not in dato["cita"]:
+            raise ValueError(f"{fuente}: {clave} no está en su cita")
+        cifras.agregar(nombre, entero(dato["valor"]), f"{fuente}: {dato['fuente']}")
+    cifras.agregar("FechaCorteLanzamientos", fecha_larga(datetime.fromisoformat(contexto["lanzamientos_2025"]["corte"])),
+                   f"{fuente}: fecha de la cuenta de lanzamientos")
+    ingresos = contexto["ingresos_brutos_2025_miles_de_millones_usd"]
+    if f"${decimal(ingresos['valor'], 1)} billion" not in ingresos["cita"]:
+        raise ValueError(f"{fuente}: los ingresos no están en su cita")
+    cifras.agregar("IngresosSteam", f"{decimal(ingresos['valor'], 1)} mil millones", f"{fuente}: {ingresos['fuente']}")
+    cifras.agregar("FechaCorteIngresos", fecha_larga(datetime.fromisoformat(ingresos["corte"])),
+                   f"{fuente}: fecha de la estimación de ingresos")
+
+
 def cifras_del_diccionario(cifras: Cifras) -> None:
     """§4.4: cuántas columnas describe backend/analisis/diccionario.py, el diccionario del 00 (§1.2)."""
     arbol = ast.parse((BACKEND / "analisis" / "diccionario.py").read_text(encoding="utf-8"))
@@ -1479,6 +1499,7 @@ def main() -> None:
     cifras_de_endpoints(cifras)
     cifras_de_nia(cifras)
     cifras_del_diccionario(cifras)
+    cifras_del_contexto(cifras)
     tag = tag_de_codigo()
     cifras_de_reproducibilidad(cifras, tag)
     cifras_de_la_parte_a(cifras, tag)

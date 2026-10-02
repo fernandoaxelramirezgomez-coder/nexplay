@@ -1,12 +1,15 @@
 % Rúbrica: Conclusiones (sólidas, basadas en los resultados, con los hallazgos clave y su relevancia).
 % Colab no es una limitación: los tres notebooks corrieron ahí el 2026-10-02 con codigo-v6, sin errores ni
-% avisos (docs/evidencia/colab/), y va en el anexo.
+% avisos (docs/evidencia/colab/), y va en el anexo. La operación de 9.3 es una propuesta del dueño (DUDAS.md).
 \section{Conclusiones}\label{sec:conclusiones}
+
+Esta sección junta lo anterior: los límites del resultado, la respuesta a la pregunta guía, cómo
+operaría NexPlay y qué sigue.
 
 \subsection{Limitaciones}\label{sec:limitaciones}
 
 \begin{itemize}
-  \item \textbf{Es una proxy.} La señal es una reseña negativa temprana, no el arrepentimiento ni el
+  \item \textbf{Es una señal indirecta.} La señal es una reseña negativa temprana, no el arrepentimiento ni el
   reembolso: deja fuera a quien no escribe y a quien escribe después de las dos horas
   (sección~\ref{sec:objetivo}).
   \item \textbf{La muestra retrata el presente.} El \cifraDesdeJulioEntrenamientoPorResena{} de las
@@ -16,8 +19,8 @@
   cambia mucho de un fold a otro. Con solo \cifraGratisEntrenamiento{} juegos gratis, el modelo
   extrapola en los gratis, y los \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin precio
   entran con precio 0; los dos casos llevan aviso en la ficha.
-  \item \textbf{En un título nuevo, solo la banda alta se sostiene.} En los externos, la banda media
-  no deja más señal que la baja (sección~\ref{sec:evaluacion-caida}).
+  \item \textbf{En un título nuevo, solo el riesgo alto se sostiene.} En los externos, el nivel medio
+  no deja más señal que el bajo (sección~\ref{sec:evaluacion-caida}).
   \item \textbf{El orden por score también lo arrastra el precio 0.} En el estante de riesgo bajo de
   Acción, los primeros lugares son de un juego sin precio y de dos gratis, todos con aviso; la
   primera alternativa sin aviso es la tercera tarjeta (sección~\ref{sec:estrategia-recorrido}).
@@ -25,18 +28,23 @@
   de las \cifraNegativasTempranasLimpias{} negativas tempranas del conjunto limpio menciona alguno
   (sección~\ref{sec:interpretabilidad-motivos}), y la mayoría de las palabras que más empujan hacia
   temprana no cae en ninguna categoría (sección~\ref{sec:modelacion-texto}).
-  \item \textbf{Representatividad.} Las reseñas son en inglés y las escriben compradores de todo el
-  mundo, mientras que los precios son de la tienda de México y el usuario objetivo compra desde
-  México. Tampoco hay datos de PlayStation ni de Xbox.
+  \item \textbf{Representatividad.} Las reseñas son en inglés y de compradores de todo el mundo,
+  mientras que los precios y el usuario son de México (sección~\ref{sec:datos-relevancia}). Tampoco
+  hay datos de PlayStation ni de Xbox.
   \item \textbf{No hubo un estudio con usuarios externos.} La usabilidad se apoya en decisiones de
   diseño y en pruebas automáticas, no en sesiones con personas que no conocían el sitio.
   \item \textbf{La infraestructura es gratuita.} La API se duerme cuando nadie la usa y su disco
   borra las calificaciones y los comentarios al reiniciarse (sección~\ref{sec:arquitectura}).
 \end{itemize}
 
-\subsection{Qué se concluye}\label{sec:conclusiones-hallazgos}
+\subsection{La respuesta a la pregunta guía}\label{sec:conclusiones-hallazgos}
 
-La señal de arrepentimiento temprano depende sobre todo del juego: la varianza de su tasa entre
+\preguntaguia{} La pregunta es personal, y la respuesta del proyecto es del título. NexPlay no puede
+decirle a una persona en particular si un juego la va a decepcionar, ni con qué probabilidad. Sí puede decirle qué
+tan seguido ese título deja la señal de arrepentimiento temprano, en tres niveles cuyos cortes salen
+de los scores de entrenamiento (sección~\ref{sec:modelacion-umbrales}), y por qué.
+
+La señal depende sobre todo del juego: la varianza de su tasa entre
 juegos es unas \cifraSobredispersion{} veces la esperada si todos tuvieran la misma tasa, y lo que
 mejor la acompaña es la crítica. Un modelo pequeño, una regresión logística con cinco variables que se conocen antes
 de comprar, ordena los juegos que no vio mejor que el trivial: \cifraPRAUCCociente{} veces en la
@@ -44,23 +52,52 @@ validación agrupada y \cifraPRAUCExternoCociente{} veces en la prueba externa, 
 no baja de \cifraExternoICInf{}. Es una ventaja real y modesta, y el documento la reporta siempre
 junto al trivial.
 
-El perfil de quien compra no la mejora más allá del ruido entre folds, y el dato que lo
-representaba en el sitio no estaba validado. Por eso el riesgo es del título y vale igual para
-cualquier persona. El aporte del proyecto es convertir esa ventaja en algo que sirve antes de
-pagar: una banda con palabras y no una probabilidad, factores que dicen qué tan firme es su
+El perfil de quien compra no la mejora más allá del ruido entre folds
+(sección~\ref{sec:modelacion-bmas}), así que el riesgo vale igual para cualquier persona. El aporte
+del proyecto es convertir esa ventaja en algo que sirve antes de pagar: un nivel de riesgo con
+palabras y no una probabilidad, factores que dicen qué tan firme es su
 evidencia, motivos con su cobertura a la vista y acciones concretas, como comparar, buscar una
 alternativa o aprovechar la ventana de reembolso. El texto de las reseñas agrega algo que el modelo
 de riesgo no da: las quejas tempranas tienen un lenguaje propio, más allá de mencionar el reembolso
 (sección~\ref{sec:modelacion-texto}), y eso respalda presentar los motivos como quejas de las
-primeras horas. Lo que no hace es decirle a nadie qué tan probable
-es que se arrepienta, ni explicar con certeza por qué un juego decepciona.
+primeras horas. Tampoco explica con certeza por qué un juego decepciona: los motivos son quejas de
+quienes las escribieron, no la causa.
+
+\subsection{Operación propuesta}\label{sec:operacion}
+
+La compañía es ficticia, pero el proceso para mantener NexPlay al día ya tiene sus piezas en el
+repositorio. Como propuesta de operación:
+\begin{enumerate}
+  \item Cada mes, la ingesta (\texttt{ingesta\_steam.py}) vuelve a bajar los precios, los
+  descuentos y las reseñas de los juegos del catálogo, y suma los nuevos.
+  \item Ese corte se publica como un release nuevo, con tag fijo y el sha256 de cada archivo
+  (\texttt{backend/publicacion/}), sin tocar los anteriores.
+  \item El build (\texttt{preparar\_entorno.py}) verifica los sha256, entrena con el corte de
+  entrenamiento vigente y compara el nivel de cada juego con la referencia. El modelo sigue
+  entrenado con data-v1: de un mes a otro cambian los precios y los descuentos, y con ellos puede
+  cambiar el nivel de un juego. Si cambia, la referencia se regenera y el cambio se documenta.
+  \item Render y Vercel despliegan, y \texttt{make test} corre los verificadores.
+  \item Un monitoreo mensual, que todavía no existe, compara la prevalencia de negativas tempranas en
+  las reseñas nuevas con la del entrenamiento. Si se aleja, el reentrenamiento se adelanta.
+  \item Una vez al año, o antes si hay deriva, el modelo se reentrena con un corte nuevo, una
+  partición congelada nueva y una prueba externa nueva, con su prerregistro, como se hizo con
+  data-v1 y data-v2.
+\end{enumerate}
+Ningún paso tiene todavía un umbral numérico: fijarlo es parte del primer prerregistro de
+reentrenamiento.
 
 \subsection{Siguientes pasos}\label{sec:siguientes}
 
-La Parte B es trabajo futuro y no ha empezado. Arranca de la cobertura de los motivos: probar si un
-modelo que lee el texto completo asigna motivos a más negativas tempranas que las palabras clave,
-contra un conjunto de referencia etiquetado a mano, con su propio prerregistro. El notebook 02
-propone un paso más corto, ampliar las categorías con lo que hoy queda fuera, como la cuenta y el
-acceso o los primeros pasos, y también lo deja para un prerregistro propio, porque cambia lo que ve
-la gente. Más allá de eso, el modelo ganaría con más juegos, en especial gratis, y con una prueba de la
-interfaz con personas que no la conocen.
+\paragraph{Para el jugador.} La Parte B es trabajo futuro y no ha empezado: probar, con su propio
+prerregistro, si un modelo que lee el texto completo asigna motivos a más negativas tempranas que
+las palabras clave, contra un conjunto de referencia etiquetado a mano. El notebook 02 propone un
+paso más corto, ampliar las categorías con lo que hoy queda fuera, como la cuenta y el acceso o los
+primeros pasos, también con un prerregistro propio, porque cambia lo que ve la gente. Y falta
+probar la interfaz con personas que no la conocen.
+
+\paragraph{Para los estudios.} El reporte de fricción temprana por juego, comparado con su género,
+no existe todavía. Construirlo pide primero la Parte B, porque los motivos que leería un estudio
+tienen que estar probados, y su propio prerregistro.
+
+\paragraph{Para el modelo.} Ganaría con más juegos, en especial gratis, y con la operación de la
+sección~\ref{sec:operacion}: un corte nuevo cada año, con su prueba externa.

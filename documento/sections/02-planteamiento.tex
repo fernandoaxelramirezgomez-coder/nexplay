@@ -1,19 +1,38 @@
 % Rúbrica: Planteamiento del problema (definición precisa, relevancia e importancia en el contexto).
 % Incluye el nicho de negocio y el usuario final. Fuente de veteranos y novatos:
-% docs/evidencia/senal-por-biblioteca.md y senal-por-biblioteca-estratificada.json.
+% docs/evidencia/senal-por-biblioteca.md y senal-por-biblioteca-estratificada.json. Contexto de mercado:
+% docs/evidencia/contexto-mercado.json, con la cita textual de cada fuente (verificadas el 2026-10-02).
 \section{Planteamiento del problema}\label{sec:planteamiento}\label{sec:nicho}
+
+La pregunta guía es la de una persona a punto de pagar. Esta sección la vuelve un problema: qué
+muestra la tienda y qué no, en qué mercado se hace la pregunta y dónde cabe NexPlay.
 
 \paragraph{La decisión antes de pagar.} Quien compra un juego decide con lo que muestra la tienda:
 el precio, el descuento, las capturas, la nota de la crítica y el porcentaje de reseñas positivas.
 Lo que más le importa saber no está ahí: si el juego le va a servir en las primeras horas, que es
-cuando todavía lo puede devolver. Un juego que decepciona pronto cuesta dinero si se deja pasar la
-ventana de reembolso, y tiempo y trámites si se aprovecha.
+cuando todavía lo puede devolver. Steam reembolsa un juego si se pide dentro de las dos semanas
+posteriores a la compra y con menos de dos horas de juego \parencite{steam_reembolsos}, y esas dos
+horas son el umbral de todo el proyecto (sección~\ref{sec:objetivo}). Un juego que decepciona
+pronto cuesta dinero si se deja pasar la ventana, y tiempo y trámites si se aprovecha.
+
+\paragraph{Un mercado grande y saturado.} Alinea Analytics estimó que, al
+\cifraFechaCorteIngresos{}, los juegos en Steam habían generado \cifraIngresosSteam{} de dólares de
+ingresos brutos en 2025 \parencite{elliott2025}. La oferta crece más rápido que la atención: con
+datos de SteamDB, \textcite{squireshand2025} contó \cifraLanzamientosSteam{} juegos publicados en
+2025 hasta el \cifraFechaCorteLanzamientos{}, y \cifraLanzamientosPocasResenas{} de ellos, casi la
+mitad, tenían diez reseñas o menos. Con tantos lanzamientos, muchos juegos llegan sin crítica
+especializada y con pocas reseñas que orienten. En los datos de este proyecto, la crítica es lo
+único con evidencia sólida: los juegos sin nota de Metacritic dejan más señal
+(sección~\ref{sec:exploracion-critica}). Es contexto y no prueba, porque los juegos de NexPlay no
+son una muestra de todos los lanzamientos.
 
 \paragraph{Por qué el promedio de reseñas no basta.} El porcentaje de reseñas positivas junta a
 quien jugó diez minutos con quien jugó mil horas: una negativa escrita al poco rato y otra escrita
-tras cien horas cuentan igual. La pregunta de quien compra es más estrecha, y la señal de ese tramo
-temprano cambia mucho de un juego a otro (sección~\ref{sec:exploracion-juego}), así que vale la pena
-estimarla por título.
+tras cien horas cuentan igual. Steam deja filtrar las reseñas por las horas que llevaba jugadas su
+autor \parencite{bailey2019}, pero no resume qué parte de las negativas llega dentro de la ventana
+de reembolso ni lo compara entre juegos. La pregunta de quien compra es más estrecha, y la señal de
+ese tramo temprano cambia mucho de un juego a otro (sección~\ref{sec:exploracion-juego}), así que
+vale la pena estimarla por título.
 
 \paragraph{Qué se puede observar y qué no.} Los datos dicen si una reseña fue negativa y cuánto
 había jugado su autor. No dicen si se arrepintió, si pidió el reembolso ni qué pasó con quien
@@ -21,10 +40,12 @@ compró y no escribió (sección~\ref{sec:objetivo}). Tampoco hay datos de PlayS
 lado del juego podría transferirse a otras tiendas, pero el riesgo que da el sitio se estimó solo
 con reseñas de Steam.
 
-\paragraph{Nicho: una capa previa a la compra.} NexPlay no vende juegos ni compite con la tienda.
-Es una consulta que se hace antes de pagar, con el enlace a Steam al lado, y su lugar está entre la
-página del juego y el botón de compra. Está pensado para quien compra desde México: los precios
-son los de la tienda de México.
+\paragraph{Nicho: una segunda opinión antes de pagar.} Ahí está el hueco. NexPlay no vende juegos
+ni compite con la tienda: es una segunda opinión que se consulta antes de pagar, con el enlace a
+Steam al lado, y su lugar está entre la página del juego y el botón de compra. No le dice a nadie
+que compre o que no compre: dice qué tan seguido el título deja la señal y por qué, y la decisión
+es de quien paga. Está pensado para quien compra desde México: los precios son los de la tienda de
+México.
 
 \paragraph{El usuario, por comportamiento.} El usuario no se define por edad ni por cuántos juegos
 tiene, sino por el momento: alguien a punto de comprar un juego para PC, que duda entre opciones o
@@ -34,7 +55,9 @@ públicos de data-v1, los veteranos, con \cifraUmbralVeterano{} juegos o más, d
 promedio por juego, \cifraVeteranosPromJuegos{} contra \cifraNovatosPromJuegos{}). La diferencia se
 sostiene dentro de cada juego: la razón de Mantel-Haenszel\footnote{Compara a veteranos y novatos
 dentro de cada juego y combina las comparaciones; vale 1 si dentro de cada juego no hay
-diferencia.} es \cifraRazonMH{}, con un intervalo de \cifraRazonMHICInf{} a \cifraRazonMHICSup{}.
-La señal no viene de la inexperiencia. Aun así, el riesgo que muestra el sitio es del título: la
-biblioteca que declara una persona no está validada, y su aporte al modelo cabe en el ruido
-(sección~\ref{sec:modelacion-bmas}).
+diferencia.} es \cifraRazonMH{}, con un intervalo\footnote{Un intervalo de confianza marca entre qué
+valores es razonable que esté el valor real. Este sale de un bootstrap sobre juegos
+(sección~\ref{sec:exploracion-critica}).} de \cifraRazonMHICInf{} a \cifraRazonMHICSup{}. La señal
+no viene de la inexperiencia. Aun así, el riesgo que muestra el sitio es del título
+(sección~\ref{sec:modelacion-bmas}). La sección~\ref{sec:estrategia} parte de este nicho y de este
+usuario para decir a quién sirve NexPlay y cómo se sostendría.
