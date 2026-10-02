@@ -57,6 +57,9 @@ EXPLICACION_SENAL = (
 # La cara de Nia según el nivel: ninguna sonrisa junto a un riesgo alto.
 EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
 
+# La pregunta con que cierra una comparación, la escriban las reglas o el modelo.
+CIERRE_DE_COMPARAR = "¿Te cuento de qué se queja la gente en cada uno?"
+
 # Sin perfil no hay sugerencias. Con perfil se muestran coincidencias con lo declarado; Nia no
 # elige por nadie, así que la invitación no puede sonar a «con tu perfil te digo cuál».
 INVITA_AL_PERFIL = (
@@ -350,7 +353,8 @@ Reglas que no puedes romper:
   cuántos más hay ("y 2 más en Explorar").
 - Los juegos que nombras y te devolvió una herramienta se pintan como tarjetas, cada una con
   su riesgo: no digas el riesgo de cada uno ni los enumeres («bajo, bajo y alto,
-  respectivamente», «Hades (riesgo bajo)»). Si importa, di cuántos hay de cada nivel.
+  respectivamente», «Hades (riesgo bajo)»). Si importa, di cuántos hay de cada nivel. Al
+  comparar, ni eso: tampoco digas que tienen el mismo riesgo; compara lo demás.
 - "Horas típicas" son las horas que llevaba jugadas, en la mediana, quien recomendó el
   juego; no es lo que dura. Si preguntan cuánto dura, contesta así, con las horas típicas
   del contexto o de la herramienta:
@@ -413,6 +417,65 @@ def sin_riesgos_enumerados(texto: str) -> str:
     for patron in _RIESGOS_ENUMERADOS:
         texto = patron.sub("", texto)
     return re.sub(r"\s+([.,;:])", r"\1", texto).strip()
+
+
+# Un nivel de riesgo dicho de cualquier forma: «riesgo bajo», «un riesgo de arrepentimiento
+# temprano bajo», «el riesgo, bajo», «riesgo igual de bajo», «bajo riesgo», «(bajo)».
+NIVEL_DE_RIESGO = re.compile(
+    rf"\briesgos?\b(?:\W+\w+){{0,6}}?\W+{_NIVEL}s?\b|\b{_NIVEL}s?\b(?:\W+\w+)?\W+riesgos?\b|\(\s*{_NIVEL}\s*\)",
+    re.IGNORECASE,
+)
+_SEPARADOR = re.compile(r"\s*[;,:]\s*")
+_CONECTOR_SUELTO = re.compile(r"^(?:así que|y|pero|aunque|por eso|entonces|o sea)\s+", re.IGNORECASE)
+
+
+def _sin_lo_que_dice_el_nivel(cuerpo: str) -> str:
+    """La oración sin los tramos (entre comas, punto y coma o dos puntos) que tocan una
+    mención del nivel de riesgo, con sus separadores originales."""
+    tramos, inicio = [], 0
+    for separador in _SEPARADOR.finditer(cuerpo):
+        tramos.append((inicio, separador.start(), separador.group(0)))
+        inicio = separador.end()
+    tramos.append((inicio, len(cuerpo), ""))
+    menciones = [m.span() for m in NIVEL_DE_RIESGO.finditer(cuerpo)]
+    quedan: list[list[str]] = []
+    for a, b, sep in tramos:
+        if any(a < fin and inicio_ < b for inicio_, fin in menciones):
+            # El tramo se va y su separador ocupa el del anterior: «$283; Hollow Knight».
+            if quedan:
+                quedan[-1][1] = sep
+        elif cuerpo[a:b].strip():
+            quedan.append([cuerpo[a:b], sep])
+    texto = "".join(tramo + sep for tramo, sep in quedan).strip(" ,;:")
+    return _CONECTOR_SUELTO.sub("", texto)
+
+
+def sin_riesgo_de_las_tarjetas(texto: str) -> str:
+    """En una comparación, cada tarjeta lleva su riesgo: el texto no dice el de ninguno, ni
+    que los dos tienen el mismo, se redacte como se redacte. Se quita el tramo de la oración
+    que lo dice y, si no queda nada, la oración; si no queda ninguna, se dice dónde está."""
+    oraciones, sueltos = [], ""
+    for oracion in _oraciones(sin_riesgos_enumerados(texto)):
+        if not NIVEL_DE_RIESGO.search(oracion):
+            oraciones.append(f"{oracion} {sueltos}".strip() if sueltos and not EMOJI.search(oracion) else oracion)
+            sueltos = "" if sueltos and not EMOJI.search(oracion) else sueltos
+            continue
+        emojis = "".join(EMOJI.findall(oracion))
+        cuerpo = EMOJI.sub("", oracion).strip()
+        limpia = "" if cuerpo.endswith("?") else _sin_lo_que_dice_el_nivel(cuerpo.rstrip(".!"))
+        if limpia:
+            oraciones.append(f"{limpia[0].upper()}{limpia[1:]}." + (f" {emojis}" if emojis else ""))
+        elif oraciones and emojis and not EMOJI.search(oraciones[-1]):
+            oraciones[-1] = f"{oraciones[-1]} {emojis}"
+        elif emojis:
+            # Sin oración antes: el emoji va al final de la siguiente que quede.
+            sueltos += emojis
+    # Sin nada más que una pregunta, que NexPlay cambia por la suya, se dice dónde está el riesgo.
+    if not any(EMOJI.sub("", o).strip() and not EMOJI.sub("", o).rstrip().endswith("?") for o in oraciones):
+        return "El riesgo de cada uno va en su tarjeta 📊"
+    if sueltos and not any(EMOJI.search(o) for o in oraciones):
+        oraciones[0] = f"{oraciones[0]} {sueltos}"
+    return " ".join(oraciones)
 
 
 def palabras(texto: str) -> int:
@@ -1053,14 +1116,7 @@ def responder(
             datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid or 0), sugerencias, generos
         )
         if salida["texto"] or salida["pide_juego"] or salida["pide_perfil"]:
-            texto = ajustar_largo(sin_descargo(pulir(salida["texto"]), ultima)) or (
-                "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
-                else INVITA_AL_PERFIL
-            )
-            juegos = _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"])
-            if juegos:
-                texto = sin_riesgos_enumerados(texto)
-            texto, oferta = con_cierre_cumplible(texto, appid, juegos, salida)
+            texto, juegos, oferta = salida_del_modelo(salida, ultima, appid)
             return _con_constancia(
                 {
                     "respuesta": texto,
@@ -1100,7 +1156,30 @@ def responder(
     )
 
 
-def con_cierre_cumplible(texto: str, appid: int | None, juegos: list[int], salida: dict) -> tuple[str, dict]:
+def salida_del_modelo(salida: dict, ultima: str, appid: int | None) -> tuple[str, list[int], dict]:
+    """Lo que se hace con el texto del modelo antes de entregarlo: pulido, con sus tarjetas,
+    sin el riesgo de cada una en el texto y con una pregunta final que las reglas saben
+    cumplir. En una comparación no queda ningún nivel de riesgo, se redacte como se redacte."""
+    texto = ajustar_largo(sin_descargo(pulir(salida["texto"]), ultima)) or (
+        "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"] else INVITA_AL_PERFIL
+    )
+    juegos = _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"])
+    comparacion = reglas.pide_comparar(ultima)
+    if comparacion:
+        # Las tarjetas de una comparación son los juegos que se pidió comparar y que devolvió
+        # una herramienta, los nombre o no el texto («los dos tienen…»).
+        pedidos = [j.appid for j in reglas._nombrados(ultima) if j.appid in salida["appids"] and j.appid != appid]
+        if len(pedidos) >= 2:
+            juegos = pedidos
+    if juegos:
+        texto = sin_riesgo_de_las_tarjetas(texto) if comparacion and len(juegos) >= 2 else sin_riesgos_enumerados(texto)
+    texto, oferta = con_cierre_cumplible(texto, appid, juegos, salida, comparacion)
+    return texto, juegos, oferta
+
+
+def con_cierre_cumplible(
+    texto: str, appid: int | None, juegos: list[int], salida: dict, comparacion: bool = False
+) -> tuple[str, dict]:
     """La pregunta final del modelo se cambia por una oferta que las reglas saben cumplir: el
     modelo ofrecía «¿Te cuento sus otros puntos débiles?» y el «sí» acababa en «Eso no lo sé».
 
@@ -1117,6 +1196,10 @@ def con_cierre_cumplible(texto: str, appid: int | None, juegos: list[int], salid
     sugeridos = salida.get("sugerencias") or []
     if salida.get("pide_juego"):
         oferta, cierre = {"intencion": "elegir_juego", "juegos": []}, "¿De qué juego te cuento?"
+    elif comparacion and len(juegos) >= 2:
+        # Ordenar dos juegos del mismo nivel por riesgo no dice nada: se ofrece lo mismo que
+        # ofrecen las reglas al comparar.
+        oferta, cierre = {"intencion": "resenas_de_varios", "juegos": juegos[:8]}, CIERRE_DE_COMPARAR
     elif salida.get("pide_perfil"):
         oferta, cierre = {"intencion": "crear_perfil", "juegos": []}, "Toma un minuto, ¿lo armamos?"
     elif uno is not None:

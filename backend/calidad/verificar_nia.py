@@ -1358,15 +1358,17 @@ def _revisar_ofertas() -> list[str]:
 def _revisar_conversaciones() -> list[str]:
     """Las dos conversaciones de producción, por el camino completo (sirven en demostración y
     con --openai): Cuphead y «¿Y el más barato de esos dos?». El historial lleva la oferta y los
-    juegos, como lo manda el chat; las dos van por reglas también con modelo."""
+    juegos, como lo manda el chat. Todo va por reglas también con modelo, salvo comparar, que
+    puede ir al modelo y se revisa por lo que fija el código."""
     problemas = []
     hilos = (
         (("dime si el juego de cuphead es adecuado para mi si me gusta el rendimiento del juego?",
           ("Ojo con eso", "3 hablan de bugs", "ninguna de rendimiento", "tuyo")),
          ("si cuentame mas sobre eso", ("3 de las 4", "bugs", "Cuphead"))),
-        (("Compara Hades y Hollow Knight", ("Hades", "Hollow Knight", "en cada uno?")),
+        (("Compara Hades y Hollow Knight", ()),
          ("¿Y el más barato de esos dos?", ("Hollow Knight", "$179"))),
     )
+    pareja = sorted(j.appid for j in catalogo.buscar() if j.nombre in ("Hades", "Hollow Knight"))
     for turnos in hilos:
         hilo: list[MensajeChat] = []
         for pregunta, esperado in turnos:
@@ -1374,6 +1376,13 @@ def _revisar_conversaciones() -> list[str]:
             salida = nia.responder(None, hilo, "verificador01")
             RespuestaNia(**salida)
             texto = salida["respuesta"]
+            if pregunta.startswith("Compara"):
+                # Comparar puede ir al modelo: su redacción cambia, el cierre, la oferta y las
+                # tarjetas no.
+                problemas += [f"«{pregunta}» ({salida['modo']}): {p}"
+                              for p in _comparacion_bien_cerrada(texto, salida["juegos"], salida["oferta"], pareja)]
+                hilo.append(_de_nia(salida))
+                continue
             faltan = [e for e in esperado if e not in texto]
             if faltan or "no lo sé" in texto or _DICTAMEN.search(texto) or salida["modo"] == "openai":
                 problemas.append(f"«{pregunta}» ({salida['modo']}): le falta {faltan} o no va por reglas: {texto[:90]}…")
@@ -1412,6 +1421,59 @@ def _revisar_cierre_del_modelo() -> list[str]:
     if not problemas:
         print(f"cierre del modelo: {len(casos)} preguntas finales cambiadas por ofertas que las reglas cumplen")
     return problemas
+
+
+# Cómo podría redactar el modelo «Compara Hades y Hollow Knight»: el riesgo dicho de muchas
+# formas y cualquier pregunta al final. La corrida --openai cerró con «¿Los ordeno por riesgo?».
+_COMPARACIONES_DEL_MODELO = (
+    "Ambos tienen riesgo bajo 📊 Hades cuesta $283 y Hollow Knight $179. ¿Los ordeno por riesgo?",
+    "Hades y Hollow Knight tienen riesgo bajo los dos 🎮 La crítica le dio 93 a Hades y 87 a Hollow Knight."
+    " ¿Quieres saber más?",
+    "Hades (riesgo bajo) cuesta $283; Hollow Knight (riesgo bajo), $179 💸 ¿Te cuento algo más?",
+    "Los dos comparten un riesgo de arrepentimiento temprano bajo, así que la diferencia está en el precio: Hades"
+    " cuesta $283 y Hollow Knight $179 💸 ¿Te los ordeno?",
+    "Hades tiene riesgo bajo y Hollow Knight también tiene riesgo bajo. La crítica prefiere a Hades (93 contra 87) ⭐",
+    "En riesgo están igual, los dos bajo 🎮 Hades tiene mejor nota (93 contra 87). ¿Seguimos?",
+    "Hades cuesta $283, tiene riesgo bajo y la crítica le dio 93; Hollow Knight, $179 🎮 ¿Te cuento más?",
+    "Riesgo: bajo para ambos 🙂 ¿Te digo cuál es más barato?",
+)
+
+
+def _revisar_comparacion_del_modelo() -> list[str]:
+    """Al comparar, la pregunta final y la oferta las fija el código, las mismas de las reglas,
+    y el texto no dice el riesgo de ninguna tarjeta, redacte como redacte el modelo. Se revisa
+    con la función que usa la API para la salida del modelo, sobre redacciones distintas."""
+    problemas = []
+    por_nombre = {j.nombre: j.appid for j in catalogo.buscar()}
+    pareja = [por_nombre["Hades"], por_nombre["Hollow Knight"]]
+    pregunta = "Compara Hades y Hollow Knight"
+    for crudo in _COMPARACIONES_DEL_MODELO:
+        salida = {"texto": crudo, "appids": set(pareja), "orden": pareja, "sugerencias": [], "pide_juego": False,
+                  "pide_perfil": False}
+        texto, juegos, oferta = nia.salida_del_modelo(salida, pregunta, None)
+        problemas += [f"modelo «{crudo[:35]}…»: {p}" for p in _comparacion_bien_cerrada(texto, juegos, oferta, pareja)]
+    reglas_ = nia_reglas.responder(None, None, [MensajeChat(rol="usuario", contenido=pregunta)], [])
+    problemas += [f"reglas: {p}" for p in
+                  _comparacion_bien_cerrada(nia.pulir(reglas_["texto"]), reglas_["juegos"], reglas_["oferta"], pareja)]
+    if not problemas:
+        print(f"comparar: {len(_COMPARACIONES_DEL_MODELO)} redacciones del modelo y las reglas cierran igual y sin el"
+              " riesgo de las tarjetas")
+    return problemas
+
+
+def _comparacion_bien_cerrada(texto: str, juegos: list[int], oferta: dict | None, pareja: list[int]) -> list[str]:
+    problemas = []
+    if sorted(juegos) != sorted(pareja):
+        problemas.append(f"no trae las dos tarjetas ({juegos})")
+    if not nia.EMOJI.sub("", texto).rstrip().endswith(nia.CIERRE_DE_COMPARAR) or nia.EMOJI.sub("", texto).count("?") != 1:
+        problemas.append(f"no cierra con la oferta de las reglas: {texto}")
+    if not oferta or oferta["intencion"] != "resenas_de_varios" or sorted(oferta["juegos"]) != sorted(pareja):
+        problemas.append(f"la oferta no es la de comparar: {oferta}")
+    if nia.NIVEL_DE_RIESGO.search(texto):
+        problemas.append(f"dice el riesgo que ya va en las tarjetas: {texto}")
+    if len(nia.EMOJI.sub("", texto).replace(nia.CIERRE_DE_COMPARAR, "").split()) < 4:
+        problemas.append(f"no dice nada antes de la pregunta: {texto}")
+    return problemas + _voz(texto, "comparación")
 
 
 def _revisar_esquema_de_ofertas() -> list[str]:
@@ -1498,6 +1560,7 @@ def main() -> int:
     problemas += _revisar_aspecto()
     problemas += _revisar_esquema_de_ofertas()
     problemas += _revisar_cierre_del_modelo()
+    problemas += _revisar_comparacion_del_modelo()
     problemas += _revisar_conversaciones()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()

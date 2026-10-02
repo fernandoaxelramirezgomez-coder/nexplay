@@ -444,8 +444,15 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
     return None
 
 
+_COMPARAR = ("compara", "comparar", "comparame", "vs", "versus", "diferencia", "diferencias")
+
+
+def pide_comparar(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_COMPARAR)
+
+
 def _compara(pregunta: str, appid: int | None) -> dict | None:
-    if not _dice(pregunta, "compara", "comparar", "comparame", "vs", "versus", "diferencia", "diferencias"):
+    if not _dice(pregunta, *_COMPARAR):
         return None
     juegos = _nombrados(pregunta)
     abierto = catalogo.obtener(appid) if appid is not None else None
@@ -479,7 +486,7 @@ def _compara(pregunta: str, appid: int | None) -> dict | None:
     tarjetas = "El riesgo de cada uno va en su tarjeta."
     # Con tres títulos largos no cabe todo en 60 palabras: primero se quita el precio, luego la crítica.
     for frases in ((critica_, precio_, tarjetas), (critica_, tarjetas), (f"{tarjetas[:-1]} 📊",)):
-        texto = f"{' '.join(frases)} ¿Te cuento de qué se queja la gente en cada uno?"
+        texto = f"{' '.join(frases)} {nia.CIERRE_DE_COMPARAR}"
         if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
             break
     return _resultado(texto, juegos=[j.appid for j in juegos])
@@ -508,7 +515,7 @@ def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
             partes.append(f"el más barato de pago es {de_pago[0].nombre}, a {_precio(de_pago[0])}")
         cuerpo = " y ".join(partes) if partes else "ninguno tiene precio en los datos"
         elegidos = gratis + de_pago[:1]
-        cierre = "¿Te cuento qué dicen sus reseñas?" if len(elegidos) == 1 else "¿Te cuento de qué se queja la gente en cada uno?"
+        cierre = "¿Te cuento qué dicen sus reseñas?" if len(elegidos) == 1 else nia.CIERRE_DE_COMPARAR
         return _resultado(f"De esos {total}, {cuerpo} 💸 {cierre}", juegos=[j.appid for j in elegidos])
     if _dice(pregunta, *_CAROS):
         de_pago = sorted((j for j in lista if j.precio_final), key=lambda j: -j.precio_final)
@@ -939,7 +946,7 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
     if parecidos:
         return _resultado(
             f"Con «{nombre}» hay {len(parecidos)} en el catálogo: {_lista([j.nombre for j in parecidos])} 🎮 "
-            "¿Te cuento de qué se queja la gente en cada uno?",
+            + nia.CIERRE_DE_COMPARAR,
             juegos=[j.appid for j in parecidos],
         )
     if datos is not None and _dice(pregunta, "se parece"):
