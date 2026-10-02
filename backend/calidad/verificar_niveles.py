@@ -8,8 +8,9 @@ con ellos el catálogo queda en 43, 37 y 43. Antes, Nia, la metodología y Panor
 1. La definición de la API (CORTES_DE_NIVEL en api/nia/agente.py) es la misma del frontend
    (frontend/src/app/dominio/etiqueta-riesgo.ts), y sus conteos son los del catálogo.
 2. La metodología que Nia le da al modelo (herramientas.metodologia) la usa.
-3. Ningún texto de frontend/src ni de api vuelve a la definición anterior.
-4. entrenar_modelo.py sigue cortando en esos percentiles: si cambian, la definición también.
+3. Ningún texto de frontend/src, de api ni del README de la raíz vuelve a la definición anterior.
+4. El README de la raíz dice la definición tal cual, con los conteos del catálogo.
+5. entrenar_modelo.py sigue cortando en esos percentiles: si cambian, la definición también.
 
 Uso, desde backend/:
     python calidad/verificar_niveles.py        # sale 1 si algún chequeo falla
@@ -31,11 +32,12 @@ from api.nia import herramientas  # noqa: E402
 
 DEFINICION_DEL_FRONTEND = RAIZ.parent / "frontend" / "src" / "app" / "dominio" / "etiqueta-riesgo.ts"
 ENTRENAR_MODELO = RAIZ / "modelado" / "entrenar_modelo.py"
+README = RAIZ.parent / "README.md"
 
 # Lo que decían antes los textos: nada de esto es cierto con los cortes de hoy.
 DEFINICION_ANTERIOR = re.compile(
     r"tercios del (?:score|catálogo|modelo)|son tercios|tres tercios|tres partes iguales|partes iguales del catálogo"
-    r"|relativo al catálogo|terciles de la distribución|reparte el catálogo en tres|compara un juego con los demás",
+    r"|relativo al catálogo|terciles? de (?:la|los)|reparte el catálogo en tres|compara un juego con los demás",
     re.IGNORECASE,
 )
 
@@ -45,7 +47,7 @@ def _textos_del_sitio() -> list[Path]:
     for carpeta, patrones in ((RAIZ.parent / "frontend" / "src", ("*.ts", "*.html")), (RAIZ / "api", ("*.py", "*.md"))):
         for patron in patrones:
             rutas += [r for r in carpeta.rglob(patron) if not r.name.endswith(".spec.ts")]
-    return sorted(rutas)
+    return sorted(rutas) + [README]
 
 
 def main() -> int:
@@ -70,12 +72,17 @@ def main() -> int:
         for numero, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), start=1):
             if encontrada := DEFINICION_ANTERIOR.search(linea):
                 problemas.append(f"{ruta.relative_to(RAIZ.parent)}:{numero} dice «{encontrada.group(0)}»")
-    print(f"3 · definición anterior: revisados {len(rutas)} archivos de frontend/src y api")
+    print(f"3 · definición anterior: revisados {len(rutas)} archivos de frontend/src, api y el README")
+
+    # El README parte las líneas a su ancho: se compara con los espacios juntos.
+    if definicion not in " ".join(README.read_text(encoding="utf-8").split()):
+        problemas.append(f"el README de la raíz no dice la definición de los niveles: {definicion}")
+    print("4 · el README de la raíz dice la definición")
 
     entrenar = ENTRENAR_MODELO.read_text()
     if "np.percentile(oof, 100 / 3)" not in entrenar or "np.percentile(oof, 200 / 3)" not in entrenar:
         problemas.append("entrenar_modelo.py ya no corta en los percentiles 33.3 y 66.7 de los scores OOF")
-    print("4 · entrenar_modelo.py corta en los percentiles 33.3 y 66.7 de las estimaciones OOF")
+    print("5 · entrenar_modelo.py corta en los percentiles 33.3 y 66.7 de las estimaciones OOF")
 
     print()
     for problema in problemas:

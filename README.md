@@ -253,13 +253,14 @@ curl -s -X POST http://localhost:8000/prediccion -H 'Content-Type: application/j
 ```
 
 `riesgo` ordena los juegos de más a menos riesgo, pero no es una probabilidad calibrada. Por eso la app solo
-muestra `nivel`, que sale de los terciles de los scores de validación.
+muestra `nivel`. Los cortes entre bajo, medio y alto están en los percentiles 33.3 y 66.7 de las estimaciones fuera
+de pliegue del entrenamiento; en el catálogo quedan 43, 37 y 43.
 
 ## ✅ Calidad
 
 | Comando | Qué revisa |
 |---|---|
-| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que `preparar_entorno --force` no pise bases ajenas y las 279 pruebas del frontend. |
+| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `preparar_entorno --force` no pise bases ajenas y las 279 pruebas del frontend. |
 | `make notebooks` | Ejecuta el 00, el 01 y el 02 con el último commit y compara cada salida con la guardada, sin sobrescribirla. Falla si un notebook no termina; las celdas distintas las lista con su diff. |
 | `cd frontend && npx ng build` | El build de producción del frontend. |
 | `python calidad/capturar_ui.py`, desde `backend/` | Recorre la UI con Playwright (API y frontend corriendo), guarda capturas en `docs/capturas/angular/` y reporta problemas de texto y contraste. |
