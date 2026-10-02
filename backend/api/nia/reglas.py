@@ -610,6 +610,19 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
 _FUERA = re.compile(r"(?:que tal|se parece a(?:l)?|parecido a(?:l)?)\s+(?:el |la |los |las )?([a-z0-9][a-z0-9 :'’.-]{2,40})")
 
 
+def _con_ese_nombre(nombre: str) -> list[JuegoCatalogo]:
+    """Los juegos cuyo nombre contiene lo escrito como palabras completas: «Apex» está en
+    «Apex Legends™». Con menos de 4 letras no busca, como las variantes del nombre."""
+    def comparable(texto: str) -> str:
+        return nia._sin_marcas(_norm(texto)).replace("'", "").replace("’", "").strip()
+
+    buscado = comparable(nombre)
+    if len(buscado) < 4:
+        return []
+    patron = re.compile(rf"(?<!\w){re.escape(buscado)}(?!\w)")
+    return [j for j in catalogo.buscar() if patron.search(comparable(j.nombre))]
+
+
 def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dict | None:
     encontrado = _FUERA.search(pregunta)
     if not encontrado:
@@ -620,6 +633,18 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
     nombre = tramo.strip(" ?.!¿¡")
     if not nombre or _nombrados(nombre):
         return None
+    # Una parte del nombre («Apex», «Battlefield») tampoco es estar fuera del catálogo.
+    parecidos = _con_ese_nombre(nombre)
+    if parecidos and datos is not None and _dice(pregunta, "se parece"):
+        return None
+    if len(parecidos) == 1:
+        return _ficha_corta(parecidos[0])
+    if parecidos:
+        return _resultado(
+            f"Con «{nombre}» hay {len(parecidos)} en el catálogo: {_lista([j.nombre for j in parecidos])} 🎮 "
+            "¿De cuál te cuento?",
+            juegos=[j.appid for j in parecidos],
+        )
     if datos is not None and _dice(pregunta, "se parece"):
         generos = _lista(datos["generos"]) if datos["generos"] else "sin géneros registrados"
         return _resultado(

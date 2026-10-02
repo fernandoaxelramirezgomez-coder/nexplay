@@ -404,6 +404,11 @@ def _sin_acentos(texto: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFD", texto.lower()) if unicodedata.category(c) != "Mn")
 
 
+def _sin_marcas(texto: str) -> str:
+    """Sin ™, ® ni ©: el catálogo escribe «Apex Legends™» y casi nadie los teclea."""
+    return texto.replace("™", "").replace("®", "").replace("©", "")
+
+
 def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[str]:
     """Nombres del catálogo que aparecen en la pregunta, sin contar el juego abierto.
 
@@ -417,9 +422,9 @@ def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[s
     contexto, mientras que no reconocer un juego del catálogo haría que Nia dijera que no
     está."""
     # Sin apóstrofos, recto (') ni tipográfico (’): «Don’t Starve» y «Sid Meier’s» del
-    # modelo contra «Don't Starve» y «Sid Meier's» del catálogo. Sin ™ ni ®, como las
+    # modelo contra «Don't Starve» y «Sid Meier's» del catálogo. Sin ™, ® ni ©, como las
     # variantes: el modelo copia «Diablo® IV» tal cual y no coincidía con «diablo iv».
-    texto = _sin_acentos(pregunta).replace("'", "").replace("’", "").replace("™", "").replace("®", "")
+    texto = _sin_marcas(_sin_acentos(pregunta)).replace("'", "").replace("’", "")
     encontrados = []
     for juego in catalogo.buscar():
         if juego.appid == appid_abierto:
@@ -438,7 +443,7 @@ def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[s
 
 def _variantes_del_nombre(nombre: str) -> list[str]:
     """El nombre completo y su primera parte, normalizados; descarta lo muy corto."""
-    limpio = _sin_acentos(nombre.replace("™", "").replace("®", "")).strip()
+    limpio = _sin_acentos(_sin_marcas(nombre)).strip()
     variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
     # "The Sims 4" también se escribe "Los Sims 4": vale sin el artículo del principio.
     variantes |= {v[4:] for v in variantes if v.startswith("the ")}
