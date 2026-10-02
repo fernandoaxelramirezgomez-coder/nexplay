@@ -854,6 +854,38 @@ def _como_se_calcula(pregunta: str) -> dict | None:
     )
 
 
+# «¿Qué opina la gente en los comentarios?»: lo que Nia lee y lo que no, con precisión. Los
+# comentarios de NexPlay no los lee (herramientas.py no toca valoraciones.db); de Steam solo
+# tiene las quejas de las reseñas negativas tempranas, contadas por tema.
+_COMENTARIOS = (
+    "comentario", "comentarios", "que opina la gente", "que opinan los demas", "que opinan los jugadores", "que dice la gente",
+    "que opina la comunidad", "opiniones de la gente",
+)
+
+
+def pide_comentarios(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_COMENTARIOS)
+
+
+def _comentarios(pregunta: str, original: str, appid: int | None) -> dict | None:
+    if not _dice(pregunta, *_COMENTARIOS):
+        return None
+    no_los_leo = "Los comentarios de NexPlay no los leo; están en la ficha de cada juego 💬"
+    nombrados = _nombrados(original)
+    juego = nombrados[0] if nombrados else catalogo.obtener(appid) if appid is not None else None
+    if juego is None:
+        return _resultado(
+            f"{no_los_leo} De las reseñas de Steam sí sé, contado por tema, de qué se queja quien no recomendó"
+            " un juego tras jugar menos de 2 horas. ¿De qué juego te cuento?",
+            pide_juego=True,
+        )
+    return _resultado(
+        f"{no_los_leo} De {juego.nombre} sí tengo sus reseñas de Steam, contadas por tema: de qué se queja quien no"
+        " lo recomendó tras jugar menos de 2 horas. ¿Te cuento qué dicen?",
+        juegos=[juego.appid] if appid is None else [],
+    )
+
+
 # «¿Qué significa la señal?»: la misma frase fija de arriba del chat, ni una más.
 _QUE_SIGNIFICA_LA_SENAL = (
     "que significa la senal", "que significa esa senal", "que es la senal", "que es esa senal",
@@ -1116,6 +1148,7 @@ def responder(
         lambda: _resumen(pregunta, mensajes),
         lambda: _que_significa_la_senal(pregunta),
         lambda: _como_se_calcula(pregunta),
+        lambda: _comentarios(pregunta, original, appid),
         # Antes que las sugerencias: con un juego, «¿es para mí?» es medir ese juego.
         lambda: _encaja(pregunta, original, appid, mensajes, generos),
         lambda: _el_mejor(pregunta),

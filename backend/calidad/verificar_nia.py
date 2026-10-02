@@ -1050,6 +1050,35 @@ def _revisar_cifras_de_los_datos() -> list[str]:
     return problemas
 
 
+def _revisar_comentarios() -> list[str]:
+    """«¿Qué opina la gente en los comentarios?» dice con precisión qué lee Nia y qué no: los
+    comentarios de NexPlay no; de Steam, las quejas de las reseñas negativas tempranas. Nunca
+    «Eso no lo sé», con juego o sin él, y va por reglas también con modelo."""
+    problemas = []
+    hades = next(j for j in catalogo.buscar() if j.nombre == "Hades")
+    casos = (
+        (None, "¿Qué opina la gente en los comentarios?", None),
+        (hades.appid, "¿Qué opina la gente en los comentarios?", hades.nombre),
+        (hades.appid, "¿Qué opina la gente?", hades.nombre),
+        (None, "¿Qué dicen los comentarios de Hades?", hades.nombre),
+    )
+    for appid, pregunta, nombre in casos:
+        datos = nia.contexto(appid) if appid else None
+        mensajes = [MensajeChat(rol="usuario", contenido=pregunta)]
+        texto = nia.pulir(nia_reglas.responder(datos, appid, mensajes, [])["texto"])
+        faltan = [f for f in ("comentarios de NexPlay no los leo", "reseñas de Steam", "menos de 2 horas") if f not in texto]
+        if nombre and nombre not in texto:
+            faltan.append(nombre)
+        if faltan or "no lo sé" in texto:
+            problemas.append(f"«{pregunta}» ({nombre or 'general'}) no dice qué puede y qué no: le falta {faltan} ({texto[:50]}…)")
+        problemas += _voz(texto, pregunta)
+        if not nia._por_reglas_aunque_haya_modelo(datos, appid, mensajes, [], pregunta):
+            problemas.append(f"«{pregunta}» ({nombre or 'general'}) iría al modelo")
+    if not problemas:
+        print("comentarios: Nia dice que no lee los de NexPlay y qué sí tiene de Steam")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1107,6 +1136,7 @@ def main() -> int:
     problemas += _revisar_titulo_suelto()
     problemas += _revisar_como_se_calcula()
     problemas += _revisar_cifras_de_los_datos()
+    problemas += _revisar_comentarios()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
