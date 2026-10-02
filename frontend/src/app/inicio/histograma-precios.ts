@@ -163,6 +163,14 @@ const OPCIONES: readonly { id: Nivel; nombre: string }[] = [
     .tramo[data-banda='alto'] {
       border-radius: 6px 6px 0 0;
     }
+    /* Entre tramos, 2 px del color del panel dentro del filo de arriba de bajo y medio: la
+       escala no cambia, un tramo vacío no deja raya y, si arriba no hay otro, no se nota.
+       Por dentro (inset): con column-reverse, una sombra hacia afuera quedaba debajo del
+       tramo vecino. */
+    .tramo[data-banda='bajo'],
+    .tramo[data-banda='medio'] {
+      box-shadow: inset 0 2px 0 var(--superficie);
+    }
     .tramo[data-banda='bajo'],
     .muestra[data-banda='bajo'] {
       background: var(--banda-bajo);

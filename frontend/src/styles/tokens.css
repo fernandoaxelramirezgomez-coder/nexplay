@@ -224,10 +224,11 @@
   --brillo-portada: 0.4;
 
   /* Riesgo en claro: el chip conserva el relleno vivo con texto tinta, y su filo y su
-     texto sobre papel usan la variante oscura. El ámbar #B45309 daba 4.19:1 sobre
-     --fondo-2; #AC500A, medido en el navegador, 4.49; pasa a #AA4F0A (4.57). */
+     texto sobre papel usan la variante oscura. El ámbar #AA4F0A quedaba a ΔE 11.2 del alto
+     (OKLab ×100; el piso es 15): el bronce #7B4A00 queda a 16.4 del bajo y 16.5 del alto, y
+     da 6.21:1 sobre --fondo-2, el fondo más justo. */
   --banda-bajo-texto: #047857;
-  --banda-medio-texto: #aa4f0a;
+  --banda-medio-texto: #7b4a00;
   --banda-alto-texto: #be123c;
   /* Al 60 % el borde verde y el ámbar no llegaban a 3:1 sobre blanco (2.59 y 2.49): 75 %. */
   --alfa-borde-riesgo: 75%;
