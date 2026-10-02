@@ -816,16 +816,18 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
              "resenas", "que dicen"):
         return _resultado(f"{_sobre_las_quejas(datos)} ¿Te cuento por qué tiene riesgo {banda}?", juegos=[appid])
     if _dice(pregunta, "cuanto dura", "dura", "duracion", "cuantas horas", "horas tipicas", "cuanto tiempo", "largo"):
+        # Steam no publica cuánto dura un juego: lo único que hay son las horas de quien lo
+        # recomendó, y se dicen como lo que son.
         horas = datos.get("horas_tipicas")
         if horas is None:
             return _resultado(
-                f"De {nombre} no tengo horas típicas: hay pocas reseñas positivas con horas jugadas ⏱️ "
-                "¿Te cuento qué dicen sus reseñas?",
+                f"No hay duración oficial de {nombre}, y tampoco horas de quienes lo recomiendan: hay pocas reseñas"
+                " positivas con horas jugadas ⏱️ ¿Te cuento qué dicen sus reseñas?",
                 juegos=[appid],
             )
         return _resultado(
-            f"Quien recomendó {nombre} llevaba unas {horas:g} h jugadas, en la mediana ⏱️ No es lo que dura, "
-            "pero da una idea de cuánto rinde. ¿Te cuento su riesgo?",
+            f"No hay duración oficial de {nombre}; quienes lo recomiendan jugaron {horas:g} h (mediana) ⏱️ "
+            "¿Te cuento su riesgo?",
             juegos=[appid],
         )
     if _dice(pregunta, "genero", "generos", "tipo de juego", "de que trata"):

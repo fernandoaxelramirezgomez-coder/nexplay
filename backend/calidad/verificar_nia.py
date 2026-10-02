@@ -827,6 +827,40 @@ def _revisar_tarjetas_sin_riesgos() -> list[str]:
     return problemas
 
 
+def _revisar_duracion() -> list[str]:
+    """«¿Cuánto dura?»: Steam no publica una duración. Se dice así, con las horas de quienes
+    lo recomiendan como lo que son: «No hay duración oficial; quienes lo recomiendan jugaron
+    X h (mediana)»."""
+    problemas = []
+    con_horas = sin_horas = 0
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        for pregunta in ("¿Cuánto dura?", "¿Cuántas horas tiene?"):
+            texto = nia.pulir(nia_reglas.responder(datos, juego.appid, [MensajeChat(rol="usuario", contenido=pregunta)], [])["texto"])
+            donde = f"{juego.nombre} · {pregunta}"
+            problemas += _voz(texto, donde)
+            if not texto.startswith(f"No hay duración oficial de {juego.nombre}"):
+                problemas.append(f"{donde}: no empieza diciendo que no hay duración oficial ({texto[:50]}…)")
+            horas = datos.get("horas_tipicas")
+            if horas is not None and f"quienes lo recomiendan jugaron {horas:g} h (mediana)" not in texto:
+                problemas.append(f"{donde}: no dice las horas de quienes lo recomiendan como mediana ({texto[:70]}…)")
+        con_horas += datos.get("horas_tipicas") is not None
+        sin_horas += datos.get("horas_tipicas") is None
+    # Ningún juego de hoy está sin horas: el caso se prueba con las horas en blanco.
+    hades = next(j for j in catalogo.buscar() if j.nombre == "Hades")
+    sin_dato = {**nia.contexto(hades.appid), "horas_tipicas": None}
+    texto = nia.pulir(nia_reglas.responder(sin_dato, hades.appid, [MensajeChat(rol="usuario", contenido="¿Cuánto dura?")], [])["texto"])
+    if not texto.startswith("No hay duración oficial de Hades, y tampoco horas"):
+        problemas.append(f"sin horas típicas no lo dice ({texto[:60]}…)")
+    problemas += _voz(texto, "duración sin horas")
+    if "No hay duración oficial; quienes lo recomiendan jugaron X h (mediana)" not in nia._SISTEMA:
+        problemas.append("el prompt no dice cómo contestar «¿cuánto dura?»")
+    if not problemas:
+        print(f"duración: «No hay duración oficial; quienes lo recomiendan jugaron X h (mediana)» en {con_horas} juegos,"
+              f" y sin ese dato en {sin_horas}")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -878,6 +912,7 @@ def main() -> int:
     problemas += _revisar_lo_que_recibe_openai()
     problemas += _revisar_resumen_completo()
     problemas += _revisar_tarjetas_sin_riesgos()
+    problemas += _revisar_duracion()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
