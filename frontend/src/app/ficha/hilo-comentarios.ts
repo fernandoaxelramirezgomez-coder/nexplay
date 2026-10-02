@@ -332,7 +332,8 @@ export class HiloComentarios {
     defaultValue: [] as Comentario[],
   });
 
-  protected readonly comentarios = computed(() => this.recurso.value());
+  // value() lanza si /comentarios falló: con la API caída la ficha entera dejaba de pintarse.
+  protected readonly comentarios = computed(() => (this.recurso.hasValue() ? this.recurso.value() : []));
 
   constructor() {
     // Al llegar uno nuevo, el hilo baja solo. Editar o reaccionar no mueve el scroll.

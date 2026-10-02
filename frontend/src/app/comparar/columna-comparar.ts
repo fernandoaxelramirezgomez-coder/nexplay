@@ -34,7 +34,9 @@ const MOTIVOS_VISIBLES = 3;
 
       <section class="bloque">
         <h3 class="titulo-bloque meta">Segunda opinión</h3>
-        @if (opinion().length) {
+        @if (errorRiesgo()) {
+          <p class="meta" data-testid="columna-riesgo-error">No se pudo calcular el riesgo. Revisa que la API esté corriendo.</p>
+        } @else if (opinion().length) {
           <p class="texto">
             @for (segmento of opinion(); track $index) {
               @if (segmento.clave) {
@@ -271,15 +273,24 @@ export class ColumnaComparar {
     stream: ({ params }) => this.api.explicacion(params),
   });
 
-  protected readonly prediccion = this.prediccionRecurso.value;
+  // value() lanza si el recurso falló: con la API caída la columna no se pintaba.
+  protected readonly prediccion = computed(() =>
+    this.prediccionRecurso.hasValue() ? this.prediccionRecurso.value() : undefined,
+  );
+  private readonly explicacion = computed(() =>
+    this.explicacionRecurso.hasValue() ? this.explicacionRecurso.value() : undefined,
+  );
+  /** Como en la ficha: sin predicción, o sin perfil neutro con qué pedirla, se dice en vez
+   * de dejar el esqueleto para siempre. */
+  protected readonly errorRiesgo = computed(() => this.prediccionRecurso.error() ?? this.perfil.errorNeutro());
 
   protected readonly clasificadas = computed(() => {
-    const datos = this.explicacionRecurso.value();
+    const datos = this.explicacion();
     return datos ? Math.round(datos.n_casos * datos.pct_clasificados) : 0;
   });
 
   protected readonly motivos = computed(
-    () => this.explicacionRecurso.value()?.motivos.slice(0, MOTIVOS_VISIBLES) ?? [],
+    () => this.explicacion()?.motivos.slice(0, MOTIVOS_VISIBLES) ?? [],
   );
 
   protected readonly opinion = computed(() => {
@@ -289,7 +300,7 @@ export class ColumnaComparar {
     }
     return segundaOpinion(
       prediccion.nivel,
-      this.explicacionRecurso.value()?.motivos ?? [],
+      this.explicacion()?.motivos ?? [],
       this.juego().metacritic,
       this.factores().some((factor) => factor.etiqueta === 'nota de Metacritic'),
       this.clasificadas(),

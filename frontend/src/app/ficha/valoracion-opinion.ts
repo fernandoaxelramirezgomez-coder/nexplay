@@ -83,9 +83,11 @@ export class ValoracionOpinion {
     stream: ({ params }) => this.api.valoraciones(params, this.usuario.id),
   });
 
-  protected readonly mia = computed(() => this.recurso.value()?.mia ?? null);
+  // value() lanza si /valoraciones falló: con la API caída queda sin conteo, no tumba la ficha.
+  private readonly resumen = computed(() => (this.recurso.hasValue() ? this.recurso.value() : undefined));
+  protected readonly mia = computed(() => this.resumen()?.mia ?? null);
   protected readonly conteo = computed(() => {
-    const resumen = this.recurso.value();
+    const resumen = this.resumen();
     return resumen ? textoCalificacion(resumen.promedio, resumen.total) : '';
   });
 
