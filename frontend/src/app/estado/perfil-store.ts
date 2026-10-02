@@ -104,8 +104,12 @@ export class PerfilStore {
   });
 
   /** El perfil con el que se puntúa: el declarado o, si no hay, el neutro. */
-  readonly efectivo = computed(() => this.perfil() ?? this.neutro.value() ?? null);
+  /** value() lanza si /perfil falló; la ficha y Comparar leen esto, así que sin perfil
+   * guardado y con la API caída o Render dormido queda en null en vez de tumbarlas. El
+   * fallo queda en errorNeutro. */
+  readonly efectivo = computed(() => this.perfil() ?? (this.neutro.hasValue() ? this.neutro.value() : null) ?? null);
   readonly cargandoNeutro = computed(() => !this.guardado() && this.neutro.isLoading());
+  readonly errorNeutro = computed(() => (this.guardado() ? undefined : this.neutro.error()));
 
   guardar(valores: ValoresPerfil, perfil: PerfilJugador): void {
     this.guardado.set({ valores, perfil });

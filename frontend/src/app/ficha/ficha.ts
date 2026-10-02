@@ -96,7 +96,8 @@ export class Ficha {
   protected readonly cargando = computed(
     () => this.catalogo.cargando() || this.prediccionRecurso.isLoading() || this.perfil.cargandoNeutro(),
   );
-  protected readonly errorRiesgo = computed(() => this.prediccionRecurso.error());
+  // Sin perfil neutro no hay predicción que pedir: también es no poder calcular el riesgo.
+  protected readonly errorRiesgo = computed(() => this.prediccionRecurso.error() ?? this.perfil.errorNeutro());
   protected readonly cargandoMotivos = computed(() => this.explicacionRecurso.isLoading());
   protected readonly esperandoOpinion = computed(() => this.cargando() || this.explicacionRecurso.isLoading());
 
