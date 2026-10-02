@@ -15,6 +15,8 @@ from sklearn.metrics import precision_recall_curve
 import texto as tx
 from entrenar_baseline import SEMILLA, splits_congelados
 from graficas import COLOR_GRUPO, PALETA
+from limpieza import STOPWORDS_SIN_NEGACIONES
+from motivos import categorias_de
 
 RECALL = np.linspace(0.01, 1, 100)
 TOP_K = (0.10, 0.20, 0.30)
@@ -125,27 +127,79 @@ def duracion_aparte(coeficientes: pd.DataFrame, estables: pd.DataFrame) -> tuple
     return unigrama, conteo
 
 
-def para_las_nubes(estables: pd.DataFrame, n: int = 60) -> tuple[dict[str, float], dict[str, float]]:
-    """Los n términos de más peso hacia cada lado, sin los que llevan `duracion` (se reportan aparte)."""
-    sin_duracion = estables[~es_de_duracion(estables.index)]["coeficiente medio"]
-    tempranas = sin_duracion[sin_duracion > 0].nlargest(n)
-    tardias = (-sin_duracion[sin_duracion < 0]).nlargest(n)
-    return tempranas.to_dict(), tardias.to_dict()
+# Lo que no se dibuja aunque pese: términos ofensivos o fuera de tema (enfermedades, sexo, política). No cambia
+# ningún coeficiente ni la decisión; el notebook imprime cuáles quedaron fuera. Un término sale si alguna de sus
+# palabras está en la lista, o si es una de las frases.
+FUERA_DEL_DIBUJO = frozenset({"ass", "piss", "pissed", "pisses", "bastard", "wtf", "sex", "cancer", "aids", "suicide",
+                              "racist", "political", "politics", "woke", "dei"})
+FRASES_FUERA_DEL_DIBUJO = frozenset({"hate you"})
 
 
-def figura_nube(pesos: dict[str, float], color: str, titulo: str) -> go.Figure:
-    """Nube con tamaño proporcional al peso, en un solo color. Se muestra con px.imshow para que salga como PNG
-    por el mismo camino que las demás gráficas. wordcloud se importa aquí: solo la necesita esta figura."""
+def es_palabra_vacia(termino: str) -> bool:
+    """Solo palabras vacías (las stopwords del 00, que conservan las negaciones): «and the», «your»."""
+    return all(palabra in STOPWORDS_SIN_NEGACIONES for palabra in termino.split())
+
+
+def va_fuera_del_dibujo(termino: str) -> bool:
+    return termino in FRASES_FUERA_DEL_DIBUJO or any(palabra in FUERA_DEL_DIBUJO for palabra in termino.split())
+
+
+def para_las_nubes(estables: pd.DataFrame) -> tuple[dict[str, float], dict[str, float], pd.DataFrame]:
+    """Todos los términos estables hacia cada lado, del de más peso al de menos, sin los que llevan `duracion`
+    (se reportan aparte), sin los hechos solo de palabras vacías y sin la lista declarada. Devuelve también los de
+    la lista que pesaban, para reportarlos."""
+    pesos = estables["coeficiente medio"]
+    pesos = pesos[~es_de_duracion(pesos.index) & ~pesos.index.map(es_palabra_vacia)]
+    fuera = pesos.index.map(va_fuera_del_dibujo)
+    quedan = pesos[~fuera]
+    tempranas = quedan[quedan > 0].sort_values(ascending=False)
+    tardias = (-quedan[quedan < 0]).sort_values(ascending=False)
+    return tempranas.to_dict(), tardias.to_dict(), pesos[fuera].sort_values().to_frame()
+
+
+def silueta_de_control(ancho: int = 1400, alto: int = 760) -> np.ndarray:
+    """La forma de las nubes: un control de videojuegos (cuerpo y dos empuñaduras), con la cruceta, cuatro botones y
+    dos sticks como huecos. En la máscara de wordcloud, 255 es donde no van palabras."""
+    from PIL import Image, ImageDraw
+
+    imagen = Image.new("L", (ancho, alto), 255)
+    dibujo = ImageDraw.Draw(imagen)
+    dibujo.rounded_rectangle((260, 40, 1140, 430), radius=190, fill=0)
+    dibujo.ellipse((150, 170, 560, 730), fill=0)
+    dibujo.ellipse((840, 170, 1250, 730), fill=0)
+    dibujo.rectangle((300, 290, 1100, 470), fill=0)
+    dibujo.rectangle((345, 190, 375, 290), fill=255)
+    dibujo.rectangle((310, 225, 410, 255), fill=255)
+    for x, y in ((1040, 170), (1000, 210), (1080, 210), (1040, 250)):
+        dibujo.ellipse((x - 22, y - 22, x + 22, y + 22), fill=255)
+    for x, y in ((540, 340), (860, 340)):
+        dibujo.ellipse((x - 50, y - 50, x + 50, y + 50), fill=255)
+    return np.array(imagen)
+
+
+def figura_nube(pesos: dict[str, float], color: str, titulo: str) -> tuple[go.Figure, int]:
+    """Nube con forma de control: entran todas las palabras que quepan, de la de más peso a la de menos, y la de más
+    peso es la más grande. Un solo color. Se muestra con px.imshow para que salga como PNG por el mismo camino que
+    las demás gráficas. Devuelve también cuántas cupieron. wordcloud se importa aquí: solo la necesita esta figura."""
     from wordcloud import WordCloud
 
-    nube = WordCloud(width=1200, height=560, background_color="white", prefer_horizontal=1.0, random_state=SEMILLA,
-                     max_words=len(pesos), color_func=lambda *_, **__: color).generate_from_frequencies(pesos)
+    nube = WordCloud(background_color="white", mask=silueta_de_control(), contour_width=4, contour_color=color,
+                     prefer_horizontal=0.9, min_font_size=5, random_state=SEMILLA, max_words=len(pesos),
+                     collocations=False, color_func=lambda *_, **__: color).generate_from_frequencies(pesos)
     figura = px.imshow(nube.to_array())
     figura.update_xaxes(visible=False)
     figura.update_yaxes(visible=False)
     figura.update_layout(title=titulo, margin={"l": 10, "r": 10, "t": 50, "b": 10})
     figura.update_traces(hoverinfo="skip", hovertemplate=None)
-    return figura
+    return figura, len(nube.layout_)
+
+
+def cobertura_del_sitio(pesos: dict[str, float], n: int = 40) -> pd.DataFrame:
+    """Las n palabras que más empujan hacia un lado y en qué categoría de motivos del sitio caen (motivos.py, las
+    mismas palabras clave de /explicacion). «—» quiere decir que hoy la ficha no la cuenta en ningún motivo."""
+    primeras = pd.Series(pesos).head(n)
+    return pd.DataFrame({"coeficiente medio": primeras,
+                         "categoría del sitio": [", ".join(categorias_de(t)) or "—" for t in primeras.index]})
 
 
 COLOR_NUBE = {"temprana": COLOR_GRUPO["negativa temprana"], "tardía": COLOR_GRUPO["negativa tardía"]}
