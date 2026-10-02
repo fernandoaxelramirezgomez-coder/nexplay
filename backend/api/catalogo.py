@@ -17,6 +17,7 @@ banda_riesgo es el riesgo del título: el modelo usa solo datos del juego
 puntúa scoring.prediccion_de_titulo(), el mismo camino que usa Nia para
 explicar de dónde sale la banda."""
 
+import html
 import logging
 import re
 import sqlite3
@@ -51,8 +52,9 @@ _PALABRAS_ESPANOLAS = re.compile(r"\b(de|del|la|el|los|las|un|una|que|con|para|e
 
 
 def _descripcion_en_espanol(texto: str | None) -> str | None:
-    """La descripción de Steam, o None si Steam la devolvió en inglés."""
-    limpio = (texto or "").strip()
+    """La descripción de Steam, o None si Steam la devolvió en inglés. Steam la manda con
+    entidades HTML (&quot; en Cuphead y en Age of Empires II): se decodifican aquí."""
+    limpio = html.unescape(texto or "").strip()
     if not limpio:
         return None
     if len(_PALABRAS_INGLESAS.findall(limpio)) > len(_PALABRAS_ESPANOLAS.findall(limpio)):
