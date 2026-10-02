@@ -11,6 +11,9 @@ que pone `analisis/` y `modelado/` en `sys.path`; ninguna cuenta se copia dentro
   Render**: `api/scoring.py` lo usa para `/explicacion`, así que cambiarlo cambia lo que ve la gente.
 - `antes_del_reembolso.py`: las pruebas A y B de la mejora 01, contra criterios fijados antes de correrlas
   (resultado en `docs/evidencia/antes-del-reembolso.md`).
+- `texto.py`: la Parte A de los modelos de texto (¿el texto distingue las negativas tempranas de las tardías?),
+  contra la regla de `docs/evidencia/modelos-texto-prerregistro.md`. La importa `notebooks/02_modelos_texto.ipynb`;
+  como script escribe `docs/evidencia/modelos-texto.json`. Ningún modelo de aquí entra al score ni a Render.
 
 No va aquí: el entrenamiento del modelo de riesgo (`modelado/`) ni valores fijos de referencia
 (`referencias/`).
