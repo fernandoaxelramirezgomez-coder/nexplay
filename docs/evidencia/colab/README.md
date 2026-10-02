@@ -1,4 +1,9 @@
-# La corrida final en Colab, 2026-09-30
+# Corridas en Colab
+
+Dos corridas: el 00 y el 01 el 2026-09-30 con `codigo-v3`, y el 02 el 2026-10-01 con `codigo-v4` (más abajo).
+Con `codigo-v5`, que agrega las gráficas para negocio, los tres están pendientes de correr en Colab.
+
+## 00 y 01: 2026-09-30, `codigo-v3`
 
 Cada notebook se ejecutó entero en un Colab limpio (*Entorno de ejecución → Ejecutar todas*) y clonó el
 código del tag `codigo-v3`. Las dos descargas están aquí, con la metadata corregida:
@@ -51,3 +56,33 @@ cinco celdas se escriben distinto sin que cambie ninguna cifra:
 | 00, 34 | Con scikit-learn 1.6.1, el GroupKFold reparte los juegos de otra forma (coincide en 12 de 83) y el notebook lo avisa; con la 1.9.1 coincide con la partición congelada. Las dos corridas evalúan con el CSV congelado. |
 | 00, 46 | Dos idiomas empatados en 59 reseñas salen en otro orden. Al ordenar, las filas son las mismas. |
 | 01, 22 | Los mismos dos juegos (GTA V Legacy y New World: Aeternum), escritos como `array([...], dtype=object)` o como `<ArrowStringArray>`. |
+
+## 02: 2026-10-01, `codigo-v4`
+
+`02_modelos_texto-colab.ipynb` es la descarga tal cual, byte por byte, sin corregir la metadata. Su sha256 es
+`6834e2966d0c23836c187970dedf1e7d14c653022009f2fcf163ae838cde6d58`. Corrió entero en un Colab con GPU T4
+disponible (*Entorno de ejecución → Ejecutar todas*) y clonó `codigo-v4`.
+
+| | 02_modelos_texto |
+|---|---|
+| Celdas de código ejecutadas | 16 de 16 |
+| Errores | 0 |
+| Salidas a stderr (avisos) | 0 |
+| Cifra principal (celda 28) | `Rama 3: se guarda TF-IDF + LR` y `Coincide con docs/evidencia/modelos-texto.json (código 59694a6).` |
+| Tiempo, medido con las mismas versiones de Colab, no en Colab | 506 s (en CPU, con torch 2.14.1 y sentence-transformers 6.1.0) |
+
+Lo que dicen sus salidas y su metadata:
+
+- **Versiones** (celda 7): Python 3.13.15, numpy 2.1.3, pandas 2.2.3, scikit-learn 1.6.1, torch 2.11.0+cu130 y
+  sentence-transformers 5.7.0.
+- **GPU sin uso.** La metadata trae `accelerator: GPU` y `gpuType: T4`, pero los embeddings corren en CPU:
+  `texto.embeddings` fija `device="cpu"` (§4 del prerregistro). La T4 estaba disponible y no intervino.
+- **Dos datos de la metadata no son de esta corrida:**
+  - `language_info.version` dice 3.14.4, aunque la celda 7 imprime 3.13.15;
+  - las 16 celdas de código traen la metadata `execution` con fechas del 2026-10-02 (UTC).
+  Las dos cosas vienen de la corrida local guardada en `notebooks/02_modelos_texto.ipynb`: Colab las conserva
+  al abrir el notebook y no las reescribe. En el 00 y el 01 se corrigieron. Aquí se dejan para que el archivo
+  sea idéntico a la descarga.
+- **Código:** la celda de clon es silenciosa (`subprocess` con la salida capturada). Así que lo que muestra el
+  código usado es la comparación de la celda 28 contra `modelos-texto.json`. Esa comparación solo pasa con
+  el `texto.py` de `59694a6`, que es el de `codigo-v4`.
