@@ -147,8 +147,8 @@ def resolver_juego(nombre: str) -> dict:
 
 
 def ficha_juego(appid: int) -> dict:
-    """Lo mismo que Nia ve de un juego abierto: riesgo, factores del modelo, motivos con su
-    n, crítica y precio."""
+    """Lo mismo que Nia ve de un juego abierto: riesgo, factores del modelo como ideas, quejas
+    en conteos, crítica y precio."""
     try:
         datos = nia.contexto(int(appid))
     except ValueError:
@@ -159,15 +159,16 @@ def ficha_juego(appid: int) -> dict:
         "nombre": datos["nombre"],
         "riesgo": datos["banda"],
         "factores": [nia.linea_de_factor(f) for f in datos["factores"]],
-        "avisos": datos["avisos"],
+        "avisos": datos["avisos_hablados"],
         "generos": datos["generos"],
         "metacritic": datos["metacritic"],
         "precio": "gratis" if datos["es_gratis"] else datos["precio"],
         "lanzamiento": datos["lanzamiento"],
         "horas_tipicas": datos["horas_tipicas"],
         "resenas_con_senal": datos["n_casos"],
-        "resenas_clasificadas": datos["clasificadas"],
-        "motivos": [f"{m.motivo} {m.frecuencia:.0%}" for m in datos["motivos"]],
+        "resenas_que_dicen_por_que": datos["clasificadas"],
+        # En conteos y no en porcentaje: la mediana del catálogo es de 4 reseñas.
+        "quejas": [f"{motivo}: {cuantas} de {datos['clasificadas']}" for motivo, cuantas in nia.quejas_en_conteos(datos)],
     }
 
 

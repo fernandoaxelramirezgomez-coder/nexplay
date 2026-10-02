@@ -44,7 +44,7 @@ from api import catalogo, scoring, valoraciones  # noqa: E402
 from api.nia import agente as nia  # noqa: E402
 from api.nia import herramientas as nia_herramientas  # noqa: E402
 from api.nia import reglas as nia_reglas  # noqa: E402
-from api.schemas import MensajeChat  # noqa: E402
+from api.schemas import MensajeChat, SugerenciaNia  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.
 _PREGUNTAS = [
@@ -266,21 +266,13 @@ def _revisar_contexto(juego) -> list[str]:
     datos = nia.contexto(juego.appid)
     texto = nia._contexto_para_prompt(datos)
 
-    if "Qué mueve esta estimación" not in texto:
+    if "Qué mueve su riesgo" not in texto:
         problemas.append(f"{juego.nombre}: el contexto no lleva las variables del modelo")
     if not datos["factores"]:
         problemas.append(f"{juego.nombre}: el contexto no trae ningún factor")
     for factor in datos["factores"]:
-        if factor["lectura"] not in texto:
-            problemas.append(f"{juego.nombre}: el factor {factor['etiqueta']!r} no sale con la frase de la ficha")
-
-    # Las frases tienen que ser las de la ficha (dominio/factores.ts, COMO_SE_LEE), no una
-    # traducción libre de la etiqueta nominal de la API.
-    for factor in datos["factores"]:
-        if factor["etiqueta"] in nia._LECTURA_FACTORES:
-            esperadas = nia._LECTURA_FACTORES[factor["etiqueta"]]
-            if factor["lectura"] not in esperadas:
-                problemas.append(f"{juego.nombre}: {factor['etiqueta']!r} no usa la frase de la ficha")
+        if nia.linea_de_factor(factor) not in texto:
+            problemas.append(f"{juego.nombre}: el factor {factor['etiqueta']!r} no sale como idea")
 
     # Mismo orden que la API: el primero es el que más aporta. Solo se quita la nota de un
     # juego sin nota, igual que factoresVisibles() en la ficha.
@@ -295,38 +287,72 @@ def _revisar_contexto(juego) -> list[str]:
         if factor["debil"] != (de_la_api.evidencia.value == "debil"):
             problemas.append(f"{juego.nombre}: {factor['etiqueta']!r} no lleva la evidencia de la API")
 
-    # Precio imputado: el factor se cita con su texto y el aviso va en el contexto.
-    precio_imputado = juego.precio_final is None and not juego.es_gratis
-    if precio_imputado:
-        if "precio del juego" in etiquetas and nia.TEXTO_PRECIO_IMPUTADO not in texto:
-            problemas.append(f"{juego.nombre}: el precio imputado no sale con el texto de la ficha")
-        if "Estimación menos confiable" not in texto:
-            problemas.append(f"{juego.nombre}: sin precio, el contexto no lleva el aviso de estimación menos confiable")
-    if juego.es_gratis and "el modelo extrapola" not in texto:
-        problemas.append(f"{juego.nombre}: es gratis y el contexto no lleva la nota de extrapolación")
+    # Precio imputado y gratis: el aviso va en el contexto, dicho en llano.
+    if juego.precio_final is None and not juego.es_gratis and "lo que tiende a bajar su riesgo" not in texto:
+        problemas.append(f"{juego.nombre}: sin precio, el contexto no lleva el aviso de estimación menos confiable")
+    if juego.es_gratis and "muy pocos juegos gratis" not in texto:
+        problemas.append(f"{juego.nombre}: es gratis y el contexto no lleva el aviso de los gratis")
 
     # L-2: la nota contra el promedio del catálogo, con el decimal de la ficha, y el precio
-    # contra la mediana. Nada de «precio promedio» ni de un promedio del modelo.
+    # contra lo normal del catálogo, que es su mediana. Nada de un promedio del modelo.
     ref = nia._referencias_del_catalogo()
-    if f"Metacritic promedio {ref['nota_promedio']}" not in texto:
-        problemas.append(f"{juego.nombre}: el contexto no cita el promedio de Metacritic del catálogo")
+    if f"la nota promedio es {ref['nota_promedio']}" not in texto:
+        problemas.append(f"{juego.nombre}: el contexto no cita la nota promedio del catálogo")
     if ref["nota_promedio"] != round(ref["nota_promedio"], 1):
-        problemas.append(f"el promedio de Metacritic no viene con un decimal ({ref['nota_promedio']})")
-    if f"precio mediano {nia._pesos(ref['precio_mediano'])}" not in texto:
-        problemas.append(f"{juego.nombre}: el contexto no cita el precio mediano del catálogo")
+        problemas.append(f"la nota promedio no viene con un decimal ({ref['nota_promedio']})")
+    if f"lo normal del precio es ${ref['precio_mediano']:,.0f}" not in texto:
+        problemas.append(f"{juego.nombre}: el contexto no cita lo normal del precio del catálogo")
     for prohibida in _REFERENCIAS_PROHIBIDAS:
         if prohibida in texto.lower():
             problemas.append(f"{juego.nombre}: el contexto dice {prohibida!r}")
 
-    # El n de los porcentajes.
-    if datos["motivos"] and "clasificada" not in texto:
-        problemas.append(f"{juego.nombre}: los motivos no dicen sobre cuántas reseñas clasificadas van")
+    # Las quejas en conteos, con sobre cuántas reseñas van.
+    if datos["motivos"] and f"de las {datos['clasificadas']} reseñas que dicen por qué" not in texto:
+        problemas.append(f"{juego.nombre}: las quejas no dicen sobre cuántas reseñas van")
 
-    print(f"contexto: {juego.nombre} (banda {juego.banda_riesgo.value}) → {len(datos['factores'])} factores")
+    print(f"contexto: {juego.nombre} (riesgo {juego.banda_riesgo.value}) → {len(datos['factores'])} factores")
     for factor in datos["factores"]:
         print(f"          - {nia.linea_de_factor(factor)}")
-    for aviso in datos["avisos"]:
+    for aviso in datos["avisos_hablados"]:
         print(f"          aviso: {aviso}")
+    return problemas
+
+
+def _revisar_lo_que_recibe_openai() -> list[str]:
+    """Lo que llega al modelo, en los 123 juegos: el contexto, ficha_juego y las sugerencias
+    traen hechos en palabras —factores como ideas, quejas en conteos, qué géneros
+    coinciden— y no etiquetas, jerga ni porcentajes que el modelo pueda copiar."""
+    problemas = []
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        texto = nia._contexto_para_prompt(datos, None, _GENEROS)
+        problemas += _sin_jerga(texto, f"contexto de {juego.nombre}")
+        problemas += _contradicciones(texto, datos["factores"], f"contexto de {juego.nombre}")
+        afinidad = nia.afinidad(juego, _GENEROS)
+        if "Coincide en:" not in texto or "No tiene:" not in texto or not all(g in texto for g in afinidad["declarados"]):
+            problemas.append(f"contexto de {juego.nombre}: no dice qué géneros coinciden y cuáles no")
+        ficha = nia_herramientas.ficha_juego(juego.appid)
+        problemas += _sin_jerga(" ".join(str(v) for v in ficha.values()), f"ficha_juego de {juego.nombre}")
+        problemas += _contradicciones(" ".join(ficha["factores"]), datos["factores"], f"ficha_juego de {juego.nombre}")
+    sugerencias = [SugerenciaNia(appid=j.appid, razones=["cuesta $283, dentro de lo que dijiste pagar"])
+                   for j in catalogo.buscar()[:6]]
+    salida = nia._sugerencias_del_perfil(sugerencias, _GENEROS)
+    for sugerida in salida.get("sugerencias_segun_tu_perfil", []):
+        if "coincide_en" not in sugerida or "no_tiene" not in sugerida:
+            problemas.append(f"sugerencias_del_perfil: {sugerida['nombre']} no trae qué géneros coinciden")
+    if "%" in str(salida):
+        problemas.append("sugerencias_del_perfil: lleva porcentajes")
+    # Las instrucciones de antes: decir la jerga, citar porcentajes y copiar las etiquetas.
+    for frase in ("con 83 juegos su efecto no se distingue de cero", "porcentajes de los motivos sí puedes",
+                  "con esas mismas palabras"):
+        if frase in nia._SISTEMA:
+            problemas.append(f"el prompt todavía dice {frase!r}")
+    for frase in ("pista débil", "nunca en porcentaje", "qué géneros"):
+        if frase not in nia._SISTEMA:
+            problemas.append(f"el prompt no lleva la regla de redacción ({frase!r})")
+    if not problemas:
+        print(f"openai:   el contexto y ficha_juego de los {len(catalogo.buscar())} juegos y las sugerencias llegan"
+              " con ideas, conteos y géneros, sin etiquetas, jerga ni porcentajes; el prompt lleva la regla")
     return problemas
 
 
@@ -735,6 +761,7 @@ def main() -> int:
     juegos = _uno_por_banda()
     problemas = _consistente_con_la_ficha()
     problemas += _revisar_lenguaje()
+    problemas += _revisar_lo_que_recibe_openai()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

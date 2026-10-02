@@ -690,28 +690,32 @@ export class Nia {
     return this.todasLasFichas().filter((ficha) => !preguntadas.has(ficha));
   });
 
-  /** Lo único del perfil que viaja: las sugerencias ya calculadas en el navegador, con su
-   * porqué. Sin perfil guardado no va nada. */
-  private readonly sugerencias = computed(() => {
+  /** Las sugerencias que calculó el navegador con el perfil. Sin perfil guardado, ninguna. */
+  private readonly calculadas = computed(() => {
     const valores = this.perfil.valores();
     if (!valores) {
       return [];
     }
-    const resultado = sugerenciasPara(this.catalogo.juegos(), criteriosDesde(valores), this.panorama.porAppid());
-    return sugerenciasParaNia(resultado.sugerencias);
+    return sugerenciasPara(this.catalogo.juegos(), criteriosDesde(valores), this.panorama.porAppid()).sugerencias;
   });
 
-  /** El porqué de cada sugerencia, para su tarjeta: el mismo que calculó el navegador. */
+  /** Lo que viaja a Nia de esas sugerencias: el appid y su porqué, contado en palabras. */
+  private readonly sugerencias = computed(() => sugerenciasParaNia(this.calculadas()));
+
+  /** El porqué de cada sugerencia, para su tarjeta: el texto de la tarjeta de Perfil. */
   protected readonly porQue = computed(() =>
     Object.fromEntries(
-      this.sugerencias().map((s) => [
-        s.appid,
-        // "Coincide en Acción y Rol; el más específico…": en la tarjeta basta la coincidencia.
-        s.razones
-          .slice(0, 2)
-          .map((razon) => razon.split(';')[0].replace(/\.$/, ''))
-          .join(' · '),
-      ]),
+      this.calculadas()
+        .slice(0, 6)
+        .map((s) => [
+          s.juego.appid,
+          // "Coincide en Acción y Rol; el más específico…": en la tarjeta basta la coincidencia.
+          s.razones
+            .filter((razon) => razon.cumple)
+            .slice(0, 2)
+            .map((razon) => razon.texto.split(';')[0].replace(/\.$/, ''))
+            .join(' · '),
+        ]),
     ),
   );
 

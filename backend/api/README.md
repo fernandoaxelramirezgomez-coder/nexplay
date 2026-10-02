@@ -196,10 +196,17 @@ trata como fuera de tema y se contesta con reglas: el detector de temas ajenos m
 pregunta, no la conversación. Se deja así a propósito: si mirara la conversación, la trivia a
 mitad de un hilo («¿cuál es la capital de Francia?») llegaría al modelo.
 
-El backend arma el contexto con los datos reales de ese juego (banda, motivos con sus
-porcentajes, Metacritic, precio, géneros) y el prompt de sistema fija el vocabulario del
-proyecto: "arrepentimiento temprano" y nunca "abandono", señal proxy, bandas en vez de
-probabilidades, y nada de recomendar comprar o no comprar.
+El backend arma el contexto con los datos reales de ese juego, ya como hechos en palabras:
+- los factores del modelo como ideas («cuesta casi el triple de lo normal del catálogo»),
+  con qué tan firme es cada uno;
+- las quejas en conteos, no en porcentaje;
+- Metacritic, el precio y los géneros;
+- si llegan los géneros declarados, cuáles coinciden y cuáles no.
+
+El prompt de sistema fija el vocabulario del proyecto ("arrepentimiento temprano" y nunca
+"abandono", señal proxy, bandas en vez de probabilidades, nada de recomendar comprar o no
+comprar) y la regla de redacción: primero la respuesta, sin etiquetas ni jerga, y el emoji
+acorde al nivel de riesgo.
 
 Sin `OPENAI_API_KEY` o sin `NEXPLAY_MODELO_NIA`, y también si la llamada falla, responde
 en **modo demostración**: la misma información armada con reglas, marcada como tal en la

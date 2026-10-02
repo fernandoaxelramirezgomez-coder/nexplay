@@ -36,7 +36,11 @@ const MOTIVOS_DE_FRICCION = new Set(['bugs', 'rendimiento', 'dificultad', 'contr
 export interface Razon {
   tipo: 'generos' | 'precio' | 'horas' | 'friccion';
   cumple: boolean;
+  /** Lo que dice la tarjeta. */
   texto: string;
+  /** Lo mismo como se le cuenta a Nia: sin «·» ni la fracción de rareza, que el modelo
+   * convertía en un porcentaje de afinidad. */
+  hablada: string;
 }
 
 /** Un juego del catálogo que encaja con lo que la persona declaró, con el porqué al lado.
@@ -209,16 +213,28 @@ function razonesDe(
 ): Razon[] {
   const razones: Razon[] = [];
   if (sugerencia.coincidencias.length) {
-    razones.push({ tipo: 'generos', cumple: true, texto: porQueCoincide(sugerencia, totalJuegos) });
+    razones.push({
+      tipo: 'generos',
+      cumple: true,
+      texto: porQueCoincide(sugerencia, totalJuegos),
+      hablada: `coincide en ${listaDeGeneros(sugerencia.coincidencias)}`,
+    });
   }
   if (criterios.gasto !== null) {
     const { juego } = sugerencia;
     if (juego.es_gratis) {
-      razones.push({ tipo: 'precio', cumple: true, texto: 'Gratuito' });
+      razones.push({ tipo: 'precio', cumple: true, texto: 'Gratuito', hablada: 'es gratis' });
     } else if (juego.precio_final !== null) {
       const cumple = tope === null || juego.precio_final <= tope;
       const donde = tope === null ? 'sin tope' : cumple ? 'dentro de tu tope' : 'arriba de tu tope';
-      razones.push({ tipo: 'precio', cumple, texto: `$${PESOS.format(juego.precio_final)} · ${donde}` });
+      const dicho =
+        tope === null ? 'y no dijiste un tope' : cumple ? 'dentro de lo que dijiste pagar' : 'más de lo que dijiste pagar';
+      razones.push({
+        tipo: 'precio',
+        cumple,
+        texto: `$${PESOS.format(juego.precio_final)} · ${donde}`,
+        hablada: `cuesta $${PESOS.format(juego.precio_final)}, ${dicho}`,
+      });
     }
   }
   const horas = dato?.horas_al_recomendar;
@@ -226,16 +242,36 @@ function razonesDe(
     const aprox = Math.max(1, Math.round(horas));
     razones.push(
       horas < HORAS_DE_SESION_CORTA
-        ? { tipo: 'horas', cumple: true, texto: `Quien lo recomienda llevaba ~${aprox} h` }
-        : { tipo: 'horas', cumple: false, texto: `Pide más: ~${aprox} h al recomendarlo` },
+        ? {
+            tipo: 'horas',
+            cumple: true,
+            texto: `Quien lo recomienda llevaba ~${aprox} h`,
+            hablada: `quien lo recomienda llevaba unas ${aprox} h`,
+          }
+        : {
+            tipo: 'horas',
+            cumple: false,
+            texto: `Pide más: ~${aprox} h al recomendarlo`,
+            hablada: `pide más tiempo: quien lo recomienda llevaba unas ${aprox} h`,
+          },
     );
   }
   if (criterios.friccionBaja) {
     const motivo = dato?.motivo_principal ?? null;
     razones.push(
       motivo && MOTIVOS_DE_FRICCION.has(motivo)
-        ? { tipo: 'friccion', cumple: false, texto: `Su queja principal es ${motivo}` }
-        : { tipo: 'friccion', cumple: true, texto: 'Sus quejas no son de bugs ni de dificultad' },
+        ? {
+            tipo: 'friccion',
+            cumple: false,
+            texto: `Su queja principal es ${motivo}`,
+            hablada: `su queja principal es ${motivo}`,
+          }
+        : {
+            tipo: 'friccion',
+            cumple: true,
+            texto: 'Sus quejas no son de bugs ni de dificultad',
+            hablada: 'sus quejas no son de bugs ni de dificultad',
+          },
     );
   }
   return razones;
@@ -258,6 +294,10 @@ function precio(juego: JuegoCatalogo): number {
     return 0;
   }
   return juego.precio_final ?? Number.POSITIVE_INFINITY;
+}
+
+function listaDeGeneros(generos: readonly string[]): string {
+  return generos.length === 1 ? generos[0] : `${generos.slice(0, -1).join(', ')} y ${generos[generos.length - 1]}`;
 }
 
 /** Por qué este juego está en la lista, en palabras. Describe la coincidencia; no dice qué

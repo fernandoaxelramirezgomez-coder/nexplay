@@ -26,14 +26,14 @@ export function recortarHistorial(
   return elegidos;
 }
 
-/** Lo único del perfil que viaja a Nia: los juegos sugeridos y su porqué, ya escritos. Las
- * respuestas del formulario se quedan en el navegador. */
+/** Los juegos sugeridos y su porqué, contado como se le dice a Nia (sin «·» ni la fracción de
+ * rareza de la tarjeta). Del formulario, aparte de esto, solo viajan los géneros. */
 export function sugerenciasParaNia(sugerencias: readonly Sugerencia[], cuantas = 6): SugerenciaNia[] {
   return sugerencias.slice(0, cuantas).map((sugerencia) => ({
     appid: sugerencia.juego.appid,
     razones: sugerencia.razones
       .filter((razon) => razon.cumple)
-      .map((razon) => razon.texto)
+      .map((razon) => razon.hablada)
       .slice(0, 3),
   }));
 }

@@ -280,14 +280,17 @@ describe('el resto del perfil', () => {
       tipo: 'friccion',
       cumple: false,
       texto: 'Su queja principal es bugs',
+      hablada: 'su queja principal es bugs',
     });
     const deLargo = sugerencias.find((s) => s.juego.nombre === 'Largo')!;
     expect(deLargo.razones.find((r) => r.tipo === 'horas')).toEqual({
       tipo: 'horas',
       cumple: false,
       texto: 'Pide más: ~120 h al recomendarlo',
+      hablada: 'pide más tiempo: quien lo recomienda llevaba unas 120 h',
     });
     expect(deLargo.razones.find((r) => r.tipo === 'precio')?.texto).toBe('$150 · dentro de tu tope');
+    expect(deLargo.razones.find((r) => r.tipo === 'precio')?.hablada).toBe('cuesta $150, dentro de lo que dijiste pagar');
 
     const soloGeneros = sugerenciasPara(catalogo, perfil(['Acción']), datos).sugerencias[0];
     expect(soloGeneros.razones.map((r) => r.tipo)).toEqual(['generos']);
