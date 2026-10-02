@@ -17,6 +17,7 @@ import contextlib
 import csv
 import io
 import json
+import re
 import shutil
 import sqlite3
 import sys
@@ -397,7 +398,7 @@ def tabla_de_correlaciones(cifras: Cifras, por_juego: pd.DataFrame) -> Path:
 
 
 def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> pd.DataFrame:
-    """§7.2 y §9.5: los coeficientes del modelo B+ con su IC al 95 % por bootstrap sobre juegos."""
+    """§7.2 y §9.4: los coeficientes del modelo B+ con su IC al 95 % por bootstrap sobre juegos."""
     coeficientes = ex.coeficientes_con_bootstrap(ex.con_juego(resenas, juegos))
     # Lo que dice el texto: con todo junto, solo la crítica se aleja del cero.
     if coeficientes.loc[["metacritic_disponible", "metacritic"], "cruza el cero"].any():
@@ -405,10 +406,92 @@ def cifras_de_coeficientes(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     if not coeficientes.loc[["log_precio_final", "descuento", "es_gratis"], "cruza el cero"].all():
         raise ValueError("el precio, el descuento o la gratuidad ya no cruzan el cero")
     fuente = "data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid"
-    for nombre, variable in (("TieneNota", "metacritic_disponible"), ("Nota", "metacritic")):
+    for nombre, variable in (("TieneNota", "metacritic_disponible"), ("Nota", "metacritic"), ("Precio", "log_precio_final"),
+                             ("Descuento", "descuento"), ("Gratis", "es_gratis")):
         cifras.agregar(f"Coef{nombre}ICInf", con_signo(coeficientes.loc[variable, "IC 2.5 %"], 2), fuente)
         cifras.agregar(f"Coef{nombre}ICSup", con_signo(coeficientes.loc[variable, "IC 97.5 %"], 2), fuente)
+    cifras.agregar("CoefPrecioReplicasPositivas", porcentaje(coeficientes.loc["log_precio_final", "réplicas > 0"], 1),
+                   fuente + ": réplicas con el coeficiente del precio mayor que cero")
     return coeficientes
+
+
+def tabla_de_conjuntos(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> Path:
+    """§9.1 y §9.2 (T9): el mismo modelo con los conjuntos juego, compra y completo, contra el trivial
+    (01, celdas 31 a 33, y docs/evidencia/simulacion_123.txt para las 30 particiones)."""
+    df = ex.con_juego(resenas, juegos)
+    resultados, variables = {}, {}
+    for conjunto in ("juego", "compra", "completo"):
+        X, y, grupos = construir_features(df, conjunto=conjunto)
+        with contextlib.redirect_stdout(io.StringIO()):
+            resultados[conjunto] = evaluar_gkf(construir_pipeline(), X, y, grupos, conjunto)
+        variables[conjunto] = X.shape[1]
+    juego, compra = resultados["juego"], resultados["compra"]
+    if decimal(juego.mean(), 4) != cifras.macros["PRAUCModelo"][0]:
+        raise ValueError("el conjunto juego ya no da el PR-AUC del modelo")
+    fuente = "GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf)"
+    for conjunto in ("compra", "completo"):
+        cifras.agregar(f"PRAUC{conjunto.capitalize()}", decimal(resultados[conjunto].mean(), 4), fuente + f", conjunto {conjunto}")
+        cifras.agregar(f"PRAUC{conjunto.capitalize()}Std", decimal(resultados[conjunto].std(), 4), fuente + f", conjunto {conjunto}")
+    cifras.agregar("DiferenciaCompraJuego", decimal(compra.mean() - juego.mean(), 4), fuente + ": compra menos juego")
+    cifras.agregar("FoldsCompraGana", str(int((compra > juego).sum())), fuente + ": folds donde compra supera a juego")
+
+    # Las 30 particiones no se recalculan aquí (tardan minutos); se lee la evidencia y se comprueba que
+    # corresponda a este modelo.
+    simulacion = (EVIDENCIA / "simulacion_123.txt").read_text(encoding="utf-8").split("===== data-v2")[0]
+    medias = re.findall(r"^\s+(?:juego|compra)\s+por fold: .*media=([\d.]+)", simulacion, re.M)
+    if medias != [decimal(juego.mean(), 4), decimal(compra.mean(), 4)]:
+        raise ValueError("docs/evidencia/simulacion_123.txt ya no corresponde al modelo")
+    gana, total = re.search(r"particiones donde compra supera a juego: (\d+)/(\d+)", simulacion).groups()
+    cifras.agregar("ParticionesCompraGana", gana, "docs/evidencia/simulacion_123.txt, data-v1")
+    cifras.agregar("ParticionesSimuladas", total, "docs/evidencia/simulacion_123.txt, data-v1")
+
+    descripcion = {"juego": "gratuidad, precio, descuento y crítica", "compra": "las de juego y los juegos del autor",
+                   "completo": "las de compra, la bandera de perfil privado y las posteriores a la reseña"}
+    filas = [f"Trivial & ninguna & 0 & {cifras.macros['PRAUCTrivial'][0]} & {cifras.macros['PRAUCTrivialStd'][0]} \\\\"]
+    for conjunto in ("juego", "compra", "completo"):
+        nombre = "Juego (el del sitio)" if conjunto == "juego" else conjunto.capitalize()
+        filas.append(f"{nombre} & {descripcion[conjunto]} & {variables[conjunto]} & {decimal(resultados[conjunto].mean(), 4)} & "
+                     f"{decimal(resultados[conjunto].std(), 4)} \\\\")
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{l >{\\raggedright\\arraybackslash}X rrr}", "\\toprule",
+        "Conjunto & Variables & Cuántas & PR-AUC & Desv. entre folds \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "conjuntos.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_de_la_particion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.DataFrame) -> None:
+    """§9.3: el PR-AUC con reseñas repartidas al azar (00, celda 73), con otras particiones por juego
+    (celda 74) y con la partición que arma scikit-learn en Colab (docs/evidencia/particion-alternativa.json)."""
+    df = ex.con_juego(resenas, juegos)
+    aleatorio = ex.kfold_contra_groupkfold(df).loc["KFold aleatorio (fuga)"]
+    fuente = "data-v1: KFold de 5 sobre reseñas, sin agrupar por juego (ex.kfold_contra_groupkfold)"
+    cifras.agregar("PRAUCKFold", decimal(aleatorio["PR-AUC media"], 4), fuente)
+    cifras.agregar("PRAUCKFoldStd", decimal(aleatorio["std entre folds"], 4), fuente)
+    particiones = ex.sensibilidad_a_la_particion(df)
+    fuente = "data-v1: GroupKFold con los juegos repartidos al azar (ex.sensibilidad_a_la_particion)"
+    cifras.agregar("ParticionesAleatorias", str(len(particiones)), fuente)
+    cifras.agregar("PRAUCParticionMin", decimal(particiones.min(), 4), fuente)
+    cifras.agregar("PRAUCParticionMax", decimal(particiones.max(), 4), fuente)
+    cifras.agregar("JuegosEmpatadosEnElTope", str(int((resenas.groupby("appid").size() == ex.TOPE_DE_LA_INGESTA).sum())),
+                   "data-v1: juegos con exactamente el tope de reseñas")
+
+    evidencia = json.loads((EVIDENCIA / "particion-alternativa.json").read_text())
+    if decimal(evidencia["resumen"]["congelada"]["pr_auc_media"], 4) != cifras.macros["PRAUCModelo"][0]:
+        raise ValueError("docs/evidencia/particion-alternativa.json ya no corresponde al modelo")
+    congelada = ex.leer_particion()
+    alternativa = {int(appid): fold for appid, fold in evidencia["particiones"]["alternativa"]["fold_por_appid"].items()}
+    fuente = "docs/evidencia/particion-alternativa.json"
+    cifras.agregar("VersionSklearnColab", evidencia["entorno"]["scikit-learn"], fuente)
+    cifras.agregar("JuegosMismoFoldColab", str(sum(1 for appid, fold in alternativa.items() if congelada[appid] == fold)),
+                   fuente + ": juegos con el mismo fold que la partición congelada")
+    resumen = evidencia["resumen"]["alternativa"]
+    cifras.agregar("PRAUCParticionAlternativa", decimal(resumen["pr_auc_media"], 4), fuente)
+    cifras.agregar("PRAUCParticionAlternativaStd", decimal(resumen["pr_auc_std"], 4), fuente)
+    cifras.agregar("PliegosGanadosAlternativa", str(resumen["folds_donde_gana_el_modelo"]), fuente)
 
 
 def conjunto_limpio(resenas: pd.DataFrame) -> tuple[pd.DataFrame, list]:
@@ -820,9 +903,11 @@ def main() -> None:
     limpio, pasos = conjunto_limpio(resenas_v1)
     cifras_del_texto(cifras, limpio)
     cifras_de_validacion(cifras, juegos_v1, resenas_v1)
+    cifras_de_la_particion(cifras, juegos_v1, resenas_v1)
     tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
               tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
-              tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1)]
+              tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1),
+              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),

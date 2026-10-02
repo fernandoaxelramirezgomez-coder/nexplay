@@ -80,6 +80,13 @@
 \newcommand{\cifraCoefTieneNotaICSup}{−0.55}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
 \newcommand{\cifraCoefNotaICInf}{−0.56}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
 \newcommand{\cifraCoefNotaICSup}{−0.07}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefPrecioICInf}{−0.01}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefPrecioICSup}{0.94}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefDescuentoICInf}{−0.31}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefDescuentoICSup}{0.07}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefGratisICInf}{−0.12}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefGratisICSup}{0.79}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid
+\newcommand{\cifraCoefPrecioReplicasPositivas}{96.6\,\%}  % data-v1: ex.coeficientes_con_bootstrap, 1,000 réplicas sobre appid: réplicas con el coeficiente del precio mayor que cero
 \newcommand{\cifraNegativasTempranasLimpias}{2,706}  % conjunto limpio de data-v1: reseñas negativa tempranas
 \newcommand{\cifraRefundTempranasPorResena}{9.5\,\%}  % conjunto limpio: negativa tempranas que mencionan «refund»
 \newcommand{\cifraPalabrasMedianaTempranas}{22}  % conjunto limpio: mediana de palabras, negativa tempranas
@@ -95,6 +102,17 @@
 \newcommand{\cifraPRAUCSinDuplicados}{0.0695}  % data-v1 con una regla de limpieza, partición congelada (ex.pr_auc_con_particion)
 \newcommand{\cifraPRAUCSinVacias}{0.0696}  % data-v1 con una regla de limpieza, partición congelada (ex.pr_auc_con_particion)
 \newcommand{\cifraPRAUCSinCortas}{0.0800}  % data-v1 con una regla de limpieza, partición congelada (ex.pr_auc_con_particion)
+\newcommand{\cifraPRAUCKFold}{0.0799}  % data-v1: KFold de 5 sobre reseñas, sin agrupar por juego (ex.kfold_contra_groupkfold)
+\newcommand{\cifraPRAUCKFoldStd}{0.0032}  % data-v1: KFold de 5 sobre reseñas, sin agrupar por juego (ex.kfold_contra_groupkfold)
+\newcommand{\cifraParticionesAleatorias}{20}  % data-v1: GroupKFold con los juegos repartidos al azar (ex.sensibilidad_a_la_particion)
+\newcommand{\cifraPRAUCParticionMin}{0.0477}  % data-v1: GroupKFold con los juegos repartidos al azar (ex.sensibilidad_a_la_particion)
+\newcommand{\cifraPRAUCParticionMax}{0.0873}  % data-v1: GroupKFold con los juegos repartidos al azar (ex.sensibilidad_a_la_particion)
+\newcommand{\cifraJuegosEmpatadosEnElTope}{73}  % data-v1: juegos con exactamente el tope de reseñas
+\newcommand{\cifraVersionSklearnColab}{1.6.1}  % docs/evidencia/particion-alternativa.json
+\newcommand{\cifraJuegosMismoFoldColab}{12}  % docs/evidencia/particion-alternativa.json: juegos con el mismo fold que la partición congelada
+\newcommand{\cifraPRAUCParticionAlternativa}{0.0692}  % docs/evidencia/particion-alternativa.json
+\newcommand{\cifraPRAUCParticionAlternativaStd}{0.0412}  % docs/evidencia/particion-alternativa.json
+\newcommand{\cifraPliegosGanadosAlternativa}{5}  % docs/evidencia/particion-alternativa.json
 \newcommand{\cifraPrivadosEntrenamientoPorResena}{59.9\,\%}  % data-v1: num_games_owned = 0
 \newcommand{\cifraSinNotaEntrenamiento}{23}  % data-v1: juegos sin nota de Metacritic
 \newcommand{\cifraPagoSinPrecioEntrenamiento}{2}  % data-v1: juegos de pago sin precio
@@ -118,3 +136,11 @@
 \newcommand{\cifraCortasPorResena}{22.7\,\%}  % conjunto limpio: menos de 3 palabras
 \newcommand{\cifraIdiomaInglesPorResena}{98.7\,\%}  % conjunto limpio: en inglés o indeterminado según lingua
 \newcommand{\cifraOtroIdioma}{1,637}  % conjunto limpio: en otro idioma según lingua
+\newcommand{\cifraPRAUCCompra}{0.0709}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto compra
+\newcommand{\cifraPRAUCCompraStd}{0.0270}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto compra
+\newcommand{\cifraPRAUCCompleto}{0.0849}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
+\newcommand{\cifraPRAUCCompletoStd}{0.0207}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf), conjunto completo
+\newcommand{\cifraDiferenciaCompraJuego}{0.0015}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): compra menos juego
+\newcommand{\cifraFoldsCompraGana}{3}  % GroupKFold de 5 por appid sobre data-v1 (evaluar_gkf): folds donde compra supera a juego
+\newcommand{\cifraParticionesCompraGana}{16}  % docs/evidencia/simulacion_123.txt, data-v1
+\newcommand{\cifraParticionesSimuladas}{30}  % docs/evidencia/simulacion_123.txt, data-v1
