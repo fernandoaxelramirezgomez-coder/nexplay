@@ -321,7 +321,7 @@ export function porQueCoincide(sugerencia: Sugerencia, totalJuegos: number): str
  * cada tarjeta, donde sería la misma frase seis veces. */
 export const NOTA_DESEMPATE =
   'Varios juegos cubren los mismos géneros que declaraste: entre ellos van primero los que ' +
-  'encajan con tus horas y tu tolerancia a la fricción, luego los que tienen nota de la ' +
+  'coinciden con tus horas y tu tolerancia a la fricción, luego los que tienen nota de la ' +
   'crítica, de mayor a menor, y después los más baratos.';
 
 /** Si algún juego de la lista empata con otro, la nota de desempate tiene sentido. */

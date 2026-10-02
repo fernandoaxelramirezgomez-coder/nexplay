@@ -10,7 +10,7 @@ import { PanoramaStore } from '../estado/panorama-store';
 
 const PESOS = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 
-/** Sugerencias según el perfil: juegos del catálogo que encajan con lo declarado —géneros,
+/** Sugerencias según el perfil: juegos del catálogo que coinciden con lo declarado —géneros,
  * gasto, horas y fricción—, recalculadas en vivo con lo que se está respondiendo, antes de
  * guardar.
  *
@@ -32,7 +32,7 @@ const PESOS = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
         <span class="en-vivo">Se recalculan mientras respondes</span>
       </div>
       <p class="entrada">
-        Juegos del catálogo que encajan con lo que declaraste. Esto no es una recomendación de compra ni una
+        Juegos del catálogo que coinciden con lo que declaraste. Esto no es una recomendación de compra ni una
         predicción: el riesgo de cada juego se calcula aparte, solo con datos del juego, y no se usa para ordenar.
       </p>
       @if (soloConsolas()) {
@@ -45,7 +45,7 @@ const PESOS = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
         @case ('sin-respuestas') {
           <p class="aviso" data-testid="sugerencias-sin-respuestas">
             Responde tus géneros, cuánto pagas por juego, tus horas o tu tolerancia a la fricción, y aquí aparecen
-            juegos que encajan.
+            juegos que coinciden.
           </p>
         }
         @case ('sin-candidatos') {
@@ -310,7 +310,7 @@ export class SugerenciasPerfil {
 
   protected readonly cuantos = computed(() => {
     const { candidatos, sugerencias } = this.resultado();
-    const juegos = candidatos === 1 ? 'juego encaja' : 'juegos encajan';
+    const juegos = candidatos === 1 ? 'juego coincide' : 'juegos coinciden';
     const mostrados = candidatos > sugerencias.length ? `; se muestran ${sugerencias.length}` : '';
     return `En el catálogo, ${candidatos} ${juegos} con lo que declaraste${mostrados}.`;
   });
