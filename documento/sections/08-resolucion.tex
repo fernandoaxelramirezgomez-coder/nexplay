@@ -42,7 +42,66 @@ por reglas, sin costo. Los comentarios, las reacciones y las consultas y votos a
 límite por minuto, por usuario y por IP.
 
 \subsection{Interfaz de uso}\label{sec:interfaz}
-\pendiente{redacción (etapa 3)}
+
+Una consulta sigue estos pasos:
+\begin{enumerate}
+  \item En el Inicio, la persona escribe el nombre de un juego en el buscador.
+  \item La ficha del juego da la banda con su frase, los tres factores que la mueven con su
+  evidencia, los motivos más frecuentes con el número de reseñas detrás y el precio al corte de
+  datos, con el enlace a Steam. Si la persona llenó su perfil, la ficha dice además qué tanto encaja
+  el juego con él; eso no cambia la banda.
+  \item Desde la ficha agrega el juego a Comparar, que lo pone junto a otros.
+  \item En Explorar recorre los estantes por banda y filtra por género para buscar alternativas.
+  \item A Nia le pregunta lo que no encuentra en la ficha, como por qué un juego tiene esa banda o
+  cuál de dos le conviene.
+\end{enumerate}
+El sitio tiene además el Perfil, el Historial de consultas, el Panorama del catálogo y una página
+que explica cómo se calcula la estimación. La sección~\ref{sec:estrategia-recorrido} muestra estos
+pasos con capturas.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.34\textwidth]{capturas/03-payday-nia.png}
+  \caption{Nia explica por qué PAYDAY 3 tiene riesgo alto, con el juego abierto. Esa pregunta se
+  contesta por reglas aunque haya modelo de lenguaje. Captura provisional del sitio: se regenera
+  desde el tag de entrega.}
+  \label{fig:nia}
+\end{figure}
+
+Nia es el asistente del sitio (figura~\ref{fig:nia}). Con un modelo de lenguaje, no recibe el
+catálogo en el texto de la conversación: usa \cifraNiaHerramientas{} herramientas que leen lo mismo
+que sirve la API, como buscar juegos, abrir la ficha de uno o consultar el panorama, y nunca las
+calificaciones ni los comentarios de la gente. Cada juego que menciona tiene que salir de esas
+herramientas, y la respuesta se valida contra ellas antes de mostrarse. Las preguntas que deben
+contestarse siempre igual, como «¿por qué tiene ese riesgo?», un juego fuera del catálogo o
+cualquier tema ajeno a los juegos, van por reglas aunque haya modelo, y sin clave de OpenAI todo va
+por reglas. Si la pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
+Nia no guarda datos personales.
+
+\paragraph{Pruebas.} \texttt{make test} corre el verificador de bandas, el de Nia, el de los
+factores de la ficha, el de \texttt{preparar\_entorno.py} y las pruebas del frontend. Nia se probó,
+además, con su modelo de lenguaje: pasó \cifraPreguntasNiaAprobadas{} de las \cifraPreguntasNia{}
+preguntas de regresión, y en la corrida del \cifraFechaCorridaTrampas{} contra
+\cifraPreguntasTrampa{} preguntas trampa y legítimas quedaron \cifraTrampasPorRevisar{} casos por
+revisar\footnote{El detalle está en \texttt{docs/evidencia/nia-pruebas.md}. La corrida de trampas
+se repite sobre el tag de entrega.}.
 
 \subsection{Cómo responde la pregunta}\label{sec:resolucion-pregunta}
-\pendiente{redacción (etapa 3)}
+
+La pregunta de datos era qué tienen en común los juegos que dejan más señal y si se puede anticipar
+antes de comprar. La respuesta es sí, en parte. La señal cambia mucho de un juego a otro
+(sección~\ref{sec:exploracion-juego}), y lo que mejor la acompaña es la crítica: no tener nota de
+Metacritic, o tener una baja (sección~\ref{sec:exploracion-critica}). Con eso, el modelo ordena los
+juegos que no vio \cifraPRAUCCociente{} veces mejor que el trivial en la validación agrupada y
+\cifraPRAUCExternoCociente{} veces mejor en la prueba externa, con un intervalo de
+\cifraExternoICInf{} a \cifraExternoICSup{} (sección~\ref{sec:evaluacion}). Hay señal, y es
+modesta.
+
+La pregunta de producto era cómo mostrarlo sin prometer una probabilidad. El sitio da una banda con
+palabras, la explica con factores que dicen su evidencia, y suma los motivos de las reseñas, que son
+una heurística de palabras clave con su cobertura a la vista (sección~\ref{sec:interpretabilidad}).
+Con eso la persona decide: si compra, si compara antes con otro juego, si busca una alternativa de
+riesgo bajo en el mismo género, o si compra y usa las dos primeras horas para probar justo lo que más
+se queja la gente, mientras todavía puede pedir el reembolso. El riesgo es el mismo para cualquier
+persona; lo que cambia de una a otra es qué quejas le afectan y qué tanto encaja el juego con lo que
+declaró.

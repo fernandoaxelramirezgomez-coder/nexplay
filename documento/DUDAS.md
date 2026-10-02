@@ -73,3 +73,22 @@ la alternativa.
 15. **La captura de Nia va en la sección 8 y no en la 3.**
     - Por qué: la sección 3 ya lleva dos figuras de capturas, y Nia se explica en la interfaz.
     - Alternativa: una tercera figura de capturas en la estrategia, que se pasaría de su presupuesto.
+
+## Etapa 3: resolución y conclusiones
+
+16. **Las pruebas del frontend se nombran sin dar su número.**
+    - Por qué: cinco de ellas dependen de la API en el puerto 8000 desde `fc310c5` (es un pendiente
+      de cierre que se arregla desde master), así que un conteo de `ng test` hoy dependería de tener
+      la API levantada. Las cifras de Nia sí salen del repo y de `docs/evidencia/nia-pruebas.md`.
+    - Alternativa: correr `ng test` con la API y citar el conteo.
+17. **La corrida de trampas de Nia se cita como la del 30 de septiembre**, con una nota de que se
+    repite sobre el tag de entrega.
+    - Por qué: es la última que hay, y `correr_trampas.py` con clave es un pendiente de cierre.
+    - Alternativa: no citarla hasta tener la del tag.
+18. **Las limitaciones incluyen que no hubo un estudio con usuarios externos.**
+    - Por qué: el plan lo tenía en la lista, y la sección de usabilidad no afirma nada que dependa de
+      él.
+    - Alternativa: dejarlo solo en los siguientes pasos.
+19. **«Qué se concluye» repite la frase de la sobredispersión que aprobó el dueño para la sección 5**:
+    la varianza es unas 107 veces la esperada si todos los juegos tuvieran la misma tasa.
+    - Por qué: «veces más de lo que daría el azar» fue la formulación que el dueño pidió cambiar.

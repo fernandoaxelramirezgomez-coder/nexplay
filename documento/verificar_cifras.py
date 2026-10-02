@@ -218,6 +218,13 @@ CANONICAS = {
     "DeadSpaceDescuento": "75" + PORCIENTO,
     "EstanteAccionBajo": "25",
     "ObjetivoTactil": "44",
+    # resolución (sección 8): backend/api/nia/herramientas.py, backend/calidad/ y docs/evidencia/nia-pruebas.md
+    "NiaHerramientas": "5",
+    "PreguntasNia": "25",
+    "PreguntasNiaAprobadas": "25",
+    "PreguntasTrampa": "48",
+    "TrampasPorRevisar": "0",
+    "FechaCorridaTrampas": "30 de septiembre de 2026",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")

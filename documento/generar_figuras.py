@@ -692,6 +692,26 @@ GRUPOS_DE_ENDPOINTS = {
 }
 
 
+def cifras_de_nia(cifras: Cifras) -> None:
+    """§8.2: cuántas herramientas tiene Nia y cómo salieron sus pruebas. Los conteos salen del código
+    (sin importarlo) y los resultados, de docs/evidencia/nia-pruebas.md, que deben cuadrar con ellos."""
+    herramientas = len(re.findall(r'"name": "', (BACKEND / "api" / "nia" / "herramientas.py").read_text(encoding="utf-8")))
+    preguntas = next(len(nodo.value.elts) for nodo in ast.parse((BACKEND / "calidad" / "preguntas_nia.py").read_text(encoding="utf-8")).body
+                     if isinstance(nodo, ast.Assign) and getattr(nodo.targets[0], "id", "") == "PREGUNTAS")
+    trampas = len(json.loads((BACKEND / "calidad" / "preguntas_trampa.json").read_text(encoding="utf-8"))["casos"])
+    evidencia = (EVIDENCIA / "nia-pruebas.md").read_text(encoding="utf-8")
+    aprobadas, total = re.search(r"(\d+) de (\d+) en las dos corridas", evidencia).groups()
+    dia, respuestas, por_revisar = re.search(r"\((\d+) de septiembre, (\d+) respuestas\) terminó con (\d+) casos por revisar", evidencia).groups()
+    if int(total) != preguntas or int(respuestas) != trampas:
+        raise ValueError("docs/evidencia/nia-pruebas.md ya no corresponde a las preguntas del repo")
+    cifras.agregar("NiaHerramientas", str(herramientas), "backend/api/nia/herramientas.py: esquemas de herramientas")
+    cifras.agregar("PreguntasNia", str(preguntas), "backend/calidad/preguntas_nia.py: PREGUNTAS")
+    cifras.agregar("PreguntasNiaAprobadas", aprobadas, "docs/evidencia/nia-pruebas.md: regresión")
+    cifras.agregar("PreguntasTrampa", str(trampas), "backend/calidad/preguntas_trampa.json: casos")
+    cifras.agregar("TrampasPorRevisar", por_revisar, "docs/evidencia/nia-pruebas.md: última corrida de trampas")
+    cifras.agregar("FechaCorridaTrampas", f"{dia} de septiembre de 2026", "docs/evidencia/nia-pruebas.md: última corrida de trampas")
+
+
 def cifras_de_endpoints(cifras: Cifras) -> None:
     """§8.1: cuántos endpoints tiene la API y cuántos de cada grupo, leídos de backend/api/main.py sin importarlo."""
     endpoints = []
@@ -1122,6 +1142,7 @@ def main() -> None:
     cifras_de_factores(cifras, rutas, modelo)
     cifras_de_motivos(cifras, limpio)
     cifras_de_endpoints(cifras)
+    cifras_de_nia(cifras)
     tablas = [tabla_de_releases(rutas), tabla_descriptiva(rutas), tabla_de_variables(juegos_v1, resenas_v1),
               tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
     ruta_cifras = cifras.escribir()

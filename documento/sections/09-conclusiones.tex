@@ -1,23 +1,60 @@
 % Rúbrica: Conclusiones (sólidas, basadas en los resultados, con los hallazgos clave y su relevancia).
+% Colab no es una limitación: los dos notebooks corrieron ahí el 2026-09-30 sin errores ni avisos
+% (docs/evidencia/colab/), y va en el anexo.
 \section{Conclusiones}\label{sec:conclusiones}
 
 \subsection{Limitaciones}\label{sec:limitaciones}
 
-% NOTA (dueño, 2026-09-30): el estante de riesgo bajo de Acción ordena del score más bajo al más alto,
-% y el precio 0 empuja al frente a los gratis y a los de precio que falta. Sus cuatro primeras tarjetas:
-% GTA V Legacy (aviso: precio imputado), Team Fortress 2 (aviso: gratis, extrapola), Resident Evil 4
-% (sin aviso) y Apex Legends (aviso: gratis). Decirlo aquí y en la Estrategia. La alternativa del recorrido es RE4.
-% NOTA (dueño, 2026-09-30): la ingesta pidió language=english, así que el 98.7 % mide qué tan bien
-% etiquetaron sus reseñas los autores, no el idioma de Steam en general. Decirlo donde se cite el 98.7 %.
-% NOTA (dueño, 2026-09-30): representatividad. La señal viene de reseñadores en inglés de todo el mundo, los
-% precios son de México (cc=mx) y el usuario objetivo es un comprador en México.
-% NOTA (2026-09-30): Colab YA NO es una limitación. Los dos notebooks corrieron en Colab el 2026-09-30 sin
-% errores ni avisos, con el código de codigo-v3 (9b64795); evidencia en docs/evidencia/colab/. Se retiró el
-% marcador [PENDIENTE: corrida en Colab]; no se menciona aquí como límite.
-\pendiente{redacción (etapa 3)}
+\begin{itemize}
+  \item \textbf{Es una proxy.} La señal es una reseña negativa temprana, no el arrepentimiento ni el
+  reembolso: deja fuera a quien no escribe y a quien escribe después de las dos horas
+  (sección~\ref{sec:objetivo}).
+  \item \textbf{La muestra retrata el presente.} El \cifraDesdeJulioEntrenamientoPorResena{} de las
+  reseñas de entrenamiento es de julio de 2025 en adelante, así que la señal de un juego viejo viene
+  de quien lo compra tarde (sección~\ref{sec:datos-periodo}).
+  \item \textbf{Hay pocos juegos.} El modelo aprende de \cifraJuegosEntrenamiento{}, y el resultado
+  cambia mucho de un fold a otro. Con solo \cifraGratisEntrenamiento{} juegos gratis, el modelo
+  extrapola en los gratis, y los \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin precio
+  entran con precio 0; los dos casos llevan aviso en la ficha.
+  \item \textbf{El orden por score también lo arrastra el precio 0.} En el estante de riesgo bajo de
+  Acción, los primeros lugares son de un juego sin precio y de dos gratis, todos con aviso; la
+  primera alternativa sin aviso es la tercera tarjeta (sección~\ref{sec:estrategia-recorrido}).
+  \item \textbf{Los motivos son palabras clave en inglés.} Solo el \cifraCoberturaMotivosPorResena{}
+  de las \cifraNegativasTempranasLimpias{} negativas tempranas del conjunto limpio menciona alguno
+  (sección~\ref{sec:interpretabilidad-motivos}).
+  \item \textbf{Representatividad.} Las reseñas son en inglés y las escriben compradores de todo el
+  mundo, mientras que los precios son de la tienda de México y el usuario objetivo compra desde
+  México. Tampoco hay datos de PlayStation ni de Xbox.
+  \item \textbf{No hubo un estudio con usuarios externos.} La usabilidad se apoya en decisiones de
+  diseño y en pruebas automáticas, no en sesiones con personas que no conocían el sitio.
+  \item \textbf{La infraestructura es gratuita.} La API se duerme cuando nadie la usa y su disco
+  borra las calificaciones y los comentarios al reiniciarse (sección~\ref{sec:arquitectura}).
+\end{itemize}
 
 \subsection{Qué se concluye}\label{sec:conclusiones-hallazgos}
-\pendiente{redacción (etapa 3)}
+
+La señal de arrepentimiento temprano depende sobre todo del juego: la varianza de su tasa entre
+juegos es unas \cifraSobredispersion{} veces la esperada si todos tuvieran la misma tasa, y lo que
+mejor la acompaña es la crítica. Un modelo pequeño, una regresión logística con cinco variables que se conocen antes
+de comprar, ordena los juegos que no vio mejor que el trivial: \cifraPRAUCCociente{} veces en la
+validación agrupada y \cifraPRAUCExternoCociente{} veces en la prueba externa, con un intervalo que
+no baja de \cifraExternoICInf{}. Es una ventaja real y modesta, y el documento la reporta siempre
+junto al trivial.
+
+El perfil de quien compra no la mejora más allá del ruido entre folds, y el dato que lo
+representaba en el sitio no estaba validado. Por eso el riesgo es del título y vale igual para
+cualquier persona. El aporte del proyecto es convertir esa ventaja en algo que sirve antes de
+pagar: una banda con palabras y no una probabilidad, factores que dicen qué tan firme es su
+evidencia, motivos con su cobertura a la vista y acciones concretas, como comparar, buscar una
+alternativa o aprovechar la ventana de reembolso. Lo que no hace es decirle a nadie qué tan probable
+es que se arrepienta, ni explicar con certeza por qué un juego decepciona.
 
 \subsection{Siguientes pasos}\label{sec:siguientes}
-\pendiente{redacción (etapa 3)}
+
+La Parte A, los modelos que leen el texto de las reseñas y la comparación entre algoritmos, sigue en
+la rama \texttt{modelos-texto} con su prerregistro, y entrará a este documento cuando llegue a
+master (sección~\ref{sec:modelacion-texto}). La Parte B parte de la cobertura de los motivos: probar
+si un modelo que lee el texto completo asigna motivos a más negativas tempranas que las palabras
+clave, contra un conjunto de referencia etiquetado a mano y con la regla de decisión fijada antes de
+mirar. Más allá de eso, el modelo ganaría con más juegos, en especial gratis, y con una prueba de la
+interfaz con personas que no la conocen.
