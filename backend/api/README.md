@@ -175,9 +175,14 @@ impiden el accidente, no a quien mande el id de otra persona a propósito.
 ### `POST /nia`
 
 El chat de Nia, con un juego (`appid`) o sobre el catálogo entero. Recibe
-`{ usuario, appid?, mensajes, sugerencias? }`: hasta 40 mensajes, los tuyos de 500
+`{ usuario, appid?, mensajes, sugerencias?, generos? }`: hasta 40 mensajes, los tuyos de 500
 caracteres como máximo y los de Nia de 1,500. Al modelo solo llegan los últimos 10 turnos.
 Devuelve `{ respuesta, modo, modelo, aviso, juegos, pide_juego, fuera_de_tema, … }`.
+
+`generos` son los géneros que la persona declaró en su perfil (hasta 12). Sirven para decir
+cuáles coinciden con un juego («¿encaja conmigo?»). No mueven el riesgo ni se guardan aparte,
+y ningún log los escribe. Si Nia responde con IA, viajan a OpenAI junto con la pregunta.
+Del resto del perfil no viaja nada: solo las sugerencias que el navegador ya calculó.
 
 `modo` dice de dónde salió la respuesta: `openai` (el modelo), `demostracion` (sin clave,
 por reglas) o `reglas`. Este último es cuando hay clave pero la respuesta no pasa por el

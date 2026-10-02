@@ -64,12 +64,12 @@ export interface Servicio {
 }
 
 /** Lo que usa la app sin ser fuente de datos. Del perfil, a Nia (y con IA, a OpenAI) solo
- * viaja la lista de sugerencias que el navegador ya calculó, no las respuestas. */
+ * viajan los géneros declarados y la lista de sugerencias que el navegador ya calculó. */
 export const SERVICIOS: readonly Servicio[] = [
   {
     quien: 'OpenAI',
     que:
-      'redacta las respuestas de Nia con tu pregunta y los datos del juego; tus respuestas del perfil no salen del navegador y el riesgo no pasa por ella.',
+      'redacta las respuestas de Nia con tu pregunta y los datos del juego, y el riesgo no pasa por ella. De tu perfil solo viajan tus géneros, para decirte cuáles coinciden con un juego: cuando Nia responde con IA, se envían a OpenAI junto con tu pregunta. El resto de tus respuestas no sale del navegador.',
     enlace: 'https://openai.com/api/',
     textoEnlace: 'openai.com',
   },

@@ -55,7 +55,15 @@ def _dice(texto: str, *frases: str) -> bool:
 
 
 def _lista(partes: list[str]) -> str:
-    return partes[0] if len(partes) == 1 else f"{', '.join(partes[:-1])} y {partes[-1]}"
+    if len(partes) == 1:
+        return partes[0]
+    # «Estrategia e Indie»: ante el sonido i la conjunción es «e» (pero «y hierro»).
+    y = "e" if re.match(r"(?i)h?i(?![aeouáéóú])", partes[-1]) else "y"
+    return f"{', '.join(partes[:-1])} {y} {partes[-1]}"
+
+
+def _mayuscula(texto: str) -> str:
+    return f"{texto[0].upper()}{texto[1:]}" if texto else texto
 
 
 def _precio(juego: JuegoCatalogo) -> str:
@@ -66,8 +74,13 @@ def _precio(juego: JuegoCatalogo) -> str:
     return f"${juego.precio_final:,.2f} MXN"
 
 
-def _critica(juego: JuegoCatalogo) -> str:
-    return f"Metacritic {juego.metacritic}" if juego.metacritic is not None else "sin nota de la crítica"
+def _cuesta(juego: JuegoCatalogo) -> str:
+    """«es gratis», «cuesta $999» o «no tiene precio en los datos»: para decirlo en una frase."""
+    if juego.es_gratis:
+        return "es gratis"
+    if juego.precio_final is None:
+        return "no tiene precio en los datos"
+    return f"cuesta {nia.pesos_hablados(juego.precio_final)}"
 
 
 def _anio(juego: JuegoCatalogo) -> int | None:
@@ -305,22 +318,27 @@ def _sugerencias(pregunta: str, sugerencias: list[SugerenciaNia]) -> dict | None
 def _fortalezas_y_debilidades(juego: JuegoCatalogo) -> str:
     datos = nia.contexto(juego.appid)
     ref = nia._referencias_del_catalogo()
-    a_favor, en_contra = [], []
+    a_favor, en_contra, aparte = [], [], []
+    # La nota pesa a favor o en contra según el modelo, como en la ficha: dentro de la banda
+    # neutral no es ni lo uno ni lo otro.
+    nota = next((f for f in datos["factores"] if f["etiqueta"] == "nota de Metacritic"), None)
     if juego.metacritic is None:
-        en_contra.append("no tiene nota de la crítica")
-    elif ref["nota_promedio"] and juego.metacritic >= ref["nota_promedio"]:
-        a_favor.append(f"su Metacritic ({juego.metacritic}) está arriba del promedio del catálogo")
+        en_contra.append("la crítica especializada no lo reseñó")
+    elif nota is None:
+        aparte.append(f"la crítica le dio {juego.metacritic}")
+    elif nota["efecto"] is None:
+        aparte.append(nota["idea"])
     else:
-        en_contra.append(f"su Metacritic ({juego.metacritic}) está abajo del promedio del catálogo")
+        (a_favor if nota["efecto"] == "baja" else en_contra).append(nota["idea"])
     banda = juego.banda_riesgo.value
     if banda != "medio":
         (a_favor if banda == "bajo" else en_contra).append(f"su riesgo es {banda}")
     if juego.es_gratis:
         a_favor.append("es gratis")
     elif juego.precio_final and ref["precio_mediano"] and juego.precio_final <= ref["precio_mediano"]:
-        a_favor.append("cuesta menos que el precio mediano del catálogo")
+        a_favor.append("cuesta menos que lo normal del catálogo")
     elif juego.precio_final:
-        en_contra.append("cuesta más que el precio mediano del catálogo")
+        en_contra.append("cuesta más que lo normal del catálogo")
     if datos["motivos"]:
         principal = datos["motivos"][0]
         en_contra.append(f"en sus reseñas negativas lo que más sale es {principal.motivo}")
@@ -329,6 +347,8 @@ def _fortalezas_y_debilidades(juego: JuegoCatalogo) -> str:
         partes.append(f"a favor, {_lista(a_favor)}")
     if en_contra:
         partes.append(f"en contra, {_lista(en_contra)}")
+    if aparte:
+        partes.append(_lista(aparte))
     if banda == "medio":
         partes.append("y su riesgo es medio")
     return "; ".join(partes)
@@ -343,27 +363,27 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
     if datos is not None and appid is not None and not eleccion:
         juego = catalogo.obtener(appid)
         return _resultado(
-            f"Decidir es tuyo 🙂 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
+            f"Decidir es tuyo 🤔 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
             "¿Qué pesa más para ti?",
             juegos=[appid],
         )
     candidatos = _nombrados(pregunta) or _ultima_lista(mensajes)
     if len(candidatos) >= 2:
-        partes = [f"{j.nombre}, riesgo {j.banda_riesgo.value} y {_precio(j)}" for j in candidatos[:3]]
+        partes = [f"{j.nombre} tiene riesgo {j.banda_riesgo.value} y {_cuesta(j)}" for j in candidatos[:3]]
         return _resultado(
-            f"Elegir es tuyo 🙂 En corto: {'; '.join(partes)}. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?",
+            f"Elegir es tuyo 🤔 En corto: {'; '.join(partes)}. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?",
             juegos=[j.appid for j in candidatos[:3]],
         )
     if len(candidatos) == 1:
         juego = candidatos[0]
         return _resultado(
-            f"Decidir es tuyo 🙂 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
+            f"Decidir es tuyo 🤔 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
             "¿Qué pesa más para ti?",
             juegos=[juego.appid],
         )
     if eleccion:
         return _resultado(
-            "Elegir es tuyo 🙂 pero te ayudo a comparar. ¿Qué pesa más para ti: el precio, el riesgo o las horas "
+            "Elegir es tuyo 🤔 pero te ayudo a comparar. ¿Qué pesa más para ti: el precio, el riesgo o las horas "
             "que le vas a dedicar?"
         )
     return None
@@ -384,11 +404,29 @@ def _compara(pregunta: str, appid: int | None) -> dict | None:
                 juegos=[juegos[0].appid],
             )
         return _resultado("¿Cuáles comparo? 🤔 Dime dos juegos del catálogo, por ejemplo «compara Hades y Celeste».")
-    partes = [f"{j.nombre}: riesgo {j.banda_riesgo.value}, {_precio(j)}, {_critica(j)}" for j in juegos[:3]]
-    return _resultado(
-        f"{'. '.join(partes)} 📊 ¿Los abro lado a lado en Comparar?",
-        juegos=[j.appid for j in juegos[:3]],
-    )
+    juegos = juegos[:3]
+    riesgo = _lista([f"{juegos[0].nombre} sale con riesgo {juegos[0].banda_riesgo.value}"]
+                    + [f"{j.nombre} con {j.banda_riesgo.value}" for j in juegos[1:]])
+    con_nota = [j for j in juegos if j.metacritic is not None]
+    sin_nota = [j.nombre for j in juegos if j.metacritic is None]
+    critica = []
+    if con_nota:
+        critica.append(f"La crítica le dio {_lista([f'{j.metacritic} a {j.nombre}' for j in con_nota])}")
+    if sin_nota:
+        critica.append(f"{_lista(sin_nota)} no {'tiene' if len(sin_nota) == 1 else 'tienen'} nota de la crítica")
+    precios = []
+    for j in juegos:
+        if not j.es_gratis and j.precio_final is None:
+            precios.append(f"de {j.nombre} no hay precio, así que su estimación es menos confiable")
+        else:
+            precios.append(f"{j.nombre} {_cuesta(j)}")
+    frases = [f"{riesgo} 📊", f"{'; '.join(critica)}.", f"{_mayuscula(_lista(precios))}."]
+    # Con tres títulos largos no cabe todo en 60 palabras: primero se quita el precio, luego la crítica.
+    for cuantas in (3, 2, 1):
+        texto = f"{' '.join(frases[:cuantas])} ¿Los abro lado a lado en Comparar?"
+        if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
+            break
+    return _resultado(texto, juegos=[j.appid for j in juegos])
 
 
 def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
@@ -451,7 +489,7 @@ def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
 _DE_UN_JUEGO = (
     "ese riesgo", "este riesgo", "ese juego", "este juego", "esta juego", "por que tiene", "cuanto cuesta",
     "que dice la critica", "sus resenas", "que dicen las resenas", "explicamelo", "de que trata", "si, explicamelo",
-    "es bueno", "vale la pena",
+    "es bueno", "vale la pena", "encaja conmigo", "encaja con mis gustos", "encaja con mi perfil",
 )
 
 
@@ -485,10 +523,74 @@ def _pedir_juego() -> dict:
     return _resultado("¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.", pide_juego=True)
 
 
+def _precio_hablado(juego: JuegoCatalogo) -> str:
+    if juego.es_gratis:
+        return "es gratis"
+    if juego.precio_final is None:
+        return "no hay dato de su precio, así que su riesgo es menos confiable"
+    return nia.precio_frente_al_catalogo(juego.precio_final, nia._referencias_del_catalogo()["precio_mediano"])
+
+
+def _critica_hablada(juego: JuegoCatalogo, datos: dict) -> str:
+    """La nota con la lectura de la ficha: «en lo normal» solo si el modelo la deja en la
+    banda neutral."""
+    if juego.metacritic is None:
+        return "la crítica especializada no lo reseñó"
+    nota = next((f for f in datos["factores"] if f["etiqueta"] == "nota de Metacritic"), None)
+    return nota["idea"] if nota else f"la crítica le dio {juego.metacritic}"
+
+
 def _ficha_corta(juego: JuegoCatalogo) -> dict:
+    datos = nia.contexto(juego.appid)
+    banda = juego.banda_riesgo.value
+    precio = _precio_hablado(juego)
+    union = ", y " if "," in precio else " y "
     return _resultado(
-        f"{juego.nombre}: riesgo {juego.banda_riesgo.value}, {_precio(juego)} y {_critica(juego)} 🎮 "
-        "¿Te cuento qué dicen sus reseñas o por qué tiene ese riesgo?",
+        f"{juego.nombre} tiene riesgo {banda} {nia.EMOJI_DEL_NIVEL[banda]} {_mayuscula(precio)}{union}"
+        f"{_critica_hablada(juego, datos)}. ¿Te cuento qué dicen sus reseñas o por qué tiene ese riesgo?",
+        juegos=[juego.appid],
+    )
+
+
+# «¿Encaja conmigo?»: qué géneros declarados tiene el juego y cuáles no. Sin porcentajes.
+_ENCAJA = (
+    "encaja conmigo", "encaja con mis gustos", "encaja con mi perfil", "encaja con mis generos", "encaja con lo que",
+    "es para mi", "va conmigo", "va con mis gustos", "me va a gustar", "coincide con mis gustos",
+    "coincide con mi perfil", "es de mis generos",
+)
+_CUANTOS_EN_LETRA = {1: "uno", 2: "dos", 3: "tres", 4: "cuatro"}
+
+
+def _encaja(pregunta: str, original: str, appid: int | None, mensajes: list[MensajeChat],
+            generos: list[str] | None) -> dict | None:
+    if not _dice(pregunta, *_ENCAJA):
+        return None
+    juego = catalogo.obtener(appid) if appid is not None else None
+    if juego is None:
+        nombrados = _nombrados(original) or _juegos_recientes(mensajes)
+        juego = nombrados[0] if len(nombrados) == 1 else None
+    if juego is None:
+        # «¿Qué juego es para mí?» es pedir sugerencias, no medir uno.
+        return None
+    afinidad = nia.afinidad(juego, generos)
+    if afinidad is None:
+        return _resultado(
+            "Para decirte si encaja necesito tus géneros 🎮 Tu perfil toma un minuto. ¿Lo armamos?", pide_perfil=True
+        )
+    nombre, coinciden, faltan = juego.nombre, afinidad["coinciden"], afinidad["no_tiene"]
+    if not coinciden:
+        cuerpo = (f"No mucho 🎮 Steam pone {nombre} en {_lista(juego.generos) if juego.generos else 'ningún género'},"
+                  f" y ninguno está entre tus géneros ({_lista(afinidad['declarados'])}).")
+    elif not faltan:
+        cuales = "tu género" if len(coinciden) == 1 else "los géneros que declaraste"
+        cuerpo = f"Sí 🎮 {nombre} es de {_lista(coinciden)}, {cuales}."
+    else:
+        cuantos = _CUANTOS_EN_LETRA.get(len(coinciden), str(len(coinciden)))
+        cuerpo = (f"En parte 🎮 {nombre} es de {_lista(coinciden)}, {cuantos} de tus géneros; de {_lista(faltan)},"
+                  " que también declaraste, no tiene nada.")
+    return _resultado(
+        f"{cuerpo} Tu perfil no cambia su riesgo, que sigue en {juego.banda_riesgo.value}. "
+        "¿Te cuento por qué tiene ese riesgo?",
         juegos=[juego.appid],
     )
 
@@ -592,14 +694,21 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
         nombres = _lista([f"{j.nombre} ({_precio(j)})" for j in mostrados[:5]])
         return _resultado(f"¡Los {descripcion} más caros! 💰 {nombres}. ¿Te cuento su riesgo?",
                           juegos=[j.appid for j in mostrados[:5]])
-    remate = "¿Los ordeno por precio?" if total > 1 else "¿Te cuento de él?"
+    # Si son todos gratis, ordenarlos por precio no dice nada.
+    remate = "¿Te cuento de él?" if total == 1 else "¿Los ordeno por riesgo?" if gratis else "¿Los ordeno por precio?"
+    # «¿Hay algo gratis?» se contesta con un sí antes de la lista.
+    if total == 1:
+        for plural, singular in (("juegos", "juego"), ("gratuitos", "gratuito"), ("se recomiendan", "se recomienda"),
+                                 ("lanzados", "lanzado")):
+            descripcion = descripcion.replace(plural, singular, 1)
+    apertura = f"Sí, hay {total} {descripcion}" if _dice(pregunta, "hay") else f"Hay {total} {descripcion}"
     # Los nombres también cuentan palabras: con títulos largos se muestran menos, hasta
-    # que la respuesta quepa en 60.
-    for cuantos_nombres in range(len(mostrados), 2, -1):
+    # que la respuesta quepa en 60. Hasta uno: con uno o dos resultados el ciclo no corría.
+    for cuantos_nombres in range(len(mostrados), 0, -1):
         visibles = mostrados[:cuantos_nombres]
-        cuantos_texto = "Todos" if total <= len(visibles) else f"Los primeros {len(visibles)}"
+        cuantos_texto = "" if total <= len(visibles) else f"Los primeros {len(visibles)}: "
         resto = f" Y {total - len(visibles)} más en Explorar." if total > len(visibles) else ""
-        texto = f"¡Hay {total} {descripcion}! 🎮 {cuantos_texto}: {_lista([j.nombre for j in visibles])}.{resto} {remate}"
+        texto = f"{apertura} 🎮 {cuantos_texto}{_lista([j.nombre for j in visibles])}.{resto} {remate}"
         if nia.palabras(texto) <= 60:
             break
     return _resultado(texto, juegos=[j.appid for j in visibles])
@@ -677,19 +786,12 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
         else " Esa señal sale de reseñas negativas escritas en las primeras 2 horas, la ventana de reembolso."
     )
     if _dice(pregunta, "precio", "cuesta", "caro", "barato", "oferta", "descuento"):
-        factor = nia._factor_de_precio(datos)
-        juego = catalogo.obtener(appid)
-        base = (
-            f"{nombre} es gratis 🎁" if juego.es_gratis
-            else f"De {nombre} no tengo el precio en los datos 💸" if juego.precio_final is None
-            else f"{nombre} cuesta {_precio(juego)} 💸"
-        )
-        return _resultado(f"{base}{(' ' + factor) if factor else ''} ¿Te cuento qué dicen sus reseñas?", juegos=[appid])
+        return _resultado(_sobre_el_precio(pregunta, datos, catalogo.obtener(appid)), juegos=[appid])
     if _dice(pregunta, "critica", "metacritic", "nota", "prensa"):
         return _resultado(f"En {nombre}, {nia._texto_critica(datos)} ⭐ ¿Quieres saber de qué se queja la gente?", juegos=[appid])
     if _dice(pregunta, "motivo", "motivos", "queja", "quejas", "problema", "problemas", "bug", "bugs", "rendimiento",
              "resenas", "que dicen"):
-        return _resultado(f"En {nombre}, {nia._texto_motivos(datos)} 🔍 ¿Te cuento por qué tiene riesgo {banda}?", juegos=[appid])
+        return _resultado(f"{_sobre_las_quejas(datos)} ¿Te cuento por qué tiene riesgo {banda}?", juegos=[appid])
     if _dice(pregunta, "cuanto dura", "dura", "duracion", "cuantas horas", "horas tipicas", "cuanto tiempo", "largo"):
         horas = datos.get("horas_tipicas")
         if horas is None:
@@ -708,11 +810,11 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
         return _resultado(f"Steam clasifica {nombre} como {generos} 🎮 ¿Te cuento su riesgo?", juegos=[appid])
     if _dice(pregunta, "banda", "por que", "porque", "riesgo", "estimacion", "explicamelo", "explica"):
         # Los avisos van completos y el factor principal siempre; para caber en las 60
-        # palabras se acorta, en este orden, el porqué de «evidencia débil», el segundo
-        # factor, el final del descargo y la pregunta de cierre.
-        for cuantos, evidencia_larga, descargo_largo, cierre in _VARIANTES_DEL_PORQUE:
+        # palabras se acorta, en este orden, el segundo factor, el final del descargo y la
+        # pregunta de cierre.
+        for cuantos, descargo_largo, cierre in _VARIANTES_DEL_PORQUE:
             descargo = senal if descargo_largo or not senal else " Esa señal: reseñas negativas escritas en las primeras 2 horas."
-            texto = f"{nombre} tiene riesgo {banda} 🙂 {_porque_del_riesgo(datos, cuantos, evidencia_larga)}{descargo} {cierre}"
+            texto = f"{_porque_del_riesgo(datos, cuantos)}{descargo} {cierre}"
             if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
                 break
         return _resultado(texto, juegos=[appid])
@@ -720,33 +822,105 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
 
 
 _VARIANTES_DEL_PORQUE = (
-    (2, True, True, "¿Te cuento qué dicen esas reseñas?"),
-    (2, False, True, "¿Te cuento qué dicen esas reseñas?"),
-    (1, True, True, "¿Te cuento qué dicen esas reseñas?"),
-    (1, False, True, "¿Te cuento qué dicen esas reseñas?"),
-    (1, False, False, "¿Te cuento qué dicen esas reseñas?"),
-    (1, False, False, "¿Sigo con sus motivos?"),
+    (2, True, "¿Te cuento qué dicen esas reseñas?"),
+    (1, True, "¿Te cuento qué dicen esas reseñas?"),
+    (1, False, "¿Te cuento qué dicen esas reseñas?"),
+    (1, False, "¿Sigo con sus motivos?"),
 )
 
+# «¿El precio influye?» se contesta con cuánto; «¿cuánto cuesta?», con el precio.
+_INFLUYE = ("influye", "importa", "afecta", "pesa", "mueve", "sube", "tiene que ver", "cuenta el precio")
 
-def _porque_del_riesgo(datos: dict, cuantos: int, evidencia_larga: bool = True) -> str:
-    """Los factores en el orden del modelo: primero el que más aporta, con «evidencia débil»
-    si lo es, y después los avisos de la estimación. Lo que está cerca de lo típico del
-    catálogo no se da como razón."""
-    razones = []
-    for factor in datos["factores"][:cuantos]:
-        if factor["efecto"] is None:
-            break
-        if factor["imputado"]:
-            razones.append("le falta el precio")
-            continue
-        debil = "" if not factor["debil"] else f", con {nia.TEXTO_EVIDENCIA_DEBIL}" if evidencia_larga else ", con evidencia débil"
-        razones.append(f"{factor['lectura'][0].lower()}{factor['lectura'][1:]} (lo {factor['efecto']}{debil})")
-    if razones:
-        porque = f"Lo que más lo mueve: {'; después, '.join(razones)}."
+
+def _sobre_el_precio(pregunta: str, datos: dict, juego: JuegoCatalogo) -> str:
+    """El precio y lo que hace en el modelo, que no es lo mismo que la gente se queje del
+    precio en sus reseñas. Primero la respuesta: sí, un poco, casi no o no se sabe."""
+    nombre = datos["nombre"]
+    factor = nia.factor_del_precio(datos)
+    if factor is not None and factor["imputado"]:
+        return (f"No se sabe 💸 Steam no dio el precio de {nombre} y el modelo lo tomó como 0, lo que tiende a bajar"
+                " su riesgo: tómalo con cuidado. ¿Te cuento qué dicen sus reseñas?")
+    if factor is None or factor["etiqueta"] == "descuento actual del juego":
+        dicho = f"{nombre} {_precio_hablado(juego)}" + (f" y {factor['idea']}" if factor else "")
+        sujeto = "eso" if factor else "su precio"
     else:
-        porque = "Ninguna variable de este juego se aleja mucho de lo típico del catálogo."
-    return " ".join([porque, *datos["avisos"]])
+        dicho, sujeto = f"{nombre} {factor['idea']}", "eso"
+    if factor is None or factor["efecto"] is None:
+        respuesta, modelo, pista = "Casi no", f"en el modelo {sujeto} {nia.CASI_NO_MUEVE}", ""
+    else:
+        respuesta, modelo = ("Un poco" if factor["debil"] else "Sí"), f"en el modelo eso {nia.efecto_hablado(factor)}"
+        principal = next((f for f in datos["factores"] if f["efecto"] is not None), None)
+        if not factor["debil"]:
+            pista = f" Es {factor['pista']}."
+        elif principal is not None and principal is not factor:
+            pista = f" Pero es {factor['pista']}, y lo que más pesa es que {principal['idea']}, que lo {principal['efecto']}."
+        else:
+            pista = f" Pero es {factor['pista']}."
+    for con_pista in (pista, pista.split(", y lo que más pesa")[0].rstrip(".") + "." if pista else ""):
+        if _dice(pregunta, *_INFLUYE):
+            texto = f"{respuesta} 💸 {dicho}, y {modelo}.{con_pista} ¿Te cuento qué dicen sus reseñas?"
+        else:
+            texto = f"{dicho}; {modelo} 💸{con_pista} ¿Te cuento qué dicen sus reseñas?"
+        # Con nombres y cifras largas no cabe en 60 palabras: se quita lo que más pesa.
+        if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
+            break
+    return texto
+
+
+def _sobre_las_quejas(datos: dict) -> str:
+    """De qué se queja la gente, en conteos: con 5 reseñas, «100%» suena más firme de lo que es."""
+    nombre, n = datos["nombre"], datos["n_casos"]
+    conteos = nia.quejas_en_conteos(datos)
+    if not conteos:
+        if n == 0:
+            return f"Nada todavía 🔍 {nombre} no tiene reseñas negativas tempranas en los datos."
+        cuantas = "una sola reseña negativa temprana" if n == 1 else f"solo {n} reseñas negativas tempranas"
+        return f"Muy poco 🔍 De {nombre} hay {cuantas}: no alcanza para saber de qué se queja la gente."
+    total = datos["clasificadas"]
+    principal, primero = conteos[0]
+    empatados = [m for m, c in conteos if c == primero]
+    if total == 1:
+        apertura, cuerpo = f"De {principal}", f"La única reseña negativa temprana de {nombre} que dice por qué habla de {principal}."
+    elif primero == total:
+        otros = "".join(f", y {c} también de {m}" for m, c in conteos[1:2])
+        apertura = f"De {principal}"
+        cuerpo = f"Las {total} reseñas negativas tempranas de {nombre} que dicen por qué hablan de {principal}{otros}."
+    else:
+        apertura = f"De {_lista(empatados[:3])}" if len(empatados) > 1 else f"Sobre todo, de {principal}"
+        partes = [f"{primero} {'habla' if primero == 1 else 'hablan'} de {principal}"] + [f"{c} de {m}" for m, c in conteos[1:3]]
+        cuerpo = f"De las {total} reseñas negativas tempranas de {nombre} que dicen por qué, {_lista(partes)}."
+    cautela = " Son pocas, tómalo con cautela." if total < 10 else ""
+    return f"{apertura} 🔍 {cuerpo}{cautela}"
+
+
+def _porque_del_riesgo(datos: dict, cuantos: int) -> str:
+    """El riesgo y su porqué, en el orden del modelo: primero el factor que más aporta, con
+    qué tan firme es, y después los avisos de la estimación, dichos en llano. Lo que está en
+    la banda neutral no se da como razón, y el emoji va con el nivel."""
+    nombre, banda = datos["nombre"], datos["banda"]
+    emoji = nia.EMOJI_DEL_NIVEL[banda]
+    razones = [f for f in datos["factores"] if f["efecto"] is not None][:cuantos]
+    avisos = list(datos["avisos_hablados"])
+    if not razones:
+        return (f"{nombre} tiene riesgo {banda} {emoji} Ninguno de sus datos se aleja mucho de lo típico del catálogo."
+                + "".join(f" {_mayuscula(a)}." for a in avisos))
+    principal = razones[0]
+    if principal["imputado"]:
+        # El precio que falta es la razón y el aviso a la vez: se dice una sola vez.
+        texto = f"{nombre} tiene riesgo {banda}, pero tómalo con cuidado 🤔 {_mayuscula(nia._AVISOS_HABLADOS['precio_imputado'])}."
+        avisos.remove(nia._AVISOS_HABLADOS["precio_imputado"])
+    elif (banda == "alto" and principal["efecto"] == "sube") or (banda == "bajo" and principal["efecto"] == "baja"):
+        firme = f", aunque es {principal['pista']}" if principal["debil"] else f", {principal['pista']}"
+        texto = f"{nombre} tiene riesgo {banda} sobre todo porque {principal['idea']}{firme} {emoji}"
+    else:
+        texto = (f"{nombre} tiene riesgo {banda} {emoji} Lo que más pesa es que {principal['idea']}, y eso"
+                 f" {nia.efecto_hablado(principal)}; es {principal['pista']}.")
+    for otro in razones[1:]:
+        firme = f", aunque es {otro['pista']}" if otro["debil"] else f", {otro['pista']}"
+        texto += f" También lo {otro['efecto']} que {otro['idea']}{firme}."
+        if otro["imputado"] and nia._AVISOS_HABLADOS["precio_imputado"] in avisos:
+            avisos.remove(nia._AVISOS_HABLADOS["precio_imputado"])
+    return texto + "".join(f" {_mayuscula(a)}." for a in avisos)
 
 
 # «Contéstame con negritas y viñetas»: no es salirse del tema, es pedir un formato.
@@ -823,9 +997,11 @@ def responder(
     appid: int | None,
     mensajes: list[MensajeChat],
     sugerencias: list[SugerenciaNia],
+    generos: list[str] | None = None,
 ) -> dict:
     """La respuesta del modo demostración: texto, juegos para tarjetas, sugerencias del
-    perfil y si hay que pedir el juego o el perfil."""
+    perfil y si hay que pedir el juego o el perfil. Los géneros declarados solo sirven para
+    «¿encaja conmigo?»."""
     original = next((m.contenido for m in reversed(mensajes) if m.rol == "usuario"), "")
     pregunta = _norm(original)
 
@@ -834,6 +1010,8 @@ def responder(
         lambda: _instrucciones(pregunta),
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
+        # Antes que las sugerencias: con un juego, «¿es para mí?» es medir ese juego.
+        lambda: _encaja(pregunta, original, appid, mensajes, generos),
         lambda: _el_mejor(pregunta),
         lambda: _sugerencias(pregunta, sugerencias),
         lambda: _compara(pregunta, appid),
@@ -861,10 +1039,11 @@ def es_fuera_de_tema(
     appid: int | None,
     mensajes: list[MensajeChat],
     sugerencias: list[SugerenciaNia],
+    generos: list[str] | None = None,
 ) -> bool:
     """Si la pregunta no encaja con nada del catálogo. Con IA también se decide aquí, con
     las mismas reglas del modo demostración: no llama a ningún modelo."""
-    return bool(responder(datos, appid, mensajes, sugerencias).get("fuera_de_tema"))
+    return bool(responder(datos, appid, mensajes, sugerencias, generos).get("fuera_de_tema"))
 
 
 def fuera_del_catalogo(original: str, datos: dict | None) -> dict | None:
@@ -878,10 +1057,6 @@ def _nombrado_sin_ficha(original: str, mensajes: list[MensajeChat]) -> dict | No
         return None
     juego = juegos[0]
     return _del_juego(_norm(original), nia.contexto(juego.appid), juego.appid, mensajes) or _ficha_corta(juego)
-
-
-# La cara de Nia según el nivel del juego; el mismo emoji acompaña la mascota del carrusel.
-_EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
 
 
 def opinion_corta(appid: int) -> dict:
@@ -902,7 +1077,7 @@ def opinion_corta(appid: int) -> dict:
     elif datos["metacritic"] is not None:
         detalle = f", y la crítica le da {datos['metacritic']}"
     respuesta = (
-        f"{nombre} tiene riesgo {banda} {_EMOJI_DEL_NIVEL[banda]} {frase[0].upper()}{frase[1:]}{detalle}. "
+        f"{nombre} tiene riesgo {banda} {nia.EMOJI_DEL_NIVEL[banda]} {frase[0].upper()}{frase[1:]}{detalle}. "
         "¿Te cuento más?"
     )
     return {

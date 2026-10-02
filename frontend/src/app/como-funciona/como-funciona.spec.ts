@@ -76,6 +76,9 @@ describe('ComoFunciona', () => {
     expect(texto).toContain('1 de 2 juegos');
     const servicios = [...html.querySelectorAll('[data-testid="fuente-servicios"]')].map((s) => s.textContent).join(' ');
     expect(servicios).toContain('OpenAI');
+    // Lo que viaja del perfil, dicho tal cual: los géneros, y con IA hasta OpenAI.
+    expect(servicios).toContain('De tu perfil solo viajan tus géneros');
+    expect(servicios).toContain('se envían a OpenAI junto con tu pregunta');
     expect(servicios).toContain('SIL OFL');
   });
 

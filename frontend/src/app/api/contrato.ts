@@ -202,8 +202,11 @@ export interface SolicitudNia {
   appid?: number;
   /** El hilo, hasta 40 mensajes, incluida la pregunta nueva. */
   mensajes: MensajeChat[];
-  /** Las sugerencias que el navegador calculó con el perfil. El perfil no se manda. */
+  /** Las sugerencias que el navegador calculó con el perfil. */
   sugerencias?: SugerenciaNia[];
+  /** Los géneros declarados, para decir cuáles coinciden con un juego. Es lo único del
+   * formulario que viaja; con IA, llega a OpenAI junto con la pregunta. */
+  generos?: string[];
 }
 
 export interface RespuestaNia {

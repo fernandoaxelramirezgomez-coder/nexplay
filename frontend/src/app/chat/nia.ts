@@ -885,12 +885,15 @@ export class Nia {
     );
 
     const sugerencias = this.sugerencias();
+    // Del formulario solo viajan los géneros: con ellos Nia dice cuáles coinciden.
+    const generos = this.perfil.valores()?.generos ?? [];
     this.api
       .preguntarANia({
         usuario: this.usuario.id,
         ...(appid !== null ? { appid } : {}),
         mensajes: recortarHistorial(hilo),
         ...(sugerencias.length ? { sugerencias } : {}),
+        ...(generos.length ? { generos } : {}),
       })
       .subscribe({
         next: (respuesta) => this.recibir(respuesta, pregunta),

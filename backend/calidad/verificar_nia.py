@@ -25,6 +25,7 @@ La corrida de las 25 preguntas contra una API levantada es calidad/preguntas_nia
 
 import argparse
 import os
+import re
 import sqlite3
 import sys
 import tempfile
@@ -68,19 +69,12 @@ _PROHIBIDO_AL_EXPLICAR_LA_BANDA = (
 _PROHIBIDO_SIEMPRE = ("abandono", "insatisfacción general", "vale la pena", "te recomiendo", "banda", "cómprate")
 
 
-_FACTORES_TS = Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "dominio" / "factores.ts"
-
-
-# Lo que Nia y la ficha dicen igual fuera de _LECTURA_FACTORES: la banda neutral, la
-# evidencia, el precio imputado y las referencias contra las que se leen la nota y el precio.
-_FRASES_COMPARTIDAS = (
-    nia.TEXTO_TIPICO,
-    nia.TEXTO_EVIDENCIA_SOLIDA,
-    nia.TEXTO_EVIDENCIA_DEBIL,
-    nia.TEXTO_PRECIO_IMPUTADO,
-    " · promedio del catálogo ",
-    " · precio mediano del catálogo ",
-)
+# Lo que la regla de redacción deja fuera de cualquier respuesta sobre un juego: las etiquetas
+# de la tarjeta de factores y la jerga estadística.
+_JERGA = ("·", "precio mediano del catálogo", "no se distingue de cero", "evidencia débil", "evidencia sólida",
+          "Lo que más lo mueve")
+# Un perfil de ejemplo para «¿encaja conmigo?».
+_GENEROS = ["Rol", "Estrategia", "Indie"]
 
 # L-2: la nota se compara con el promedio del catálogo y el precio con la mediana. Ni el
 # promedio del precio ni un promedio «del modelo».
@@ -92,26 +86,161 @@ _REFERENCIAS_PROHIBIDAS = ("precio promedio", "promedio usado por el modelo", "p
 _CASOS = ("Grand Theft Auto V Legacy", "New World: Aeternum", "Apex Legends™", "Cyberpunk 2077")
 
 
-def _mismas_frases_que_la_ficha() -> list[str]:
-    """Las frases de _LECTURA_FACTORES y las compartidas tienen que estar tal cual en
-    dominio/factores.ts.
+# Fin de oración: punto, signo o emoji. «(85.5)» y «$282.99» no cortan.
+_FIN_DE_ORACION = re.compile(r"[.?!](?=\s|$)|[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF]")
+# Cómo dice Nia la dirección de un factor después de nombrarlo.
+_MARCAS_DE_DIRECCION = (("casi no mueve", None), ("tiende a bajar", "baja"), (" sube", "sube"), (" baja", "baja"))
+# Lo que da a un factor como razón del riesgo: un factor neutral nunca va así.
+_COMO_RAZON = re.compile(r"(porque|lo (?:sube|baja) que|más pesa es que)\s*$")
 
-    Viven en dos idiomas porque la ficha las pinta y Nia las dice; si una se cambia sola,
-    Nia contradice a la ficha sin que nada falle."""
-    if not _FACTORES_TS.exists():
-        return [f"no se encontró {_FACTORES_TS}"]
-    ts = _FACTORES_TS.read_text(encoding="utf-8")
-    faltan = [
-        f"{etiqueta}: {frase!r} no está en dominio/factores.ts"
-        for etiqueta, frases in nia._LECTURA_FACTORES.items()
-        for frase in frases
-        if frase not in ts
-    ]
-    faltan += [f"{frase!r} no está en dominio/factores.ts" for frase in _FRASES_COMPARTIDAS if frase not in ts]
-    if not faltan:
-        print(f"frases:   las {sum(len(f) for f in nia._LECTURA_FACTORES.values())} lecturas y las"
-              f" {len(_FRASES_COMPARTIDAS)} frases compartidas son las mismas que en la ficha")
-    return faltan
+
+def _alrededor(texto: str, inicio: int, fin: int) -> tuple[str, str, str]:
+    """Lo que va antes de la idea en su oración, lo que va después hasta que la oración
+    termina y la oración siguiente."""
+    comienzo = max((m.end() for m in _FIN_DE_ORACION.finditer(texto, 0, inicio)), default=0)
+    final = _FIN_DE_ORACION.search(texto, fin)
+    corte = final.end() if final else len(texto)
+    siguiente = _FIN_DE_ORACION.search(texto, corte)
+    return texto[comienzo:inicio], texto[fin:corte], texto[corte:siguiente.end() if siguiente else len(texto)].strip()
+
+
+def _direccion_dicha(antes: str, despues: str) -> str | None:
+    """«sube», «baja», None (casi no mueve) o «sin decir»."""
+    marca = re.search(r"\blo (sube|baja) que\s*$", antes)
+    if marca:
+        return marca.group(1)
+    if re.search(r"sobre todo porque\s*$", antes):
+        return "sube" if "riesgo alto" in antes else "baja" if "riesgo bajo" in antes else "sin decir"
+    halladas = sorted(
+        ((despues.find(texto), direccion) for texto, direccion in _MARCAS_DE_DIRECCION if texto in despues),
+        key=lambda par: par[0],
+    )
+    return halladas[0][1] if halladas else "sin decir"
+
+
+def _contradicciones(texto: str, factores: list[dict], donde: str) -> list[str]:
+    """Lo que Nia dice de cada factor contra lo que pinta la ficha, que sale de los mismos
+    campos de la API: la dirección (sube, baja o casi no mueve), la evidencia (pista débil o
+    la más confiable) y la banda neutral («en lo normal», nunca dado como razón)."""
+    problemas = []
+    bajo = texto.lower()
+    neutrales = []
+    for factor in factores:
+        idea = factor["idea"].lower()
+        inicio = bajo.find(idea)
+        while inicio >= 0:
+            fin = inicio + len(idea)
+            antes, despues, siguiente = _alrededor(texto, inicio, fin)
+            dicha = _direccion_dicha(antes, despues)
+            if dicha != "sin decir" and dicha != factor["efecto"]:
+                problemas.append(f"{donde}: dice que «{factor['idea']}» {dicha or 'casi no mueve'} su riesgo y la ficha"
+                                 f" dice {factor['efecto'] or 'casi no mueve'}")
+            if factor["efecto"] is None:
+                neutrales.append((inicio, fin))
+                if _COMO_RAZON.search(antes):
+                    problemas.append(f"{donde}: da «{factor['idea']}» como razón y está en la banda neutral")
+            pista = next((p for p in ("pista débil", "pista más confiable") if p in despues), None)
+            if pista is None and siguiente.startswith(("Pero es", "Es ")):
+                pista = next((p for p in ("pista débil", "pista más confiable") if p in siguiente[:40]), None)
+            esperada = "pista débil" if factor["debil"] else "pista más confiable"
+            if pista is not None and pista != esperada:
+                problemas.append(f"{donde}: llama a «{factor['idea']}» {pista} y la ficha dice evidencia"
+                                 f" {'débil' if factor['debil'] else 'sólida'}")
+            inicio = bajo.find(idea, fin)
+    for normal in re.finditer("en lo normal", bajo):
+        if not any(a <= normal.start() < b for a, b in neutrales):
+            problemas.append(f"{donde}: dice «en lo normal» de algo que no está en la banda neutral del modelo")
+    return problemas
+
+
+def _consistente_con_la_ficha() -> list[str]:
+    """En los 123 juegos, cada factor que Nia menciona va con la dirección y la evidencia de
+    la ficha. Reemplaza a la comprobación de frases idénticas: Nia ya no copia la tarjeta,
+    dice lo mismo como idea."""
+    problemas = []
+    revisadas = 0
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        for pregunta in ("¿Por qué tiene ese riesgo?", "¿El precio influye?", "¿Cuánto cuesta?"):
+            texto = nia.pulir(nia_reglas.responder(datos, juego.appid, [MensajeChat(rol="usuario", contenido=pregunta)], [])["texto"])
+            problemas += _contradicciones(texto, datos["factores"], f"{juego.nombre} · {pregunta}")
+            revisadas += 1
+        pregunta = f"¿Qué tal {juego.nombre}?"
+        texto = nia.pulir(nia_reglas.responder(None, None, [MensajeChat(rol="usuario", contenido=pregunta)], [])["texto"])
+        problemas += _contradicciones(texto, datos["factores"], pregunta)
+        revisadas += 1
+    if not problemas:
+        print(f"ficha:    {revisadas} respuestas en los {len(catalogo.buscar())} juegos dicen cada factor con la"
+              " dirección y la evidencia de la ficha, y «en lo normal» solo en la banda neutral")
+    return problemas
+
+
+def _sin_jerga(texto: str, donde: str) -> list[str]:
+    problemas = [f"{donde}: dice {jerga!r}" for jerga in _JERGA if jerga in texto]
+    if "%" in texto:
+        problemas.append(f"{donde}: da un porcentaje")
+    if "riesgo alto" in texto and ("🙂" in texto or "😊" in texto):
+        problemas.append(f"{donde}: sonríe junto a un riesgo alto")
+    return problemas
+
+
+def _revisar_lenguaje() -> list[str]:
+    """La regla de redacción, en los 123 juegos: sin etiquetas de la tarjeta, sin jerga, sin
+    porcentajes, sin sonrisas junto a un riesgo alto, primero la respuesta y la afinidad en
+    géneros, nunca en porcentaje."""
+    problemas = []
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    sin_generos = False
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        for pregunta in ("¿Por qué tiene ese riesgo?", "¿El precio influye?", "¿Cuánto cuesta?", "¿Qué dicen las reseñas?"):
+            texto = nia.pulir(nia_reglas.responder(datos, juego.appid, usuario(pregunta), [])["texto"])
+            donde = f"{juego.nombre} · {pregunta}"
+            problemas += _sin_jerga(texto, donde) + _voz(texto, donde)
+            if pregunta == "¿El precio influye?" and not texto.startswith(("Sí", "Un poco", "Casi no", "No se sabe")):
+                problemas.append(f"{donde}: no empieza por la respuesta ({texto[:30]}…)")
+        pregunta = f"¿Qué tal {juego.nombre}?"
+        texto = nia.pulir(nia_reglas.responder(None, None, usuario(pregunta), [])["texto"])
+        problemas += _sin_jerga(texto, pregunta) + _voz(texto, pregunta)
+        # «¿Encaja conmigo?»: qué géneros coinciden y cuáles no, sin porcentaje.
+        try:
+            encaja = nia_reglas.responder(datos, juego.appid, usuario("¿Encaja conmigo?"), [], _GENEROS)
+        except TypeError:
+            if not sin_generos:
+                problemas.append("reglas.responder no recibe los géneros del perfil: no puede decir cuáles coinciden")
+            sin_generos = True
+            continue
+        texto, donde = nia.pulir(encaja["texto"]), f"{juego.nombre} · ¿Encaja conmigo?"
+        problemas += _sin_jerga(texto, donde) + _voz(texto, donde)
+        if not texto.startswith(("Sí", "En parte", "No mucho")):
+            problemas.append(f"{donde}: no empieza por la respuesta ({texto[:30]}…)")
+        if not all(genero in texto for genero in _GENEROS):
+            problemas.append(f"{donde}: no dice qué géneros coinciden y cuáles no ({texto[:60]}…)")
+    if not sin_generos:
+        sin_perfil = nia_reglas.responder(nia.contexto(1091500), 1091500, usuario("¿Encaja conmigo?"), [], [])
+        if not sin_perfil["pide_perfil"]:
+            problemas.append("«¿Encaja conmigo?» sin géneros no invita a crear el perfil")
+        if not nia_reglas.responder(None, None, usuario("¿Encaja conmigo?"), [], _GENEROS)["pide_juego"]:
+            problemas.append("«¿Encaja conmigo?» sin juego no pregunta de cuál")
+    gratis = nia.pulir(nia_reglas.responder(None, None, usuario("¿Hay algo gratis?"), [])["texto"])
+    if not gratis.startswith("Sí, hay") or "¿Los ordeno por precio?" in gratis:
+        problemas.append(f"«¿Hay algo gratis?» no empieza por el sí o los ofrece ordenar por precio ({gratis!r})")
+    # Con uno o dos resultados la lista no se armaba y la respuesta tronaba.
+    for pregunta in ("¿Qué juegos de carreras tienen riesgo alto?", "¿Qué juegos de multijugador masivo tienen riesgo bajo?"):
+        try:
+            texto = nia.pulir(nia_reglas.responder(None, None, usuario(pregunta), [])["texto"])
+            problemas += _voz(texto, pregunta)
+        except Exception as exc:
+            problemas.append(f"«{pregunta}» truena: {type(exc).__name__}")
+    compara = nia.pulir(nia_reglas.responder(
+        None, None, usuario("Compara Cyberpunk 2077 y Grand Theft Auto V Legacy"), [])["texto"])
+    problemas += _sin_jerga(compara, "compara") + _voz(compara, "compara")
+    if not compara.startswith("Cyberpunk 2077 sale con riesgo"):
+        problemas.append(f"comparar no empieza por el riesgo de cada uno ({compara!r})")
+    if not problemas:
+        print(f"lenguaje: {len(catalogo.buscar())} juegos × 6 preguntas sin etiquetas, jerga, porcentajes ni sonrisas"
+              " con riesgo alto; «¿encaja conmigo?» dice qué géneros coinciden y cuáles no")
+    return problemas
 
 
 def _uno_por_banda() -> list:
@@ -220,8 +349,8 @@ def _voz(texto: str, donde: str) -> list[str]:
 
 def _revisar_respuestas(juego) -> list[str]:
     """Las tres preguntas en una misma conversación, por reglas y con la voz de ahora. Al
-    explicar el riesgo cita las variables del modelo con las frases de la ficha y no las
-    reseñas; el descargo de la señal sale una sola vez."""
+    explicar el riesgo cita las variables del modelo como ideas, con la dirección y la
+    evidencia de la ficha, y no las reseñas; el descargo de la señal sale una sola vez."""
     problemas = []
     datos = nia.contexto(juego.appid)
     hilo: list[MensajeChat] = []
@@ -234,33 +363,30 @@ def _revisar_respuestas(juego) -> list[str]:
         problemas += _voz(respuesta, donde)
 
         bajo = respuesta.lower()
+        problemas += _contradicciones(respuesta, datos["factores"], donde)
         if "riesgo" in pregunta.lower() or "por qué" in pregunta.lower():
-            citadas = [f["lectura"] for f in datos["factores"] if f["lectura"][1:] in respuesta]
-            if datos["factores"] and not citadas and "le falta el precio" not in respuesta:
-                problemas.append(f"{donde}: al explicar el riesgo no cita ninguna variable del modelo")
             for prohibido in _PROHIBIDO_AL_EXPLICAR_LA_BANDA:
                 if prohibido in bajo:
                     problemas.append(f"{donde}: explica el riesgo con las reseñas ({prohibido!r})")
-            # El factor que más aporta va primero, y si es de evidencia débil lo dice.
-            principal = datos["factores"][0] if datos["factores"] else None
-            if principal and principal["efecto"] is not None:
-                cita = "le falta el precio" if principal["imputado"] else principal["lectura"][1:]
-                otras = [f["lectura"][1:] for f in datos["factores"][1:] if f["lectura"][1:] in respuesta]
-                if cita not in respuesta:
+            # El factor que más aporta va primero, y si es una pista débil lo dice.
+            razones = [f for f in datos["factores"] if f["efecto"] is not None]
+            if razones:
+                principal = razones[0]
+                cita = principal["idea"].lower()
+                otras = [f["idea"].lower() for f in razones[1:] if f["idea"].lower() in bajo]
+                if cita not in bajo:
                     problemas.append(f"{donde}: no nombra el factor que más aporta ({principal['etiqueta']})")
-                elif any(respuesta.index(o) < respuesta.index(cita) for o in otras):
+                elif any(bajo.index(o) < bajo.index(cita) for o in otras):
                     problemas.append(f"{donde}: nombra otro factor antes del que más aporta")
-                if principal["debil"] and not principal["imputado"] and "evidencia débil" not in respuesta:
-                    problemas.append(f"{donde}: el factor principal es de evidencia débil y no lo dice")
-            for aviso in datos["avisos"]:
-                if aviso not in respuesta:
+                if principal["debil"] and not principal["imputado"] and nia.PISTA_DEBIL not in respuesta:
+                    problemas.append(f"{donde}: el factor principal es una pista débil y no lo dice")
+            elif "se aleja mucho de lo típico" not in respuesta:
+                problemas.append(f"{donde}: sin factores que muevan la estimación y no lo dice")
+            for aviso in datos["avisos_hablados"]:
+                if aviso.lower() not in bajo:
                     problemas.append(f"{donde}: no da el aviso de la estimación ({aviso[:40]}…)")
-        if pregunta == "¿El precio influye?":
-            esperado = nia._factor_de_precio(datos)
-            if esperado and esperado not in respuesta:
-                problemas.append(f"{donde}: la respuesta del precio no distingue la variable del modelo")
-        if datos["motivos"] and "%" in respuesta and "clasificada" not in respuesta:
-            problemas.append(f"{donde}: cita un porcentaje sin decir sobre cuántas clasificadas")
+        if datos["motivos"] and "%" in respuesta:
+            problemas.append(f"{donde}: da los motivos en porcentaje en vez de cuántas reseñas")
     descargos = sum("primeras 2 horas" in m.contenido for m in hilo if m.rol == "nia")
     if descargos > 1:
         problemas.append(f"{juego.nombre}: el descargo de la señal sale {descargos} veces en la misma conversación")
@@ -607,7 +733,8 @@ def main() -> int:
     argumentos = parser.parse_args()
 
     juegos = _uno_por_banda()
-    problemas = _mismas_frases_que_la_ficha()
+    problemas = _consistente_con_la_ficha()
+    problemas += _revisar_lenguaje()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

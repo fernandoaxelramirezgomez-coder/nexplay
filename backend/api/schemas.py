@@ -322,6 +322,17 @@ class SolicitudNia(BaseModel):
         max_length=6,
         description="Las sugerencias que el navegador calculó con el perfil; vacía si no hay perfil",
     )
+    generos: list[str] = Field(
+        default_factory=list,
+        max_length=12,
+        description="Los géneros que declaró la persona, para decir cuáles coinciden con un juego. No mueven el riesgo,"
+        " no se guardan ni se registran; si Nia responde con IA, viajan a OpenAI junto con la pregunta",
+    )
+
+    @field_validator("generos")
+    @classmethod
+    def _generos_cortos(cls, generos: list[str]) -> list[str]:
+        return [g.strip()[:40] for g in generos if g.strip()]
 
 
 class RespuestaNia(BaseModel):
