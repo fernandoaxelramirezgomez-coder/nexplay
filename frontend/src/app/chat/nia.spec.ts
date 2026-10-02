@@ -110,3 +110,52 @@ describe('Nia: la respuesta final', () => {
     expect(html.querySelector('[data-testid="nia-escribiendo"]')).toBeNull();
   });
 });
+
+/** A propósito desde la ficha con chat (2026-09-20) y el buscador dentro del chat
+ * (2026-09-26): elegir otro juego por fuera cambia el contexto y la conversación empieza de
+ * cero; fijarlo desde el chat conserva el hilo. No se cambia sin preguntarle al dueño. */
+describe('Nia: elegir un juego', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('elegido por fuera del chat (el panel de /nia), la conversación general empieza de cero', async () => {
+    const { fixture } = montar();
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Hay algo gratis?');
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelectorAll('[data-testid="mensaje-usuario"]')).toHaveLength(1);
+
+    fixture.componentRef.setInput('appid', 2);
+    await fixture.whenStable();
+    expect(html.querySelectorAll('[data-testid="mensaje-usuario"]')).toHaveLength(0);
+  });
+
+  it('fijado con el buscador del chat, el hilo se conserva', async () => {
+    const { fixture } = montar({
+      ...RESPUESTA,
+      respuesta: '¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.',
+      pide_juego: true,
+    });
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Por qué tiene ese riesgo?');
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    const buscar = html.querySelector<HTMLInputElement>('[data-testid="nia-elegir-buscar"]')!;
+    buscar.value = 'Portal';
+    buscar.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    html.querySelector<HTMLButtonElement>('[data-testid="nia-elegir-resultado"]')!.click();
+    await fixture.whenStable();
+    // Quien monta el chat (la página de Nia) refleja el juego fijado en su entrada.
+    fixture.componentRef.setInput('appid', 2);
+    await fixture.whenStable();
+
+    const preguntas = [...html.querySelectorAll('[data-testid="mensaje-usuario"]')].map((m) => m.textContent);
+    expect(preguntas.some((texto) => texto?.includes('¿Por qué tiene ese riesgo?'))).toBe(true);
+  });
+});
