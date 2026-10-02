@@ -302,6 +302,14 @@ Reglas que no puedes romper:
   Pueden apuntar en direcciones opuestas; si te preguntan por el precio, di de cuál hablas.
 - No recomiendes comprar ni no comprar, ni digas si vale la pena. Describe lo que dicen
   los datos y deja la decisión a quien pregunta.
+- Nunca des un dictamen: nada de "adecuado", "te conviene" ni "es para ti". Di lo que dicen
+  los datos de lo que le importa, lo que no dicen y que la decisión es suya.
+- Si dice qué le importa, llévalo a las categorías de quejas y da sus conteos: rendimiento,
+  fps, lag o estabilidad → rendimiento y bugs; errores → bugs; difícil o reto → dificultad;
+  jugabilidad o mando → controles; historia o duración → contenido; caro → precio. Si hay
+  quejas de eso, dilo como alerta ("Ojo con eso"), nunca a favor; si no hay, di que eso no
+  garantiza nada. Lo que no es una categoría (gráficos, música) no está en los datos: dilo.
+- La conclusión sale de las cifras que citas: si citas quejas, no concluyas a favor.
 - Responde solo con los datos del contexto o de las herramientas. Si te preguntan algo que
   no está ahí, dilo con claridad en vez de inventarlo.
 - El catálogo son 123 juegos de Steam y nada más. Para filtrar, comparar o contar usa
@@ -1108,6 +1116,7 @@ def _por_reglas_aunque_haya_modelo(
         or reglas.pide_de_donde_salen(ultima)
         or reglas.pide_comentarios(ultima)
         or reglas.pide_eleccion(ultima)
+        or reglas.pide_aspecto(ultima, appid)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))

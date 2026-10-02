@@ -589,6 +589,104 @@ def _ficha_corta(juego: JuegoCatalogo) -> dict:
     )
 
 
+# «¿Cuphead es para mí si me importa el rendimiento?»: lo que la persona nombra se lleva a las
+# categorías de quejas y se dice en conteos. Si las quejas lo tocan, es una alerta; si no, no
+# es aval. Nunca un dictamen («adecuado», «te conviene»): lo que dicen los datos de eso, lo que
+# no dicen y que decidir es de quien pregunta.
+_ASPECTOS = (
+    # (palabras de la persona, categorías de quejas, lo que esas quejas no dicen)
+    (("rendimiento", "fps", "lag", "estabilidad", "estable", "optimizacion", "optimizado", "se traba", "crashea"),
+     ("rendimiento", "bugs"), "no dicen cómo corre en tu equipo"),
+    (("bugs", "bug", "errores", "fallas", "glitches"), ("bugs",), "no dicen si ya los corrigieron"),
+    (("dificil", "dificultad", "reto", "desafiante"), ("dificultad",), "no dicen qué tan difícil se te hará a ti"),
+    (("controles", "jugabilidad", "mando"), ("controles",), "no dicen cómo se siente en tus manos"),
+    (("historia", "trama", "contenido", "rejugabilidad"), ("contenido",), "no cuentan de qué trata ni cuánto dura"),
+    (("caro", "vale lo que cuesta"), ("precio",), "no dicen si a ti te parece caro"),
+)
+# Lo que no se mide: se dice que no está en los datos, con las categorías que sí hay.
+_SIN_MEDIR = {"graficos": "los gráficos", "grafica": "la gráfica", "musica": "la música", "arte": "el arte",
+              "sonido": "el sonido", "doblaje": "el doblaje", "ambientacion": "la ambientación"}
+# «Caro» solo cuenta como aspecto si la persona dice que le importa; si no, es una pregunta de precio.
+_LE_IMPORTA = ("me gusta", "me importa", "me importan", "me preocupa", "me interesa", "busco", "prefiero",
+               "para mi", "adecuado", "adecuada", "me conviene", "me sirve", "odio", "no soporto")
+_CATEGORIAS = ("rendimiento", "bugs", "dificultad", "controles", "contenido", "precio")
+
+
+def _aspecto_pedido(pregunta: str, original: str, appid: int | None):
+    """El juego, las categorías, lo que no dicen y lo que no se mide, si la pregunta es por un
+    aspecto de un solo juego (el nombrado o el de la ficha). None si no."""
+    nombrados = _nombrados(original)
+    if len(nombrados) > 1:
+        return None
+    juego = nombrados[0] if nombrados else catalogo.obtener(appid) if appid is not None else None
+    if juego is None:
+        return None
+    grupos = [g for g in _ASPECTOS if _dice(pregunta, *g[0])]
+    if grupos and grupos[0][1] == ("precio",) and len(grupos) == 1 and not _dice(pregunta, *_LE_IMPORTA):
+        return None
+    sin_medir = [nombre for palabra, nombre in _SIN_MEDIR.items() if _dice(pregunta, palabra)]
+    if not grupos and not (sin_medir and _dice(pregunta, *_LE_IMPORTA)):
+        return None
+    categorias = list(dict.fromkeys(c for g in grupos for c in g[1]))
+    return juego, categorias, grupos[0][2] if grupos else None, sin_medir
+
+
+def pide_aspecto(pregunta: str, appid: int | None) -> bool:
+    """Con modelo, solo si pide un veredicto («¿es adecuado para mí si me importa…?»): ahí el
+    modelo daba un dictamen. «¿Hades es difícil?» sigue yendo al modelo, con la misma regla."""
+    normal = _norm(pregunta)
+    return _dice(normal, *_LE_IMPORTA) and _aspecto_pedido(normal, pregunta, appid) is not None
+
+
+def _aspecto(pregunta: str, original: str, appid: int | None) -> dict | None:
+    pedido = _aspecto_pedido(pregunta, original, appid)
+    if pedido is None:
+        return None
+    juego, categorias, limite, sin_medir = pedido
+    nombre, tarjeta = juego.nombre, {"juegos": [juego.appid]} if appid is None else {}
+    if not categorias:
+        return _resultado(
+            f"De {_lista(sin_medir)} no tengo datos 🤷 De {nombre} solo cuento quejas de {_lista(list(_CATEGORIAS))};"
+            " decidir es tuyo. ¿Te cuento qué dicen sus reseñas?",
+            **tarjeta,
+        )
+    datos = nia.contexto(juego.appid)
+    total, banda = datos["clasificadas"], datos["banda"]
+    if total == 0:
+        ninguna = "no tiene reseñas negativas tempranas" if datos["n_casos"] == 0 else "ninguna de sus reseñas negativas tempranas dice por qué"
+        return _resultado(
+            f"No tengo cómo saberlo de {nombre} 🤷 {_mayuscula(ninguna)}, así que de {_lista(categorias)} no hay"
+            f" quejas que contar; decidir es tuyo. ¿Te cuento por qué tiene riesgo {banda}?",
+            **tarjeta,
+        )
+    conteos = dict(nia.quejas_en_conteos(datos))
+    orden = sorted(categorias, key=lambda c: -conteos.get(c, 0))
+    con_quejas = [(c, conteos[c]) for c in orden if conteos.get(c, 0) > 0]
+    sin_quejas = [c for c in orden if conteos.get(c, 0) == 0]
+    if not con_quejas:
+        cuantas = "su única reseña negativa temprana que dice por qué" if total == 1 else f"sus {total} reseñas negativas tempranas que dicen por qué"
+        ninguna = " ni de ".join(sin_quejas)
+        pocas = ", y son pocas" if total < 10 else ""
+        return _resultado(
+            f"Ninguna queja de eso en {nombre} 🔍 De {cuantas}, ninguna habla de {ninguna}. Que nadie se queje no"
+            f" garantiza nada{pocas}: {limite}; decidir es tuyo. ¿Te cuento qué más dicen sus reseñas?",
+            **tarjeta,
+        )
+    (primera, c1), resto = con_quejas[0], con_quejas[1:]
+    partes = [f"{c1} {'habla' if c1 == 1 else 'hablan'} de {primera}", *(f"{c} de {cat}" for cat, c in resto)]
+    partes += [f"ninguna de {cat}" for cat in sin_quejas]
+    if total == 1:
+        cuerpo = f"Su única reseña negativa temprana que dice por qué habla de {primera}"
+        cuerpo += f", no de {' ni de '.join(sin_quejas)}" if sin_quejas else ""
+    else:
+        cuerpo = f"De sus {total} reseñas negativas tempranas que dicen por qué, {_lista(partes)}"
+    cautela = f"Son pocas, tómalo con cautela, y {limite}" if total < 10 else f"Eso sí, {limite}"
+    return _resultado(
+        f"Ojo con eso en {nombre} ⚠️ {cuerpo}. {cautela}; decidir es tuyo. ¿Te cuento qué más dicen sus reseñas?",
+        **tarjeta,
+    )
+
+
 # «¿Encaja conmigo?»: qué géneros declarados tiene el juego y cuáles no. Sin porcentajes.
 _ENCAJA = (
     "encaja conmigo", "encaja con mis gustos", "encaja con mi perfil", "encaja con mis generos", "encaja con lo que",
@@ -1167,6 +1265,8 @@ def responder(
         lambda: _que_significa_la_senal(pregunta),
         lambda: _como_se_calcula(pregunta),
         lambda: _comentarios(pregunta, original, appid),
+        # Antes que «¿encaja conmigo?»: «¿es para mí si me importa el rendimiento?» es el aspecto.
+        lambda: _aspecto(pregunta, original, appid),
         # Antes que las sugerencias: con un juego, «¿es para mí?» es medir ese juego.
         lambda: _encaja(pregunta, original, appid, mensajes, generos),
         lambda: _el_mejor(pregunta),

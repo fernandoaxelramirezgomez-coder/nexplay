@@ -686,7 +686,8 @@ _RECORRIDO = [
 # Nada de esto puede salir de Nia, conteste el modelo o las reglas.
 # "banda" también: desde la revisión del usuario final el nivel se llama riesgo de
 # arrepentimiento, y "banda" era la palabra que nadie entendía.
-_NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar", "banda")
+_NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar", "banda",
+          "adecuado", "te conviene", "es para ti")
 
 
 def _nombra_sin_consultar(texto: str, juegos: list[int], appid: int | None) -> list[str]:
@@ -1155,6 +1156,74 @@ def _revisar_cual_me_compro() -> list[str]:
     return problemas
 
 
+# Lo que la persona dice que le importa y las categorías de quejas a las que va.
+_ASPECTOS_DE_PRUEBA = {
+    "el rendimiento": ("rendimiento", "bugs"), "los bugs": ("bugs",), "la dificultad": ("dificultad",),
+    "los controles": ("controles",), "la historia": ("contenido",), "que sea caro": ("precio",),
+}
+_DICTAMEN = re.compile(r"adecuad|te conviene|es para ti|para ti es|vale la pena|encaja contigo", re.IGNORECASE)
+
+
+def _conteos_dichos(texto: str) -> dict[str, int]:
+    """Cuántas quejas de cada categoría dice un texto: «3 hablan de bugs», «2 de dificultad»,
+    «ninguna de rendimiento», «su única reseña… habla de contenido»."""
+    dichos = {c: int(n) for n, c in re.findall(r"(\d+) (?:hablan? )?de (\w+)", texto)}
+    dichos |= {c: 1 for c in re.findall(r"única reseña negativa temprana que dice por qué habla de (\w+)", texto)}
+    dichos |= {c: 0 for c in re.findall(r"(?:ninguna (?:habla )?de|ni de|no de) (\w+)", texto)}
+    return dichos
+
+
+def _revisar_aspecto() -> list[str]:
+    """Lo que a la persona le importa (rendimiento, historia…) va a las categorías de quejas con
+    sus conteos, que deben ser los de los datos. Si hay quejas de eso, es una alerta («Ojo con
+    eso»), nunca a favor; nunca un dictamen («adecuado», «te conviene»); la decisión es suya.
+    Va por reglas también con modelo. Cuphead es la conversación real de producción."""
+    problemas = []
+    cuphead = next(j for j in catalogo.buscar() if j.nombre == "Cuphead")
+    real = "dime si el juego de cuphead es adecuado para mi si me gusta el rendimiento del juego?"
+    for appid in (None, cuphead.appid):
+        datos = nia.contexto(appid) if appid else None
+        mensajes = [MensajeChat(rol="usuario", contenido=real)]
+        texto = nia.pulir(nia_reglas.responder(datos, appid, mensajes, [])["texto"])
+        donde = f"Cuphead ({'ficha' if appid else 'general'})"
+        faltan = [f for f in ("Ojo con eso", "3 hablan de bugs", "ninguna de rendimiento", "tuyo") if f not in texto]
+        if faltan or _DICTAMEN.search(texto):
+            problemas.append(f"{donde}: le falta {faltan} o da un dictamen: {texto[:80]}…")
+        if not nia._por_reglas_aunque_haya_modelo(datos, appid, mensajes, [], real):
+            problemas.append(f"{donde}: iría al modelo")
+    revisadas = 0
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        conteos = dict(nia.quejas_en_conteos(datos))
+        for aspecto, categorias in _ASPECTOS_DE_PRUEBA.items():
+            pregunta = f"¿Es adecuado para mí si me importa {aspecto}?"
+            mensajes = [MensajeChat(rol="usuario", contenido=pregunta)]
+            texto = nia.pulir(nia_reglas.responder(datos, juego.appid, mensajes, [])["texto"])
+            donde = f"{juego.nombre}, {aspecto}"
+            revisadas += 1
+            if _DICTAMEN.search(texto) or "tuyo" not in texto:
+                problemas.append(f"{donde}: da un dictamen o no deja la decisión: {texto[:80]}…")
+            if datos["clasificadas"]:
+                dichos = _conteos_dichos(texto)
+                distintos = {c: (dichos.get(c), conteos.get(c, 0)) for c in categorias if dichos.get(c) != conteos.get(c, 0)}
+                if distintos:
+                    problemas.append(f"{donde}: los conteos no son los de los datos (dice, datos): {distintos}")
+                if ("Ojo con eso" in texto) != any(conteos.get(c, 0) for c in categorias):
+                    problemas.append(f"{donde}: la alerta no sale de los conteos: {texto[:80]}…")
+            problemas += _voz(texto, f"{donde}")
+            if not nia._por_reglas_aunque_haya_modelo(datos, juego.appid, mensajes, [], pregunta):
+                problemas.append(f"{donde}: iría al modelo")
+    mensajes = [MensajeChat(rol="usuario", contenido="¿Hades es para mí si me importan los gráficos?")]
+    texto = nia_reglas.responder(None, None, mensajes, [])["texto"]
+    if "no tengo datos" not in texto or "rendimiento, bugs, dificultad, controles, contenido y precio" not in texto:
+        problemas.append(f"los gráficos no dicen que no están en los datos ni cuáles sí: {texto[:80]}…")
+    if "Nunca des un dictamen" not in nia._SISTEMA or "historia o duración → contenido" not in nia._SISTEMA:
+        problemas.append("el prompt no tiene las reglas del aspecto ni la del dictamen")
+    if not problemas:
+        print(f"aspecto: Cuphead y {revisadas} preguntas de aspecto en los {len(catalogo.buscar())} juegos, en conteos y sin dictamen")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1215,6 +1284,7 @@ def main() -> int:
     problemas += _revisar_comentarios()
     problemas += _revisar_cual_me_compro()
     problemas += _revisar_nombrados_sin_consultar()
+    problemas += _revisar_aspecto()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
