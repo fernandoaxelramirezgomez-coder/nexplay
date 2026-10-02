@@ -11,7 +11,9 @@ import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
 import { PerfilStore } from '../estado/perfil-store';
 import { UsuarioStore } from '../estado/usuario-store';
+import { EXPLICACION_SENAL } from '../dominio/textos-nia';
 import { Nia } from './nia';
+import { NiaFlotante } from './nia-flotante';
 
 const JUEGOS = [juegoDePrueba(), juegoDePrueba({ appid: 2, nombre: 'Portal 2', generos: ['Rol', 'Indie'] })];
 const RESPUESTA: RespuestaNia = {
@@ -157,5 +159,50 @@ describe('Nia: elegir un juego', () => {
 
     const preguntas = [...html.querySelectorAll('[data-testid="mensaje-usuario"]')].map((m) => m.textContent);
     expect(preguntas.some((texto) => texto?.includes('¿Por qué tiene ese riesgo?'))).toBe(true);
+  });
+});
+
+/** Qué es la señal va fijo arriba del chat, igual en todos los lugares donde Nia responde, y
+ * fuera de lo que se desplaza: las respuestas ya no lo repiten. */
+describe('Nia: la explicación de la señal, fija arriba', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  for (const [donde, appid] of [
+    ['en el chat de un juego (la ficha)', 2],
+    ['en el chat sin juego (/nia)', null],
+  ] as const) {
+    it(donde, async () => {
+      const { fixture } = montar();
+      fixture.componentRef.setInput('appid', appid);
+      await fixture.whenStable();
+      fixture.componentInstance.preguntar('¿Por qué tiene ese riesgo?');
+      await fixture.whenStable();
+
+      const html = fixture.nativeElement as HTMLElement;
+      const senal = html.querySelector('[data-testid="nia-senal"]');
+      expect(senal?.textContent?.trim()).toBe(EXPLICACION_SENAL);
+      // Arriba de la conversación y fuera del bloque que se desplaza.
+      expect(senal?.closest('.cuerpo-chat')).toBeNull();
+      expect(senal!.compareDocumentPosition(html.querySelector('[data-testid="conversacion"]')!)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+  }
+
+  it('en la burbuja, al abrirla', async () => {
+    vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
+    montar();
+    const fixture = TestBed.createComponent(NiaFlotante);
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('[data-testid="nia-senal"]')).toBeNull();
+
+    html.querySelector<HTMLButtonElement>('[data-testid="nia-flotante-burbuja"]')!.click();
+    await fixture.whenStable();
+    expect(html.querySelector('[data-testid="nia-senal"]')?.textContent?.trim()).toBe(EXPLICACION_SENAL);
+    vi.unstubAllGlobals();
   });
 });

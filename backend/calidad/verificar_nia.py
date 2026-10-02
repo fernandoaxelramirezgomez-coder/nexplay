@@ -4,8 +4,8 @@ El riesgo lo pone el modelo con datos del juego; las reseñas solo dicen de qué
 gente. Nia confundía las dos cosas porque su contexto no traía los factores, así que este
 script revisa lo que se le manda (api/nia/agente.py, _contexto_para_prompt) y lo que responden las
 reglas (api/nia/reglas.py), que es el mismo camino sin gastar una llamada, con la voz de
-ahora: 60 palabras o menos, de 1 a 3 emojis, un remate con pregunta y el descargo de la
-señal una sola vez por conversación.
+ahora: 60 palabras o menos, de 1 a 3 emojis, un remate con pregunta y sin el descargo de la
+señal, que está fijo arriba del chat.
 
 También revisa lo que se contesta con reglas aunque haya modelo (la trivia, «el mejor», el
 resumen), el recorte del descargo repetido y del largo en las respuestas del modelo, las
@@ -118,6 +118,10 @@ def _direccion_dicha(antes: str, despues: str) -> str | None:
     return halladas[0][1] if halladas else "sin decir"
 
 
+# Cómo dice Nia qué tan firme es un factor; «otra pista confiable» es sólida, como la primera.
+_PISTAS = ("pista débil", "pista más confiable", "pista confiable")
+
+
 def _contradicciones(texto: str, factores: list[dict], donde: str) -> list[str]:
     """Lo que Nia dice de cada factor contra lo que pinta la ficha, que sale de los mismos
     campos de la API: la dirección (sube, baja o casi no mueve), la evidencia (pista débil o
@@ -139,9 +143,10 @@ def _contradicciones(texto: str, factores: list[dict], donde: str) -> list[str]:
                 neutrales.append((inicio, fin))
                 if _COMO_RAZON.search(antes):
                     problemas.append(f"{donde}: da «{factor['idea']}» como razón y está en la banda neutral")
-            pista = next((p for p in ("pista débil", "pista más confiable") if p in despues), None)
+            pista = next((p for p in _PISTAS if p in despues), None)
             if pista is None and siguiente.startswith(("Pero es", "Es ")):
-                pista = next((p for p in ("pista débil", "pista más confiable") if p in siguiente[:40]), None)
+                pista = next((p for p in _PISTAS if p in siguiente[:40]), None)
+            pista = "pista más confiable" if pista == "pista confiable" else pista
             esperada = "pista débil" if factor["debil"] else "pista más confiable"
             if pista is not None and pista != esperada:
                 problemas.append(f"{donde}: llama a «{factor['idea']}» {pista} y la ficha dice evidencia"
@@ -428,9 +433,10 @@ def _revisar_respuestas(juego) -> list[str]:
                     problemas.append(f"{donde}: no da el aviso de la estimación ({aviso[:40]}…)")
         if datos["motivos"] and "%" in respuesta:
             problemas.append(f"{donde}: da los motivos en porcentaje en vez de cuántas reseñas")
-    descargos = sum("primeras 2 horas" in m.contenido for m in hilo if m.rol == "nia")
-    if descargos > 1:
-        problemas.append(f"{juego.nombre}: el descargo de la señal sale {descargos} veces en la misma conversación")
+    # Qué es la señal está fijo arriba del chat: ninguna respuesta lo repite.
+    descargos = sum("primeras 2 horas" in m.contenido or "señal, no prueba" in m.contenido for m in hilo if m.rol == "nia")
+    if descargos:
+        problemas.append(f"{juego.nombre}: el descargo de la señal sale {descargos} veces, y ya está fijo arriba")
     return problemas
 
 
@@ -553,12 +559,7 @@ def _revisar_casos_de_produccion() -> list[str]:
     if not nia_reglas.necesita_juego("¿Por qué tiene ese riesgo?", lista, None):
         problemas.append("tras una lista de juegos, «¿por qué tiene ese riesgo?» no pide el juego")
 
-    # A la salida del modelo: el descargo una vez y 60 palabras sin perder el remate.
-    ya_dicho = [usuario("¿Por qué?"), de_nia("Tiene riesgo alto 🙂 Es una señal proxy, no confirma arrepentimiento."),
-                usuario("¿Y cuánto cuesta?")]
-    con_descargo = "Cuesta $1,599 MXN 💸 Recuerda que es una señal proxy. ¿Te cuento sus reseñas?"
-    if "proxy" in nia.sin_descargo_repetido(con_descargo, ya_dicho, "¿Y cuánto cuesta?"):
-        problemas.append("el descargo de la señal se repite en la misma conversación")
+    # A la salida del modelo: 60 palabras sin perder el remate. El descargo, en _revisar_senal_fija.
     largo = "Una oración de relleno con varias palabras para pasar el tope. " * 8 + "¿Seguimos?"
     ajustado = nia.ajustar_largo(largo)
     if nia.palabras(ajustado) > nia.MAXIMO_PALABRAS or not ajustado.endswith("¿Seguimos?"):
@@ -589,7 +590,7 @@ def _revisar_casos_de_produccion() -> list[str]:
     if not problemas:
         print("producción: trivia, correo e instrucciones van a reglas y 8 preguntas legítimas al modelo;"
               " negritas, correo, instrucciones y jugar con amigos con su respuesta;"
-              " no corona; el resumen cubre todo y no deja media lista; horas típicas; el descargo una vez; 60 palabras;"
+              " no corona; el resumen cubre todo y no deja media lista; horas típicas; 60 palabras;"
               " 7 tarjetas; nombres con ™, ® y ©; «Apex» y «Battlefield» a medias; «GTA V»; el historial al modelo con tope")
     return problemas
 
@@ -861,6 +862,70 @@ def _revisar_duracion() -> list[str]:
     return problemas
 
 
+_TEXTOS_NIA_TS = Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "dominio" / "textos-nia.ts"
+
+
+def _revisar_senal_fija() -> list[str]:
+    """Qué es la señal está fijo arriba del chat (en /nia, la ficha y la burbuja), así que las
+    respuestas no lo repiten; solo si preguntan qué significa, Nia contesta con esa misma frase.
+    El filtro de la salida del modelo quita oraciones completas que son el descargo, y nada más:
+    «2 horas» en otro contexto se queda, y una oración que dice algo más no se corta."""
+    problemas = []
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    explicacion = getattr(nia, "EXPLICACION_SENAL", None)
+    if explicacion is None:
+        return ["no hay una sola explicación de la señal (EXPLICACION_SENAL)"]
+    # La misma frase en la línea fija del chat y en lo que dice Nia.
+    if not _TEXTOS_NIA_TS.exists() or explicacion not in _TEXTOS_NIA_TS.read_text(encoding="utf-8"):
+        problemas.append("la explicación de la señal no es la misma en el chat (textos-nia.ts) y en Nia")
+    # Ninguna respuesta la repite, en los 123 juegos.
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        for pregunta in ("¿Por qué tiene ese riesgo?", "¿Qué dicen las reseñas?", "¿El precio influye?", "¿Cuánto dura?"):
+            texto = nia.pulir(nia_reglas.responder(datos, juego.appid, usuario(pregunta), [])["texto"])
+            if explicacion in texto or "primeras 2 horas" in texto or any(nia.es_descargo(o) for o in nia._oraciones(texto)):
+                problemas.append(f"{juego.nombre} · {pregunta}: repite el descargo de la señal")
+    # Si preguntan qué significa, la misma frase; también con modelo, para que sea siempre esa.
+    for appid in (None, next(j.appid for j in catalogo.buscar() if j.nombre == "Hades")):
+        for pregunta in ("¿Qué significa la señal?", "¿Qué significa ese riesgo?"):
+            datos = nia.contexto(appid) if appid else None
+            texto = nia.pulir(nia_reglas.responder(datos, appid, usuario(pregunta), [])["texto"])
+            if not texto.startswith(explicacion):
+                problemas.append(f"«{pregunta}» no contesta con la explicación fija ({texto[:50]}…)")
+            problemas += _voz(texto, pregunta)
+            if not nia._por_reglas_aunque_haya_modelo(datos, appid, usuario(pregunta), [], pregunta):
+                problemas.append(f"«{pregunta}» iría al modelo y podría decirlo de otra forma")
+    if explicacion not in nia._SISTEMA or "no la repitas" not in nia._SISTEMA:
+        problemas.append("el prompt no pide dejar la explicación fija arriba y no repetirla")
+    # El filtro de la salida del modelo: oraciones completas que son el descargo, nada más.
+    for del_modelo, pregunta, esperado in (
+        ("Cuesta $1,599 💸 Recuerda que es una señal proxy. ¿Te cuento sus reseñas?", "¿Cuánto cuesta?",
+         "Cuesta $1,599 💸 ¿Te cuento sus reseñas?"),
+        ("Hades tiene riesgo bajo 🙂 Esa señal sale de reseñas negativas escritas en las primeras 2 horas, la ventana"
+         " de reembolso. ¿Te cuento?", "¿Por qué?", "Hades tiene riesgo bajo 🙂 ¿Te cuento?"),
+        ("Hades tiene riesgo bajo. No sabemos si alguien se arrepintió de verdad. ¿Algo más?", "¿Por qué?",
+         "Hades tiene riesgo bajo. ¿Algo más?"),
+        # «2 horas» en otro contexto: se queda.
+        ("Llegas a 2 horas en 2 sesiones, dentro del reembolso ⏱️ ¿Te cuento su riesgo?", "Juego poco",
+         "Llegas a 2 horas en 2 sesiones, dentro del reembolso ⏱️ ¿Te cuento su riesgo?"),
+        ("Steam te devuelve el dinero si juegas menos de 2 horas 💸 ¿Algo más?", "¿Hay reembolso?",
+         "Steam te devuelve el dinero si juegas menos de 2 horas 💸 ¿Algo más?"),
+        # Una oración que dice algo más no se corta.
+        ("Hades tiene riesgo bajo, aunque es una señal proxy. ¿Algo más?", "¿Qué tal Hades?",
+         "Hades tiene riesgo bajo, aunque es una señal proxy. ¿Algo más?"),
+        # Si preguntan qué significa, se queda todo.
+        ("Es una señal proxy: no confirma que alguien se arrepintiera 🔍 ¿Te cuento más?", "¿Qué significa la señal?",
+         "Es una señal proxy: no confirma que alguien se arrepintiera 🔍 ¿Te cuento más?"),
+    ):
+        quedo = nia.sin_descargo(del_modelo, pregunta) if hasattr(nia, "sin_descargo") else del_modelo
+        if quedo != esperado:
+            problemas.append(f"el filtro del descargo deja {quedo!r} (se esperaba {esperado!r})")
+    if not problemas:
+        print("señal:    la explicación está fija arriba y es la misma que Nia da si preguntan; ninguna respuesta la"
+              " repite y el filtro solo quita oraciones completas que son el descargo")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -913,6 +978,7 @@ def main() -> int:
     problemas += _revisar_resumen_completo()
     problemas += _revisar_tarjetas_sin_riesgos()
     problemas += _revisar_duracion()
+    problemas += _revisar_senal_fija()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

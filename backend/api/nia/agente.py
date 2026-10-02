@@ -45,6 +45,15 @@ CASI_NO_MUEVE = "casi no mueve la estimación"
 # decide el modelo, no un umbral de puntos.
 EN_LO_NORMAL = "en lo normal del catálogo"
 
+# Qué es la señal, dicho para alguien que llega nuevo. Va fija arriba del chat (en /nia, en la
+# ficha y en la burbuja) y es lo que Nia contesta si preguntan qué significa: las respuestas no
+# la repiten. Es la misma frase que EXPLICACION_SENAL en frontend/src/app/dominio/textos-nia.ts,
+# para no decirlo dos veces de forma distinta (calidad/verificar_nia.py lo comprueba).
+EXPLICACION_SENAL = (
+    "El riesgo se basa en reseñas de gente que no recomendó el juego tras jugar menos de 2 horas."
+    " Es una señal, no prueba que se arrepintiera."
+)
+
 # La cara de Nia según el nivel: ninguna sonrisa junto a un riesgo alto.
 EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
 
@@ -219,12 +228,12 @@ Reglas que no puedes romper:
   títulos. Lo que escribas se pinta tal cual, así que un **así** se ve con los asteriscos.
 - Usa siempre "arrepentimiento temprano", nunca "abandono", ni siquiera para citar la
   pregunta: si te preguntan por el abandono, contesta con arrepentimiento temprano.
-- Es una señal proxy construida con reseñas de Steam donde alguien jugó menos de 120
-  minutos y calificó negativo. No sabes si alguien se arrepintió de verdad. Eso se explica
-  **la primera vez que hables del riesgo de arrepentimiento en esta conversación**, o si
-  te lo preguntan; después, di "esa señal" y sigue. Si la pregunta es
-  de otra cosa —el precio, la crítica, los géneros—, respóndela y ya: no metas el riesgo ni
-  el aviso donde nadie los pidió.
+- El riesgo es una señal proxy: sale de reseñas de Steam de gente que jugó menos de 2 horas
+  y no recomendó el juego, y no confirma que alguien se arrepintiera. Nunca digas que
+  alguien se arrepintió. Esa explicación ya está fija arriba del chat: no la repitas en tus
+  respuestas. Solo si preguntan qué significa la señal o el riesgo, contesta con esta misma
+  frase: «__EXPLICACION_SENAL__». Si la pregunta es de otra cosa —el precio, la crítica, los
+  géneros—, respóndela y ya: no metas el riesgo ni el aviso donde nadie los pidió.
 - Si quien pregunta dice que juega poco, o cuántas horas juega, usa esa cifra para decirle
   en cuántas sesiones llegaría a las dos horas de la ventana de reembolso, en vez de
   repetir que la ventana son 120 minutos.
@@ -381,6 +390,8 @@ def pulir(texto: str) -> str:
 # Qué prompt produjo una respuesta, para poder comparar los votos de antes y después de
 # cambiarlo. Sale del texto mismo: una etiqueta a mano se queda vieja sin que nadie lo
 # note, y entonces los votos de dos prompts distintos se suman como si fueran uno.
+_SISTEMA = _SISTEMA.replace("__EXPLICACION_SENAL__", EXPLICACION_SENAL)
+
 VERSION_PROMPT = hashlib.sha256(_SISTEMA.encode("utf-8")).hexdigest()[:8]
 
 # En modo demostración el prompt no interviene: atribuirle el voto sería falso.
@@ -808,13 +819,6 @@ def _preguntar_a_openai(
         for mensaje in historial_para_el_modelo(mensajes)
     ]
 
-    if ya_explico_la_senal(mensajes):
-        conversacion.append({
-            "role": "system",
-            "content": "En esta conversación ya explicaste qué es la señal y que es una proxy: no lo repitas,"
-                       " salvo que te pregunten qué significa.",
-        })
-
     salida_final = {
         "texto": "", "pasos": [], "appids": set(), "orden": [], "sugerencias": [], "pide_juego": False,
         "pide_perfil": False,
@@ -991,7 +995,7 @@ def responder(
             datos, mensajes, juegos_del_catalogo_mencionados(ultima, appid or 0), sugerencias, generos
         )
         if salida["texto"] or salida["pide_juego"] or salida["pide_perfil"]:
-            texto = ajustar_largo(sin_descargo_repetido(pulir(salida["texto"]), mensajes, ultima)) or (
+            texto = ajustar_largo(sin_descargo(pulir(salida["texto"]), ultima)) or (
                 "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
                 else "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?"
             )
@@ -1058,6 +1062,7 @@ def _por_reglas_aunque_haya_modelo(
     que más aporta)."""
     return (
         reglas.pide_resumen(ultima)
+        or reglas.pide_que_significa_la_senal(ultima)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))
@@ -1065,8 +1070,6 @@ def _por_reglas_aunque_haya_modelo(
     )
 
 
-# El descargo de la señal: "es una proxy", "no confirma que alguien se arrepintiera".
-_DESCARGO = re.compile(r"proxy|no confirma|no sabemos si|no se sabe si|no s[eé] si alguien", re.IGNORECASE)
 _PREGUNTA_POR_LA_SENAL = (
     "que significa", "que es la senal", "que es esa senal", "que quiere decir", "proxy", "como se calcula",
     "de donde sale", "metodologia",
@@ -1081,15 +1084,36 @@ def _oraciones(texto: str) -> list[str]:
     return [o for o in _FIN_DE_ORACION.split(texto.strip()) if o]
 
 
-def ya_explico_la_senal(mensajes: list[MensajeChat]) -> bool:
-    return any(m.rol == "nia" and _DESCARGO.search(m.contenido) for m in mensajes[:-1])
+# Una oración que es el descargo y nada más: empieza hablando de la señal, no de un juego, y
+# dice de dónde sale o que no confirma el arrepentimiento. «Llegas a 2 horas en 2 sesiones»
+# o «Steam devuelve el dinero si juegas menos de 2 horas» no empiezan así y se quedan.
+_ABRE_COMO_DESCARGO = re.compile(
+    r"^(?:ojo[:,]?\s+|recuerda(?:\s+que)?\s+|ten en cuenta que\s+)?"
+    r"(?:(?:esa|la|esta) señal\b|es una señal\b|el riesgo se basa en reseñas\b|no (?:sabemos|se sabe|s[eé]) si\b"
+    r"|no (?:confirma|prueba)\b)",
+    re.IGNORECASE,
+)
+_HABLA_DE_LA_SENAL = re.compile(
+    r"proxy|arrepint|primeras 2 horas|menos de 2 horas|120 minutos|reseñas negativas|no recomend", re.IGNORECASE
+)
 
 
-def sin_descargo_repetido(texto: str, mensajes: list[MensajeChat], ultima: str) -> str:
-    """El descargo sale la primera vez o cuando preguntan qué significa; después, fuera."""
-    if not ya_explico_la_senal(mensajes) or reglas._dice(_sin_acentos(ultima), *_PREGUNTA_POR_LA_SENAL):
+def es_descargo(oracion: str) -> bool:
+    limpia = oracion.strip(" ¡¿")
+    return bool(_ABRE_COMO_DESCARGO.match(limpia)) and bool(_HABLA_DE_LA_SENAL.search(limpia))
+
+
+def pregunta_por_la_senal(pregunta: str) -> bool:
+    return reglas._dice(_sin_acentos(pregunta), *_PREGUNTA_POR_LA_SENAL)
+
+
+def sin_descargo(texto: str, ultima: str) -> str:
+    """Quita el descargo de la señal, que ya está fijo arriba del chat: solo oraciones
+    completas que son el descargo, nunca un pedazo de otra. Si preguntan qué significa, se
+    queda."""
+    if pregunta_por_la_senal(ultima):
         return texto
-    quedan = [o for o in _oraciones(texto) if not _DESCARGO.search(o)]
+    quedan = [o for o in _oraciones(texto) if not es_descargo(o)]
     return " ".join(quedan) if quedan else texto
 
 

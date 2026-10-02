@@ -117,10 +117,6 @@ def _ultima_lista(mensajes: list[MensajeChat]) -> list[JuegoCatalogo]:
     return _nombrados(previas[-1]) if previas else []
 
 
-def _ya_explico_la_senal(mensajes: list[MensajeChat]) -> bool:
-    return any("primeras 2 horas" in m or "arrepentimiento temprano" in m for m in _respuestas_previas(mensajes))
-
-
 def _resultado(texto: str, **extra) -> dict:
     return {
         "texto": texto, "juegos": [], "sugerencias": [], "pide_juego": False, "pide_perfil": False,
@@ -795,19 +791,33 @@ def _de_donde_salen(pregunta: str) -> dict | None:
         return None
     p = panorama.resumen()
     return _resultado(
-        f"Salen de {p.resenas_descargadas:,} reseñas de Steam y de los datos de cada juego 📊 La señal es una "
-        "reseña negativa escrita en las primeras 2 horas, la ventana de reembolso. ¿Te cuento cómo se calcula el riesgo?"
+        f"Salen de {p.resenas_descargadas:,} reseñas de Steam y de los datos de cada juego 📊 {nia.EXPLICACION_SENAL}"
+        " ¿Te cuento cómo se calcula el riesgo?"
     )
+
+
+# «¿Qué significa la señal?»: la misma frase fija de arriba del chat, ni una más.
+_QUE_SIGNIFICA_LA_SENAL = (
+    "que significa la senal", "que significa esa senal", "que es la senal", "que es esa senal",
+    "que significa el riesgo", "que quiere decir el riesgo", "que significa ese riesgo", "que es una senal proxy",
+    "senal proxy", "que significa arrepentimiento temprano", "que es el arrepentimiento temprano",
+)
+
+
+def pide_que_significa_la_senal(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_QUE_SIGNIFICA_LA_SENAL)
+
+
+def _que_significa_la_senal(pregunta: str) -> dict | None:
+    if not pide_que_significa_la_senal(pregunta):
+        return None
+    return _resultado(f"{nia.EXPLICACION_SENAL} 🔍 ¿Te cuento qué mueve el riesgo de un juego?")
 
 
 def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeChat]) -> dict | None:
     """Lo de siempre dentro de una ficha (precio, crítica, riesgo, motivos, géneros), con la
-    voz nueva. La señal se explica solo la primera vez que sale el riesgo en el hilo."""
+    voz nueva. Qué es la señal no se dice aquí: está fija arriba del chat."""
     nombre, banda = datos["nombre"], datos["banda"]
-    senal = (
-        "" if _ya_explico_la_senal(mensajes)
-        else " Esa señal sale de reseñas negativas escritas en las primeras 2 horas, la ventana de reembolso."
-    )
     if _dice(pregunta, "precio", "cuesta", "caro", "barato", "oferta", "descuento"):
         return _resultado(_sobre_el_precio(pregunta, datos, catalogo.obtener(appid)), juegos=[appid])
     if _dice(pregunta, "critica", "metacritic", "nota", "prensa"):
@@ -835,11 +845,9 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
         return _resultado(f"Steam clasifica {nombre} como {generos} 🎮 ¿Te cuento su riesgo?", juegos=[appid])
     if _dice(pregunta, "banda", "por que", "porque", "riesgo", "estimacion", "explicamelo", "explica"):
         # Los avisos van completos y el factor principal siempre; para caber en las 60
-        # palabras se acorta, en este orden, el segundo factor, el final del descargo y la
-        # pregunta de cierre.
-        for cuantos, descargo_largo, cierre in _VARIANTES_DEL_PORQUE:
-            descargo = senal if descargo_largo or not senal else " Esa señal: reseñas negativas escritas en las primeras 2 horas."
-            texto = f"{_porque_del_riesgo(datos, cuantos)}{descargo} {cierre}"
+        # palabras se acorta, en este orden, el segundo factor y la pregunta de cierre.
+        for cuantos, cierre in _VARIANTES_DEL_PORQUE:
+            texto = f"{_porque_del_riesgo(datos, cuantos)} {cierre}"
             if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
                 break
         return _resultado(texto, juegos=[appid])
@@ -847,10 +855,9 @@ def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeCha
 
 
 _VARIANTES_DEL_PORQUE = (
-    (2, True, "¿Te cuento qué dicen esas reseñas?"),
-    (1, True, "¿Te cuento qué dicen esas reseñas?"),
-    (1, False, "¿Te cuento qué dicen esas reseñas?"),
-    (1, False, "¿Sigo con sus motivos?"),
+    (2, "¿Te cuento qué dicen sus reseñas?"),
+    (1, "¿Te cuento qué dicen sus reseñas?"),
+    (1, "¿Sigo con sus motivos?"),
 )
 
 # «¿El precio influye?» se contesta con cuánto; «¿cuánto cuesta?», con el precio.
@@ -944,10 +951,12 @@ def _porque_del_riesgo(datos: dict, cuantos: int) -> str:
         texto = (f"{nombre} tiene riesgo {banda} {emoji} Lo que más pesa es que {principal['idea']}, y eso"
                  f" {nia.efecto_hablado(principal)}; es {principal['pista']}.")
     for otro in razones[1:]:
-        firme = f", aunque es {otro['pista']}" if otro["debil"] else f", {otro['pista']}"
+        if otro["imputado"]:
+            # El precio que falta lo dice su aviso, que va al final y completo.
+            continue
+        # «La más confiable» ya se dijo del primero: el segundo, si también es sólido, es otra.
+        firme = f", aunque es {otro['pista']}" if otro["debil"] else ", otra pista confiable"
         texto += f" También lo {otro['efecto']} que {otro['idea']}{firme}."
-        if otro["imputado"] and nia._AVISOS_HABLADOS["precio_imputado"] in avisos:
-            avisos.remove(nia._AVISOS_HABLADOS["precio_imputado"])
     return texto + "".join(f" {_mayuscula(a)}." for a in avisos)
 
 
@@ -1038,6 +1047,7 @@ def responder(
         lambda: _instrucciones(pregunta),
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
+        lambda: _que_significa_la_senal(pregunta),
         # Antes que las sugerencias: con un juego, «¿es para mí?» es medir ese juego.
         lambda: _encaja(pregunta, original, appid, mensajes, generos),
         lambda: _el_mejor(pregunta),

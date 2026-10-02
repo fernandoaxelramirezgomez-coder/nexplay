@@ -20,6 +20,12 @@ export function sinMarkdown(texto: string): string {
     .trim();
 }
 
+/** Qué es la señal, para alguien que llega nuevo. Va fija arriba del chat, en /nia, en la
+ * ficha y en la burbuja, y es lo mismo que Nia contesta si preguntan qué significa: es la
+ * misma frase que EXPLICACION_SENAL en backend/api/nia/agente.py (verificar_nia lo revisa). */
+export const EXPLICACION_SENAL =
+  'El riesgo se basa en reseñas de gente que no recomendó el juego tras jugar menos de 2 horas. Es una señal, no prueba que se arrepintiera.';
+
 /** El saludo del chat sin juego: el de la página de Nia. Corto: el dueño pidió menos texto. */
 export const SALUDO_CHAT_CATALOGO = '¡Hola! Soy Nia 👋 ¿Buscas algo en particular o ya tienes un juego en mente?';
 

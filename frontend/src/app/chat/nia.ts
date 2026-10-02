@@ -22,6 +22,7 @@ import { recortarHistorial, sugerenciasParaNia } from '../dominio/historial-nia'
 import { criteriosDesde, sugerenciasPara } from '../dominio/sugerencias';
 import {
   COMO_FILTRAR,
+  EXPLICACION_SENAL,
   FICHAS_CATALOGO,
   FICHAS_JUEGO,
   FILTRAR_EL_CATALOGO,
@@ -91,6 +92,9 @@ interface Extra {
       <!-- Todo lo que va entre la cabecera y el campo: en la columna de la ficha (alto) se
            desplaza como un solo bloque, y el campo con «Preguntar» se queda siempre abajo.
            Fuera de ahí no es una caja (display: contents). -->
+      <!-- Qué es la señal, fijo arriba y fuera de lo que se desplaza: las respuestas ya no lo
+           repiten. Va aquí y no en cada página para que salga igual en /nia, la ficha y la burbuja. -->
+      <p class="senal meta" data-testid="nia-senal">{{ explicacionSenal }}</p>
       <div class="cuerpo-chat" #cuerpo>
       @if (muestraIntro()) {
         <p class="meta intro">Pregúntale por su riesgo, sus reseñas, la crítica o el precio.</p>
@@ -315,6 +319,12 @@ interface Extra {
     /* El chat es para leer la respuesta, no la introducción: lo de alrededor va compacto
        y el alto que se gana se lo queda la conversación. */
     .intro {
+      margin: 0;
+      font-size: var(--texto-caption);
+      line-height: var(--interlineado-largo);
+    }
+    .senal {
+      flex: none;
       margin: 0;
       font-size: var(--texto-caption);
       line-height: var(--interlineado-largo);
@@ -624,6 +634,7 @@ export class Nia {
   /** El mismo número que aplica api/valoraciones.py (DIAS_DE_RETENCION_NIA): si allá
    * cambia, aquí también, o el aviso miente. */
   protected readonly diasQueSeGuarda = DIAS_DE_RETENCION_NIA;
+  protected readonly explicacionSenal = EXPLICACION_SENAL;
 
   /** El juego del que se habla: el de la entrada o el que se eligió dentro del chat. */
   readonly appidEfectivo = signal<number | null>(null);
