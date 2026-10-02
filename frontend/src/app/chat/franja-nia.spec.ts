@@ -40,7 +40,10 @@ describe('FranjaNia', () => {
     // Sin perfil no se gasta la vez del día.
     expect(localStorage.getItem(CLAVE_GLOBITOS)).toBeNull();
     TestBed.resetTestingModule();
-    expect(franja(montar({ vista: 'perfil', disponible: true }))?.textContent).toContain('Ver sugerencias');
+    const perfil = franja(montar({ vista: 'perfil', disponible: true }))?.textContent ?? '';
+    expect(perfil).toContain('Ver coincidencias');
+    // Con perfil se muestran coincidencias: nada de «te sugiero» ni «encajan contigo».
+    expect(perfil).not.toMatch(/te sugiero|encajan contigo/);
   });
 
   it('su botón le pide a la burbuja lo que ofrecía y la franja se cierra', () => {

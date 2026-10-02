@@ -71,7 +71,7 @@ export function textoGlobito(vista: VistaConGlobito, enComparacion = 0): { texto
     case 'explorar':
       return { texto: '¿Te ayudo a filtrar? 🔎 Dime un género, un precio o un riesgo.', accion: 'Filtrar con Nia' };
     case 'perfil':
-      return { texto: 'Con tu perfil te sugiero juegos que encajan contigo ✨', accion: 'Ver sugerencias' };
+      return { texto: 'Con tu perfil te muestro qué juegos coinciden contigo ✨', accion: 'Ver coincidencias' };
     case 'comparar':
       return { texto: `¿Te resumo en qué se diferencian estos ${enComparacion}? 📊`, accion: 'Resumir la comparación' };
   }

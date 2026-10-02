@@ -1079,6 +1079,51 @@ def _revisar_comentarios() -> list[str]:
     return problemas
 
 
+# Con perfil se muestran coincidencias; Nia no elige por nadie ni lo promete.
+_ELIGE_POR_TI = re.compile(
+    r"para sugerirte|necesito saber cómo juegas|encajan contigo|te conviene|es para ti|es adecuad|te digo cuál"
+    r"|elijo por ti|elegiré|te recomiendo|cuál comprar",
+    re.IGNORECASE,
+)
+
+
+def _revisar_cual_me_compro() -> list[str]:
+    """«¿Cuál me compro?» y «¿Qué me recomiendas?», con perfil y sin él: la decisión es de quien
+    pregunta, y si se habla del perfil es para mostrar coincidencias, nunca para que Nia elija.
+    «¿Cuál me compro?» va por reglas también con modelo, y el prompt lo dice."""
+    problemas = []
+    hades = next(j.appid for j in catalogo.buscar() if j.nombre == "Hades")
+    de_rol = [SugerenciaNia(appid=j.appid, razones=["coincide en Rol"]) for j in catalogo.buscar(genero="Rol")[:3]]
+    perfiles = (("sin perfil", [], None), ("con perfil", de_rol, ["Rol"]))
+    preguntas = ("¿Cuál me compro?", "¿Cuál elijo?", "¿Qué juego me recomiendas?", "¿Qué me recomiendas?")
+    for (perfil, sugerencias, generos), appid, pregunta in (
+        (p, a, q) for p in perfiles for a in (None, hades) for q in preguntas
+    ):
+        datos = nia.contexto(appid) if appid else None
+        mensajes = [MensajeChat(rol="usuario", contenido=pregunta)]
+        texto = nia.pulir(nia_reglas.responder(datos, appid, mensajes, sugerencias, generos)["texto"])
+        donde = f"«{pregunta}» ({perfil}, {'ficha' if appid else 'general'})"
+        if _ELIGE_POR_TI.search(texto):
+            problemas.append(f"{donde} suena a que Nia elige: {texto[:70]}…")
+        if "tuyo" not in texto:
+            problemas.append(f"{donde} no deja la decisión a quien pregunta: {texto[:70]}…")
+        if "perfil" in texto and "coincid" not in texto:
+            problemas.append(f"{donde} habla del perfil sin decir que muestra coincidencias: {texto[:70]}…")
+        problemas += _voz(texto, pregunta)
+    for pregunta in ("¿Cuál me compro?", "¿Cuál elijo?"):
+        if not nia._por_reglas_aunque_haya_modelo(None, None, [MensajeChat(rol="usuario", contenido=pregunta)], [], pregunta):
+            problemas.append(f"«{pregunta}» iría al modelo")
+    # La que usa el modo con modelo cuando sugerencias_del_perfil responde sin_perfil.
+    invitacion = getattr(nia, "INVITA_AL_PERFIL", "")
+    if not invitacion or _ELIGE_POR_TI.search(invitacion) or "coincid" not in invitacion:
+        problemas.append(f"la invitación al perfil del modo con modelo no habla de coincidencias: «{invitacion}»")
+    if "Nunca digas que con el perfil elegirás" not in nia._SISTEMA:
+        problemas.append("el prompt no le prohíbe al modelo prometer que con el perfil elige")
+    if not problemas:
+        print("elección: con perfil o sin él, elegir es de quien pregunta; el perfil muestra coincidencias")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1137,6 +1182,7 @@ def main() -> int:
     problemas += _revisar_como_se_calcula()
     problemas += _revisar_cifras_de_los_datos()
     problemas += _revisar_comentarios()
+    problemas += _revisar_cual_me_compro()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

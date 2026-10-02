@@ -145,7 +145,7 @@ def _saludo_o_gracias(pregunta: str, datos: dict | None) -> dict | None:
 # más, se queda fuera porque no le queda ninguna oración que resumir.
 _DE_TRAMITE = (
     "Va, en corto", "Más corto", "Eso no lo sé", "No corono", "¿De qué juego hablamos", "Aún no te he contado",
-    "Ya te lo conté", "¡De nada", "Para sugerirte algo",
+    "Ya te lo conté", "¡De nada", "Sin perfil no sé",
 )
 
 _PIDE_RESUMEN = ("resume", "resumen", "resumir", "resumelo", "resumeme", "en corto", "lo que dijiste",
@@ -318,17 +318,18 @@ def _sugerencias(pregunta: str, sugerencias: list[SugerenciaNia]) -> dict | None
     if not _dice(pregunta, "recomiendas", "recomiendame", "recomienda", "recomendarias", "sugiere", "sugiereme",
                  "sugerencias", "sugerencia", "que juego me va", "que me va", "para mi"):
         return None
-    appids = [s.appid for s in sugerencias if catalogo.obtener(s.appid) is not None][:4]
+    appids = _de_las_sugerencias(sugerencias)
     if not appids:
-        return _resultado(
-            "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?",
-            pide_perfil=True,
-        )
+        return _resultado(nia.INVITA_AL_PERFIL, pide_perfil=True)
     return _resultado(
-        "Con lo que declaraste en tu perfil, estos encajan contigo ✨ Elegir es tuyo: te dejo el riesgo de "
-        "cada uno al lado. ¿Te explico alguno?",
+        "Estos coinciden con lo que declaraste en tu perfil ✨ Son coincidencias, no una elección: decidir es tuyo,"
+        " y el riesgo de cada uno va en su tarjeta. ¿Te explico alguno?",
         sugerencias=appids,
     )
+
+
+def _de_las_sugerencias(sugerencias: list[SugerenciaNia]) -> list[int]:
+    return [s.appid for s in sugerencias if catalogo.obtener(s.appid) is not None][:4]
 
 
 def _fortalezas_y_debilidades(juego: JuegoCatalogo) -> str:
@@ -370,8 +371,19 @@ def _fortalezas_y_debilidades(juego: JuegoCatalogo) -> str:
     return "; ".join(partes)
 
 
-def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes: list[MensajeChat]) -> dict | None:
-    eleccion = _dice(pregunta, "cual me compro", "cual compro", "cual elijo", "cual escojo")
+# «¿Cuál me compro?»: con modelo también va por reglas. El modelo contestaba que con el perfil
+# elegiría por la persona; con perfil solo se muestran coincidencias.
+_ELECCION = ("cual me compro", "cual compro", "cual elijo", "cual escojo", "cual me llevo", "que me compro",
+             "que juego compro", "cual me conviene")
+
+
+def pide_eleccion(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_ELECCION)
+
+
+def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes: list[MensajeChat],
+                  sugerencias: list[SugerenciaNia]) -> dict | None:
+    eleccion = _dice(pregunta, *_ELECCION)
     un_juego = _dice(pregunta, "vale la pena", "es bueno", "esta bueno", "recomendarias comprarlo", "comprarlo",
                      "lo compro", "me lo compro")
     if not (eleccion or un_juego):
@@ -398,6 +410,12 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
             f"Decidir es tuyo 🤔 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
             "¿Qué pesa más para ti?",
             juegos=[juego.appid],
+        )
+    if eleccion and _de_las_sugerencias(sugerencias):
+        return _resultado(
+            "Elegir es tuyo 🤔 Te dejo los que coinciden con lo que declaraste en tu perfil, con su riesgo en cada"
+            " tarjeta. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?",
+            sugerencias=_de_las_sugerencias(sugerencias),
         )
     if eleccion:
         return _resultado(
@@ -1154,7 +1172,7 @@ def responder(
         lambda: _el_mejor(pregunta),
         lambda: _sugerencias(pregunta, sugerencias),
         lambda: _compara(pregunta, appid),
-        lambda: _vale_la_pena(pregunta, datos, appid, mensajes),
+        lambda: _vale_la_pena(pregunta, datos, appid, mensajes, sugerencias),
         lambda: _de_esos(pregunta, mensajes),
         lambda: _pedir_juego() if necesita_juego(original, mensajes, appid) else None,
         lambda: _de_donde_salen(pregunta),

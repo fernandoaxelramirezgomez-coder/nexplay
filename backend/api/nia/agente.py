@@ -57,6 +57,13 @@ EXPLICACION_SENAL = (
 # La cara de Nia según el nivel: ninguna sonrisa junto a un riesgo alto.
 EMOJI_DEL_NIVEL = {"bajo": "🙂", "medio": "🤔", "alto": "😬"}
 
+# Sin perfil no hay sugerencias. Con perfil se muestran coincidencias con lo declarado; Nia no
+# elige por nadie, así que la invitación no puede sonar a «con tu perfil te digo cuál».
+INVITA_AL_PERFIL = (
+    "Sin perfil no sé qué géneros te gustan 🎮 Con uno te muestro qué juegos coinciden con ellos; elegir sigue"
+    " siendo tuyo. Toma un minuto, ¿lo armamos?"
+)
+
 # Los avisos de la estimación, dichos como se le dirían a alguien.
 _AVISOS_HABLADOS = {
     "precio_imputado": "Steam no dio su precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo",
@@ -310,7 +317,9 @@ Reglas que no puedes romper:
   lista que ya calculó NexPlay con lo que declararon. Preséntalas como "sugerencias según tu
   perfil", con el riesgo de cada una, y nunca digas cuál comprar. Di en qué géneros
   coincide cada una (coincide_en) y cuáles de los declarados no tiene (no_tiene), nunca
-  como porcentaje. Si responde sin_perfil, invita a crear el perfil.
+  como porcentaje. Si responde sin_perfil, invita a crear el perfil: con él verá qué juegos
+  coinciden con sus géneros. Nunca digas que con el perfil elegirás, sabrás cuál le conviene
+  o le dirás cuál comprar: son coincidencias y la decisión sigue siendo suya.
 - Si preguntan si un juego encaja con ellos, usa "Tus géneros" del contexto (o los géneros
   que declararon, contra los del juego que te den las herramientas): di qué géneros
   coinciden y cuáles no, con sus nombres. Nunca des la afinidad como porcentaje ni como
@@ -1029,7 +1038,7 @@ def responder(
         if salida["texto"] or salida["pide_juego"] or salida["pide_perfil"]:
             texto = ajustar_largo(sin_descargo(pulir(salida["texto"]), ultima)) or (
                 "¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico." if salida["pide_juego"]
-                else "Para sugerirte algo necesito saber cómo juegas 🙂 Tu perfil toma un minuto. ¿Lo armamos?"
+                else INVITA_AL_PERFIL
             )
             juegos = _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"])
             if juegos:
@@ -1098,6 +1107,7 @@ def _por_reglas_aunque_haya_modelo(
         or reglas.pide_como_se_calcula(ultima)
         or reglas.pide_de_donde_salen(ultima)
         or reglas.pide_comentarios(ultima)
+        or reglas.pide_eleccion(ultima)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))
