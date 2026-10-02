@@ -262,6 +262,7 @@ CANONICAS = {
     "PreguntasTrampa": "48",
     "TrampasPorRevisar": "0",
     "FechaCorridaTrampas": "30 de septiembre de 2026",
+    "CommitTrampas": "c5478f6",
     # docs/evidencia/verificar-nia-openai-2026-10-02.txt: la prueba local del camino con IA
     "FechaCorridaNiaIA": "2 de octubre de 2026",
     # contexto de mercado (sección 2): docs/evidencia/contexto-mercado.json, con la cita textual de cada fuente,
@@ -273,14 +274,14 @@ CANONICAS = {
     "FechaCorteIngresos": "19 de diciembre de 2025",
     # datos (4.4): backend/analisis/diccionario.py, COLUMNAS
     "ColumnasDiccionario": "41",
-    # anexo: docs/evidencia/colab/, la corrida de los tres con codigo-v6 (README y las tres descargas)
+    # anexo: docs/evidencia/colab/, la corrida de los tres con codigo-v8, el tag de entrega (README y las tres descargas)
     "FechaColab": "2 de octubre de 2026",
     "CeldasCero": "69 de 69",
     "CeldasUno": "28 de 28",
     "CeldasDos": "24 de 24",
-    "TiempoCero": "192",
-    "TiempoUno": "34",
-    "TiempoDos": "400",
+    "TiempoCero": "184",
+    "TiempoUno": "28",
+    "TiempoDos": "378",
     "VersionPythonColab": "3.13.15",
     "VersionNumpyColab": "2.1.3",
     "VersionPandasColab": "2.2.3",

@@ -265,3 +265,34 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
     el párrafo «Los comandos» del anexo queda en una oración. Remite a «Puesta en marcha» del README y conserva
     `make doc`, que el README no lista en esa sección.
     - El README de master decía que `make notebooks` «ejecuta el 00 y el 01»; se corrige primero en master.
+
+## Cierre con el tag de entrega (2026-10-02, tarde)
+
+54. **La evidencia de Colab con `codigo-v8`.** Son las tres descargas de las 11:59 y las 12:06, copiadas byte por byte a
+    `docs/evidencia/colab/*-colab-codigo-v8.ipynb`.
+    - Su código es idéntico al del tag, y corrieron completas (69, 28 y 24 celdas) sin errores ni salidas a stderr.
+    - El 01 prueba que usó v8: llama a `construir_features(..., mediana_metacritic=…)` y dice «errores de inferencia:
+      ninguno».
+    - Los tiempos (184, 28 y 378 s) se midieron en esta máquina con las mismas versiones, contando el clon y la
+      descarga de los datos.
+55. **`documento` se rebasó sobre master (`c648c42`)**: 42 commits, y el árbol final es idéntico al de la fusión
+    (`e56d2582`). Respaldo en la rama `respaldo-documento-antes-del-rebase-v8`.
+56. **Las rutas de Nia, fijas en el generador** (`RUTAS_DE_NIA`): `git diff --quiet codigo-v7 <tag de entrega>` sobre
+    todo lo que puede cambiar lo que Nia contesta o cómo se etiqueta. Entre `codigo-v6` y `codigo-v8` da diferencias,
+    y entre `codigo-v7` y `codigo-v8`, ninguna.
+57. **Trampas: no se repite la corrida ni se escribe `correr_trampas.py`** (del dueño). El script nunca existió: las
+    corridas usaron un `nia_real.py` del scratchpad.
+    - 8.2 dice que la corrida del 30 de septiembre fue sobre `c5478f6` (`CommitTrampas`, de `preguntas_trampa.json`),
+      anterior a los arreglos de lenguaje de Nia, y que no se repitió.
+    - **Trabajo futuro (no va en el documento):** versionar el script de trampas en `backend/calidad/`. Correría
+      `preguntas_trampa.json` contra una API con clave, comprobaría lo automatizable y dejaría solo conteos.
+58. **Capturas de producción.**
+    - Las figuras del recorrido, de los accionables y de Nia por reglas se tomaron de `nexplay-six.vercel.app` con
+      `capturar_recorrido.py --front` y los mismos parámetros. La figura «Con IA» se tomó antes con `codigo-v7`, y el
+      pie lo dice.
+    - `capturar_recorrido.py` sube la lista del chat antes de recortar a Nia: en producción, la explicación de la
+      señal va fija arriba del chat y tapaba la pregunta.
+    - §9.1 decía que los primeros lugares del estante de Acción eran «un juego sin precio y dos gratis»; el generador
+      fija GTA V Legacy, Team Fortress 2, Resident Evil 4 y Apex Legends, así que son las dos primeras.
+59. **`\fechaentrega` es el 3 de octubre de 2026** (del dueño). Se quita la macro `\provisional`, que ya nada usa.
+

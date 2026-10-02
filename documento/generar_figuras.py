@@ -738,13 +738,23 @@ GRUPOS_DE_ENDPOINTS = {
 }
 
 
+# La prueba con IA (verificar_nia.py --openai) corrió sobre codigo-v7. El documento dice que el código de Nia es
+# idéntico en el tag de entrega: todo lo que puede cambiar lo que Nia contesta o cómo se etiqueta.
+TAG_PRUEBA_NIA_IA = "codigo-v7"
+RUTAS_DE_NIA = ("backend/api/nia/", "backend/api/main.py", "backend/api/schemas.py", "backend/api/config.py",
+                "backend/api/catalogo.py", "backend/api/panorama.py", "backend/api/scoring.py", "backend/api/valoraciones.py",
+                "backend/analisis/motivos.py", "frontend/src/app/chat/", ":(exclude)frontend/src/app/chat/*.spec.ts",
+                "frontend/src/app/dominio/textos-nia.ts", "backend/calidad/verificar_nia.py")
+
+
 def cifras_de_nia(cifras: Cifras) -> None:
     """§8.2: cuántas herramientas tiene Nia y cómo salieron sus pruebas. Los conteos salen del código
     (sin importarlo) y los resultados, de docs/evidencia/nia-pruebas.md, que deben cuadrar con ellos."""
     herramientas = len(re.findall(r'"name": "', (BACKEND / "api" / "nia" / "herramientas.py").read_text(encoding="utf-8")))
     preguntas = next(len(nodo.value.elts) for nodo in ast.parse((BACKEND / "calidad" / "preguntas_nia.py").read_text(encoding="utf-8")).body
                      if isinstance(nodo, ast.Assign) and getattr(nodo.targets[0], "id", "") == "PREGUNTAS")
-    trampas = len(json.loads((BACKEND / "calidad" / "preguntas_trampa.json").read_text(encoding="utf-8"))["casos"])
+    preguntas_trampa = json.loads((BACKEND / "calidad" / "preguntas_trampa.json").read_text(encoding="utf-8"))
+    trampas = len(preguntas_trampa["casos"])
     evidencia = (EVIDENCIA / "nia-pruebas.md").read_text(encoding="utf-8")
     aprobadas, total = re.search(r"(\d+) de (\d+) en las dos corridas", evidencia).groups()
     dia, respuestas, por_revisar = re.search(r"\((\d+) de septiembre, (\d+) respuestas\) terminó con (\d+) casos por revisar", evidencia).groups()
@@ -756,6 +766,14 @@ def cifras_de_nia(cifras: Cifras) -> None:
     cifras.agregar("PreguntasTrampa", str(trampas), "backend/calidad/preguntas_trampa.json: casos")
     cifras.agregar("TrampasPorRevisar", por_revisar, "docs/evidencia/nia-pruebas.md: última corrida de trampas")
     cifras.agregar("FechaCorridaTrampas", f"{dia} de septiembre de 2026", "docs/evidencia/nia-pruebas.md: última corrida de trampas")
+    commit_trampas = preguntas_trampa["codigo_de_referencia"]
+    if subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{commit_trampas}^{{commit}}"], cwd=RAIZ,
+                      capture_output=True).returncode != 0:
+        raise ValueError(f"preguntas_trampa.json cita el commit {commit_trampas}, que no está en git")
+    cifras.agregar("CommitTrampas", commit_trampas, "backend/calidad/preguntas_trampa.json: codigo_de_referencia")
+    tag = tag_de_codigo()
+    if subprocess.run(["git", "diff", "--quiet", TAG_PRUEBA_NIA_IA, tag, "--", *RUTAS_DE_NIA], cwd=RAIZ).returncode != 0:
+        raise ValueError(f"el código de Nia cambió entre {TAG_PRUEBA_NIA_IA} y {tag}: la prueba con IA ya no lo cubre")
     # La prueba local del camino con IA: la fecha sale del nombre de su salida, que tiene que terminar limpia.
     corrida = max(EVIDENCIA.glob("verificar-nia-openai-*.txt"))
     if not corrida.read_text(encoding="utf-8").rstrip().endswith("sin problemas: 6 juegos × 3 preguntas"):

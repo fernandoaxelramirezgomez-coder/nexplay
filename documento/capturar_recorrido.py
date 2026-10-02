@@ -114,6 +114,24 @@ def _desde_la_pregunta(pagina: Page, chat: str) -> list[dict]:
     )]
 
 
+def _subir_a_la_pregunta(pagina: Page, chat: str) -> None:
+    """La lista del chat baja sola hasta el final, y arriba de ella va fijo qué es la señal: sin subirla, la
+    pregunta queda debajo de ese texto y el recorte la corta."""
+    pagina.evaluate(
+        """chat => {
+            const preguntas = document.querySelectorAll(chat + " li.mensaje[data-rol='usuario']");
+            const pregunta = preguntas[preguntas.length - 1];
+            let caja = pregunta.parentElement;
+            while (caja && !(caja.scrollHeight > caja.clientHeight && /auto|scroll/.test(getComputedStyle(caja).overflowY))) {
+                caja = caja.parentElement;
+            }
+            if (caja) caja.scrollTop += pregunta.getBoundingClientRect().top - caja.getBoundingClientRect().top - 8;
+        }""",
+        chat,
+    )
+    _esperar_quietud(pagina)
+
+
 def _texto(pagina: Page, selector: str) -> str:
     return " ".join(pagina.locator(selector).first.inner_text().split())
 
@@ -166,6 +184,7 @@ def main() -> None:
         # 2 y 3. Las dos fichas; en la de PAYDAY 3, además, la pregunta a Nia.
         lineas += _ficha(pagina, args.front, PAYDAY, "02-payday")
         _preguntar_en_chat(pagina, "¿Por qué tiene ese riesgo?")
+        _subir_a_la_pregunta(pagina, "aside.lateral app-nia")
         _recortar(pagina, "03-payday-nia.png", "aside.lateral app-nia",
                   medir=lambda: _desde_la_pregunta(pagina, "aside.lateral app-nia"))
         lineas.append("03-payday-nia.png: modo " + _texto(pagina, "[data-testid='nia-modo']")
