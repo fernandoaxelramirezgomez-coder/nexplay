@@ -1,14 +1,46 @@
 % Rúbrica: Introducción. Incluye la tabla que lleva cada criterio de la rúbrica a su sección.
 \section{Introducción}\label{sec:introduccion}
 
-\subsection{Contexto}
-\pendiente{redacción (etapa 2)}
+Comprar un videojuego en Steam tiene una salida: se puede pedir el reembolso dentro de las dos
+semanas posteriores a la compra, si se ha jugado menos de dos horas \parencite{steam_reembolsos}.
+Esa ventana es corta. Quien descubre que un juego no era lo que buscaba tiene un par de horas para
+darse cuenta y actuar, y si no lo hace, se queda con un gasto que no quería.
 
-\subsection{Preguntas del proyecto}
-\pendiente{redacción (etapa 2)}
+NexPlay estima, antes de pagar, qué tan seguido un juego deja a sus compradores arrepentidos en
+las primeras horas. No observa el arrepentimiento: usa una señal que sí está en los datos, las
+reseñas negativas escritas antes de las dos horas de juego, y la llama \emph{señal de
+arrepentimiento temprano} (sección~\ref{sec:objetivo}). El proyecto responde dos preguntas. La de
+datos: ¿qué tienen en común los juegos que dejan más señal, y se puede anticipar con lo que se sabe
+del juego antes de comprarlo? La de producto: ¿cómo se le muestra eso a quien duda entre dos juegos,
+sin prometerle una probabilidad que el modelo no da?
 
-\subsection{Qué entrega el proyecto}
-\pendiente{redacción (etapa 2)}
+Entrega un modelo de riesgo por título, entrenado con \cifraJuegosEntrenamiento{} juegos de Steam y
+probado con \cifraJuegosExternos{} que no vio (sección~\ref{sec:modelacion}); un sitio con el
+catálogo, la ficha de cada juego, una comparación y un asistente, Nia
+(sección~\ref{sec:resolucion}); dos notebooks que corren en Colab (anexo~\ref{sec:anexo}), y este
+documento. La tabla~\ref{tab:rubrica} lleva cada criterio de la rúbrica a la sección que lo cubre.
 
-\subsection{Mapa del documento contra la rúbrica}
-\pendiente{redacción (etapa 2)}
+\begin{table}[htbp]
+  \centering\small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{6.6cm} >{\raggedright\arraybackslash}X}
+    \toprule
+    Criterio de la rúbrica & Dónde se cubre \\
+    \midrule
+    Introducción & Resumen y sección~\ref{sec:introduccion} \\
+    Planteamiento del problema & Sección~\ref{sec:planteamiento} \\
+    Estrategia: accionables, usuarios y usabilidad & Sección~\ref{sec:estrategia} \\
+    Descripción de los datos & Sección~\ref{sec:datos} \\
+    Análisis exploratorio de datos & Sección~\ref{sec:exploracion} \\
+    Procesamiento de datos & Sección~\ref{sec:procesamiento} \\
+    Modelación supervisada & Sección~\ref{sec:modelacion} \\
+    Resolución del problema & Sección~\ref{sec:resolucion} \\
+    Interfaz de uso: paso a paso y demostración & Secciones~\ref{sec:estrategia-recorrido}
+    y~\ref{sec:interfaz} \\
+    Conclusiones & Sección~\ref{sec:conclusiones} \\
+    Referencias en formato APA & Referencias \\
+    Reproducibilidad de los notebooks & Anexo~\ref{sec:anexo} \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Cada criterio de la rúbrica y la sección que lo cubre.}
+  \label{tab:rubrica}
+\end{table}

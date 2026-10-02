@@ -1,22 +1,98 @@
 % Rúbrica: Estrategia (15 puntos): accionables, descripción de usuarios y usabilidad del modelo.
+% Fuente: las capturas de docs/capturas/documento/ (provisionales: se regeneran desde el tag de entrega),
+% frontend/src/app/ y las cifras de data-v3 que da generar_figuras.py (cifras_del_recorrido).
 \section{Estrategia}\label{sec:estrategia}
 
-\subsection{Accionables}
-\pendiente{redacción (etapa 2)}
+\subsection{Usuarios y necesidades}\label{sec:estrategia-usuarios}
 
-\subsection{Usuarios y necesidades}
-\pendiente{redacción (etapa 2)}
+Quien usa NexPlay está por comprar un juego en Steam desde México. Necesita tres cosas: saber
+antes de pagar si el juego tiende a decepcionar pronto, entender por qué, y decidir entre opciones
+con eso a la vista. El sitio le pide un perfil corto, que se declara en un formulario: compras al
+año, horas por semana, tolerancia a la fricción, las etiquetas de Steam que prefiere o rechaza y la
+plataforma. Ese perfil sirve para la afinidad, que dice qué tanto encaja un juego con quien lo
+declaró; no mueve el riesgo, que es del título (sección~\ref{sec:modelacion-bmas}).
 
-\subsection{Recorrido: PAYDAY 3 contra Dead Space}
-% NOTA (dueño, 2026-09-30): «precio al corte de datos» con la fecha en que se observó el precio de cada
-% juego (juegos.descargado_en, la marca de appdetails): PAYDAY 3 el 14-sep-2026 y Dead Space el 21-sep-2026
-% (UTC). Nunca la fecha de publicación de data-v3. Decir que Dead Space está con 75 % de descuento ese día
-% ($349.75, precio sin descuento $1,399.00) y que la comparación es al precio que vería un comprador ese día.
-% NOTA (dueño, 2026-09-30): el estante de riesgo bajo de Acción ordena del score más bajo al más alto,
-% y el precio 0 empuja al frente a los gratis y a los de precio que falta. Sus cuatro primeras tarjetas:
-% GTA V Legacy (aviso: precio imputado), Team Fortress 2 (aviso: gratis, extrapola), Resident Evil 4
-% (sin aviso) y Apex Legends (aviso: gratis). Decirlo aquí y en §15. La alternativa del recorrido es RE4.
-\pendiente{redacción (etapa 2)}
+\subsection{Accionables}\label{sec:estrategia-accionables}
 
-\subsection{Usabilidad}
-\pendiente{redacción (etapa 2)}
+Cada resultado del proyecto lleva a una acción concreta en el sitio:
+\begin{itemize}
+  \item \textbf{Comparar antes de decidir.} Comparar pone lado a lado la banda de riesgo, el motivo
+  principal, el precio y la crítica de los juegos elegidos (figura~\ref{fig:accionables}a).
+  \item \textbf{Revisar si las quejas son de las que le afectan.} Los motivos dicen de qué se
+  quejan las reseñas con la señal; un juego cuyas quejas son de rendimiento pesa distinto para
+  quien tiene un equipo de sobra que para quien no (figura~\ref{fig:recorrido}e y f).
+  \item \textbf{Preguntarle a Nia,} que contesta con los datos del catálogo y explica la banda de
+  un juego (sección~\ref{sec:interfaz}).
+  \item \textbf{Planear las dos primeras horas.} El Inicio recuerda la ventana de reembolso y lo
+  que más mencionan las negativas tempranas, para probar eso primero mientras el juego todavía se
+  puede devolver; Steam decide cada solicitud, y el sitio lo dice (figura~\ref{fig:accionables}c).
+  \item \textbf{Buscar alternativas del mismo género con riesgo bajo.} Explorar agrupa el catálogo
+  en estantes por banda y se filtra por género (figura~\ref{fig:accionables}b).
+\end{itemize}
+
+\subsection{Recorrido: PAYDAY 3 contra Dead Space}\label{sec:estrategia-recorrido}
+
+Una persona duda entre PAYDAY 3 y Dead Space, dos juegos de acción con precios casi iguales al corte
+de datos: \cifraPaydayPrecio{} pesos PAYDAY 3, al \cifraPaydayFechaPrecio{}, y
+\cifraDeadSpacePrecio{} Dead Space, al \cifraDeadSpaceFechaPrecio{}, con \cifraDeadSpaceDescuento{}
+de descuento sobre \cifraDeadSpacePrecioInicial{}. Son los precios que habría visto quien comprara
+esos días. El recorrido tiene cinco pasos:
+\begin{enumerate}
+  \item En el Inicio busca los dos. La ficha de PAYDAY 3 dice riesgo alto y la de Dead Space, riesgo
+  bajo, cada una con su frase (figura~\ref{fig:recorrido}a y b). Dead Space es uno de los
+  \cifraJuegosExternos{} juegos que el modelo no vio al entrenar.
+  \item «Qué mueve esta estimación» da los factores (figura~\ref{fig:recorrido}c y d). PAYDAY 3
+  tiene una nota de Metacritic de \cifraPaydayMetacritic{}, por debajo del promedio del catálogo, y
+  eso sube su riesgo estimado; Dead Space tiene \cifraDeadSpaceMetacritic{}. El descuento de Dead
+  Space aparece como un factor que lo baja, pero con evidencia débil, así que no es parte del
+  argumento.
+  \item Los motivos marcan la diferencia (figura~\ref{fig:recorrido}e y f). En PAYDAY 3, la queja
+  principal es el contenido, en el \cifraPaydayMotivoPrincipal{} de las
+  \cifraPaydayClasificadas{} reseñas clasificadas de sus \cifraPaydayCasos{} con la señal. En Dead
+  Space es el rendimiento, en el \cifraDeadSpaceMotivoPrincipal{} de \cifraDeadSpaceClasificadas{},
+  de \cifraDeadSpaceCasos{}. Las quejas de rendimiento pesan según el equipo de quien juega; las de
+  contenido, no.
+  \item Comparar los pone lado a lado (figura~\ref{fig:accionables}a), y Nia puede explicar la
+  banda de cualquiera de los dos.
+  \item Si quiere otro juego de acción con riesgo bajo, Explorar muestra un estante de
+  \cifraEstanteAccionBajo{} (figura~\ref{fig:accionables}b). Va del score más bajo al más alto, y
+  el precio 0 empuja al frente a los gratis y a los que no tienen precio: Grand Theft Auto V Legacy
+  lleva el aviso de precio imputado, y Team Fortress 2 y Apex Legends, el de juego gratis. La
+  alternativa sin aviso es Resident Evil 4.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/02-payday-veredicto.png}\caption{}\end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/04-deadspace-veredicto.png}\caption{}\end{subfigure}
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/02-payday-factores.png}\caption{}\end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/04-deadspace-factores.png}\caption{}\end{subfigure}
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/02-payday-motivos.png}\caption{}\end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/04-deadspace-motivos.png}\caption{}\end{subfigure}
+  \caption{El recorrido en la ficha: PAYDAY 3 a la izquierda y Dead Space a la derecha. La banda
+  (a, b), lo que mueve la estimación (c, d) y los motivos más frecuentes (e, f). Capturas
+  provisionales del sitio: se regeneran desde el tag de entrega.}
+  \label{fig:recorrido}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}\centering\includegraphics[width=0.86\linewidth]{capturas/05-comparar.png}\caption{}\end{subfigure}
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/06-explorar-accion-bajo.png}\caption{}\end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}\includegraphics[width=\linewidth]{capturas/07-inicio-reembolso.png}\caption{}\end{subfigure}
+  \caption{Tres accionables: Comparar (a), el estante de riesgo bajo de Acción en Explorar (b) y la
+  ventana de reembolso en el Inicio (c), cuyos motivos se cuentan sobre todo el catálogo servido.
+  Capturas provisionales del sitio: se regeneran desde el tag de entrega.}
+  \label{fig:accionables}
+\end{figure}
+
+\subsection{Usabilidad}\label{sec:estrategia-usabilidad}
+
+La banda se dice con palabras y color, no con un porcentaje: el score no es una probabilidad
+calibrada (sección~\ref{sec:modelacion-umbrales}), y un porcentaje se leería como una. La ficha
+explica la banda con sus tres factores principales, cada uno con su nivel de evidencia, y los
+motivos con el número de reseñas sobre el que se calcularon, para que una cifra sobre pocas reseñas
+no parezca más firme de lo que es. Todo lo que muestra el riesgo es igual para cualquier persona,
+así que dos personas que consultan el mismo juego ven lo mismo. Los controles pequeños miden al
+menos \cifraObjetivoTactil{} píxeles de alto, para tocarlos con el dedo en un teléfono, y el sitio tiene tema claro y
+oscuro.

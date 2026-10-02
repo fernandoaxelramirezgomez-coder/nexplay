@@ -1,5 +1,40 @@
 % Rúbrica: Planteamiento del problema (definición precisa, relevancia e importancia en el contexto).
-% Incluye el nicho de negocio y el usuario final.
+% Incluye el nicho de negocio y el usuario final. Fuente de veteranos y novatos:
+% docs/evidencia/senal-por-biblioteca.md y senal-por-biblioteca-estratificada.json.
 \section{Planteamiento del problema}\label{sec:planteamiento}\label{sec:nicho}
 
-\pendiente{redacción (etapa 2)}
+\paragraph{La decisión antes de pagar.} Quien compra un juego decide con lo que muestra la tienda:
+el precio, el descuento, las capturas, la nota de la crítica y el porcentaje de reseñas positivas.
+Lo que más le importa saber no está ahí: si el juego le va a servir en las primeras horas, que es
+cuando todavía lo puede devolver. Un juego que decepciona pronto cuesta dinero si se deja pasar la
+ventana de reembolso, y tiempo y trámites si se aprovecha.
+
+\paragraph{Por qué el promedio de reseñas no basta.} El porcentaje de reseñas positivas junta a
+quien jugó diez minutos con quien jugó mil horas: una negativa escrita al poco rato y otra escrita
+tras cien horas cuentan igual. La pregunta de quien compra es más estrecha, y la señal de ese tramo
+temprano cambia mucho de un juego a otro (sección~\ref{sec:exploracion-juego}), así que vale la pena
+estimarla por título.
+
+\paragraph{Qué se puede observar y qué no.} Los datos dicen si una reseña fue negativa y cuánto
+había jugado su autor. No dicen si se arrepintió, si pidió el reembolso ni qué pasó con quien
+compró y no escribió (sección~\ref{sec:objetivo}). Tampoco hay datos de PlayStation ni de Xbox: el
+lado del juego podría transferirse a otras tiendas, pero el riesgo que da el sitio se estimó solo
+con reseñas de Steam.
+
+\paragraph{Nicho: una capa previa a la compra.} NexPlay no vende juegos ni compite con la tienda.
+Es una consulta que se hace antes de pagar, con el enlace a Steam al lado, y su lugar está entre la
+página del juego y el botón de compra. Está pensado para quien compra desde México: los precios
+son los de la tienda de México.
+
+\paragraph{El usuario, por comportamiento.} El usuario no se define por edad ni por cuántos juegos
+tiene, sino por el momento: alguien a punto de comprar un juego para PC, que duda entre opciones o
+quiere saber a qué se arriesga. Los datos apoyan no definirlo por experiencia. Entre los perfiles
+públicos de data-v1, los veteranos, con \cifraUmbralVeterano{} juegos o más, dejan la señal en el
+\cifraVeteranosPorResena{} de sus reseñas, y los novatos, en el \cifraNovatosPorResena{} (como
+promedio por juego, \cifraVeteranosPromJuegos{} contra \cifraNovatosPromJuegos{}). La diferencia se
+sostiene dentro de cada juego: la razón de Mantel-Haenszel\footnote{Compara a veteranos y novatos
+dentro de cada juego y combina las comparaciones; vale 1 si dentro de cada juego no hay
+diferencia.} es \cifraRazonMH{}, con un intervalo de \cifraRazonMHICInf{} a \cifraRazonMHICSup{}.
+La señal no viene de la inexperiencia. Aun así, el riesgo que muestra el sitio es del título: la
+biblioteca que declara una persona no está validada, y su aporte al modelo cabe en el ruido
+(sección~\ref{sec:modelacion-bmas}).

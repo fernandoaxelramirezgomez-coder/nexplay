@@ -248,6 +248,8 @@ def cifras_de_evidencia(cifras: Cifras) -> None:
     cifras.agregar("ExternoReplicas", entero(bootstrap["bootstrap"]["replicas"]), "docs/evidencia/bootstrap-prueba-externa.json")
 
     biblioteca = json.loads((EVIDENCIA / "senal-por-biblioteca.json").read_text())["original"]
+    veterano = re.search(r"veteranos: (\d+) o más", biblioteca["definicion"])[1]
+    cifras.agregar("UmbralVeterano", veterano, "docs/evidencia/senal-por-biblioteca.json: definición de veterano")
     for grupo in ("novatos", "veteranos"):
         g = biblioteca["grupos"][grupo]
         cifras.agregar(f"{grupo.capitalize()}PorResena", porcentaje(g["por_resena_pct"] / 100),
@@ -517,6 +519,58 @@ def features_como_la_api(juegos: pd.DataFrame, mediana_metacritic: float) -> pd.
         "descuento": juegos["descuento"].fillna(0), "metacritic_disponible": juegos["metacritic"].notna().astype(int),
         "metacritic": juegos["metacritic"].fillna(mediana_metacritic),
     })
+
+
+# La pareja del recorrido de la sección 3 (aprobada por el dueño) y el estante que se abre después.
+PAYDAY_3, DEAD_SPACE = 1272080, 1693980
+ESTANTE_ACCION_BAJO = ["Grand Theft Auto V Legacy", "Team Fortress 2", "Resident Evil 4", "Apex Legends™"]
+
+
+def cifras_del_recorrido(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> None:
+    """§3: lo que ve en el sitio quien duda entre PAYDAY 3 y Dead Space, con el precio al corte de datos
+    (el día en que se observó, juegos.descargado_en) y los motivos como los calcula /explicacion: sobre las
+    reseñas con la señal de cada juego, en porcentaje de las que caen en alguna categoría."""
+    juegos = ex.cargar_release(rutas[SERVIDO_REF])[0].set_index("appid")
+    X = features_como_la_api(juegos, modelo["mediana_metacritic"])[modelo["columnas"]]
+    scores = pd.Series(modelo["pipeline"].predict_proba(X)[:, 1], index=juegos.index)
+    medio, alto = modelo["cortes"]
+    banda = pd.Series(np.select([scores < medio, scores < alto], ["bajo", "medio"], "alto"), index=juegos.index)
+    appids_v1 = {int(f["appid"]) for f in csv.DictReader(open(BACKEND / "referencias" / "particion_gkf_data-v1.csv"))}
+    # Lo que dice el texto: PAYDAY 3 es de riesgo alto y se vio al entrenar; Dead Space es de riesgo bajo y es externo.
+    if (banda[PAYDAY_3], banda[DEAD_SPACE]) != ("alto", "bajo") or PAYDAY_3 not in appids_v1 or DEAD_SPACE in appids_v1:
+        raise ValueError("cambió la pareja del recorrido")
+    con = sqlite3.connect(f"file:{rutas[SERVIDO_REF]}?mode=ro", uri=True)
+    principal = {PAYDAY_3: "contenido", DEAD_SPACE: "rendimiento"}
+    for appid, nombre in ((PAYDAY_3, "Payday"), (DEAD_SPACE, "DeadSpace")):
+        juego = juegos.loc[appid]
+        fuente = f"{SERVIDO_REF}: {juego['nombre']}"
+        cifras.agregar(f"{nombre}Metacritic", str(int(juego["metacritic"])), fuente)
+        cifras.agregar(f"{nombre}Precio", f"{juego['precio_final'] / 100:,.2f}", fuente + ", precio_final / 100")
+        cifras.agregar(f"{nombre}FechaPrecio", fecha_larga(de_iso(juego["descargado_en"])), fuente + ", juegos.descargado_en (UTC)")
+        textos = pd.Series([t for (t,) in con.execute(
+            "SELECT texto FROM resenas WHERE appid = ? AND playtime_at_review < ? AND voted_up = 0", (appid, ex.UMBRAL_REEMBOLSO))])
+        tabla = motivos.tabla_de_motivos(textos)
+        clasificadas = tabla[tabla.any(axis=1)]
+        frecuencia = clasificadas.mean().sort_values(ascending=False)
+        if frecuencia.index[0] != principal[appid]:
+            raise ValueError(f"cambió el motivo principal de {juego['nombre']}")
+        cifras.agregar(f"{nombre}Casos", str(len(textos)), fuente + ": reseñas con la señal")
+        cifras.agregar(f"{nombre}Clasificadas", str(len(clasificadas)), fuente + ": con al menos un motivo")
+        cifras.agregar(f"{nombre}MotivoPrincipal", porcentaje(round(frecuencia.iloc[0], 2), 0),
+                       fuente + f": {principal[appid]}, sobre las clasificadas (como /explicacion)")
+    con.close()
+    dead_space = juegos.loc[DEAD_SPACE]
+    cifras.agregar("DeadSpacePrecioInicial", f"{dead_space['precio_inicial'] / 100:,.2f}", f"{SERVIDO_REF}: Dead Space, precio_inicial / 100")
+    cifras.agregar("DeadSpaceDescuento", porcentaje(dead_space["descuento"] / 100, 0), f"{SERVIDO_REF}: Dead Space, descuento")
+
+    accion = juegos["generos"].fillna("").str.split("|").map(lambda generos: "Acción" in generos)
+    # Como dominio/estantes.ts: en el estante «bajo», del score más bajo al más alto.
+    estante = scores[accion & (banda == "bajo")].sort_values()
+    if list(juegos.loc[estante.index[:4], "nombre"]) != ESTANTE_ACCION_BAJO:
+        raise ValueError("cambiaron las primeras tarjetas del estante de riesgo bajo de Acción")
+    cifras.agregar("EstanteAccionBajo", str(len(estante)), f"{SERVIDO_REF}: juegos de Acción con riesgo bajo")
+    tactil = re.search(r"\.compacto \{\s*min-height: (\d+)px", (RAIZ / "frontend" / "src" / "styles" / "base.css").read_text(encoding="utf-8"))
+    cifras.agregar("ObjetivoTactil", tactil[1], "frontend/src/styles/base.css: min-height de .compacto")
 
 
 def cifras_de_casos_al_filo(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> None:
@@ -1064,6 +1118,7 @@ def main() -> None:
     cifras_de_externos(cifras, rutas)
     cifras_por_banda(cifras, rutas)
     cifras_de_casos_al_filo(cifras, rutas, modelo)
+    cifras_del_recorrido(cifras, rutas, modelo)
     cifras_de_factores(cifras, rutas, modelo)
     cifras_de_motivos(cifras, limpio)
     cifras_de_endpoints(cifras)

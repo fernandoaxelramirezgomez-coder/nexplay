@@ -49,3 +49,27 @@ la alternativa.
     - Por qué: es lo que hace el código. El precio entra en logaritmo, los rangos imposibles no
       tienen casos, y de los minutos solo importa si quedan antes o después de los 120.
     - Alternativa: medir y reportar valores atípicos, que sería contenido nuevo.
+
+## Etapa 2: introducción, planteamiento y estrategia
+
+11. **`verificar_cifras.py` ignora las medidas de diseño**, como `0.49\textwidth` o `6.6cm`.
+    - Por qué: las figuras con capturas y la tabla de la rúbrica necesitan anchos, y un ancho no es
+      una cifra del análisis. La excepción solo cubre números seguidos de una unidad de longitud.
+    - Alternativa: definir un macro de ancho en `main.tex` por cada uso.
+12. **Veteranos y novatos aparecen con su matiz.**
+    - Por qué: la experiencia sí se asocia con la señal dentro de cada juego (2.6 [1.84, 4.12]),
+      pero el sitio no la usa para mover el riesgo. El texto dice las dos cosas y remite a la
+      decisión B+, en lugar de callar la asociación.
+    - Alternativa: citar solo «la señal no viene de la inexperiencia».
+13. **La usabilidad no dice «menos de un minuto».**
+    - Por qué: no hay una medición que lo respalde. Solo afirma lo que se ve en el código y en las
+      capturas: la banda sin porcentaje, la evidencia por factor, el número de reseñas detrás de
+      cada motivo, los controles de 44 px (tomados de `base.css`) y los dos temas.
+    - Alternativa: medir el tiempo de una consulta con usuarios, que sería contenido nuevo.
+14. **En el recorrido, los porcentajes de motivos se dan sobre las reseñas clasificadas, con sus
+    conteos** (48 % de 33, de 113).
+    - Por qué: así los calcula `/explicacion` y así los muestra la ficha.
+    - Alternativa: darlos sobre todas las reseñas con la señal, que no coincidiría con la captura.
+15. **La captura de Nia va en la sección 8 y no en la 3.**
+    - Por qué: la sección 3 ya lleva dos figuras de capturas, y Nia se explica en la interfaz.
+    - Alternativa: una tercera figura de capturas en la estrategia, que se pasaría de su presupuesto.

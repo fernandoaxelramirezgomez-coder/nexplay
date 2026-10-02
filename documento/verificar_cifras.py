@@ -19,7 +19,8 @@ Falla (exit 1) si:
 - se genera una macro que no está en la lista;
 - una canónica no se usa en main.tex ni en sections/, o el texto usa una que no se generó;
 - una sección trae un número con decimales o con % fuera de una macro. Las referencias a una
-  sección de un notebook («notebook 00, §3.4») no cuentan: no son cifras.
+  sección de un notebook («notebook 00, §3.4») y las medidas de diseño («0.49\textwidth») no
+  cuentan: no son cifras.
 
 Uso:
   .venv/bin/python documento/verificar_cifras.py
@@ -191,12 +192,40 @@ CANONICAS = {
     "EndpointsRiesgo": "5",
     "EndpointsComunidad": "8",
     "EndpointsNia": "4",
+    # planteamiento y estrategia (secciones 2 y 3): docs/evidencia/senal-por-biblioteca.md, las capturas del
+    # recorrido (los mismos precios, notas y motivos) y frontend/src/styles/base.css
+    "UmbralVeterano": "20",
+    "NovatosPorResena": "0.67" + PORCIENTO,
+    "VeteranosPorResena": "2.89" + PORCIENTO,
+    "NovatosPromJuegos": "0.97" + PORCIENTO,
+    "VeteranosPromJuegos": "2.72" + PORCIENTO,
+    "RazonMH": "2.6",
+    "RazonMHICInf": "1.84",
+    "RazonMHICSup": "4.12",
+    "PaydayMetacritic": "66",
+    "PaydayPrecio": "344.00",
+    "PaydayFechaPrecio": "14 de septiembre de 2026",
+    "PaydayCasos": "113",
+    "PaydayClasificadas": "33",
+    "PaydayMotivoPrincipal": "48" + PORCIENTO,
+    "DeadSpaceMetacritic": "87",
+    "DeadSpacePrecio": "349.75",
+    "DeadSpaceFechaPrecio": "21 de septiembre de 2026",
+    "DeadSpaceCasos": "80",
+    "DeadSpaceClasificadas": "45",
+    "DeadSpaceMotivoPrincipal": "71" + PORCIENTO,
+    "DeadSpacePrecioInicial": "1,399.00",
+    "DeadSpaceDescuento": "75" + PORCIENTO,
+    "EstanteAccionBajo": "25",
+    "ObjetivoTactil": "44",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")
 _COMENTARIO = re.compile(r"(?<!\\)%.*$")
 # Un decimal, o un número seguido de % con o sin el espacio fino de LaTeX («100\,\%»).
-_NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+|\d+(?:\s|\\,)*\\%")
+# Un número seguido de una unidad de longitud («0.49\textwidth», «6.6cm») es diseño, no una cifra.
+_NUMERO_SUELTO = re.compile(r"(?<![\w\\.])\d+[.,]\d+(?![\d.,])(?!\s*(?:cm|mm|pt|em|ex|in|\\textwidth|\\linewidth|\\textheight)\b)"
+                            r"|\d+(?:\s|\\,)*\\%")
 _SECCION_DE_NOTEBOOK = re.compile(r"notebook[ ~]0[01],?[ ~]*§\d+(?:\.\d+)*")
 _USO = re.compile(r"\\cifra([A-Za-z]+)")
 
