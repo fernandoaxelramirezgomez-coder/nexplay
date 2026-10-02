@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { RespuestaNia, SolicitudNia } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { juegoDePrueba } from '../dominio/juego-prueba';
+import { saludoDeJuego } from '../dominio/textos-nia';
 import { ValoresPerfil } from '../dominio/opciones-perfil';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
@@ -144,6 +145,8 @@ describe('Nia: lo que ofreció vuelve en el historial', () => {
 
   it('sin oferta ni tarjetas, el mensaje de Nia viaja solo con rol y contenido', async () => {
     const { fixture, enviadas } = montar();
+    // En el catálogo: en la ficha, el saludo va primero en el hilo.
+    fixture.componentRef.setInput('appid', null);
     await fixture.whenStable();
     fixture.componentInstance.preguntar('¿Encaja conmigo?');
     await fixture.whenStable();
@@ -151,6 +154,53 @@ describe('Nia: lo que ofreció vuelve en el historial', () => {
     await fixture.whenStable();
 
     expect(Object.keys(enviadas[1].mensajes[1]).sort()).toEqual(['contenido', 'rol']);
+  });
+});
+
+describe('Nia: el saludo de la ficha es una oferta', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('en la ficha, el saludo viaja primero en el historial con su oferta: explicar el riesgo de ese juego', async () => {
+    const { fixture, enviadas } = montar();
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('Si te me lo acabas de preguntar');
+    await fixture.whenStable();
+
+    const [saludo, pregunta] = enviadas[0].mensajes;
+    expect(saludo).toEqual({
+      rol: 'nia',
+      contenido: saludoDeJuego('Portal 2', JUEGOS[1].banda_riesgo),
+      oferta: { intencion: 'riesgo', juegos: [2] },
+    });
+    expect(pregunta).toEqual({ rol: 'usuario', contenido: 'Si te me lo acabas de preguntar' });
+  });
+
+  it('elegido dentro del chat sin pregunta pendiente, el saludo queda en el hilo con su oferta', async () => {
+    const { fixture, enviadas } = montar();
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance['fijarJuego'](JUEGOS[1], 0);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('sí');
+    await fixture.whenStable();
+
+    expect(enviadas[0].mensajes).toEqual([
+      { rol: 'nia', contenido: saludoDeJuego('Portal 2', JUEGOS[1].banda_riesgo), oferta: { intencion: 'riesgo', juegos: [2] } },
+      { rol: 'usuario', contenido: 'sí' },
+    ]);
+  });
+
+  it('en el catálogo no hay saludo de juego en el historial', async () => {
+    const { fixture, enviadas } = montar();
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('sí');
+    await fixture.whenStable();
+
+    expect(enviadas[0].mensajes).toEqual([{ rol: 'usuario', contenido: 'sí' }]);
   });
 });
 

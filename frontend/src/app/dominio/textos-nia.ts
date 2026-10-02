@@ -1,3 +1,5 @@
+import { JuegoCatalogo, MensajeChat } from '../api/contrato';
+
 /** Textos cortos de Nia fuera del chat. Viven juntos para que una sola prueba vigile
  * el mismo criterio en todos: Nia describe la estimación, nunca aconseja qué hacer. */
 
@@ -40,6 +42,16 @@ const EMOJI_DEL_NIVEL: Record<string, string> = { bajo: '🙂', medio: '🤔', a
 
 export function saludoDeJuego(nombre: string, nivel: string): string {
   return `¿Te explico por qué ${nombre} tiene riesgo ${nivel}? ${EMOJI_DEL_NIVEL[nivel] ?? '🤔'}`;
+}
+
+/** El saludo de la ficha como mensaje del historial, con su oferta (explicar el riesgo de ese
+ * juego), igual que las ofertas del backend: así «sí» o «sí, explícamelo» la cumplen. */
+export function mensajeDeSaludo(juego: Pick<JuegoCatalogo, 'appid' | 'nombre' | 'banda_riesgo'>): MensajeChat {
+  return {
+    rol: 'nia',
+    contenido: saludoDeJuego(juego.nombre, juego.banda_riesgo),
+    oferta: { intencion: 'riesgo', juegos: [juego.appid] },
+  };
 }
 
 /** Fichas de arranque. «Sí, explícamelo» responde al saludo de la ficha. */

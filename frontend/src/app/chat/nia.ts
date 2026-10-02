@@ -29,6 +29,7 @@ import {
   HABLAR_DE_UN_JUEGO,
   PIDE_JUEGO,
   SALUDO_CHAT_CATALOGO,
+  mensajeDeSaludo,
   saludoDeJuego,
   sinMarkdown,
 } from '../dominio/textos-nia';
@@ -673,6 +674,13 @@ export class Nia {
     return this.appid() === null ? SALUDO_CHAT_CATALOGO : '¡Hola! Soy Nia 👋 ¿Qué quieres saber de este juego?';
   });
 
+  /** En la ficha, el saludo se pinta aparte, pero va al historial con su oferta: un «sí» a
+   * «¿Te explico por qué…?» la cumple como cualquier oferta de Nia. */
+  private readonly saludoEnElHilo = computed(() => {
+    const juego = this.appid() === null || this.saludo() ? null : this.juegoEfectivo();
+    return juego ? mensajeDeSaludo(juego) : null;
+  });
+
   private readonly todasLasFichas = computed(() => {
     if (this.appidEfectivo() !== null) {
       return FICHAS_JUEGO;
@@ -834,7 +842,7 @@ export class Nia {
     const anteriores = this.mensajes().slice(0, posicion);
     const pendiente = [...anteriores].reverse().find((mensaje) => mensaje.rol === 'usuario');
     if (!pendiente || pendiente.contenido === HABLAR_DE_UN_JUEGO) {
-      this.agregar({ rol: 'nia', contenido: saludoDeJuego(juego.nombre, juego.banda_riesgo) });
+      this.agregar(mensajeDeSaludo(juego));
       return;
     }
     // Sola, con el juego elegido: con el hilo de antes («los 7 gratis…»), Nia volvía a
@@ -890,13 +898,14 @@ export class Nia {
     );
 
     const sugerencias = this.sugerencias();
+    const saludo = this.saludoEnElHilo();
     // Del formulario solo viajan los géneros: con ellos Nia dice cuáles coinciden.
     const generos = this.perfil.valores()?.generos ?? [];
     this.api
       .preguntarANia({
         usuario: this.usuario.id,
         ...(appid !== null ? { appid } : {}),
-        mensajes: recortarHistorial(hilo),
+        mensajes: recortarHistorial(saludo && hilo[0]?.rol !== 'nia' ? [saludo, ...hilo] : hilo),
         ...(sugerencias.length ? { sugerencias } : {}),
         ...(generos.length ? { generos } : {}),
       })

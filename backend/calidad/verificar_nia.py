@@ -1520,6 +1520,41 @@ def _revisar_ficha_abierta() -> list[str]:
     return problemas
 
 
+def _saludo_de_la_ficha(juego) -> MensajeChat:
+    """El saludo como lo manda el chat de la ficha (mensajeDeSaludo en textos-nia.ts)."""
+    nivel = juego.banda_riesgo.value
+    return MensajeChat(rol="nia", contenido=f"¿Te explico por qué {juego.nombre} tiene riesgo {nivel}? {nia.EMOJI_DEL_NIVEL[nivel]}",
+                       oferta={"intencion": "riesgo", "juegos": [juego.appid]})
+
+
+def _revisar_saludo_en_el_hilo() -> list[str]:
+    """El saludo de la ficha llega al historial con su oferta: «sí» la cumple (explica el riesgo),
+    también con modelo, y el resumen de la conversación no lo cuenta como algo que Nia dijo."""
+    problemas = []
+    juego = next(j for j in catalogo.buscar() if j.nombre == "A Short Hike")
+    datos = nia.contexto(juego.appid)
+    saludo = _saludo_de_la_ficha(juego)
+    usuario = lambda texto: MensajeChat(rol="usuario", contenido=texto)
+    if "¿Te explico por qué" not in (Path(_TEXTOS_NIA_TS).read_text(encoding="utf-8")):
+        problemas.append("el saludo del frontend ya no empieza «¿Te explico por qué…»: revisa _saludo_de_la_ficha")
+    for si in ("sí", "Sí, explícamelo"):
+        hilo = [saludo, usuario(si)]
+        salida = nia_reglas.responder(datos, juego.appid, hilo, [])
+        if "tiene riesgo" not in salida["texto"] or "no lo sé" in salida["texto"]:
+            problemas.append(f"«{si}» al saludo no explica el riesgo: {salida['texto'][:80]}…")
+        if not nia._por_reglas_aunque_haya_modelo(datos, juego.appid, hilo, [], si):
+            problemas.append(f"«{si}» al saludo iría al modelo")
+    precio = nia_reglas.responder(datos, juego.appid, [saludo, usuario("¿Cuánto cuesta?")], [])
+    hilo = [saludo, usuario("¿Cuánto cuesta?"), _de_nia({**precio, "texto": nia.pulir(precio["texto"])}),
+            usuario("Resume lo que me dijiste")]
+    resumen = nia_reglas.responder(datos, juego.appid, hilo, [])["texto"]
+    if "Te explico" in resumen:
+        problemas.append(f"el resumen cuenta el saludo como respuesta: {resumen[:90]}…")
+    if not problemas:
+        print("saludo: va en el hilo con su oferta; «sí» explica el riesgo y el resumen no lo cuenta")
+    return problemas
+
+
 def _revisar_esquema_de_ofertas() -> list[str]:
     """La oferta y los juegos solo los lleva un mensaje de Nia, con intención de la lista y
     hasta 8 juegos: lo demás es un 422."""
@@ -1607,6 +1642,7 @@ def main() -> int:
     problemas += _revisar_comparacion_del_modelo()
     problemas += _revisar_conversaciones()
     problemas += _revisar_ficha_abierta()
+    problemas += _revisar_saludo_en_el_hilo()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
