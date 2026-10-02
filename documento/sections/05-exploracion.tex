@@ -155,21 +155,9 @@ lleva su nivel de evidencia, sólida para la crítica y débil para el resto
 
 \subsection{El texto de las negativas tempranas}\label{sec:exploracion-texto}
 
-En el conjunto limpio (sección~\ref{sec:procesamiento-limpieza}) hay \cifraPositivasLimpias{}
-positivas, \cifraNegativasTardiasLimpias{} negativas tardías y \cifraNegativasTempranasLimpias{}
-negativas tempranas, las que tienen $Y = 1$. Según el log-odds con prior informativo
-\parencite{monroe2008}\footnote{Compara qué tan seguido aparece cada palabra en un grupo y en el
-otro; el prior evita que una palabra rara parezca distintiva solo por aparecer un par de veces.},
-la palabra que más separa a las negativas tempranas de las positivas es «not», y por eso la
-normalización conserva las negaciones. Frente a las tardías aparece lo que pasa al empezar:
-«tutorial», «account», «login», «settings» y «minutes»; las tardías hablan de «hours», «boss»,
-«mods» y «dlc». El \cifraRefundTempranasPorResena{} de las negativas tempranas menciona «refund» o
-una de sus formas, contra el \cifraRefundTardiasPorResena{} de las tardías y el
-\cifraRefundPositivasPorResena{} de las positivas: encaja con la lectura de la señal como proxy,
-aunque no prueba que esas personas pidieran el reembolso, y la mayoría no lo menciona. El análisis
-es descriptivo: el texto no entra al modelo de riesgo, y en el sitio solo lo lee la explicación de motivos,
-una heurística de palabras clave (sección~\ref{sec:interpretabilidad-motivos}). La Parte A prueba
-si ese lenguaje distingue de verdad a las tempranas (sección~\ref{sec:modelacion-texto}).
+Frente a las negativas tardías, las tempranas hablan de lo que pasa al empezar, como el tutorial o
+la cuenta, y mencionan más «refund» (detalle en el notebook 00, §3.7); la Parte A prueba si ese
+lenguaje las distingue de verdad (sección~\ref{sec:modelacion-texto}).
 
 \subsection{Los \cifraJuegosEntrenamiento{} contra los \cifraJuegosExternos{}}\label{sec:exploracion-externos}
 

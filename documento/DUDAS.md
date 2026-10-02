@@ -6,7 +6,7 @@ la alternativa.
 
 ## Etapa 1: nueve secciones y lo escrito, condensado
 
-1. **F10, el diagrama de arquitectura, se queda.**
+1. **F10, el diagrama de arquitectura, se queda.** (Desde el 2026-10-02 es una frase: recorte 2, entrada 48.)
    - Por qué: sostiene dos decisiones de la sección 8, que después de la ingesta nada vuelve a
      consultar Steam y que el build verifica sha256 y bandas. Ocupa poco más de un quinto de página.
    - Alternativa: cambiarlo por una frase y ahorrar ese espacio.
@@ -228,3 +228,12 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
     - el sitio con `organization`;
     - sin la nota duplicada «Consultada…»;
     - tres referencias nuevas, citadas en §2.
+48. **Recortes 1 y 2 del orden aprobado, antes de la ronda del tag** (del dueño).
+    - El §5.5 queda en una oración que remite al notebook 00, §3.7, y a 7.9. Conserva «refund», porque 7.9 remite ahí
+      para decir de dónde salió esa palabra. Sin ese párrafo, Monroe et al. (2008) deja de citarse y sale de la
+      lista de referencias; las cinco canónicas que solo usaba salen de la lista.
+    - La figura de arquitectura pasa a una frase en 8.1. `figura_de_arquitectura()` y `figures/arquitectura.tex` se
+      quitan, para no dejar una salida que nada usa.
+    - Siguen 30 páginas: los flotantes se reacomodan, aunque la última queda a menos de la mitad. Con los recortes 3
+      y 4 juntos (recorrido de 6 a 4 paneles y accionables solo con Comparar) quedan 29; probado en una copia, no
+      aplicado.

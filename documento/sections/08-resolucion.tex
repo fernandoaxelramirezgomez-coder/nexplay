@@ -8,7 +8,8 @@ sirve, la interfaz que lo muestra y cómo responde a las preguntas del proyecto.
 
 \subsection{Arquitectura y despliegue}\label{sec:arquitectura}\label{sec:arquitectura-flujo}\label{sec:arquitectura-build}
 
-La figura~\ref{fig:arquitectura} sigue el camino de los datos. La ingesta bajó las reseñas y las
+Los datos siguen un solo camino: la ingesta, los releases con tag fijo, el build en Render y, de ahí,
+la API y el frontend en Vercel. La ingesta bajó las reseñas y las
 fichas de Steam y las publicó en releases con tag fijo (sección~\ref{sec:datos-releases}); de ahí
 en adelante nada vuelve a consultar Steam. Render construye la API con
 \texttt{backend/despliegue/Dockerfile}, y el build falla si algo no cuadra:
@@ -17,15 +18,6 @@ entrena el modelo con data-v1 y la partición congelada, y \texttt{verificar\_ba
 nivel de los \cifraJuegosCatalogo{} juegos con la referencia validada, así que basta con que cambie
 una para que falle. El build también rechaza la imagen si le llega una biblioteca de modelos de
 texto, que deben calcularse fuera de la API.
-
-\begin{figure}[htbp]
-  \centering
-  \input{figures/arquitectura}
-  \caption{De la API de Steam a la interfaz. Después de la ingesta, ningún paso consulta Steam.
-  Fuente: \texttt{backend/despliegue/Dockerfile}, \texttt{preparar\_entorno.py} y
-  \texttt{frontend/vercel.json}.}
-  \label{fig:arquitectura}
-\end{figure}
 
 La API, hecha con FastAPI, expone \cifraEndpoints{} endpoints: \cifraEndpointsRiesgo{} de riesgo
 (\texttt{/catalogo}, \texttt{/perfil}, \texttt{/prediccion}, \texttt{/explicacion} y

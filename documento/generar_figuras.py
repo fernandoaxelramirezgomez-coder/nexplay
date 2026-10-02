@@ -781,38 +781,6 @@ def cifras_de_endpoints(cifras: Cifras) -> None:
     cifras.agregar("Endpoints", str(len(endpoints)), "backend/api/main.py: rutas con @app.get/post/put/delete")
 
 
-def figura_de_arquitectura() -> Path:
-    """F10: de la API de Steam a la interfaz, en TikZ. Los tags salen del código: los releases, de
-    preparar_entorno.py; el del código, del CODIGO_REF de los notebooks, que también dan sus números."""
-    codigo = tag_de_codigo()
-    numeros = sorted(ruta.name[:2] for ruta in (RAIZ / "notebooks").glob("0*.ipynb"))
-    notebooks = f"{', '.join(numeros[:-1])} y {numeros[-1]}"
-    cajas = {
-        "steam": (0, 0, "API de Steam\\\\\\texttt{appreviews}\\\\y \\texttt{appdetails}", "neutro"),
-        "ingesta": (3.95, 0, "Ingesta\\\\\\texttt{ingesta\\_steam.py}", "neutro"),
-        "releases": (7.9, 0, f"Releases con tag fijo\\\\{ENTRENAMIENTO_REF} y {SERVIDO_REF}\\\\con su sha256", "neutro"),
-        "build": (11.85, 0, f"Build en Render\\\\entrena con {ENTRENAMIENTO_REF}\\\\y compara las bandas", "neutro"),
-        "notebooks": (3.95, -1.9, f"Notebooks {notebooks}\\\\código del tag {codigo}", "neutro"),
-        "frontend": (7.9, -1.9, "Frontend Angular\\\\en Vercel", "acento"),
-        "api": (11.85, -1.9, "API FastAPI\\\\en Render", "acento"),
-    }
-    lineas = [
-        "% Generado por documento/generar_figuras.py. No se edita a mano.",
-        "\\begin{tikzpicture}[caja/.style={draw=#1, fill=#1!7, rounded corners=2pt, align=center, font=\\footnotesize,",
-        "  minimum width=3.5cm, minimum height=1.25cm, inner sep=3pt}, flecha/.style={-{Stealth[length=5pt]}, draw=neutro, thick}]",
-    ]
-    lineas += [f"\\node[caja={color}] ({nombre}) at ({x}, {y}) {{{texto}}};" for nombre, (x, y, texto, color) in cajas.items()]
-    lineas += [
-        "\\draw[flecha] (steam) -- (ingesta);", "\\draw[flecha] (ingesta) -- (releases);", "\\draw[flecha] (releases) -- (build);",
-        "\\draw[flecha] (releases.south) -- (notebooks.north east);", "\\draw[flecha] (build) -- (api);",
-        "\\draw[flecha, {Stealth[length=5pt]}-{Stealth[length=5pt]}] (frontend) -- (api);",
-        "\\end{tikzpicture}",
-    ]
-    ruta = FIGURAS / "arquitectura.tex"
-    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
-    return ruta
-
-
 def figura_pr_auc_por_fold(modelo: np.ndarray, trivial: np.ndarray) -> Path:
     """F6: el PR-AUC del modelo y del trivial en cada fold de la partición congelada y en la prueba externa."""
     externa = json.loads((EVIDENCIA / "prueba-externa.json").read_text())["resumen"]
@@ -1510,7 +1478,7 @@ def main() -> None:
     estilo_de_figuras()
     figuras = [figura_minutos_al_resenar(rutas), figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()),
                figura_tasa_contra_nota(por_juego), figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]),
-               figura_de_arquitectura(), *figuras_de_los_notebooks(tag)]
+               *figuras_de_los_notebooks(tag)]
     capturas = copiar_capturas()
     copiar_logo()
 
