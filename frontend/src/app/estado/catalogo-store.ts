@@ -16,7 +16,10 @@ export class CatalogoStore {
     defaultValue: [] as JuegoCatalogo[],
   });
 
-  readonly juegos = this.recurso.value;
+  /** value() lanza si la petición falló; la barra lateral lee esto en todas las vistas, así
+   * que con la API caída o Render dormido tiene que quedar vacío y no tumbar la página.
+   * Quien quiera saber del fallo mira `error`. */
+  readonly juegos = computed(() => (this.recurso.hasValue() ? this.recurso.value() : []));
   readonly cargando = this.recurso.isLoading;
   readonly error = this.recurso.error;
 
