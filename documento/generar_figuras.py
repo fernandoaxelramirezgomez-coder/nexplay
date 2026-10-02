@@ -13,6 +13,7 @@ Los releases se guardan en documento/.cache/ (ignorada por git) y se reutilizan 
 sigue siendo el publicado.
 """
 
+import ast
 import contextlib
 import csv
 import io
@@ -40,6 +41,7 @@ sys.path[:0] = [str(BACKEND), str(BACKEND / "modelado"), str(BACKEND / "calidad"
 
 import exploracion as ex  # noqa: E402
 import limpieza as li  # noqa: E402
+import motivos  # noqa: E402
 
 from bootstrap_prueba_externa import RELEASES as RELEASES_V1_V2  # noqa: E402
 from despliegue.preparar_entorno import SERVIDO_REF, SERVIDO_SHA256  # noqa: E402
@@ -207,7 +209,7 @@ def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> dict:
     cifras.agregar("CocienteFoldMin", decimal(cocientes.min(), 1), fuente + ": modelo entre trivial, el fold más bajo")
     cifras.agregar("CocienteFoldMax", decimal(cocientes.max(), 1), fuente + ": modelo entre trivial, el fold más alto")
     return {"modelo": modelo, "trivial": trivial, "cortes": cortes, "pipeline": construir_pipeline().fit(X, y),
-            "mediana_metacritic": df["metacritic"].median()}
+            "columnas": list(X.columns), "mediana_metacritic": df["metacritic"].median()}
 
 
 def cifras_de_bandas(cifras: Cifras) -> None:
@@ -553,15 +555,21 @@ def tabla_por_banda(cifras: Cifras, rutas: dict[str, Path]) -> Path:
     return ruta
 
 
+def features_como_la_api(juegos: pd.DataFrame, mediana_metacritic: float) -> pd.DataFrame:
+    """Las cinco variables de cada juego como las arma backend/api/scoring.py: los faltantes en 0 y la
+    nota que falta con la mediana de data-v1."""
+    return pd.DataFrame({
+        "es_gratis": juegos["es_gratis"].fillna(0).astype(int), "log_precio_final": np.log1p(juegos["precio_final"].fillna(0)),
+        "descuento": juegos["descuento"].fillna(0), "metacritic_disponible": juegos["metacritic"].notna().astype(int),
+        "metacritic": juegos["metacritic"].fillna(mediana_metacritic),
+    })
+
+
 def cifras_de_casos_al_filo(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> None:
     """§10.4: los juegos más cerca de un corte. Califica los 123 como la API (la nota que falta, con la mediana
     de data-v1) y comprueba que salgan las bandas de referencia."""
     juegos = ex.cargar_release(rutas[SERVIDO_REF])[0].set_index("appid")
-    X = pd.DataFrame({
-        "es_gratis": juegos["es_gratis"].fillna(0).astype(int), "log_precio_final": np.log1p(juegos["precio_final"].fillna(0)),
-        "descuento": juegos["descuento"].fillna(0), "metacritic_disponible": juegos["metacritic"].notna().astype(int),
-        "metacritic": juegos["metacritic"].fillna(modelo["mediana_metacritic"]),
-    })
+    X = features_como_la_api(juegos, modelo["mediana_metacritic"])
     scores = pd.Series(modelo["pipeline"].predict_proba(X)[:, 1], index=juegos.index)
     medio, alto = modelo["cortes"]
     banda = pd.Series(np.select([scores < medio, scores < alto], ["bajo", "medio"], "alto"), index=juegos.index)
@@ -575,6 +583,133 @@ def cifras_de_casos_al_filo(cifras: Cifras, rutas: dict[str, Path], modelo: dict
     fuente = "modelo juego entrenado con data-v1, sobre los atributos de " + SERVIDO_REF
     for appid, nombre in zip(distancia.index[:2], ("ScoreHollowKnight", "ScoreWarframe")):
         cifras.agregar(nombre, decimal(scores[appid], 4), fuente)
+
+
+def constantes_de_scoring() -> dict:
+    """UMBRAL_TIPICO, UMBRAL_MIN_CASOS, las etiquetas y la evidencia de cada variable, leídas de
+    backend/api/scoring.py sin importarlo: al importarse, la API carga el modelo y la base servida."""
+    valores = {}
+    for nodo in ast.parse((BACKEND / "api" / "scoring.py").read_text(encoding="utf-8")).body:
+        if not (isinstance(nodo, ast.Assign) and isinstance(nodo.targets[0], ast.Name)):
+            continue
+        nombre = nodo.targets[0].id
+        if nombre in ("UMBRAL_TIPICO", "UMBRAL_MIN_CASOS", "_ETIQUETAS_FEATURES"):
+            valores[nombre] = ast.literal_eval(nodo.value)
+        elif nombre == "_EVIDENCIA_POR_VARIABLE":
+            valores[nombre] = {ast.literal_eval(k): v.attr for k, v in zip(nodo.value.keys, nodo.value.values)}
+    return valores
+
+
+def flechas_que_contradicen(juegos: pd.DataFrame, aportes: pd.DataFrame, umbral: float, nota_promedio: float,
+                            precio_mediano: float) -> list[str]:
+    """Los factores que la ficha mostraría con flecha (entre los tres de mayor aporte, con aporte de al menos
+    `umbral`) cuya dirección contradice la cifra que se muestra al lado: una nota por encima del promedio del
+    catálogo que sube el riesgo, o un precio por encima de la mediana que lo baja. Replica _factores_prediccion."""
+    contradicen = []
+    for appid, fila in aportes.iterrows():
+        aporte, juego = fila.to_dict(), juegos.loc[appid]
+        gratis = bool(juego["es_gratis"])
+        if gratis:
+            aporte["es_gratis"] += aporte.pop("log_precio_final")
+        for variable in sorted(aporte, key=lambda v: abs(aporte[v]), reverse=True)[:3]:
+            if abs(aporte[variable]) < umbral:
+                continue
+            if variable == "metacritic" and pd.notna(juego["metacritic"]) and (juego["metacritic"] > nota_promedio) != (aporte[variable] < 0):
+                contradicen.append(juego["nombre"])
+            if (variable == "log_precio_final" and not gratis and pd.notna(juego["precio_final"])
+                    and (juego["precio_final"] / 100 > precio_mediano) != (aporte[variable] > 0)):
+                contradicen.append(juego["nombre"])
+    return contradicen
+
+
+def tabla_de_factores(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> Path:
+    """§11.1 a §11.3 (T10): cada factor de la ficha con su evidencia y contra qué se lee, las referencias del
+    catálogo y UMBRAL_TIPICO, con la comprobación de que ninguna flecha contradiga la cifra que se muestra."""
+    scoring = constantes_de_scoring()
+    juegos = ex.cargar_release(rutas[SERVIDO_REF])[0].set_index("appid")
+    # Como referencias_del_catalogo(): la nota, promedio de los que la tienen; el precio, mediana de los de pago.
+    nota_promedio = round(float(juegos["metacritic"].dropna().mean()), 1)
+    precio_mediano = round(float((juegos.loc[(juegos["es_gratis"] == 0) & juegos["precio_final"].notna(), "precio_final"] / 100).median()), 2)
+    pipeline, columnas = modelo["pipeline"], list(modelo["columnas"])
+    escalador, coeficientes = pipeline.named_steps["escalar"], pipeline.named_steps["clf"].coef_[0]
+    X = features_como_la_api(juegos, modelo["mediana_metacritic"])[columnas]
+    aportes = pd.DataFrame(escalador.transform(X) * coeficientes, index=juegos.index, columns=columnas)
+    umbral = scoring["UMBRAL_TIPICO"]
+    contradicen = flechas_que_contradicen(juegos, aportes, umbral, nota_promedio, precio_mediano)
+    if contradicen:
+        raise ValueError(f"con UMBRAL_TIPICO hay flechas que contradicen la cifra de la ficha: {contradicen}")
+
+    fuente = "backend/api/scoring.py"
+    cifras.agregar("UmbralTipico", decimal(umbral, 2), fuente + ": UMBRAL_TIPICO")
+    cifras.agregar("NotaPromedioCatalogo", decimal(nota_promedio, 1), f"{SERVIDO_REF}: promedio de Metacritic de los juegos que la tienen")
+    cifras.agregar("PrecioMedianoCatalogo", decimal(precio_mediano, 2), f"{SERVIDO_REF}: mediana de precio de los de pago con precio")
+    cifras.agregar("MediaNotaModelo", decimal(escalador.mean_[columnas.index("metacritic")], 2),
+                   "media de metacritic del StandardScaler del modelo (data-v1, con la nota que falta imputada)")
+
+    evidencia = {"SOLIDA": "sólida", "DEBIL": "débil"}
+    contra_que = {
+        "metacritic_disponible": "si Steam muestra una nota",
+        "metacritic": f"el promedio del catálogo, {decimal(nota_promedio, 1)}",
+        "log_precio_final": f"la mediana de los de pago, {decimal(precio_mediano, 2)} pesos",
+        "descuento": "si hay descuento",
+        "es_gratis": "si es gratis; en los gratis suma el aporte del precio",
+    }
+    if set(contra_que) != set(columnas):
+        raise ValueError("cambiaron las variables del modelo")
+    filas = [f"{scoring['_ETIQUETAS_FEATURES'][v]} & {evidencia[scoring['_EVIDENCIA_POR_VARIABLE'][v]]} & {contra_que[v]} \\\\"
+             for v in sorted(columnas, key=lambda v: (scoring["_EVIDENCIA_POR_VARIABLE"][v] != "SOLIDA", columnas.index(v)))]
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}X l >{\\raggedright\\arraybackslash}p{6.4cm}}",
+        "\\toprule", "Factor en la ficha & Evidencia & Contra qué se lee \\\\", "\\midrule",
+        *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "factores.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+# Las categorías que nombra el texto de §11.5, en el orden de backend/analisis/motivos.py.
+CATEGORIAS_DE_MOTIVOS = ["rendimiento", "bugs", "dificultad", "controles", "contenido", "precio"]
+
+
+def cifras_de_motivos(cifras: Cifras, limpio: pd.DataFrame) -> pd.Series:
+    """§11.5: qué parte de las negativas tempranas del conjunto limpio menciona cada motivo de la lista de
+    palabras clave de /explicacion (00 §3.8), y «ninguno». Una reseña puede mencionar varios o ninguno."""
+    if list(motivos.PALABRAS_CLAVE_POR_CATEGORIA) != CATEGORIAS_DE_MOTIVOS:
+        raise ValueError("cambiaron las categorías de motivos")
+    senal = limpio[ex.senal(limpio)]
+    tabla = motivos.tabla_de_motivos(senal["texto"])
+    cobertura = tabla.any(axis=1).mean()
+    por_motivo = tabla.mean().sort_values()
+    # El texto dice que rendimiento y bugs son los más frecuentes.
+    if set(por_motivo.index[-2:]) != {"rendimiento", "bugs"}:
+        raise ValueError("cambiaron los motivos más frecuentes")
+    if entero(len(senal)) != cifras.macros["NegativasTempranasLimpias"][0]:
+        raise ValueError("las negativas tempranas de los motivos no son las del conjunto limpio")
+    scoring = constantes_de_scoring()
+    fuente = "conjunto limpio de data-v1: negativas tempranas con al menos un motivo (motivos.tabla_de_motivos)"
+    cifras.agregar("CoberturaMotivosPorResena", porcentaje(cobertura, 1), fuente)
+    cifras.agregar("SinMotivoPorResena", porcentaje(1 - cobertura, 1), fuente.replace("con al menos un", "sin ningún"))
+    cifras.agregar("CategoriasMotivos", str(len(CATEGORIAS_DE_MOTIVOS)), "backend/analisis/motivos.py: PALABRAS_CLAVE_POR_CATEGORIA")
+    cifras.agregar("UmbralMinCasos", str(scoring["UMBRAL_MIN_CASOS"]), "backend/api/scoring.py: UMBRAL_MIN_CASOS")
+    return pd.concat([pd.Series({"ninguno": 1 - cobertura}), por_motivo]).rename(len(senal))
+
+
+def figura_de_motivos(barras: pd.Series) -> Path:
+    """F9: las negativas tempranas por motivo, con las que no mencionan ninguno."""
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.1))
+    colores = [PALETA["neutro"] if motivo == "ninguno" else PALETA["serie"] for motivo in barras.index]
+    eje.barh(barras.index, 100 * barras.values, color=colores, height=0.62)
+    for i, valor in enumerate(barras.values):
+        eje.annotate(f"{100 * valor:.1f} %", xy=(100 * valor, i), xytext=(3, 0), textcoords="offset points", va="center",
+                     fontsize=7.5, color=PALETA["tinta"])
+    eje.grid(axis="x", color=PALETA["rejilla"], linewidth=0.6)
+    eje.grid(axis="y", visible=False)
+    eje.set_xlim(0, 100 * barras.max() * 1.12)
+    eje.set_xlabel(f"% de las {entero(barras.name)} negativas tempranas del conjunto limpio")
+    eje.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.0f} %"))
+    return guardar_figura(fig, "motivos")
 
 
 def figura_pr_auc_por_fold(modelo: np.ndarray, trivial: np.ndarray) -> Path:
@@ -1013,13 +1148,15 @@ def main() -> None:
     tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
               tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
               tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1),
-              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1), tabla_por_banda(cifras, rutas)]
+              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1), tabla_por_banda(cifras, rutas),
+              tabla_de_factores(cifras, rutas, modelo)]
+    motivos_por_resena = cifras_de_motivos(cifras, limpio)
     cifras_de_casos_al_filo(cifras, rutas, modelo)
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),
                figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego),
-               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"])]
+               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]), figura_de_motivos(motivos_por_resena)]
     capturas = copiar_capturas()
     copiar_logo()
 

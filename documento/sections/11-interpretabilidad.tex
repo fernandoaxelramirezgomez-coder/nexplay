@@ -1,17 +1,80 @@
-% Rúbrica: Resolución del problema. Fuentes y figuras: ver el plan del documento.
+% Rúbrica: Resolución del problema (interpretabilidad). Fuente: backend/api/scoring.py,
+% backend/analisis/motivos.py, frontend/src/app/dominio/factores.ts y notebooks/00_exploracion.ipynb, §3.8.
 \section{Interpretabilidad}\label{sec:interpretabilidad}
 
+El sitio no se queda en la banda. Dice qué la mueve y de qué se quejan las reseñas con la señal.
+Esta sección explica cómo se arma cada pieza y hasta dónde llega.
+
 \subsection{Factores por aporte y su evidencia}\label{sec:interpretabilidad-factores}
-\pendiente{redacción}
 
-\subsection{Lectura contra el catálogo}
-\pendiente{redacción}
+Para cada juego, la API calcula el aporte de cada variable al score: su coeficiente por su valor
+estandarizado, que es lo que suma la regresión logística\footnote{El aporte está en log-odds, la
+escala en la que la regresión suma: positivo sube el score y negativo lo baja.}. La ficha muestra
+los tres factores de mayor aporte, en ese orden, aunque el primero tenga evidencia débil. Cada
+uno lleva su nivel de evidencia (tabla~\ref{tab:factores}): sólida para la cobertura y la nota
+de la crítica, y débil para la gratuidad, el precio y el descuento, según sus intervalos por
+bootstrap (sección~\ref{sec:modelacion-bootstrap}). La ficha lo dice con palabras: «evidencia
+débil: con \cifraJuegosEntrenamiento{} juegos no se distingue de cero».
 
-\subsection{Lo típico del catálogo: una decisión de producto}
-\pendiente{redacción}
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/factores}
+  \caption{Los factores de la ficha, su evidencia y la referencia contra la que se lee cada uno.
+  Fuente: \texttt{backend/api/scoring.py} y los juegos de data-v3.}
+  \label{tab:factores}
+\end{table}
+
+\subsection{Lectura contra el catálogo}\label{sec:interpretabilidad-lectura}
+
+Junto a cada factor va la cifra del juego y la referencia contra la que se lee. La nota se
+compara con el promedio de los juegos del catálogo que la tienen, \cifraNotaPromedioCatalogo{}, y
+el precio con la mediana de los de pago, \cifraPrecioMedianoCatalogo{} pesos. Para el precio se
+usa la mediana porque el modelo trabaja con su logaritmo, y en esa escala la referencia se parece
+más a la mediana que al promedio, que los juegos caros inflan.
+
+\subsection{Lo típico del catálogo: una decisión de producto}\label{sec:interpretabilidad-tipico}
+
+Un factor cuyo aporte es menor que \texttt{UMBRAL\_TIPICO}, \cifraUmbralTipico{}, se muestra sin
+flecha y con la leyenda «cerca de lo típico del catálogo; casi no mueve la estimación». Ese valor
+es una decisión de producto, no una propiedad estadística: no sale de un intervalo ni de una
+prueba. Se eligió para que ninguna flecha contradiga la cifra que tiene al lado. Hace falta porque
+el modelo compara cada nota contra su media de entrenamiento, \cifraMediaNotaModelo{}, mientras
+que la ficha la compara contra el promedio del catálogo, \cifraNotaPromedioCatalogo{}. Una nota
+entre las dos aparece «por encima del promedio» y, aun así, recibe un aporte pequeño que sube el
+score. Con \cifraUmbralTipico{}, ningún factor con flecha cae en ese caso en los
+\cifraJuegosCatalogo{} juegos del catálogo; el generador de este documento lo comprueba.
 
 \subsection{Avisos}\label{sec:interpretabilidad-avisos}
-\pendiente{redacción}
+
+Dos casos llevan aviso. En un juego gratis, la gratuidad y el precio de 0 dicen lo mismo y tiran
+en sentidos opuestos, así que se muestran como un solo factor, con los dos aportes sumados. El
+aviso agrega que en el entrenamiento había solo \cifraGratisEntrenamiento{} juegos gratis y que,
+para ellos, el modelo extrapola. En los \cifraPagoSinPrecioEntrenamiento{} juegos de pago sin
+precio (sección~\ref{sec:procesamiento-precio}), el aviso dice que la estimación es menos
+confiable, porque el modelo tomó el precio como 0 y eso tiende a bajar su riesgo estimado.
 
 \subsection{Los motivos: una heurística de palabras clave}\label{sec:interpretabilidad-motivos}
-\pendiente{redacción}
+
+\texttt{/explicacion} no usa un modelo. Busca palabras clave en inglés de
+\cifraCategoriasMotivos{} categorías (rendimiento, bugs, dificultad, controles, contenido y
+precio) en las reseñas con la señal de cada juego, y una reseña puede caer en varias o en
+ninguna. Si el juego tiene menos de \cifraUmbralMinCasos{} reseñas con la señal, no muestra
+motivos. Cada porcentaje se calcula sobre las reseñas que sí cayeron en alguna categoría, y la
+ficha dice cuántas son.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{motivos.pdf}
+  \caption{Negativas tempranas del conjunto limpio de data-v1 que mencionan cada motivo de la
+  lista de palabras clave, como porcentaje de las \cifraNegativasTempranasLimpias{}. Una reseña
+  puede mencionar varios. Fuente: \texttt{backend/analisis/motivos.py}, como en la sección
+  «Motivos por palabras clave» del notebook 00.}
+  \label{fig:motivos}
+\end{figure}
+
+El límite de esta heurística es su cobertura. De las \cifraNegativasTempranasLimpias{} negativas
+tempranas del conjunto limpio, el \cifraCoberturaMotivosPorResena{} menciona al menos un motivo
+de la lista; el \cifraSinMotivoPorResena{} restante no menciona ninguno
+(figura~\ref{fig:motivos}). Rendimiento y bugs son los más frecuentes. Por eso los motivos se
+leen como las quejas de las reseñas que usan esas palabras, no como la causa de la señal en ese
+juego.

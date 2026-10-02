@@ -161,5 +161,13 @@
 \newcommand{\cifraTasaAltoSinNotaExternosPromJuegos}{3.64\,\%}  % externos: banda alto, sin nota (bandas_referencia.json)
 \newcommand{\cifraJuegosAltoConNota}{10}  % los 123: banda alta con nota de Metacritic
 \newcommand{\cifraAltoSinNotaCatalogo}{33}  % los 123: banda alta sin nota de Metacritic
+\newcommand{\cifraUmbralTipico}{0.10}  % backend/api/scoring.py: UMBRAL_TIPICO
+\newcommand{\cifraNotaPromedioCatalogo}{85.5}  % data-v3: promedio de Metacritic de los juegos que la tienen
+\newcommand{\cifraPrecioMedianoCatalogo}{349.88}  % data-v3: mediana de precio de los de pago con precio
+\newcommand{\cifraMediaNotaModelo}{86.97}  % media de metacritic del StandardScaler del modelo (data-v1, con la nota que falta imputada)
+\newcommand{\cifraCoberturaMotivosPorResena}{34.0\,\%}  % conjunto limpio de data-v1: negativas tempranas con al menos un motivo (motivos.tabla_de_motivos)
+\newcommand{\cifraSinMotivoPorResena}{66.0\,\%}  % conjunto limpio de data-v1: negativas tempranas sin ningún motivo (motivos.tabla_de_motivos)
+\newcommand{\cifraCategoriasMotivos}{6}  % backend/analisis/motivos.py: PALABRAS_CLAVE_POR_CATEGORIA
+\newcommand{\cifraUmbralMinCasos}{5}  % backend/api/scoring.py: UMBRAL_MIN_CASOS
 \newcommand{\cifraScoreHollowKnight}{0.2857}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3
 \newcommand{\cifraScoreWarframe}{0.3918}  % modelo juego entrenado con data-v1, sobre los atributos de data-v3

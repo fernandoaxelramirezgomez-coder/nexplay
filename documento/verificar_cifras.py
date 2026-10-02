@@ -210,6 +210,16 @@ CANONICAS = {
     "AltoSinNotaCatalogo": "33",
     "ScoreHollowKnight": "0.2857",
     "ScoreWarframe": "0.3918",
+    # interpretabilidad (§11), contrastadas con el 00 (celda 110), backend/api/scoring.py (UMBRAL_TIPICO,
+    # UMBRAL_MIN_CASOS y la media 86.97 de su comentario) y el plan (nota promedio 85.5). El precio
+    # mediano del catálogo no tenía registro anterior: se calcula como referencias_del_catalogo().
+    "SinMotivoPorResena": "66.0" + PORCIENTO,
+    "CategoriasMotivos": "6",
+    "UmbralMinCasos": "5",
+    "UmbralTipico": "0.10",
+    "NotaPromedioCatalogo": "85.5",
+    "PrecioMedianoCatalogo": "349.88",
+    "MediaNotaModelo": "86.97",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")
