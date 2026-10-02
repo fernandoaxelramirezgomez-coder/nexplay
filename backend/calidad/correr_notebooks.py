@@ -13,7 +13,7 @@ Cómo lo hace:
   Las celdas del clon, de las versiones del entorno y de la configuración de las gráficas (con PNG solo si
   hay Chrome) cambian de una máquina a otra: se listan aparte.
 
-Sale con 1 si falta algo o si un notebook no termina (sus asserts, 36 en el 00, 16 en el 01 y 46 en el 02,
+Sale con 1 si falta algo o si un notebook no termina (sus asserts, 36 en el 00, 16 en el 01 y 51 en el 02,
 detienen la ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff
 para revisarlas, pero no hacen fallar: las salidas guardadas pueden venir de otro entorno, y otra versión de
 pandas escribe distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.

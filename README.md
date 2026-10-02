@@ -93,7 +93,7 @@ flowchart LR
     openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
     api -->|HTTP/JSON| web["Angular<br/>frontend/"]
     releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
-    tag["tag codigo-v5"] -->|git clone| nb
+    tag["tag codigo-v6"] -->|git clone| nb
 ```
 
 En producción, Render construye la API con `backend/despliegue/Dockerfile`: baja los datos, entrena el modelo
@@ -190,11 +190,11 @@ un release. Todos los comandos de Python corren desde `backend/`.
 | `02_modelos_texto`: si el texto distingue las negativas tempranas | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
 
 Abre cualquiera de los tres y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag
-`codigo-v5` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
+`codigo-v6` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
 credenciales.
 
 El 00 y el 01 corrieron en Colab el 2026-09-30 con `codigo-v3`, y el 02 el 2026-10-01 con `codigo-v4`, sin
-errores ni avisos; evidencia en [docs/evidencia/colab/](docs/evidencia/colab/README.md). Con `codigo-v5`, que
+errores ni avisos; evidencia en [docs/evidencia/colab/](docs/evidencia/colab/README.md). Con `codigo-v6`, que
 agrega tablas y gráficas para negocio, falta correrlos en Colab. Los tres guardan en `notebooks/` las salidas de
 una corrida local, para que sus gráficas también se vean como PNG en GitHub.
 

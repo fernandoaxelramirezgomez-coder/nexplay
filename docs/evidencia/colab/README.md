@@ -1,7 +1,8 @@
 # Corridas en Colab
 
 Dos corridas: el 00 y el 01 el 2026-09-30 con `codigo-v3`, y el 02 el 2026-10-01 con `codigo-v4` (más abajo).
-Con `codigo-v5`, que agrega las gráficas para negocio, los tres están pendientes de correr en Colab.
+Con `codigo-v6`, que agrega las gráficas para negocio, las nubes con forma de control y la conclusión para negocio
+del 02, los tres están pendientes de correr en Colab.
 
 ## 00 y 01: 2026-09-30, `codigo-v3`
 

@@ -1,7 +1,7 @@
 # notebooks/
 
 Los notebooks de la entrega. Corren en Colab sin el resto del repositorio: cada uno clona el tag de código
-`codigo-v5` y baja los datos de releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas
+`codigo-v6` y baja los datos de releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas
 de tu checkout.
 
 | Notebook | Qué hace | Abrir |
@@ -20,7 +20,9 @@ otros dos dan por hechas. Ninguno lee lo que otro deja en disco, así que cada u
 conjunto limpio del 00 y comprueba su firma.
 
 **En Colab.** Abre el notebook con su botón y usa *Entorno de ejecución → Ejecutar todas*. No pide
-credenciales ni Google Drive, y no reinstala los paquetes que Colab ya trae.
+credenciales ni Google Drive, y no reinstala los paquetes que Colab ya trae. Si el entorno ya tenía un
+`repo_nexplay` de otro tag (por ejemplo, de una corrida anterior), la celda del clon lo borra y clona el que pide el
+notebook.
 
 **En local**, desde la raíz del repositorio y después de `make setup`:
 
