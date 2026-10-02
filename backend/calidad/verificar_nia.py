@@ -689,6 +689,39 @@ _RECORRIDO = [
 _NUNCA = ("abandono", "te lo recomiendo", "vale la pena", "cómpralo", "no lo compres", "deberías comprar", "banda")
 
 
+def _nombra_sin_consultar(texto: str, juegos: list[int], appid: int | None) -> list[str]:
+    """Los juegos del catálogo que una respuesta nombra sin haberlos consultado: sin tarjetas no
+    puede nombrar ninguno, salvo el de la ficha abierta, que ya viene en su contexto. Su nombre
+    se quita antes de buscar los demás: en la ficha de Portal 2, «Portal 2» no es «Portal»."""
+    if juegos:
+        return []
+    bajo = texto.lower()
+    abierto = catalogo.obtener(appid) if appid is not None else None
+    if abierto is not None:
+        bajo = bajo.replace(abierto.nombre.lower(), " ")
+    return sorted(j.nombre for j in catalogo.buscar() if j.nombre.lower() in bajo)
+
+
+def _revisar_nombrados_sin_consultar() -> list[str]:
+    """La regla del recorrido con modelo, con casos fijos: en la ficha de Hades puede nombrar a
+    Hades sin tarjeta; a cualquier otro juego, no, igual que en el chat general."""
+    problemas = []
+    por_nombre = {j.nombre: j.appid for j in catalogo.buscar()}
+    casos = (
+        (por_nombre["Hades"], "Hades cuesta $179 y la crítica le dio 93 💸 ¿Te cuento su riesgo?", []),
+        (por_nombre["Portal 2"], "Portal 2 tiene riesgo bajo 🙂 ¿Te cuento por qué?", []),
+        (por_nombre["Hades"], "Hollow Knight cuesta menos que Hades 💸", ["Hollow Knight"]),
+        (None, "Hades cuesta $179 💸", ["Hades"]),
+        (por_nombre["Portal 2"], "Portal también es de Valve 🎮", ["Portal"]),
+    )
+    for appid, texto, esperado in casos:
+        if (encontrados := _nombra_sin_consultar(texto, [], appid)) != esperado:
+            problemas.append(f"«{texto}» en {appid or 'el chat general'}: marca {encontrados} y debía marcar {esperado}")
+    if not problemas:
+        print("nombrados: en la ficha puede nombrar su juego sin tarjeta; a ningún otro")
+    return problemas
+
+
 def _revisar_recorrido(con_openai: bool) -> list[str]:
     """Las quince preguntas, en el modo que esté configurado.
 
@@ -697,7 +730,6 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
     ahí además se imprimen para leerlas."""
     problemas = []
     del_catalogo = {j.appid for j in catalogo.buscar()}
-    nombres = {j.nombre for j in catalogo.buscar()}
 
     for appid, pregunta in _RECORRIDO:
         salida = nia.responder(appid, [MensajeChat(rol="usuario", contenido=pregunta)], "verificador01")
@@ -727,10 +759,9 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
                 problemas.append(f"{donde}: salió en modo {salida['modo']} y se esperaba {esperado}")
             if pregunta == "¿Y Super Mario Odyssey?" and "no está" not in bajo:
                 problemas.append(f"{donde}: no dice que el juego no está en el catálogo")
-            # Un juego nombrado sin haberlo consultado no se puede pintar ni citar.
-            nombrados = {n for n in nombres if n.lower() in bajo}
-            if nombrados and not salida["juegos"]:
-                problemas.append(f"{donde}: nombra juegos sin haberlos consultado ({sorted(nombrados)[:3]})")
+            nombrados = _nombra_sin_consultar(texto, salida["juegos"], appid)
+            if nombrados:
+                problemas.append(f"{donde}: nombra juegos sin haberlos consultado ({nombrados[:3]})")
 
     if not problemas:
         print(f"catálogo: las {len(_RECORRIDO)} preguntas del recorrido pasan"
@@ -1183,6 +1214,7 @@ def main() -> int:
     problemas += _revisar_cifras_de_los_datos()
     problemas += _revisar_comentarios()
     problemas += _revisar_cual_me_compro()
+    problemas += _revisar_nombrados_sin_consultar()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
