@@ -6,7 +6,8 @@ modelo/
 extracto/
 # lo que deja la ingesta al correr: su registro y su candado
 registros/
-.env
+.env*
+!.env.example
 .claude/
 
 # capturas que genera calidad/capturar_ui.py; las del README sí se versionan
