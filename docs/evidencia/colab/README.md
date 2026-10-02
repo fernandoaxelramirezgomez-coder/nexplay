@@ -7,7 +7,9 @@ Tres corridas:
 - el 00 y el 01 el 2026-09-30 con `codigo-v3`;
 - el 02 el 2026-10-01 con `codigo-v4`.
 
-Las anteriores se quedan como historial: muestran que cada versión corrió, y sus archivos no cambian.
+Las anteriores se quedan como historial: muestran que cada versión corrió, y sus archivos no cambian. Con `codigo-v8`,
+que quita el aviso «Mean of empty slice» del 01 (`construir_features` recibe la mediana de la nota), los tres están
+pendientes de correr en Colab.
 
 ## Los tres: 2026-10-02, `codigo-v6`
 

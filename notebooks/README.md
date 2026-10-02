@@ -1,7 +1,7 @@
 # notebooks/
 
 Los notebooks de la entrega. Corren en Colab sin el resto del repositorio: cada uno clona el tag de código
-`codigo-v6` y baja los datos de releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas
+`codigo-v8` y baja los datos de releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas
 de tu checkout.
 
 | Notebook | Qué hace | Abrir |

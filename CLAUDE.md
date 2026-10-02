@@ -36,7 +36,7 @@ lo sigue recibiendo por compatibilidad.
 **Perfiles privados.** `author.num_games_owned == 0` es bandera de privacidad, no biblioteca vacía. No
 imputar como cero.
 
-**Notebooks.** Los tres clonan un tag fijo de código (`codigo-v6`) y bajan los datos por sha256. Guardan las
+**Notebooks.** Los tres clonan un tag fijo de código (`codigo-v8`) y bajan los datos por sha256. Guardan las
 salidas de una corrida local con PNG, para que sus gráficas se vean en GitHub; sus corridas de Colab están en
 `docs/evidencia/colab/`. `make notebooks` solo compara, nunca las sobrescribe. En el 02, todo lo que no es la
 decisión prerregistrada va después de ella y se rotula como descriptivo.

@@ -93,7 +93,7 @@ flowchart LR
     openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
     api -->|HTTP/JSON| web["Angular<br/>frontend/"]
     releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
-    tag["tag codigo-v6"] -->|git clone| nb
+    tag["tag codigo-v8"] -->|git clone| nb
 ```
 
 En producción, Render construye la API con `backend/despliegue/Dockerfile`: baja los datos, entrena el modelo
@@ -190,12 +190,13 @@ un release. Todos los comandos de Python corren desde `backend/`.
 | `02_modelos_texto`: si el texto distingue las negativas tempranas | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
 
 Abre cualquiera de los tres y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag
-`codigo-v6` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
+`codigo-v8` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
 credenciales.
 
 Los tres corrieron en Colab el 2026-10-02 con `codigo-v6`, sin errores ni avisos; evidencia en
 [docs/evidencia/colab/](docs/evidencia/colab/README.md), junto con las corridas anteriores (`codigo-v3` y
-`codigo-v4`). Los tres guardan en `notebooks/` las salidas de
+`codigo-v4`). Con `codigo-v8`, que quita el aviso «Mean of empty slice» del 01 en el entorno de Colab, falta
+correrlos en Colab. Los tres guardan en `notebooks/` las salidas de
 una corrida local, para que sus gráficas también se vean como PNG en GitHub.
 
 ## ⚙️ Configuración (.env)
