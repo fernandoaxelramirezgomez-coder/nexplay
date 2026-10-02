@@ -1437,13 +1437,13 @@ def _criterio_dicho(pregunta: str) -> str | None:
     return None
 
 
-def responde_al_seguimiento(pregunta: str, mensajes: list[MensajeChat]) -> bool:
+def responde_al_seguimiento(pregunta: str, mensajes: list[MensajeChat], appid: int | None = None) -> bool:
     """Un sí a la oferta anterior, o el criterio que pidió: se cumple con reglas aunque haya
-    modelo, porque lo ofrecido tiene que poder hacerse."""
-    oferta = _oferta_previa(mensajes)
-    if es_afirmacion(pregunta):
-        return True
-    return bool(oferta and oferta["intencion"] == "ordenar" and _criterio_dicho(_norm(pregunta)))
+    modelo, porque lo ofrecido tiene que poder hacerse. Sin oferta que cumplir, no es seguro."""
+    oferta = _oferta_previa(mensajes, appid)
+    if oferta is None:
+        return False
+    return es_afirmacion(pregunta) or (oferta["intencion"] == "ordenar" and bool(_criterio_dicho(_norm(pregunta))))
 
 
 def _seguimiento(pregunta: str, datos: dict | None, appid: int | None, mensajes: list[MensajeChat],
@@ -1658,6 +1658,31 @@ def es_fuera_de_tema(
     """Si la pregunta no encaja con nada del catálogo. Con IA también se decide aquí, con
     las mismas reglas del modo demostración: no llama a ningún modelo."""
     return bool(responder(datos, appid, mensajes, sugerencias, generos).get("fuera_de_tema"))
+
+
+# Temas ajenos que se reconocen sin dudar. Con modelo, a media conversación solo estos se
+# contestan por reglas: un mensaje sin palabras de juegos después de otra respuesta suele ser un
+# seguimiento («¿Y eso es mucho?») y va al modelo con el historial.
+_TEMA_AJENO = ("capital de", "mundial", "presidente", "receta", "clima", "horoscopo", "chiste", "tarea", "traduce",
+               "traducir", "matematicas", "ecuacion", "futbol", "pelicula", "noticias", "elecciones")
+
+
+def es_tema_ajeno_seguro(
+    pregunta: str,
+    datos: dict | None,
+    appid: int | None,
+    mensajes: list[MensajeChat],
+    sugerencias: list[SugerenciaNia],
+    generos: list[str] | None = None,
+) -> bool:
+    """Datos personales e instrucciones, siempre. Un tema sin relación con los juegos, solo si
+    abre la conversación o se nombra sin duda; si no, puede ser un seguimiento."""
+    if tiene_datos_personales(pregunta) or _dice(_norm(pregunta), *_INSTRUCCIONES):
+        return True
+    if not sin_relacion_con_juegos(pregunta) or not es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos):
+        return False
+    abre_la_conversacion = not any(m.rol == "usuario" for m in mensajes[:-1])
+    return abre_la_conversacion or _dice(_norm(pregunta), *_TEMA_AJENO)
 
 
 def fuera_del_catalogo(original: str, datos: dict | None) -> dict | None:

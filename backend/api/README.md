@@ -200,10 +200,11 @@ coronar «el mejor», no contestar preguntas que no son de juegos y explicar por
 abierto tiene su riesgo («¿por qué tiene ese riesgo?»), con el factor que más aporta, su
 evidencia y los avisos.
 
-**Limitación conocida.** Un seguimiento sin palabras de juegos, como «¿Y eso es mucho?», se
-trata como fuera de tema y se contesta con reglas: el detector de temas ajenos mira solo la
-pregunta, no la conversación. Se deja así a propósito: si mirara la conversación, la trivia a
-mitad de un hilo («¿cuál es la capital de Francia?») llegaría al modelo.
+Con modelo, las reglas solo toman un mensaje cuando están seguras; ante la duda, va al modelo con
+el historial. La lista y el criterio de cada una están en `_por_reglas_aunque_haya_modelo`
+(`api/nia/agente.py`). Un tema ajeno a los juegos va por reglas si abre la conversación o se
+nombra sin duda («¿cuál es la capital de Francia?», en cualquier turno); un seguimiento sin
+palabras de juegos a mitad de un hilo, como «¿Y eso es mucho?», va al modelo con la conversación.
 
 El backend arma el contexto con los datos reales de ese juego, ya como hechos en palabras:
 - los factores del modelo como ideas («cuesta casi el triple de lo normal del catálogo»),

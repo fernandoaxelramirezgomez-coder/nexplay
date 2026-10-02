@@ -1249,15 +1249,21 @@ def _por_reglas_aunque_haya_modelo(
     ultima: str,
     generos: list[str] | None = None,
 ) -> bool:
-    """Lo que se contesta con reglas aunque haya modelo, porque la respuesta tiene que ser
-    siempre la misma y el prompt no lo garantiza: el resumen (de todas las respuestas del
-    hilo, no de la última), "el mejor" (no se corona a nadie), lo que no es de juegos (el
-    modelo contestaba la trivia), «¿qué tal X?» o «¿se parece a X?» con un X que no está en
-    el catálogo (el modelo a veces se saltaba el «no está en este catálogo») y «¿por qué tiene
-    ese riesgo?» con un juego abierto (el modelo se saltaba el aviso, el descargo o el factor
-    que más aporta)."""
+    """Con modelo, las reglas solo toman un mensaje cuando están seguras; ante la duda, va al
+    modelo con el historial. Sin clave, todo va por reglas, igual que siempre. Lo que toman:
+
+    - un sí a la oferta de la respuesta anterior, o el criterio que pidió («por precio»), si
+      hay oferta que cumplir;
+    - «el más barato de esos dos» y parecidos, con los juegos guardados del turno anterior;
+    - intenciones explícitas que tienen que salir siempre igual: el resumen de la conversación,
+      qué significa la señal, cómo se calcula el riesgo, de dónde salen los datos, los
+      comentarios, «¿cuál me compro?», un veredicto por un aspecto («¿es para mí si me importa
+      el rendimiento?»), por qué un juego abierto tiene su riesgo y «el mejor»;
+    - datos personales e instrucciones, siempre; un tema ajeno a los juegos si abre la
+      conversación o se nombra sin duda («capital de», «mundial»…);
+    - un título que no está en el catálogo, solo si lo escrito parece un título."""
     return (
-        reglas.responde_al_seguimiento(ultima, mensajes)
+        reglas.responde_al_seguimiento(ultima, mensajes, appid)
         or reglas.responde_de_esos(ultima, mensajes)
         or reglas.pide_resumen(ultima)
         or reglas.pide_que_significa_la_senal(ultima)
@@ -1268,10 +1274,9 @@ def _por_reglas_aunque_haya_modelo(
         or reglas.pide_aspecto(ultima, appid)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
-        or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))
+        or reglas.es_tema_ajeno_seguro(ultima, datos, appid, mensajes, sugerencias, generos)
         or reglas.fuera_del_catalogo(ultima, datos) is not None
     )
-
 
 _PREGUNTA_POR_LA_SENAL = (
     "que significa", "que es la senal", "que es esa senal", "que quiere decir", "proxy", "como se calcula",
