@@ -73,7 +73,7 @@ test: _modelo _frontend
 	cd $(BACKEND) && $(PY) calidad/verificar_preparar_entorno.py
 	cd $(FRONTEND) && npx ng test --watch=false
 
-## notebooks: ejecuta 00 y 01 en una carpeta temporal y compara con las salidas guardadas, sin tocarlas
+## notebooks: ejecuta 00, 01 y 02 en una carpeta temporal y compara con las salidas guardadas, sin tocarlas
 notebooks: _venv
 	@$(PY) -c 'import torch' 2>/dev/null || $(PY) -m pip install -q torch --index-url https://download.pytorch.org/whl/cpu
 	$(PY) -m pip install -q -r $(BACKEND)/requirements-notebooks.txt -r $(BACKEND)/requirements-dev.txt

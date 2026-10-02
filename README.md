@@ -77,8 +77,9 @@ lo hizo.
   recomendarte que lo compres. El perfil que declares sirve para contarte qué tanto encaja un juego contigo;
   no cambia el riesgo.
 
-La historia completa está en dos notebooks que corren en Colab: `00_exploracion` (los datos, antes del
-modelo) y `01_modelo_riesgo` (el modelo). Los detalles, en [notebooks/README.md](notebooks/README.md).
+La historia completa está en tres notebooks que corren en Colab: `00_exploracion` (los datos, antes del
+modelo), `01_modelo_riesgo` (el modelo) y `02_modelos_texto` (si el texto distingue las negativas
+tempranas). Los detalles, en [notebooks/README.md](notebooks/README.md).
 
 ## 🏗️ Arquitectura
 
@@ -91,8 +92,8 @@ flowchart LR
     modelo --> api
     openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
     api -->|HTTP/JSON| web["Angular<br/>frontend/"]
-    releases -->|Parquet y SQLite| nb["Notebooks 00 y 01<br/>(Colab)"]
-    tag["tag codigo-v3"] -->|git clone| nb
+    releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
+    tag["tags codigo-v3 y codigo-v4"] -->|git clone| nb
 ```
 
 En producción, Render construye la API con `backend/despliegue/Dockerfile`: baja los datos, entrena el modelo
@@ -260,7 +261,7 @@ muestra `nivel`, que sale de los terciles de los scores de validación.
 | Comando | Qué revisa |
 |---|---|
 | `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que `preparar_entorno --force` no pise bases ajenas y las 279 pruebas del frontend. |
-| `make notebooks` | Ejecuta el 00 y el 01 con el último commit y compara cada salida con la guardada, sin sobrescribirla. Falla si un notebook no termina; las celdas distintas las lista con su diff. |
+| `make notebooks` | Ejecuta el 00, el 01 y el 02 con el último commit y compara cada salida con la guardada, sin sobrescribirla. Falla si un notebook no termina; las celdas distintas las lista con su diff. |
 | `cd frontend && npx ng build` | El build de producción del frontend. |
 | `python calidad/capturar_ui.py`, desde `backend/` | Recorre la UI con Playwright (API y frontend corriendo), guarda capturas en `docs/capturas/angular/` y reporta problemas de texto y contraste. |
 | `python calidad/preguntas_nia.py --api http://localhost:8000 --etiqueta prueba`, desde `backend/` | Las 25 preguntas a Nia contra una API levantada. |
@@ -290,7 +291,7 @@ nexplay/
 │   ├── operacion/         exportar y moderar comentarios
 │   └── requirements*.txt  uno por uso (ver backend/README.md)
 ├── frontend/            Angular: src/, public/, fuentes/ (la hoja de Nia) y scripts/
-├── notebooks/           00_exploracion y 01_modelo_riesgo, con su ruta de ejecución
+├── notebooks/           00_exploracion, 01_modelo_riesgo y 02_modelos_texto, con su ruta de ejecución
 └── docs/                evidencia, capturas, diseño e historial
 ```
 

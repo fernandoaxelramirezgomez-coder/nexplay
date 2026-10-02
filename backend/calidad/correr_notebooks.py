@@ -1,20 +1,20 @@
-"""Ejecuta los dos notebooks con el código del último commit y compara sus salidas con las guardadas.
+"""Ejecuta los tres notebooks con el código del último commit y compara sus salidas con las guardadas.
 
 No escribe nada en notebooks/: las salidas que se guardan en el repo se eligen a mano (el 01 guarda las de
-Colab; el 00, las de una corrida local con PNG). Esto comprueba, en local, que los notebooks corren de punta a punta con el código de
+Colab; el 00, las de una corrida local con PNG; el 02, las de una corrida local). Esto comprueba, en local, que los notebooks corren de punta a punta con el código de
 este checkout y dan las mismas cifras.
 
 Cómo lo hace:
 - exporta el último commit (git archive HEAD) como repo_nexplay/ en una carpeta temporal. Es lo mismo que
   traerá el tag, y al encontrarlo la celda de clon no clona;
-- ejecuta 00_exploracion y 01_modelo_riesgo ahí, en ese orden;
+- ejecuta 00_exploracion, 01_modelo_riesgo y 02_modelos_texto ahí, en ese orden;
 - compara, celda por celda, el stdout, el texto de las tablas y los errores contra lo guardado. El stdout se
   une antes de comparar, porque Jupyter lo parte distinto en cada corrida. Las gráficas no se comparan.
   Las celdas del clon, de las versiones del entorno y de la configuración de las gráficas (con PNG solo si
   hay Chrome) cambian de una máquina a otra: se listan aparte.
 
-Sale con 1 si falta algo o si un notebook no termina (sus asserts, 34 en el 00 y 6 en el 01, detienen la
-ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff para
+Sale con 1 si falta algo o si un notebook no termina (sus asserts, 34 en el 00, 6 en el 01 y 22 en el 02,
+detienen la ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff para
 revisarlas, pero no hacen fallar: las salidas guardadas pueden venir de Colab, y otra versión de pandas escribe
 distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.
 
@@ -36,14 +36,14 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-NOTEBOOKS = ("00_exploracion", "01_modelo_riesgo")
+NOTEBOOKS = ("00_exploracion", "01_modelo_riesgo", "02_modelos_texto")
 PAQUETES = {"nbclient": "nbclient", "nbformat": "nbformat", "ipykernel": "ipykernel", "plotly": "plotly",
             "lingua": "lingua-language-detector",
             "sentence_transformers": "sentence-transformers", "pyarrow": "pyarrow", "requests": "requests"}
 # Las celdas cuya salida depende de la máquina, reconocidas por su código.
 MARCAS_DE_ENTORNO = ("repo_nexplay ya existe", "__version__", "configurar_graficas")
 # Cómo empiezan las líneas con la cifra principal de cada notebook, para verlas sin abrirlos.
-CIFRAS = ("GroupKFold por appid ", "PR-AUC GroupKFold del modelo de produccion")
+CIFRAS = ("GroupKFold por appid ", "PR-AUC GroupKFold del modelo de produccion", "Rama ")
 
 
 def _comprobar_paquetes() -> None:
