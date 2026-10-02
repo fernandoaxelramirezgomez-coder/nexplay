@@ -1,8 +1,8 @@
 """Ejecuta los tres notebooks con el código del último commit y compara sus salidas con las guardadas.
 
-No escribe nada en notebooks/: las salidas que se guardan en el repo se eligen a mano (el 01 guarda las de
-Colab; el 00, las de una corrida local con PNG; el 02, las de una corrida local). Esto comprueba, en local, que los notebooks corren de punta a punta con el código de
-este checkout y dan las mismas cifras.
+No escribe nada en notebooks/: las salidas que se guardan en el repo se eligen a mano. Los tres guardan las de
+una corrida local con PNG, y sus corridas de Colab están en docs/evidencia/colab/. Esto comprueba, en local, que
+los notebooks corren de punta a punta con el código de este checkout y dan las mismas cifras.
 
 Cómo lo hace:
 - exporta el último commit (git archive HEAD) como repo_nexplay/ en una carpeta temporal. Es lo mismo que
@@ -13,10 +13,10 @@ Cómo lo hace:
   Las celdas del clon, de las versiones del entorno y de la configuración de las gráficas (con PNG solo si
   hay Chrome) cambian de una máquina a otra: se listan aparte.
 
-Sale con 1 si falta algo o si un notebook no termina (sus asserts, 34 en el 00, 6 en el 01 y 22 en el 02,
-detienen la ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff para
-revisarlas, pero no hacen fallar: las salidas guardadas pueden venir de Colab, y otra versión de pandas escribe
-distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.
+Sale con 1 si falta algo o si un notebook no termina (sus asserts, 36 en el 00, 16 en el 01 y 46 en el 02,
+detienen la ejecución si una cifra deja de sostenerse). Las celdas con una salida distinta se listan con su diff
+para revisarlas, pero no hacen fallar: las salidas guardadas pueden venir de otro entorno, y otra versión de
+pandas escribe distinto los tipos o desempata en otro orden sin que cambie ninguna cifra.
 
 Uso, desde backend/ (make notebooks, desde la raíz, instala antes lo que hace falta):
   python calidad/correr_notebooks.py                        # en una carpeta temporal nueva

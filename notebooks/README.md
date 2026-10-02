@@ -1,14 +1,14 @@
 # notebooks/
 
-Los notebooks de la entrega. Corren en Colab sin el resto del repositorio: cada uno clona un tag de código
-(`codigo-v3` el 00 y el 01; `codigo-v4` el 02, que trae `backend/analisis/texto.py`) y baja los datos de
-releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas de tu checkout.
+Los notebooks de la entrega. Corren en Colab sin el resto del repositorio: cada uno clona el tag de código
+`codigo-v5` y baja los datos de releases con tag fijo, verificados con su sha256. Por eso no dependen de las rutas
+de tu checkout.
 
 | Notebook | Qué hace | Abrir |
 |---|---|---|
 | `00_exploracion.ipynb` | Valida, limpia y explora los datos antes del modelo. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) [![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) |
-| `01_modelo_riesgo.ipynb` | Construye y mide el modelo de riesgo: variables, GroupKFold por `appid`, experimento de privacidad y prueba externa. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) [![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
-| `02_modelos_texto.ipynb` | ¿El texto distingue las negativas tempranas de las tardías? Cinco modelos contra una regla prerregistrada (`docs/evidencia/modelos-texto-prerregistro.md`). | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) [![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
+| `01_modelo_riesgo.ipynb` | Construye y mide el modelo de riesgo: variables, GroupKFold por `appid`, experimento de privacidad, prueba externa y cuánta señal real hay en cada banda. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) [![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
+| `02_modelos_texto.ipynb` | ¿El texto distingue las negativas tempranas de las tardías? Cinco modelos contra una regla prerregistrada (`docs/evidencia/modelos-texto-prerregistro.md`) y, después de la decisión, una lectura para negocio descriptiva. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) [![Ver en nbviewer](https://img.shields.io/badge/ver%20en-nbviewer-orange)](https://nbviewer.org/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
 
 Cada uno abre con una ficha: objetivo, entradas (releases y sha256), salidas, cómo correrlo y tiempo
 estimado.
@@ -31,11 +31,10 @@ make notebooks
 Instala `backend/requirements-notebooks.txt` y `backend/requirements-dev.txt` y ejecuta los tres notebooks
 en una carpeta temporal, con el último commit de tu checkout en lugar del tag, y compara cada salida con la
 guardada. Si alguna difiere, la lista con su diff sin hacer fallar el comando; falla solo si un notebook no
-termina. Las copias ejecutadas quedan ahí y los notebooks del repositorio no cambian: el 01 guarda las salidas
-de la corrida en Colab; el 00, las de una corrida local con PNG (su versión de Colab está en
-`docs/evidencia/colab/`), y el 02, las de una corrida local. Si kaleido encuentra un Chrome (`plotly_get_chrome`, o la variable
-`BROWSER_PATH` apuntando a uno), el 00 guarda cada gráfica también como PNG. Si no lo encuentra, o en Colab,
-lo avisa y deja las gráficas solo interactivas.
+termina. Las copias ejecutadas quedan ahí y los notebooks del repositorio no cambian: los tres guardan las
+salidas de una corrida local con PNG (sus corridas de Colab están en `docs/evidencia/colab/`). Si kaleido
+encuentra un Chrome (`plotly_get_chrome`, o la variable `BROWSER_PATH` apuntando a uno), cada notebook guarda sus
+gráficas también como PNG. Si no lo encuentra, o en Colab, lo avisa y deja las gráficas solo interactivas.
 
 Los tres validan con la partición congelada de `backend/referencias/particion_gkf_data-v1.csv`. Así, los
 folds no dependen de cómo desempata cada versión de scikit-learn, y el PR-AUC del modelo de producción

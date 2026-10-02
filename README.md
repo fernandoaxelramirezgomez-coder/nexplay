@@ -93,7 +93,7 @@ flowchart LR
     openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
     api -->|HTTP/JSON| web["Angular<br/>frontend/"]
     releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
-    tag["tags codigo-v3 y codigo-v4"] -->|git clone| nb
+    tag["tag codigo-v5"] -->|git clone| nb
 ```
 
 En producción, Render construye la API con `backend/despliegue/Dockerfile`: baja los datos, entrena el modelo
@@ -187,15 +187,16 @@ un release. Todos los comandos de Python corren desde `backend/`.
 |---|---|
 | `00_exploracion`: valida, limpia y explora los datos | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) |
 | `01_modelo_riesgo`: construye y mide el modelo | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
+| `02_modelos_texto`: si el texto distingue las negativas tempranas | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
 
-Abre cualquiera de los dos y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag
-`codigo-v3` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
+Abre cualquiera de los tres y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag
+`codigo-v5` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
 credenciales.
 
-Cada uno corrió en Colab el 2026-09-30 sin errores ni avisos; evidencia en
-[docs/evidencia/colab/](docs/evidencia/colab/README.md). Usaron el código de `codigo-v3` (`9b64795`). El 01
-guarda en `notebooks/` las salidas de esa corrida. El 00 guarda las de una corrida local, para que sus 18
-gráficas también se vean como PNG en GitHub; su versión de Colab está en esa misma carpeta.
+El 00 y el 01 corrieron en Colab el 2026-09-30 con `codigo-v3`, y el 02 el 2026-10-01 con `codigo-v4`, sin
+errores ni avisos; evidencia en [docs/evidencia/colab/](docs/evidencia/colab/README.md). Con `codigo-v5`, que
+agrega tablas y gráficas para negocio, falta correrlos en Colab. Los tres guardan en `notebooks/` las salidas de
+una corrida local, para que sus gráficas también se vean como PNG en GitHub.
 
 ## ⚙️ Configuración (.env)
 
