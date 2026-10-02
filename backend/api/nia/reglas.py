@@ -569,6 +569,9 @@ def necesita_juego(pregunta: str, mensajes: list[MensajeChat], appid: int | None
     no nombra ninguno o nombra varios."""
     if appid is not None:
         return False
+    # «Sí, explícamelo» a una oferta la cumple: no pide un juego.
+    if es_afirmacion(pregunta) and _oferta_previa(mensajes) is not None:
+        return False
     texto = _norm(pregunta)
     if not _dice(texto, *_DE_UN_JUEGO) or _nombrados(pregunta):
         return False
@@ -1381,25 +1384,46 @@ _AFIRMATIVAS = frozenset(
     " muestramelo muestrame hazlo me interesa obvio ya venga a ver pues mas sobre eso y lo los tambien yes please"
     .split()
 )
-_ARRANQUES = frozenset(
-    "si sii siii sip simon va vale dale ok okay okey claro sale andale orale bueno perfecto de adelante por porfa"
-    " porfavor cuentame cuentamelo cuentamelos platicame explicame explicamelo muestramelos muestramelo muestrame"
-    " hazlo me obvio venga a yes".split()
+# Un sí fuerte, con sus errores de dedo («sii», «sip», «dalee», «okis»): lo que sigue puede ser
+# cualquier cosa que no pida otra cosa («si te me lo acabas de preguntar», «dale pues»).
+_SI_FUERTE = re.compile(
+    r"^(?:s+i+p?|s+e+p|z+i+|si+m|simon|va+|vale|da+le+|ok+(?:ay|ey|is?)?|okey|claro|sale|andale|orale|bueno"
+    r"|perfecto|adelante|porfa(?:vor)?|cuentame(?:lo|los)?|platicame|explicame(?:lo)?|muestramel[oa]s?"
+    r"|muestrame|hazlo|obvio|venga|yes|yep)$"
 )
+# Arranques que también abren otras frases («de esos…», «me gusta…»): solo son un sí si todo
+# el mensaje son palabras de afirmación («de acuerdo», «por favor», «me interesa», «a ver»).
+_ARRANQUES = frozenset("de por me a".split())
+# Lo que convierte un «sí, …» en otra pregunta: un tema concreto («sí, ¿cuánto cuesta?»).
+_PIDE_OTRA_COSA = frozenset("""
+    precio precios cuesta cuestan cuanto critica criticas nota metacritic resena resenas motivos quejas riesgo
+    genero generos dura duracion horas compara comparar gratis barato baratos caro caros comentarios perfil
+    rendimiento bugs dificultad controles historia graficos multijugador recomiendas
+""".split())
 
 
 def es_afirmacion(pregunta: str) -> bool:
-    """«sí», «sí, cuéntame», «si cuentame mas sobre eso», «dale», «va», «claro que sí»: un sí
-    a lo que Nia ofreció, sin pedir otra cosa."""
+    """Un sí a lo que Nia acaba de ofrecer, sin pedir otra cosa: «sí», «sí, explícamelo», «va»,
+    «dale pues», «si cuentame mas sobre eso», «si te me lo acabas de preguntar», «sii». «Sí,
+    ¿cuánto cuesta?» o «sí, ¿y la crítica?» piden otra cosa y no cuentan."""
     palabras = re.findall(r"[a-zñ]+", _norm(pregunta))
-    return 0 < len(palabras) <= 8 and palabras[0] in _ARRANQUES and all(p in _AFIRMATIVAS for p in palabras)
+    # Una pregunta detrás del sí es otra pregunta: «si, ¿por qué?». «¿Va?» sola sí cuenta.
+    if not 0 < len(palabras) <= 12 or ("?" in pregunta and len(palabras) > 1):
+        return False
+    if all(p in _AFIRMATIVAS for p in palabras) and (_SI_FUERTE.match(palabras[0]) or palabras[0] in _ARRANQUES):
+        return True
+    return bool(_SI_FUERTE.match(palabras[0])) and not any(p in _PIDE_OTRA_COSA for p in palabras) and not _nombrados(pregunta)
 
 
-def _oferta_previa(mensajes: list[MensajeChat]) -> dict | None:
+def _oferta_previa(mensajes: list[MensajeChat], appid: int | None = None) -> dict | None:
+    """La oferta de la respuesta inmediata anterior de Nia: la que viene como dato o, si no vino,
+    la que se lee en su pregunta de cierre."""
     anterior = _respuesta_anterior(mensajes)
-    if anterior is None or anterior.oferta is None:
+    if anterior is None:
         return None
-    return anterior.oferta.model_dump()
+    if anterior.oferta is not None:
+        return anterior.oferta.model_dump()
+    return oferta_del_cierre(anterior.contenido, anterior.juegos, appid)
 
 
 def _criterio_dicho(pregunta: str) -> str | None:
@@ -1424,7 +1448,7 @@ def responde_al_seguimiento(pregunta: str, mensajes: list[MensajeChat]) -> bool:
 
 def _seguimiento(pregunta: str, datos: dict | None, appid: int | None, mensajes: list[MensajeChat],
                  sugerencias: list[SugerenciaNia]) -> dict | None:
-    oferta = _oferta_previa(mensajes)
+    oferta = _oferta_previa(mensajes, appid)
     if es_afirmacion(pregunta):
         if oferta is None:
             # Un sí sin oferta guardada responde al saludo: en la ficha, «¿Te explico por qué

@@ -1328,7 +1328,7 @@ def _revisar_ofertas() -> list[str]:
             return
         OfertaNia(**oferta)
         vistas.add(oferta["intencion"])
-        for si in ("sí", "si cuentame mas sobre eso"):
+        for si in ("sí", "si te me lo acabas de preguntar"):
             mensajes = [*hilo, MensajeChat(rol="usuario", contenido=si)]
             cumplida = nia_reglas.responder(datos, appid, mensajes, sugerencias)
             cumplida["texto"] = nia.pulir(cumplida["texto"])
@@ -1555,6 +1555,67 @@ def _revisar_saludo_en_el_hilo() -> list[str]:
     return problemas
 
 
+_SON_UN_SI = ("sí", "Si te me lo acabas de preguntar", "Sí, explícamelo", "va", "dale pues", "si cuentame mas sobre eso",
+              "sii", "sip", "dalee", "okis", "claro que sí", "de acuerdo", "por favor", "simón", "órale pues", "¿Va?")
+_NO_SON_UN_SI = ("sí, ¿cuánto cuesta?", "sí, ¿y la crítica?", "si juego poco, ¿me conviene?", "me gusta el rendimiento",
+                 "de esos, ¿cuál es gratis?", "Si, ¿por qué?", "Sí, compara Hades y Celeste", "si, explícame el riesgo",
+                 "no gracias", "sí, Hades")
+
+
+def _como_respuesta(salida: dict) -> dict:
+    """La salida de la API con los nombres que usa _cumple."""
+    return {"texto": salida["respuesta"], "juegos": salida["juegos"], "pide_perfil": salida.get("pide_perfil", False),
+            "pide_juego": salida.get("pide_juego", False), "oferta": salida.get("oferta")}
+
+
+def _revisar_afirmaciones() -> list[str]:
+    """Un sí con palabras de más o errores de dedo cumple la oferta de la respuesta inmediata
+    anterior de Nia, la que sea; un sí que pide otra cosa no. La conversación de producción de A
+    Short Hike, completa y por el camino completo (sirve en demostración y con --openai): el saludo
+    con su oferta, la crítica, «Si te me lo acabas de preguntar» y «Sí, explícamelo»."""
+    problemas = []
+    problemas += [f"«{q}» no se toma como un sí" for q in _SON_UN_SI if not nia_reglas.es_afirmacion(q)]
+    problemas += [f"«{q}» se toma como un sí y pide otra cosa" for q in _NO_SON_UN_SI if nia_reglas.es_afirmacion(q)]
+    nombres = {j.appid: j.nombre for j in catalogo.buscar()}
+    juego = next(j for j in catalogo.buscar() if j.nombre == "A Short Hike")
+    hilo = [_saludo_de_la_ficha(juego)]
+    for pregunta in ("Que tal es este juego según las críticas?", "Si te me lo acabas de preguntar", "Sí, explícamelo"):
+        ofrecida = hilo[-1].oferta.model_dump() if hilo[-1].oferta else None
+        hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
+        salida = nia.responder(juego.appid, hilo, "verificador01")
+        RespuestaNia(**salida)
+        donde = f"A Short Hike, «{pregunta}» ({salida['modo']})"
+        if _NO_ENTENDIO.search(salida["respuesta"]):
+            problemas.append(f"{donde}: {salida['respuesta'][:90]}…")
+        if nia_reglas.es_afirmacion(pregunta):
+            if salida["modo"] == "openai":
+                problemas.append(f"{donde}: un sí a su oferta fue al modelo")
+            elif ofrecida and (falla := _cumple(ofrecida, _como_respuesta(salida), nombres)):
+                problemas.append(f"{donde}: {falla}")
+        elif (salida.get("oferta") or {}).get("juegos") != [juego.appid]:
+            problemas.append(f"{donde}: lo que ofrece no es de A Short Hike: {salida.get('oferta')}")
+        hilo.append(_de_nia(salida))
+    # Sin la oferta como dato, se lee de la pregunta de cierre.
+    datos = nia.contexto(juego.appid)
+    sin_dato = [MensajeChat(rol="usuario", contenido="¿Cuánto cuesta?"),
+                MensajeChat(rol="nia", contenido="A Short Hike cuesta $93 💸 ¿Te cuento qué dicen sus reseñas?"),
+                MensajeChat(rol="usuario", contenido="dale pues")]
+    texto = nia_reglas.responder(datos, juego.appid, sin_dato, [])["texto"]
+    if "reseñas negativas tempranas" not in texto:
+        problemas.append(f"sin la oferta como dato, «dale pues» no lee la pregunta de cierre: {texto[:80]}…")
+    # En el catálogo, «Sí, explícamelo» a una oferta la cumple: no abre el buscador.
+    datos_hilo = [MensajeChat(rol="usuario", contenido="¿De dónde salen estos datos?")]
+    datos_hilo.append(_de_nia(nia.responder(None, datos_hilo, "verificador01")))
+    datos_hilo.append(MensajeChat(rol="usuario", contenido="Sí, explícamelo"))
+    salida = nia.responder(None, datos_hilo, "verificador01")
+    if salida.get("pide_juego") or not salida["respuesta"].startswith("Con datos del juego"):
+        problemas.append(f"en el catálogo, «Sí, explícamelo» no cumple la oferta: {salida['respuesta'][:80]}…")
+    if not problemas:
+        print(f"afirmaciones: {len(_SON_UN_SI)} formas de decir sí cumplen la oferta anterior y {len(_NO_SON_UN_SI)} que"
+              " piden otra cosa no; la conversación de A Short Hike se cumple completa")
+    return problemas
+
+
 def _revisar_esquema_de_ofertas() -> list[str]:
     """La oferta y los juegos solo los lleva un mensaje de Nia, con intención de la lista y
     hasta 8 juegos: lo demás es un 422."""
@@ -1643,6 +1704,7 @@ def main() -> int:
     problemas += _revisar_conversaciones()
     problemas += _revisar_ficha_abierta()
     problemas += _revisar_saludo_en_el_hilo()
+    problemas += _revisar_afirmaciones()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
