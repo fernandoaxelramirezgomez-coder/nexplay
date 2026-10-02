@@ -463,6 +463,15 @@ def _revisar_casos_de_produccion() -> list[str]:
     problemas += _voz(apex["texto"], "«¿Qué tal Apex?»") + _voz(battlefield["texto"], "«¿Qué tal Battlefield?»")
     if "No encuentro «Zelda»" not in nia_reglas.responder(None, None, [usuario("¿Qué tal Zelda?")], [])["texto"]:
         problemas.append("«¿Qué tal Zelda?» ya no dice que no está en el catálogo")
+    # «GTA V» es como casi todos le dicen a Grand Theft Auto V Legacy.
+    gta = next(j.appid for j in catalogo.buscar() if j.nombre == "Grand Theft Auto V Legacy")
+    cyberpunk = next(j.appid for j in catalogo.buscar() if j.nombre == "Cyberpunk 2077")
+    compara = nia_reglas.responder(None, None, [usuario("Compara Cyberpunk 2077 y GTA V Legacy")], [])
+    if sorted(compara["juegos"]) != sorted([gta, cyberpunk]):
+        problemas.append(f"«Compara Cyberpunk 2077 y GTA V Legacy» no reconoce los dos ({compara['texto']!r})")
+    for pregunta in ("¿Qué tal GTA 5?", "¿Qué tal GTA?"):
+        if not nia_reglas.responder(None, None, [usuario(pregunta)], [])["texto"].startswith("Grand Theft Auto V Legacy"):
+            problemas.append(f"«{pregunta}» no encuentra Grand Theft Auto V Legacy")
     # © entre palabras, como ™ y ®: sin quitarlo, «sims© 4» no es «sims 4».
     if nia.juegos_del_catalogo_mencionados("¿Qué tal The Sims© 4?", 0) != ["The Sims™ 4"]:
         problemas.append("con ©, «The Sims© 4» no se reconoce como The Sims™ 4")
@@ -566,7 +575,7 @@ def _revisar_casos_de_produccion() -> list[str]:
         print("producción: trivia, correo e instrucciones van a reglas y 8 preguntas legítimas al modelo;"
               " negritas, correo, instrucciones y jugar con amigos con su respuesta;"
               " no corona; el resumen cubre todo y no deja media lista; horas típicas; el descargo una vez; 60 palabras;"
-              " 7 tarjetas; nombres con ™, ® y ©; «Apex» y «Battlefield» a medias; el historial al modelo con tope")
+              " 7 tarjetas; nombres con ™, ® y ©; «Apex» y «Battlefield» a medias; «GTA V»; el historial al modelo con tope")
     return problemas
 
 

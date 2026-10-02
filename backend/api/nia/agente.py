@@ -488,8 +488,16 @@ def juegos_del_catalogo_mencionados(pregunta: str, appid_abierto: int) -> list[s
     return [n for n in encontrados if not any(n != otro and dentro(n, otro) for otro in encontrados)]
 
 
+# Cómo se nombra un juego cuando no sale de su nombre en Steam. Van tal cual, aunque sean
+# cortas: son siglas que nadie usa para otra cosa.
+_ALIAS = {
+    "Grand Theft Auto V Legacy": ("gta", "gta v", "gta 5", "gta v legacy", "grand theft auto v"),
+}
+
+
 def _variantes_del_nombre(nombre: str) -> list[str]:
-    """El nombre completo y su primera parte, normalizados; descarta lo muy corto."""
+    """El nombre completo y su primera parte, normalizados, y sus alias; descarta lo muy
+    corto que no sea alias."""
     limpio = _sin_acentos(_sin_marcas(nombre)).strip()
     variantes = {limpio, limpio.split(":")[0].strip(), limpio.split(" - ")[0].strip()}
     # "The Sims 4" también se escribe "Los Sims 4": vale sin el artículo del principio.
@@ -498,7 +506,7 @@ def _variantes_del_nombre(nombre: str) -> list[str]:
     variantes |= {re.sub(r"^[\w ]+?['’]s ", "", v) for v in variantes}
     # "baldurs gate 3" también es Baldur's Gate 3: casi nadie escribe el apóstrofo.
     variantes |= {v.replace("'", "").replace("’", "") for v in variantes}
-    return [v for v in variantes if len(v) >= 4]
+    return [v for v in variantes if len(v) >= 4] + list(_ALIAS.get(nombre, ()))
 
 
 def _texto_comparacion(datos: dict, ref: dict) -> str:
