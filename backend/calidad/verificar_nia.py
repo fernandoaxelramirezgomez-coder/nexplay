@@ -737,6 +737,54 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
     return problemas
 
 
+def _hilo_por_reglas(preguntas: list[str], appid: int | None = None) -> list[MensajeChat]:
+    """Una conversación contestada por reglas, pregunta por pregunta, con el hilo completo."""
+    hilo: list[MensajeChat] = []
+    for pregunta in preguntas:
+        hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
+        datos = nia.contexto(appid) if appid is not None else None
+        hilo.append(MensajeChat(rol="nia", contenido=nia.pulir(nia_reglas.responder(datos, appid, hilo, [])["texto"])))
+    return hilo
+
+
+def _revisar_resumen_completo() -> list[str]:
+    """«Resúmeme lo que hemos hablado» cubre toda la conversación, no solo la última respuesta.
+    En producción se saltaba la primera respuesta del modelo, que abre con «¡Hola!», y las que
+    abren con una respuesta corta («Un poco 💸», «De contenido 🔍»)."""
+    problemas = []
+    usuario = lambda texto: MensajeChat(rol="usuario", contenido=texto)
+    de_nia = lambda texto: MensajeChat(rol="nia", contenido=texto)
+    pide = "Resúmeme lo que hemos hablado"
+    general = _hilo_por_reglas(["¿Hay algo gratis?", "¿Qué tal Apex?", "Compara Cyberpunk 2077 y GTA V",
+                                "¿Qué juegos de estrategia tienen riesgo bajo?", pide])
+    ficha = _hilo_por_reglas(["¿Por qué tiene ese riesgo?", "¿Qué dicen las reseñas?", "¿El precio influye?", pide],
+                             next(j.appid for j in catalogo.buscar() if j.nombre == "Amnesia: The Bunker"))
+    # Como contesta el modelo: saluda en la primera y abre con la respuesta corta.
+    con_modelo = [
+        usuario("¿Hay algo gratis?"),
+        de_nia("¡Hola! 👋 Sí, hay 7 juegos gratuitos en el catálogo, como Apex Legends™ y Warframe. ¿Te los ordeno?"),
+        usuario("¿Y Cyberpunk 2077?"),
+        de_nia("Un poco 💸 Cyberpunk 2077 cuesta $999, casi el triple de lo normal del catálogo. ¿Te cuento sus reseñas?"),
+        usuario("¿Qué dicen las reseñas de Hades?"),
+        de_nia("De contenido 🔍 La única reseña negativa temprana de Hades que dice por qué habla de contenido. ¿Algo más?"),
+        usuario(pide),
+    ]
+    resumen_modelo = nia.pulir(nia_reglas.responder(None, None, con_modelo, [])["texto"])
+    for nombre, resumen, esperados in (
+        ("catálogo", general[-1].contenido, ("gratuitos", "Apex", "Cyberpunk", "Estrategia")),
+        ("ficha", ficha[-1].contenido, ("crítica", "5 de las 11 reseñas", "cuesta $283")),
+        ("con el modelo", resumen_modelo, ("gratuitos", "Cyberpunk", "Hades")),
+    ):
+        faltan = [e for e in esperados if e not in resumen]
+        if faltan or not resumen.startswith("Va, en corto"):
+            problemas.append(f"el resumen ({nombre}) no cubre toda la conversación: le falta {faltan} ({resumen!r})")
+        problemas += _voz(resumen, f"resumen ({nombre})")
+    if not problemas:
+        print("resumen:  cubre toda la conversación, aunque la primera respuesta abra con «¡Hola!» y las demás"
+              " con una respuesta corta")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -786,6 +834,7 @@ def main() -> int:
     problemas = _consistente_con_la_ficha()
     problemas += _revisar_lenguaje()
     problemas += _revisar_lo_que_recibe_openai()
+    problemas += _revisar_resumen_completo()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

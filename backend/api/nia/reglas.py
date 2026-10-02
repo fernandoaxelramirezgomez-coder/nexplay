@@ -143,11 +143,13 @@ def _saludo_o_gracias(pregunta: str, datos: dict | None) -> dict | None:
     return None
 
 
-# Lo que no se resume: otro resumen, los saludos y las respuestas que no dijeron nada del
-# catálogo (no lo sé, pedir el juego, no coronar, ya te lo conté).
+# Lo que no se resume: otro resumen y las respuestas que no dijeron nada del catálogo (no lo
+# sé, pedir el juego, no coronar, ya te lo conté). «¡Hola!» no va aquí: el modelo abre con él
+# su primera respuesta, y por eso el resumen se la saltaba entera; un saludo solo, sin nada
+# más, se queda fuera porque no le queda ninguna oración que resumir.
 _DE_TRAMITE = (
     "Va, en corto", "Más corto", "Eso no lo sé", "No corono", "¿De qué juego hablamos", "Aún no te he contado",
-    "Ya te lo conté", "¡De nada", "¡Hola", "Para sugerirte algo",
+    "Ya te lo conté", "¡De nada", "Para sugerirte algo",
 )
 
 _PIDE_RESUMEN = ("resume", "resumen", "resumir", "resumelo", "resumeme", "en corto", "lo que dijiste",
@@ -175,7 +177,20 @@ def _oraciones_de(texto: str) -> list[str]:
     # «Sí, hay 7 gratis…», «¡Hola! …»: el arranque de cortesía no es parte de lo dicho.
     partes = [_SIN_ARRANQUE.sub("", p) for p in partes]
     oraciones = [p.strip("¡!¿ ").rstrip(".") for p in partes if p and p.strip()]
-    return [o for o in oraciones if o and not o.endswith("?") and len(o.split()) >= 2]
+    # «Y 2 más en Explorar» es la cola de una lista: suelta no dice nada.
+    oraciones = [o for o in oraciones if o and not o.endswith("?") and len(o.split()) >= 2 and not _COLA.match(o)]
+    # La respuesta corta con que abre («Un poco 💸», «En parte 🎮», «Sobre todo, de
+    # rendimiento 🔍», «Soy Nia») no dice de qué se habló: se resume lo que sigue.
+    while oraciones and (len(oraciones[0].split()) < 3 or _APERTURA.match(oraciones[0])):
+        oraciones = oraciones[1:]
+    return oraciones
+
+
+_COLA = re.compile(r"^Y \d+ más\b")
+_APERTURA = re.compile(
+    r"^(?:un poco|en parte|no mucho|casi no|no se sabe|muy poco|nada todavía|(?:sobre todo, )?de [\wáéíóúñ ]{1,30})$",
+    re.IGNORECASE,
+)
 
 
 _TOPE_DURO = 50
@@ -186,10 +201,15 @@ def _primera_clausula(oracion: str) -> str:
     guion largo («Hay 7 gratis: A, B…», «hay 7 gratis—A, B…») o, si no hay lista, antes de la
     primera coma o punto y coma. Si eso queda en menos de tres palabras, la oración entera.
     Con el guion largo cortaba en la primera coma y dejaba media lista."""
+    # Los dos puntos de un nombre («Amnesia: The Bunker») no abren ninguna lista.
+    nombres = [n for n in (j.nombre for j in catalogo.buscar()) if ":" in n and n in oracion]
+    protegida = oracion
+    for nombre in nombres:
+        protegida = protegida.replace(nombre, nombre.replace(":", "\x00"))
     for corte in (r":\s|\s*[—–]\s*", r"(?<=\w)[,;]\s"):
-        clausula = re.split(corte, oracion, maxsplit=1)[0]
-        if clausula != oracion and len(clausula.split()) >= 3:
-            return clausula
+        clausula = re.split(corte, protegida, maxsplit=1)[0]
+        if clausula != protegida and len(clausula.split()) >= 3:
+            return clausula.replace("\x00", ":")
     return oracion
 
 
@@ -205,7 +225,7 @@ def _resumen(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
     if not _dice(pregunta, *_PIDE_RESUMEN):
         return None
     respuestas = [_oraciones_de(p) for p in _respuestas_previas(mensajes) if not p.startswith(_DE_TRAMITE)]
-    respuestas = [r for r in respuestas if r and len(r[0].split()) >= 3]
+    respuestas = [r for r in respuestas if r]
     if not respuestas:
         return _resultado("Aún no te he contado nada 🙂 ¿Por dónde empezamos: un juego o el catálogo?")
     # "Más corto" pide menos que el resumen de antes.
@@ -887,8 +907,11 @@ def _sobre_las_quejas(datos: dict) -> str:
         cuerpo = f"Las {total} reseñas negativas tempranas de {nombre} que dicen por qué hablan de {principal}{otros}."
     else:
         apertura = f"De {_lista(empatados[:3])}" if len(empatados) > 1 else f"Sobre todo, de {principal}"
-        partes = [f"{primero} {'habla' if primero == 1 else 'hablan'} de {principal}"] + [f"{c} de {m}" for m, c in conteos[1:3]]
-        cuerpo = f"De las {total} reseñas negativas tempranas de {nombre} que dicen por qué, {_lista(partes)}."
+        # La cifra primero: si el resumen se queda con la primera cláusula, se queda con ella.
+        otros = [f"{c} de {m}" for m, c in conteos[1:3]]
+        cuerpo = (f"{primero} de las {total} reseñas negativas tempranas de {nombre} que dicen por qué"
+                  f" {'habla' if primero == 1 else 'hablan'} de {principal}"
+                  + (f", {_lista(otros)}" if otros else "") + ".")
     cautela = " Son pocas, tómalo con cautela." if total < 10 else ""
     return f"{apertura} 🔍 {cuerpo}{cautela}"
 
