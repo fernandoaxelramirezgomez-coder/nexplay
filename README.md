@@ -193,9 +193,9 @@ Abre cualquiera de los tres y usa *Entorno de ejecución → Ejecutar todas*. Ca
 `codigo-v6` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
 credenciales.
 
-El 00 y el 01 corrieron en Colab el 2026-09-30 con `codigo-v3`, y el 02 el 2026-10-01 con `codigo-v4`, sin
-errores ni avisos; evidencia en [docs/evidencia/colab/](docs/evidencia/colab/README.md). Con `codigo-v6`, que
-agrega tablas y gráficas para negocio, falta correrlos en Colab. Los tres guardan en `notebooks/` las salidas de
+Los tres corrieron en Colab el 2026-10-02 con `codigo-v6`, sin errores ni avisos; evidencia en
+[docs/evidencia/colab/](docs/evidencia/colab/README.md), junto con las corridas anteriores (`codigo-v3` y
+`codigo-v4`). Los tres guardan en `notebooks/` las salidas de
 una corrida local, para que sus gráficas también se vean como PNG en GitHub.
 
 ## ⚙️ Configuración (.env)

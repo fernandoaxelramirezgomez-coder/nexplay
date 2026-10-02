@@ -73,8 +73,10 @@ rutas de entonces.
   antes de la ronda «explicar el riesgo». El primer factor ya es el de mayor aporte en los 123
   juegos. Fallan la evidencia por factor y los avisos (gratis y precio imputado), porque el
   contrato todavía no existe.
-- `colab/`: la corrida final de los dos notebooks en Colab (2026-09-30), con la que se guardaron sus
-  salidas, y su comparación con una corrida local (`make notebooks`).
+- `colab/`: las corridas de los notebooks en Colab, byte por byte.
+  - La vigente es la de los tres, del 2026-10-02 con `codigo-v6`.
+  - Quedan como historial la del 00 y el 01 (2026-09-30, `codigo-v3`) y la del 02 (2026-10-01, `codigo-v4`).
+  - Incluye la comparación de la del 2026-09-30 con una corrida local (`make notebooks`).
 - `sugerencias-afinidad.md`: qué son las sugerencias por afinidad de `/perfil` y por qué,
   a diferencia del modelo de riesgo, **no se pueden validar** contra ningún resultado real.
 
