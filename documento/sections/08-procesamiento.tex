@@ -71,15 +71,21 @@ estimado. La ficha de esos juegos lo avisa (sección~\ref{sec:interpretabilidad-
 
 \subsection{Variables que no se conocen al comprar}\label{sec:procesamiento-variables}
 
-Una variable solo puede entrar al modelo si se conoce antes de comprar. Si no, el modelo
-aprendería de algo que todavía no existe cuando la persona decide, y eso es una
-fuga\footnote{Hay fuga cuando un modelo usa información que no tendría en el momento de
-predecir. Sus métricas salen mejores de lo que serán en uso.}. La tabla~\ref{tab:variables}
-repasa las candidatas. Las del juego vienen de la tienda y entran. Las del autor de la reseña
-no: casi todas existen solo porque la reseña ya se escribió, y la biblioteca del autor, que sí
-podría declararse antes, se probó y su aporte cupo en el ruido entre folds
-(sección~\ref{sec:modelacion-bmas}). En el sitio, el perfil se declara en un formulario y sirve
-para la afinidad: no mueve el riesgo.
+Una variable solo puede entrar al modelo si se conoce antes de comprar. La
+tabla~\ref{tab:variables} repasa las candidatas. Las del juego vienen de la tienda y entran.
+Las del autor de la reseña, no. \texttt{num\_reviews} cambia con el tiempo y se lee al
+descargar, y \texttt{steam\_purchase}, \texttt{received\_for\_free} y
+\texttt{written\_during\_early\_access} solo existen porque la reseña ya se escribió: ninguna
+está disponible al momento de la compra. La biblioteca del autor sí podría declararse antes; se
+probó, y su aporte cupo en el ruido entre folds (sección~\ref{sec:modelacion-bmas}). En el
+sitio, el perfil se declara en un formulario y sirve para la afinidad: no mueve el riesgo.
+
+El texto de la reseña es otro caso. Tampoco existe al comprar, pero además sería una
+fuga\footnote{Hay fuga cuando las variables de un modelo ya contienen la respuesta que debe
+predecir. Sus métricas salen mejores de lo que serán en uso.}: la señal $Y$ sale de esas
+mismas reseñas, de su voto y de sus minutos, y el texto acompaña a ese voto. Por eso solo lo
+leen la exploración (sección~\ref{sec:exploracion-texto}) y los motivos
+(sección~\ref{sec:interpretabilidad-motivos}).
 
 \begin{table}[htbp]
   \centering\small

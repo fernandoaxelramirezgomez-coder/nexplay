@@ -6,9 +6,9 @@ Variable & Cuándo se conoce & ¿Entra al modelo de riesgo? \\
 \texttt{es\_gratis}, precio (en logaritmo) y descuento & en la tienda, antes de comprar & sí \\
 Si tiene nota de Metacritic, y la nota & en la tienda, antes de comprar & sí; la nota que falta se rellena con la mediana, junto a la bandera \\
 \texttt{num\_games\_owned}: juegos del autor & en la reseña; en el sitio se declara «compras al año» & no: su aporte cabe en el ruido entre folds, y 0 es un perfil privado \\
-\texttt{num\_reviews}: reseñas del autor & al descargar; cambia con el tiempo & no: describe al autor después de reseñar \\
-\texttt{steam\_purchase}, \texttt{received\_for\_free} y \texttt{written\_during\_early\_access} & en la reseña & no: solo existen porque la reseña ya se escribió \\
+\texttt{num\_reviews}: reseñas del autor & al descargar; cambia con el tiempo & no: no está disponible al momento de la compra \\
+\texttt{steam\_purchase}, \texttt{received\_for\_free} y \texttt{written\_during\_early\_access} & en la reseña & no: no están disponibles al momento de la compra \\
 \texttt{playtime\_at\_review} y \texttt{voted\_up} & en la reseña & no: definen $Y$ \\
-Texto de la reseña & en la reseña & no: solo lo leen la exploración y los motivos \\
+Texto de la reseña & en la reseña & no: sería una fuga, porque $Y$ sale de esas mismas reseñas \\
 \bottomrule
 \end{tabularx}
