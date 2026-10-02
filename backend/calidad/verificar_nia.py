@@ -665,23 +665,26 @@ def _revisar_votos() -> list[str]:
 # Las quince del recorrido de catálogo (fase 5a): filtros, un juego que no está, las dos
 # formas de pedir que elija por uno, metodología, comparar, seguimiento y fuera de tema.
 # El primer valor es el juego del que se habla; None es modo catálogo.
+# Conversaciones: cada turno lleva el historial de los anteriores, con la oferta y los juegos
+# de cada respuesta, como lo manda el chat. «¿Y el más barato de esos dos?» iba sola, sin
+# saber de qué dos se hablaba.
 _RECORRIDO = [
-    (None, "¿Qué juegos de acción tienen riesgo bajo?"),
-    (None, "¿Hay algo gratis en el catálogo?"),
-    (None, "Juegos de estrategia de menos de 300 pesos"),
-    (None, "¿Tienen Elden Ring?"),
-    (None, "¿Y Super Mario Odyssey?"),
-    (None, "¿Cuál me compro?"),
-    (None, "¿Cuál es el mejor juego del catálogo?"),
-    (None, "¿De dónde salen estos datos?"),
-    (None, "¿Cómo calculan el riesgo?"),
-    (None, "Compara Hades y Hollow Knight"),
-    (None, "¿Y el más barato de esos dos?"),
-    (None, "¿Qué opina la gente en los comentarios?"),
-    (None, "¿Quién ganó el mundial de 2022?"),
-    (1145360, "¿Por qué quedó en esa banda?"),
-    (1145360, "¿Cuánto cuesta?"),
+    (None, ("¿Qué juegos de acción tienen riesgo bajo?",)),
+    (None, ("¿Hay algo gratis en el catálogo?",)),
+    (None, ("Juegos de estrategia de menos de 300 pesos",)),
+    (None, ("¿Tienen Elden Ring?",)),
+    (None, ("¿Y Super Mario Odyssey?",)),
+    (None, ("¿Cuál me compro?",)),
+    (None, ("¿Cuál es el mejor juego del catálogo?",)),
+    (None, ("¿De dónde salen estos datos?",)),
+    (None, ("¿Cómo calculan el riesgo?",)),
+    (None, ("Compara Hades y Hollow Knight", "¿Y el más barato de esos dos?")),
+    (None, ("¿Qué opina la gente en los comentarios?",)),
+    (None, ("¿Quién ganó el mundial de 2022?",)),
+    (1145360, ("¿Por qué quedó en esa banda?", "¿Cuánto cuesta?")),
 ]
+# Lo que tiene que decir un turno, en cualquier modo.
+_ESPERADO_EN_EL_RECORRIDO = {"¿Y el más barato de esos dos?": ("Hollow Knight", "$179")}
 
 # Nada de esto puede salir de Nia, conteste el modelo o las reglas.
 # "banda" también: desde la revisión del usuario final el nivel se llama riesgo de
@@ -723,8 +726,19 @@ def _revisar_nombrados_sin_consultar() -> list[str]:
     return problemas
 
 
+def _turnos_del_recorrido():
+    """Cada pregunta del recorrido con su hilo: los turnos anteriores de su conversación. Quien
+    recorre agrega la respuesta al mismo hilo, como la guarda el chat, antes del turno siguiente."""
+    for appid, preguntas in _RECORRIDO:
+        hilo: list[MensajeChat] = []
+        for pregunta in preguntas:
+            hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
+            yield appid, pregunta, hilo
+
+
 def _revisar_recorrido(con_openai: bool) -> list[str]:
-    """Las quince preguntas, en el modo que esté configurado.
+    """Las conversaciones del recorrido, turno por turno y con su historial, en el modo que
+    esté configurado.
 
     En demostración se comprueban las reglas que valen siempre; las semánticas —que diga
     que un juego no está, que no elija por nadie— solo se pueden afirmar con el modelo, y
@@ -732,8 +746,8 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
     problemas = []
     del_catalogo = {j.appid for j in catalogo.buscar()}
 
-    for appid, pregunta in _RECORRIDO:
-        salida = nia.responder(appid, [MensajeChat(rol="usuario", contenido=pregunta)], "verificador01")
+    for appid, pregunta, hilo in _turnos_del_recorrido():
+        salida = nia.responder(appid, hilo, "verificador01")
         texto = salida["respuesta"]
         bajo = texto.lower()
         donde = f"[{'catálogo' if appid is None else appid}] {pregunta!r}"
@@ -743,6 +757,12 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
         for prohibido in _NUNCA:
             if prohibido in bajo:
                 problemas.append(f"{donde}: dice {prohibido!r}")
+        # Por reglas dice «No encuentro… en este catálogo»; el modelo decía «no está».
+        if pregunta == "¿Y Super Mario Odyssey?" and not re.search(r"no est[aá]|no encuentro", bajo):
+            problemas.append(f"{donde}: no dice que el juego no está en el catálogo")
+        faltan = [e for e in _ESPERADO_EN_EL_RECORRIDO.get(pregunta, ()) if e not in texto]
+        if faltan:
+            problemas.append(f"{donde}: le falta {faltan}: {texto[:90]}…")
         fuera = [a for a in salida["juegos"] if a not in del_catalogo]
         if fuera:
             problemas.append(f"{donde}: devuelve appids que no están en el catálogo ({fuera})")
@@ -753,19 +773,18 @@ def _revisar_recorrido(con_openai: bool) -> list[str]:
                 print(f"          pasos: {' · '.join(salida['pasos'])}")
             esperado = (
                 "reglas"
-                if nia._por_reglas_aunque_haya_modelo(None, appid, [MensajeChat(rol="usuario", contenido=pregunta)], [], pregunta)
+                if nia._por_reglas_aunque_haya_modelo(None, appid, hilo, [], pregunta)
                 else "openai"
             )
             if salida["modo"] != esperado:
                 problemas.append(f"{donde}: salió en modo {salida['modo']} y se esperaba {esperado}")
-            if pregunta == "¿Y Super Mario Odyssey?" and "no está" not in bajo:
-                problemas.append(f"{donde}: no dice que el juego no está en el catálogo")
             nombrados = _nombra_sin_consultar(texto, salida["juegos"], appid)
             if nombrados:
                 problemas.append(f"{donde}: nombra juegos sin haberlos consultado ({nombrados[:3]})")
+        hilo.append(_de_nia(salida))
 
     if not problemas:
-        print(f"catálogo: las {len(_RECORRIDO)} preguntas del recorrido pasan"
+        print(f"catálogo: las {sum(len(p) for _, p in _RECORRIDO)} preguntas del recorrido pasan"
               f" {'con el modelo' if con_openai else 'en demostración'}")
     return problemas
 
