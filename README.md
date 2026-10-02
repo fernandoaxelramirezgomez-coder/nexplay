@@ -11,7 +11,7 @@ del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requisitos-previos)
 [![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend/README.md)
 
-**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf).
+**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) · [🎤 Presentación](docs/presentacion/NexPlay-presentacion-final.pdf).
 La API está en el plan gratis de Render y se duerme cuando nadie la usa, así que la primera carga puede tardar
 un poco.
 
