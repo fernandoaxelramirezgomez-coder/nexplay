@@ -61,10 +61,12 @@ pasos con capturas.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.34\textwidth]{capturas/03-payday-nia.png}
-  \caption{Nia explica por qué PAYDAY 3 tiene riesgo alto, con el juego abierto. Esa pregunta se
-  contesta por reglas aunque haya modelo de lenguaje. Captura provisional del sitio: se regenera
-  desde el tag de entrega.}
+  \begin{subfigure}[t]{0.34\textwidth}\includegraphics[width=\linewidth]{capturas/03-payday-nia.png}\caption{Por reglas: «Sin IA»}\end{subfigure}\hspace{2em}
+  \begin{subfigure}[t]{0.34\textwidth}\includegraphics[width=\linewidth]{capturas/08-payday-nia-con-ia.png}\caption{Con el modelo: «Con IA»}\end{subfigure}
+  \caption{Nia en la ficha de PAYDAY 3. (a) «¿Por qué tiene ese riesgo?» se contesta por reglas
+  aunque haya modelo de lenguaje; captura provisional del sitio, que se regenera desde el tag de
+  entrega. (b) «¿Qué juegos de acción tienen riesgo bajo?» la contesta el modelo de lenguaje;
+  captura de producción, en \texttt{nexplay-six.vercel.app}.}
   \label{fig:nia}
 \end{figure}
 
@@ -76,7 +78,8 @@ herramientas, y la respuesta se valida contra ellas antes de mostrarse. Las preg
 contestarse siempre igual, como «¿por qué tiene ese riesgo?», un juego fuera del catálogo o
 cualquier tema ajeno a los juegos, van por reglas aunque haya modelo, y sin clave de OpenAI todo va
 por reglas. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
-modelo de lenguaje y «Sin IA» si fueron las reglas (\texttt{frontend/src/app/chat/nia.ts}). Si la
+modelo de lenguaje y «Sin IA» si fueron las reglas (\texttt{frontend/src/app/chat/nia.ts};
+figura~\ref{fig:nia}). Si la
 pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
 Nia no guarda datos personales.
 

@@ -176,3 +176,14 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
     - La macro `FechaCorridaNiaIA` sigue en «2 de octubre de 2026»: las dos corridas son de ese día, y la
       fecha sale del nombre del archivo.
 37. **8.2 nombra el verificador de niveles** (del dueño), en el orden de `make test`.
+38. **La captura de producción con «Con IA» va junto a la de reglas, como figura de dos paneles** (la toma la
+    pidió el dueño).
+    - Se tomó el 2026-10-02 en `nexplay-six.vercel.app`, con los parámetros de `capturar_recorrido.py`
+      (1440×1000, escala 2, tema claro, es-MX) y el mismo recorte que `03-payday-nia.png`, de la pregunta al pie
+      del panel. Antes de guardar, el script comprobó `data-modo="openai"` y la etiqueta «Con IA».
+    - La pregunta, «¿Qué juegos de acción tienen riesgo bajo?», es una de las que el modelo contestó en
+      `verificar_nia --openai`, y es el accionable de buscar alternativas del recorrido.
+    - Costó dos preguntas a Nia en producción: la primera captura quedó con el chat desplazado hasta el final y
+      se descartó.
+    - A diferencia de las demás capturas, esta no se regenera desde el tag de entrega: es la evidencia de
+      producción.
