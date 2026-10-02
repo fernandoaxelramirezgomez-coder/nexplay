@@ -1002,9 +1002,9 @@ def _como_se_calcula(pregunta: str) -> dict | None:
         return None
     juegos = scoring.ficha_del_modelo()["juegos_entrenamiento"] or "varios"
     return _resultado(
-        f"Con datos del juego, no con tus gustos 🧮 Un modelo aprendió de {juegos} juegos de Steam cómo se relacionan"
+        f"Con datos del juego, no con tus gustos 🧮 Un modelo aprendió de {juegos} juegos cómo se relacionan"
         " la gratuidad, el precio, el descuento y la crítica con las reseñas de gente que no lo recomendó tras jugar"
-        " menos de 2 horas. Bajo, medio y alto son tres partes iguales del catálogo. ¿Te cuento de dónde salen"
+        " menos de 2 horas. Bajo, medio y alto comparan su estimación con las del entrenamiento. ¿Te cuento de dónde salen"
         " los datos?"
     )
 

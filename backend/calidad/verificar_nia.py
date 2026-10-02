@@ -1037,18 +1037,24 @@ def _revisar_titulo_suelto() -> list[str]:
 def _revisar_como_se_calcula() -> list[str]:
     """«¿Cómo calculan el riesgo?» se contesta por reglas, también con modelo: corto, en llano y
     con lo mismo que la línea fija y la metodología (datos del juego, los juegos del
-    entrenamiento, reseñas de menos de 2 horas, tres partes)."""
+    entrenamiento, reseñas de menos de 2 horas, niveles contra las estimaciones del
+    entrenamiento). Lo que dice de los niveles tiene que ser cierto con los cortes de hoy."""
     problemas = []
     usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
     juegos = scoring.ficha_del_modelo()["juegos_entrenamiento"]
     hades = next(j.appid for j in catalogo.buscar() if j.nombre == "Hades")
+    por_nivel = {b: sum(j.banda_riesgo.value == b for j in catalogo.buscar()) for b in ("bajo", "medio", "alto")}
     for appid, pregunta in ((None, "¿Cómo calculan el riesgo?"), (None, "¿Cómo se calcula el riesgo?"),
                             (None, "¿Cómo sacan el riesgo?"), (hades, "¿Cómo calculan el riesgo?")):
         datos = nia.contexto(appid) if appid else None
         texto = nia.pulir(nia_reglas.responder(datos, appid, usuario(pregunta), [])["texto"])
-        faltan = [f for f in ("Con datos del juego", f"{juegos} juegos", "menos de 2 horas", "tres partes") if f not in texto]
+        faltan = [f for f in ("Con datos del juego", f"{juegos} juegos", "menos de 2 horas", "del entrenamiento") if f not in texto]
         if faltan:
             problemas.append(f"«{pregunta}» no explica cómo se calcula: le falta {faltan} ({texto[:50]}…)")
+        # Los cortes son los tercios de las estimaciones del entrenamiento: el catálogo no
+        # queda en partes iguales (hoy 43, 37 y 43), así que no se puede decir que sí.
+        if re.search(r"partes iguales|tercios del catálogo", texto) and len(set(por_nivel.values())) != 1:
+            problemas.append(f"«{pregunta}» dice que el catálogo se parte en partes iguales y es {por_nivel}")
         problemas += _voz(texto, pregunta)
         if not nia._por_reglas_aunque_haya_modelo(datos, appid, usuario(pregunta), [], pregunta):
             problemas.append(f"«{pregunta}» iría al modelo")
