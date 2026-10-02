@@ -959,6 +959,30 @@ def _revisar_conectores() -> list[str]:
     return problemas
 
 
+def _revisar_titulo_suelto() -> list[str]:
+    """«¿Y Super Mario Odyssey?» dice que no está en el catálogo, también con modelo; lo que no
+    parece un título («¿y el más barato?») no se toma por un juego, y lo que sí está se encuentra."""
+    problemas = []
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    for pregunta, nombre in (("¿Y Super Mario Odyssey?", "Super Mario Odyssey"), ("¿Tienen Zelda?", "Zelda"),
+                             ("Háblame de Halo Infinite", "Halo Infinite")):
+        texto = nia_reglas.responder(None, None, usuario(pregunta), [])["texto"]
+        if f"No encuentro «{nombre}»" not in texto:
+            problemas.append(f"«{pregunta}» no dice que no está en el catálogo ({texto[:60]}…)")
+        if not nia._por_reglas_aunque_haya_modelo(None, None, usuario(pregunta), [], pregunta):
+            problemas.append(f"«{pregunta}» iría al modelo")
+    for pregunta, empieza in (("¿Tienen Elden Ring?", "ELDEN RING"), ("¿Y Hades?", "Hades")):
+        texto = nia_reglas.responder(None, None, usuario(pregunta), [])["texto"]
+        if not texto.startswith(empieza):
+            problemas.append(f"«{pregunta}» no encuentra {empieza} ({texto[:60]}…)")
+    texto = nia_reglas.responder(None, None, usuario("¿Y el más barato?"), [])["texto"]
+    if "No encuentro" in texto:
+        problemas.append(f"«¿Y el más barato?» se tomó por un juego ({texto[:60]}…)")
+    if not problemas:
+        print("títulos: «¿Y Super Mario Odyssey?» no está en el catálogo, por reglas; «¿Y Hades?» sí está")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1013,6 +1037,7 @@ def main() -> int:
     problemas += _revisar_duracion()
     problemas += _revisar_senal_fija()
     problemas += _revisar_conectores()
+    problemas += _revisar_titulo_suelto()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

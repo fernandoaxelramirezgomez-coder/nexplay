@@ -751,13 +751,35 @@ def _con_ese_nombre(nombre: str) -> list[JuegoCatalogo]:
     return [j for j in catalogo.buscar() if patron.search(comparable(j.nombre))]
 
 
+# «¿Y Super Mario Odyssey?», «¿Tienen Zelda?»: un título suelto después de una muletilla.
+# Solo cuenta si lo escrito parece un título (una palabra con mayúscula o un número), para no
+# leer «¿y el más barato?» como un juego.
+_FUERA_CORTO = re.compile(
+    r"^(?:y|y que tal|tienen|tienes|hay|esta|que sabes de|que opinas de|hablame de)\s+(?:el |la |los |las )?"
+    r"([a-z0-9][a-z0-9 :'’.-]{2,40})$"
+)
+_PARECE_TITULO = re.compile(r"(?:^|\s)[A-ZÁÉÍÓÚÑ0-9]")
+
+
+def _titulo_suelto(pregunta: str, original: str) -> str | None:
+    limpia, limpio = pregunta.strip(" ¿?¡!."), original.strip(" ¿?¡!.")
+    encontrado = _FUERA_CORTO.match(limpia)
+    if not encontrado or len(limpia) != len(limpio):
+        return None
+    tramo = limpio[encontrado.start(1):encontrado.end(1)]
+    return tramo if _PARECE_TITULO.search(tramo) else None
+
+
 def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dict | None:
     encontrado = _FUERA.search(pregunta)
-    if not encontrado:
-        return None
-    # Se cita como lo escribió la persona: quitar acentos no cambia el largo del texto, así
-    # que el mismo tramo sirve en el original.
-    tramo = original[encontrado.start(1):encontrado.end(1)] if len(original) == len(pregunta) else encontrado.group(1)
+    if encontrado:
+        # Se cita como lo escribió la persona: quitar acentos no cambia el largo del texto,
+        # así que el mismo tramo sirve en el original.
+        tramo = original[encontrado.start(1):encontrado.end(1)] if len(original) == len(pregunta) else encontrado.group(1)
+    else:
+        tramo = _titulo_suelto(pregunta, original)
+        if tramo is None:
+            return None
     nombre = tramo.strip(" ?.!¿¡")
     if not nombre or _nombrados(nombre):
         return None
