@@ -296,3 +296,9 @@ Al traer master (`codigo-v6`) a `documento`. Las del dueño van marcadas así; l
       fija GTA V Legacy, Team Fortress 2, Resident Evil 4 y Apex Legends, así que son las dos primeras.
 59. **`\fechaentrega` es el 3 de octubre de 2026** (del dueño). Se quita la macro `\provisional`, que ya nada usa.
 
+60. **El índice como navegación** (pedido del dueño). Sus entradas eran enlaces, pero `hidelinks` las dejaba sin
+    señal visual, y solo el título llevaba a la sección.
+    - Ahora van en el color de acento, y el título y el número de página llevan a la sección (`linktoc=all`).
+    - El encabezado «Diplomado en Ciencia de Datos» de cada página regresa al índice.
+    - Los marcadores del visor incluyen las subsecciones, numeradas.
+    - En el cuerpo, los enlaces siguen viéndose como texto negro (`allcolors=black`), igual que antes.

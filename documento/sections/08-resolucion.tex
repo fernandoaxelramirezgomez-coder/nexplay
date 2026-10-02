@@ -91,11 +91,11 @@ frontend. El de los niveles (\texttt{verificar\_niveles.py}) comprueba que la AP
 Nia usan la misma definición de bajo, medio y alto, la de los percentiles de la
 sección~\ref{sec:modelacion-umbrales}, y que ningún texto de la API ni del frontend vuelve a la
 definición anterior, la de tercios del catálogo. Nia se probó, además, con su modelo de lenguaje:
-pasó \cifraPreguntasNiaAprobadas{} de las \cifraPreguntasNia{} preguntas de regresión. La corrida de
-las \cifraPreguntasTrampa{} preguntas trampa y legítimas del \cifraFechaCorridaTrampas{} fue sobre
-\texttt{\cifraCommitTrampas}, anterior a los arreglos de lenguaje de Nia, y no se repitió sobre el
-tag de entrega; quedaron \cifraTrampasPorRevisar{} casos por revisar\footnote{El detalle está en
-\texttt{docs/evidencia/nia-pruebas.md}.}. La evidencia del camino con IA sobre el código de entrega
+pasó \cifraPreguntasNiaAprobadas{} de las \cifraPreguntasNia{} preguntas de regresión. En la corrida
+de las \cifraPreguntasTrampa{} preguntas trampa y legítimas del \cifraFechaCorridaTrampas{}, sobre
+\texttt{\cifraCommitTrampas}, anterior a los arreglos de lenguaje de Nia, quedaron
+\cifraTrampasPorRevisar{} casos por revisar\footnote{El detalle está en
+\texttt{docs/evidencia/nia-pruebas.md}.}; no se repitió sobre el tag de entrega. La evidencia del camino con IA sobre el código de entrega
 es \texttt{verificar\_nia.py --openai}, que manda el recorrido de preguntas al modelo de lenguaje de
 OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre \mbox{\texttt{codigo-v7}} y terminó sin
 problemas\footnote{La salida completa está en

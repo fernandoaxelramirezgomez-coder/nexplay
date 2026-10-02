@@ -32,7 +32,10 @@
 \DefineBibliographyStrings{spanish}{retrieved = {Recuperado}, from = {de}}
 % APA 7: coma antes de «&» en listas de tres o más nombres (los editores de un volumen, por ejemplo).
 \DefineBibliographyExtras{spanish}{\def\finalandcomma{\addcomma}}
-\usepackage[hidelinks]{hyperref}
+% Los enlaces del cuerpo se ven como texto (negros); los del índice llevan el color de acento. En el índice, el
+% título y el número de página llevan a la sección, y los marcadores del visor incluyen las subsecciones.
+\usepackage[colorlinks=true, allcolors=black, linktoc=all, bookmarksnumbered=true, bookmarksopen=true,
+            bookmarksdepth=2]{hyperref}
 \hypersetup{pdftitle={NexPlay: señal de arrepentimiento temprano antes de comprar un videojuego},
             pdfauthor={Fernando Axel Ramírez Gómez}}
 \usepackage{fancyhdr}
@@ -74,7 +77,7 @@
 % En cada página, como en el ejemplo del diplomado: los dos escudos, el diplomado y el autor.
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\raisebox{-0.32\height}{\includegraphics[height=0.95cm]{escudos/logo_unam.png}}\hspace{0.7em}\small Diplomado en Ciencia de Datos}
+\fancyhead[L]{\raisebox{-0.32\height}{\includegraphics[height=0.95cm]{escudos/logo_unam.png}}\hspace{0.7em}\small \hyperlink{indice}{Diplomado en Ciencia de Datos}}
 \fancyhead[R]{\small Fernando Axel Ramírez Gómez\hspace{0.7em}\raisebox{-0.32\height}{\includegraphics[height=0.95cm]{escudos/logo_fes.png}}}
 \fancyfoot[C]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -129,9 +132,14 @@
 
 \input{sections/00-resumen}
 
-% Solo secciones, en la misma página que el resumen: el documento cabe en 28 páginas.
+% Solo secciones, en la misma página que el resumen. Cada entrada es un enlace, en el color de acento, y el
+% encabezado de cada página («Diplomado en Ciencia de Datos») regresa aquí.
 \setcounter{tocdepth}{1}
+\hypertarget{indice}{}
+\begingroup
+\hypersetup{linkcolor=acento}
 \tableofcontents
+\endgroup
 \newpage
 
 \input{sections/01-introduccion}
