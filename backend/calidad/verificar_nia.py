@@ -1482,6 +1482,44 @@ def _comparacion_bien_cerrada(texto: str, juegos: list[int], oferta: dict | None
     return problemas + _voz(texto, "comparación")
 
 
+# Con la ficha de A Short Hike abierta: la conversación de producción y tres preguntas que
+# señalan al juego de la ficha. Ninguna es un juego fuera del catálogo ni un «no lo sé».
+_DE_LA_CRITICA = ("Que tal es este juego según las críticas?", "¿y según la crítica?")
+_DEL_JUEGO_ABIERTO = ("¿qué tal este?", "cuéntame de este juego", "¿Qué tal el juego?")
+_NO_ENTENDIO = re.compile(r"No encuentro «|no lo sé", re.IGNORECASE)
+
+
+def _revisar_ficha_abierta() -> list[str]:
+    """Con una ficha abierta, «este juego», «este», «ese» o «el juego» son el juego de la ficha:
+    nunca un título fuera del catálogo. Por reglas, la crítica y el resumen de ese juego; por el
+    camino completo (sirve en demostración y con --openai), nada de «No encuentro» ni «no lo sé»,
+    y lo que ofrece es de ese juego."""
+    problemas = []
+    juego = next(j for j in catalogo.buscar() if j.nombre == "A Short Hike")
+    datos = nia.contexto(juego.appid)
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    for pregunta in (*_DE_LA_CRITICA, *_DEL_JUEGO_ABIERTO):
+        texto = nia.pulir(nia_reglas.responder(datos, juego.appid, usuario(pregunta), [])["texto"])
+        esperado = f"Metacritic {juego.metacritic}" if pregunta in _DE_LA_CRITICA else f"{juego.nombre} tiene riesgo"
+        if esperado not in texto or _NO_ENTENDIO.search(texto):
+            problemas.append(f"ficha de {juego.nombre}, «{pregunta}» por reglas: le falta «{esperado}»: {texto[:80]}…")
+        for appid, ficha in ((juego.appid, datos), (None, None)):
+            if nia_reglas.fuera_del_catalogo(pregunta, ficha) is not None:
+                problemas.append(f"«{pregunta}» ({'ficha' if appid else 'catálogo'}) se lee como un juego fuera del catálogo")
+        salida = nia.responder(juego.appid, usuario(pregunta), "verificador01")
+        oferta = salida.get("oferta") or {}
+        if _NO_ENTENDIO.search(salida["respuesta"]) or oferta.get("juegos") != [juego.appid]:
+            problemas.append(f"ficha de {juego.nombre}, «{pregunta}» ({salida['modo']}): {salida['respuesta'][:80]}…"
+                             f" oferta={oferta}")
+    # Un título de verdad sigue siendo un juego fuera del catálogo.
+    for pregunta in ("¿Qué tal Zelda?", "¿qué tal zelda breath of the wild?", "¿Y Super Mario Odyssey?", "¿Se parece a Mario?"):
+        if nia_reglas.fuera_del_catalogo(pregunta, None) is None:
+            problemas.append(f"«{pregunta}» ya no se reconoce como un juego fuera del catálogo")
+    if not problemas:
+        print(f"ficha abierta: «este juego», «este» y «el juego» son {juego.nombre}; sin «No encuentro» ni «no lo sé»")
+    return problemas
+
+
 def _revisar_esquema_de_ofertas() -> list[str]:
     """La oferta y los juegos solo los lleva un mensaje de Nia, con intención de la lista y
     hasta 8 juegos: lo demás es un 422."""
@@ -1568,6 +1606,7 @@ def main() -> int:
     problemas += _revisar_cierre_del_modelo()
     problemas += _revisar_comparacion_del_modelo()
     problemas += _revisar_conversaciones()
+    problemas += _revisar_ficha_abierta()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()

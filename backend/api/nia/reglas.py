@@ -913,6 +913,20 @@ _FUERA_CORTO = re.compile(
     r"([a-z0-9][a-z0-9 :'’.-]{2,40})$"
 )
 _PARECE_TITULO = re.compile(r"(?:^|\s)[A-ZÁÉÍÓÚÑ0-9]")
+# Lo que no va en un título y sí en una pregunta: deícticos («este juego», «ese»), «según»,
+# palabras de pregunta y verbos. «¿Qué tal es este juego según las críticas?» no pregunta por un
+# juego llamado «es este juego según las críticas», y «¿qué tal este?» no busca «este».
+_NO_VA_EN_UN_TITULO = frozenset("""
+    este esta estos estas ese esa esos esas eso esto aquel aquella juego juegos segun que cual cuales como cuanto
+    cuanta cuantos donde cuando porque por es son era fue sera seria estan tiene tienen hay vale valen cuesta cuestan
+    dice dicen opina opinan parece parecen gusta gustan sirve conviene recomiendas recomienda puedo puedes quiero
+    quieres sabes crees se me te le lo
+""".split())
+
+
+def _parece_un_titulo(tramo: str) -> bool:
+    palabras = re.findall(r"[a-z0-9ñ]+", _norm(tramo))
+    return 0 < len(palabras) <= 6 and not any(p in _NO_VA_EN_UN_TITULO for p in palabras)
 
 
 def _titulo_suelto(pregunta: str, original: str) -> str | None:
@@ -921,7 +935,7 @@ def _titulo_suelto(pregunta: str, original: str) -> str | None:
     if not encontrado or len(limpia) != len(limpio):
         return None
     tramo = limpio[encontrado.start(1):encontrado.end(1)]
-    return tramo if _PARECE_TITULO.search(tramo) else None
+    return tramo if _PARECE_TITULO.search(tramo) and _parece_un_titulo(tramo) else None
 
 
 def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dict | None:
@@ -935,7 +949,7 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
         if tramo is None:
             return None
     nombre = tramo.strip(" ?.!¿¡")
-    if not nombre or _nombrados(nombre):
+    if not nombre or not _parece_un_titulo(nombre) or _nombrados(nombre):
         return None
     # Una parte del nombre («Apex», «Battlefield») tampoco es estar fuera del catálogo.
     parecidos = _con_ese_nombre(nombre)
@@ -1059,13 +1073,30 @@ def _que_significa_la_senal(pregunta: str) -> dict | None:
     return _resultado(f"{nia.EXPLICACION_SENAL} 🔍 ¿Te cuento cómo se calcula el riesgo?")
 
 
+# Con una ficha abierta, «este juego», «este», «ese» o «el juego» son el juego de la ficha:
+# «¿qué tal este?» y «cuéntame de este juego» piden su resumen, no un juego llamado «este».
+_PIDE_EL_RESUMEN = re.compile(r"^(?:y )?(?:que tal|que opinas|que me dices|que onda|hablame|cuentame|platicame|como es)\b")
+_SOLO_SENALA_AL_JUEGO = frozenset("de del sobre con este ese esta esa el la juego es un poco algo".split())
+
+
+def _resumen_del_abierto(pregunta: str, appid: int | None) -> dict | None:
+    limpia = pregunta.strip(" ¿?¡!.")
+    pide = _PIDE_EL_RESUMEN.match(limpia)
+    if appid is None or pide is None:
+        return None
+    if any(p not in _SOLO_SENALA_AL_JUEGO for p in re.findall(r"[a-z0-9ñ]+", limpia[pide.end():])):
+        return None
+    # En su propia ficha, la tarjeta del juego sobra.
+    return {**_ficha_corta(catalogo.obtener(appid)), "juegos": []}
+
+
 def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeChat]) -> dict | None:
     """Lo de siempre dentro de una ficha (precio, crítica, riesgo, motivos, géneros), con la
     voz nueva. Qué es la señal no se dice aquí: está fija arriba del chat."""
     nombre, banda = datos["nombre"], datos["banda"]
     if _dice(pregunta, "precio", "cuesta", "caro", "barato", "oferta", "descuento"):
         return _resultado(_sobre_el_precio(pregunta, datos, catalogo.obtener(appid)), juegos=[appid])
-    if _dice(pregunta, "critica", "metacritic", "nota", "prensa"):
+    if _dice(pregunta, "critica", "criticas", "critico", "criticos", "metacritic", "nota", "prensa", "calificacion"):
         return _resultado(f"En {nombre}, {nia._texto_critica(datos)} ⭐ ¿Quieres saber de qué se queja la gente?", juegos=[appid])
     if _dice(pregunta, "motivo", "motivos", "queja", "quejas", "problema", "problemas", "bug", "bugs", "rendimiento",
              "resenas", "que dicen"):
@@ -1575,6 +1606,7 @@ def responder(
         lambda: _pedir_juego() if necesita_juego(original, mensajes, appid) else None,
         lambda: _de_donde_salen(pregunta),
         lambda: _del_juego(pregunta, datos, appid, mensajes) if datos is not None and appid is not None else None,
+        lambda: _resumen_del_abierto(pregunta, appid) if datos is not None else None,
         lambda: None if datos is not None else _nombrado_sin_ficha(original, mensajes),
         lambda: None if datos is not None else _del_juego_del_hilo(pregunta, original, mensajes),
         lambda: _filtros_del_catalogo(pregunta, original),
