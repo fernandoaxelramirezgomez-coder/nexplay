@@ -807,12 +807,24 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
     )
 
 
+# «¿De dónde salen estos datos?»: con modelo también va por reglas, para que las cifras sean
+# las mismas en los dos modos (nia.cifras_habladas) y digan cuál es del catálogo y cuál del
+# entrenamiento.
+_DE_DONDE_SALEN = (
+    "de donde salen", "de donde sacas", "de donde sacan", "de donde vienen", "de donde sale la informacion",
+    "que datos usan", "que datos usas", "fuentes",
+)
+
+
+def pide_de_donde_salen(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_DE_DONDE_SALEN)
+
+
 def _de_donde_salen(pregunta: str) -> dict | None:
-    if not _dice(pregunta, "de donde salen", "de donde sacas", "metodologia", "que datos", "fuentes"):
+    if not _dice(pregunta, *_DE_DONDE_SALEN, "metodologia", "que datos"):
         return None
-    p = panorama.resumen()
     return _resultado(
-        f"Salen de {p.resenas_descargadas:,} reseñas de Steam y de los datos de cada juego 📊 {nia.EXPLICACION_SENAL}"
+        f"De Steam 📊 {nia.cifras_habladas()} La nota de la crítica es la de Metacritic que muestra Steam."
         " ¿Te cuento cómo se calcula el riesgo?"
     )
 

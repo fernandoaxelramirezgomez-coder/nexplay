@@ -182,9 +182,10 @@ def ficha_juego(appid: int) -> dict:
 def panorama_del_catalogo() -> dict:
     """Las cifras de la muestra: de dónde salen los datos y qué tan grandes son."""
     p = panorama.resumen()
+    cifras = nia.cifras_de_los_datos()
     return {
-        "juegos": p.juegos,
-        "resenas_descargadas": p.resenas_descargadas,
+        **cifras,
+        "que_es_cada_cifra": nia.cifras_habladas(),
         "resenas_en_steam": p.resenas_en_steam,
         "cobertura": f"{p.cobertura:.1%}",
         "desde": p.ventana.desde,
@@ -205,8 +206,8 @@ arrepintió, así que es un indicio, no un hecho.
 El modelo es de título: solo usa datos del juego (gratuidad, precio, descuento, nota de
 Metacritic y si tiene cobertura de crítica). El perfil declarado no mueve el riesgo; sirve
 para ver qué tanto encaja un juego con quien lo declaró.
-Se entrenó con el corte data-v1 (83 juegos, 123,972 reseñas), validado con GroupKFold
-agrupando por appid para que generalice a juegos que no vio, y optimizado a PR-AUC porque
+Se entrenó con el corte data-v1. __CIFRAS__ Se validó con GroupKFold
+agrupando por appid para que generalice a juegos que no vio, y se optimizó a PR-AUC porque
 la clase está desbalanceada. En los 40 títulos que nunca vio sacó PR-AUC 0.0356 contra
 0.0234 de un clasificador trivial: hay señal, y es modesta.
 El riesgo de arrepentimiento (bajo, medio, alto) reparte el catálogo en tres niveles:
@@ -214,7 +215,8 @@ compara un juego con los demás y no es una probabilidad. Es del juego, no de qu
 
 
 def metodologia() -> dict:
-    return {"texto": _METODOLOGIA}
+    # Las cifras salen de la misma fuente que «¿De dónde salen estos datos?» por reglas.
+    return {"texto": _METODOLOGIA.replace("__CIFRAS__", nia.cifras_habladas())}
 
 
 # Lo que se le describe al modelo. Los nombres y las descripciones son parte del contrato:
@@ -279,7 +281,10 @@ ESQUEMAS = [
         "type": "function",
         "function": {
             "name": "panorama_del_catalogo",
-            "description": "Cifras de la muestra de reseñas: cuántas, de cuándo, qué proporción trae señal.",
+            "description": (
+                "Cifras de la muestra de reseñas: cuántas, de cuándo, qué proporción trae señal. Separa las del"
+                " catálogo de las del entrenamiento; que_es_cada_cifra dice cuál es cuál."
+            ),
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -336,8 +341,8 @@ def appids_de(salida: dict) -> set[int]:
     appids = set()
     if isinstance(salida.get("appid"), int):
         appids.add(salida["appid"])
-    # En panorama_del_catalogo «juegos» es cuántos hay, no una lista: sin revisar el tipo,
-    # «¿de dónde salen los datos?» con el modelo tronaba y caía al modo demostración.
+    # «juegos» puede no ser una lista (panorama_del_catalogo lo daba como conteo): sin revisar
+    # el tipo, «¿de dónde salen los datos?» con el modelo tronaba y caía al modo demostración.
     juegos = salida.get("juegos")
     for juego in juegos if isinstance(juegos, list) else []:
         if isinstance(juego, dict) and isinstance(juego.get("appid"), int):

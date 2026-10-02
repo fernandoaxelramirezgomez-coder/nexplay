@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 _BASE_DE_PRUEBA = Path(tempfile.mkdtemp(prefix="nexplay-verificar-nia-")) / "valoraciones.db"
 os.environ["NEXPLAY_VALORACIONES_DB"] = str(_BASE_DE_PRUEBA)
 
-from api import catalogo, scoring, valoraciones  # noqa: E402
+from api import catalogo, panorama, scoring, valoraciones  # noqa: E402
 from api.nia import agente as nia  # noqa: E402
 from api.nia import herramientas as nia_herramientas  # noqa: E402
 from api.nia import reglas as nia_reglas  # noqa: E402
@@ -1006,6 +1006,50 @@ def _revisar_como_se_calcula() -> list[str]:
     return problemas
 
 
+_FRASE_DE_CIFRAS = re.compile(r"El catálogo tiene [^.]*\.")
+
+
+def _revisar_cifras_de_los_datos() -> list[str]:
+    """Las cifras de reseñas salen de una sola fuente y dicen cuál es del catálogo y cuál del
+    entrenamiento: la misma frase por reglas, en la metodología y en panorama_del_catalogo.
+    «¿De dónde salen estos datos?» va por reglas también con modelo, para que no cambien de un
+    modo a otro."""
+    problemas = []
+    p = panorama.resumen()
+    modelo = scoring.ficha_del_modelo()
+    del_catalogo = (f"{p.juegos} juegos", f"{p.resenas_descargadas:,} reseñas")
+    del_entrenamiento = (f"{modelo['juegos_entrenamiento']} de esos juegos", f"{modelo['resenas_entrenamiento']:,} reseñas")
+    frases = {}
+    for pregunta in ("¿De dónde salen estos datos?", "¿De dónde sacas la información?", "¿Qué datos usan?"):
+        mensajes = [MensajeChat(rol="usuario", contenido=pregunta)]
+        texto = nia.pulir(nia_reglas.responder(None, None, mensajes, [])["texto"])
+        faltan = [c for c in (*del_catalogo, *del_entrenamiento) if c not in texto]
+        if faltan or "el modelo aprendió de" not in texto:
+            problemas.append(f"«{pregunta}» no da las dos cifras ni dice cuál es cuál: le falta {faltan} ({texto[:60]}…)")
+        problemas += _voz(texto, pregunta)
+        if not nia._por_reglas_aunque_haya_modelo(None, None, mensajes, [], pregunta):
+            problemas.append(f"«{pregunta}» iría al modelo y sus cifras podrían cambiar")
+        frases[pregunta] = texto
+    metodo = nia_herramientas.metodologia()["texto"]
+    salida = nia_herramientas.panorama_del_catalogo()
+    frases["metodologia"] = metodo
+    frases["panorama_del_catalogo"] = str(salida.get("que_es_cada_cifra", ""))
+    distintas = {m.group(0) if (m := _FRASE_DE_CIFRAS.search(texto)) else None for texto in frases.values()}
+    if len(distintas) != 1 or None in distintas:
+        problemas.append(f"las cifras no salen de una sola frase: {sorted(map(str, distintas))}")
+    cifras_sueltas = set(re.findall(r"\d{1,3}(?:,\d{3})+ reseñas", metodo)) - {del_catalogo[1], del_entrenamiento[1]}
+    if cifras_sueltas:
+        problemas.append(f"metodologia cita cifras que no salen de la fuente: {sorted(cifras_sueltas)}")
+    if (salida.get("resenas_del_catalogo"), salida.get("resenas_del_entrenamiento")) != (
+            p.resenas_descargadas, modelo["resenas_entrenamiento"]):
+        problemas.append("panorama_del_catalogo no separa las reseñas del catálogo de las del entrenamiento")
+    if f"El catálogo son {p.juegos} juegos" not in nia._SISTEMA or "que_es_cada_cifra" not in nia._SISTEMA:
+        problemas.append("el prompt no tiene las cifras del catálogo o la regla de las dos cifras")
+    if not problemas:
+        print(f"cifras: {distintas.pop()}")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1062,6 +1106,7 @@ def main() -> int:
     problemas += _revisar_conectores()
     problemas += _revisar_titulo_suelto()
     problemas += _revisar_como_se_calcula()
+    problemas += _revisar_cifras_de_los_datos()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

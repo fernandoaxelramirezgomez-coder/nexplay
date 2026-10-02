@@ -20,7 +20,7 @@ import unicodedata
 import uuid
 from decimal import ROUND_HALF_UP, Decimal
 
-from .. import catalogo, scoring, valoraciones
+from .. import catalogo, panorama, scoring, valoraciones
 from ..config import configuracion
 from ..schemas import MAXIMO_RESPUESTA, MensajeChat, PerfilJugador, SugerenciaNia
 from . import herramientas, reglas
@@ -68,6 +68,35 @@ _IDEAS_SI_NO = {
     "descuento actual del juego": ("está con descuento", "no tiene descuento"),
     "cobertura de crítica especializada": ("la crítica especializada sí lo reseñó", "la crítica especializada no lo reseñó"),
 }
+
+
+def cifras_de_los_datos() -> dict:
+    """Las cifras de reseñas y juegos que Nia puede citar, de una sola fuente para los dos modos:
+    la muestra del catálogo que se sirve (data-v3) y el corte con que se entrenó el modelo
+    (data-v1, del artefacto). Son distintas y no se mezclan."""
+    p = panorama.resumen()
+    modelo = scoring.ficha_del_modelo()
+    return {
+        "juegos_del_catalogo": p.juegos,
+        "resenas_del_catalogo": p.resenas_descargadas,
+        "juegos_del_entrenamiento": modelo.get("juegos_entrenamiento"),
+        "resenas_del_entrenamiento": modelo.get("resenas_entrenamiento"),
+    }
+
+
+def cifras_habladas() -> str:
+    """Las dos cifras en una frase que dice qué es cada una: OpenAI decía «123,972 reseñas
+    de 83 juegos» y las reglas «184,367 reseñas» ante la misma pregunta."""
+    c = cifras_de_los_datos()
+    texto = f"El catálogo tiene {c['juegos_del_catalogo']} juegos y {c['resenas_del_catalogo']:,} reseñas de Steam"
+    if not c["juegos_del_entrenamiento"] or not c["resenas_del_entrenamiento"]:
+        return texto + "."
+    texto += (
+        f"; el modelo aprendió de {c['juegos_del_entrenamiento']} de esos juegos,"
+        f" con {c['resenas_del_entrenamiento']:,} reseñas"
+    )
+    otros = c["juegos_del_catalogo"] - c["juegos_del_entrenamiento"]
+    return texto + (f", y los otros {otros} sirven para probarlo." if otros > 0 else ".")
 
 
 def pesos_enteros(valor: float) -> int:
@@ -271,6 +300,9 @@ Reglas que no puedes romper:
 - El catálogo son 123 juegos de Steam y nada más. Para filtrar, comparar o contar usa
   buscar_juegos, resolver_juego, ficha_juego, panorama_del_catalogo o metodologia. Nunca
   nombres un juego, un precio o una nota que no te haya devuelto una herramienta.
+- Hay dos cifras de reseñas y no se mezclan: las del catálogo y las del entrenamiento del
+  modelo. Si dices las dos, di cuál es cuál con las palabras de "que_es_cada_cifra"
+  (panorama_del_catalogo); nunca des una por la otra.
 - Si la pregunta es de un juego ("¿por qué tiene ese riesgo?", "¿cuánto cuesta?") y no hay
   ningún juego abierto ni nombrado en la conversación, llama a pedir_juego en vez de
   adivinar cuál.
@@ -1064,6 +1096,7 @@ def _por_reglas_aunque_haya_modelo(
         reglas.pide_resumen(ultima)
         or reglas.pide_que_significa_la_senal(ultima)
         or reglas.pide_como_se_calcula(ultima)
+        or reglas.pide_de_donde_salen(ultima)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))
