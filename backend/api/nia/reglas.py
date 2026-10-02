@@ -11,6 +11,7 @@ junta las primeras oraciones de lo que ya dijo: el hilo es lo único que se recu
 """
 
 import re
+from collections import Counter
 
 from .. import catalogo, panorama, scoring
 from ..schemas import JuegoCatalogo, MensajeChat, SugerenciaNia
@@ -111,17 +112,34 @@ def _respuestas_previas(mensajes: list[MensajeChat]) -> list[str]:
     return [m.contenido for m in mensajes[:-1] if m.rol == "nia"]
 
 
+def _respuesta_anterior(mensajes: list[MensajeChat]) -> MensajeChat | None:
+    return next((m for m in reversed(mensajes[:-1]) if m.rol == "nia"), None)
+
+
+def _juegos_guardados(mensaje: MensajeChat | None) -> list[JuegoCatalogo]:
+    """Los juegos de las tarjetas de un mensaje de Nia, tal como volvieron en el historial."""
+    if mensaje is None:
+        return []
+    return [j for j in (catalogo.obtener(a) for a in mensaje.juegos) if j is not None]
+
+
 def _ultima_lista(mensajes: list[MensajeChat]) -> list[JuegoCatalogo]:
-    """Los juegos que Nia nombró en su respuesta anterior: a eso se refiere «de esos»."""
-    previas = _respuestas_previas(mensajes)
-    return _nombrados(previas[-1]) if previas else []
+    """Los juegos de la respuesta anterior: a eso se refieren «de esos» y «esos dos». Primero
+    los de sus tarjetas, que vuelven como dato; si no vinieron, los nombres del texto."""
+    anterior = _respuesta_anterior(mensajes)
+    return _juegos_guardados(anterior) or (_nombrados(anterior.contenido) if anterior else [])
 
 
 def _resultado(texto: str, **extra) -> dict:
     return {
         "texto": texto, "juegos": [], "sugerencias": [], "pide_juego": False, "pide_perfil": False,
-        "fuera_de_tema": False, **extra,
+        "fuera_de_tema": False, "oferta": None, **extra,
     }
+
+
+def _oferta(intencion: str, juegos: list[int] | None = None, criterio: str | None = None,
+            pregunta: str | None = None) -> dict:
+    return {"intencion": intencion, "juegos": list(juegos or [])[:8], "criterio": criterio, "pregunta": pregunta}
 
 
 # ── Intenciones ───────────────────────────────────────────────────────────────
@@ -284,7 +302,8 @@ def _el_mejor(pregunta: str) -> dict | None:
         return None
     return _resultado(
         "No corono a ningún juego 🙂 Depende de lo que busques: te los ordeno por precio, por riesgo o por la "
-        "nota de la crítica. ¿Por cuál empezamos?"
+        "nota de la crítica. ¿Por cuál empezamos?",
+        oferta=_oferta("ordenar"),
     )
 
 
@@ -323,7 +342,7 @@ def _sugerencias(pregunta: str, sugerencias: list[SugerenciaNia]) -> dict | None
         return _resultado(nia.INVITA_AL_PERFIL, pide_perfil=True)
     return _resultado(
         "Estos coinciden con lo que declaraste en tu perfil ✨ Son coincidencias, no una elección: decidir es tuyo,"
-        " y el riesgo de cada uno va en su tarjeta. ¿Te explico alguno?",
+        " y el riesgo de cada uno va en su tarjeta. ¿Los ordeno por riesgo?",
         sugerencias=appids,
     )
 
@@ -392,7 +411,7 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
         juego = catalogo.obtener(appid)
         return _resultado(
             f"Decidir es tuyo 🤔 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
-            "¿Qué pesa más para ti?",
+            "¿Te cuento qué dicen sus reseñas?",
             juegos=[appid],
         )
     candidatos = _nombrados(pregunta) or _ultima_lista(mensajes)
@@ -408,7 +427,7 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
         juego = candidatos[0]
         return _resultado(
             f"Decidir es tuyo 🤔 pero esto dicen los datos de {juego.nombre}: {_fortalezas_y_debilidades(juego)}. "
-            "¿Qué pesa más para ti?",
+            "¿Te cuento qué dicen sus reseñas?",
             juegos=[juego.appid],
         )
     if eleccion and _de_las_sugerencias(sugerencias):
@@ -419,8 +438,8 @@ def _vale_la_pena(pregunta: str, datos: dict | None, appid: int | None, mensajes
         )
     if eleccion:
         return _resultado(
-            "Elegir es tuyo 🤔 pero te ayudo a comparar. ¿Qué pesa más para ti: el precio, el riesgo o las horas "
-            "que le vas a dedicar?"
+            "Elegir es tuyo 🤔 pero te ayudo a comparar. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?",
+            oferta=_oferta("ordenar"),
         )
     return None
 
@@ -460,10 +479,16 @@ def _compara(pregunta: str, appid: int | None) -> dict | None:
     tarjetas = "El riesgo de cada uno va en su tarjeta."
     # Con tres títulos largos no cabe todo en 60 palabras: primero se quita el precio, luego la crítica.
     for frases in ((critica_, precio_, tarjetas), (critica_, tarjetas), (f"{tarjetas[:-1]} 📊",)):
-        texto = f"{' '.join(frases)} ¿Los abro lado a lado en Comparar?"
+        texto = f"{' '.join(frases)} ¿Te cuento de qué se queja la gente en cada uno?"
         if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
             break
     return _resultado(texto, juegos=[j.appid for j in juegos])
+
+
+def responde_de_esos(pregunta: str, mensajes: list[MensajeChat]) -> bool:
+    """«¿Y el más barato de esos dos?»: con los juegos del turno anterior las reglas lo
+    contestan, y con modelo también, porque el modelo no siempre sabía cuáles eran."""
+    return _de_esos(_norm(pregunta), mensajes) is not None
 
 
 def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
@@ -482,10 +507,9 @@ def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
         if de_pago:
             partes.append(f"el más barato de pago es {de_pago[0].nombre}, a {_precio(de_pago[0])}")
         cuerpo = " y ".join(partes) if partes else "ninguno tiene precio en los datos"
-        return _resultado(
-            f"De esos {total}, {cuerpo}. ¿Te cuento qué dicen sus reseñas?",
-            juegos=[j.appid for j in (gratis + de_pago[:1])],
-        )
+        elegidos = gratis + de_pago[:1]
+        cierre = "¿Te cuento qué dicen sus reseñas?" if len(elegidos) == 1 else "¿Te cuento de qué se queja la gente en cada uno?"
+        return _resultado(f"De esos {total}, {cuerpo} 💸 {cierre}", juegos=[j.appid for j in elegidos])
     if _dice(pregunta, *_CAROS):
         de_pago = sorted((j for j in lista if j.precio_final), key=lambda j: -j.precio_final)
         if de_pago:
@@ -496,10 +520,11 @@ def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
     if _dice(pregunta, *_GRATIS):
         gratis = [j for j in lista if j.es_gratis]
         if not gratis:
-            return _resultado(f"De esos {total}, ninguno es gratis 🙈 ¿Te busco gratuitos en todo el catálogo?")
+            return _resultado(f"De esos {total}, ninguno es gratis 🙈 ¿Te busco gratuitos en todo el catálogo?",
+                              oferta=_oferta("buscar", pregunta="¿Hay juegos gratis?"))
         return _resultado(
             f"De esos {total}, {_lista([j.nombre for j in gratis])} {'es gratis' if len(gratis) == 1 else 'son gratis'} 🎁 "
-            "¿Te cuento de alguno?",
+            + ("¿Te cuento de él?" if len(gratis) == 1 else "¿Los ordeno por riesgo?"),
             juegos=[j.appid for j in gratis],
         )
     if _dice(pregunta, "critica", "nota", "metacritic", "mejor calificado"):
@@ -514,9 +539,11 @@ def _de_esos(pregunta: str, mensajes: list[MensajeChat]) -> dict | None:
         if _dice(pregunta, f"riesgo {banda}"):
             cumplen = [j for j in lista if j.banda_riesgo.value == banda]
             if not cumplen:
-                return _resultado(f"De esos {total}, ninguno tiene riesgo {banda} 🙈 ¿Busco en todo el catálogo?")
+                return _resultado(f"De esos {total}, ninguno tiene riesgo {banda} 🙈 ¿Busco en todo el catálogo?",
+                                  oferta=_oferta("buscar", pregunta=f"Juegos con riesgo {banda}"))
             return _resultado(
-                f"De esos {total}, con riesgo {banda}: {_lista([j.nombre for j in cumplen])} 🎯 ¿Te cuento de alguno?",
+                f"De esos {total}, con riesgo {banda}: {_lista([j.nombre for j in cumplen])} 🎯 "
+                + ("¿Te cuento de él?" if len(cumplen) == 1 else "¿Los ordeno por precio?"),
                 juegos=[j.appid for j in cumplen],
             )
     return None
@@ -542,7 +569,7 @@ def necesita_juego(pregunta: str, mensajes: list[MensajeChat], appid: int | None
 
 
 def _juegos_recientes(mensajes: list[MensajeChat]) -> list[JuegoCatalogo]:
-    return _nombrados(" ".join(m.contenido for m in mensajes[-5:-1]))
+    return _juegos_guardados(_respuesta_anterior(mensajes)) or _nombrados(" ".join(m.contenido for m in mensajes[-5:-1]))
 
 
 def _del_juego_del_hilo(pregunta: str, original: str, mensajes: list[MensajeChat]) -> dict | None:
@@ -557,7 +584,8 @@ def _del_juego_del_hilo(pregunta: str, original: str, mensajes: list[MensajeChat
 
 
 def _pedir_juego() -> dict:
-    return _resultado("¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.", pide_juego=True)
+    return _resultado("¿De qué juego hablamos? 👀 Búscalo aquí y te lo explico.", pide_juego=True,
+                      oferta=_oferta("elegir_juego"))
 
 
 def _precio_hablado(juego: JuegoCatalogo) -> str:
@@ -584,7 +612,7 @@ def _ficha_corta(juego: JuegoCatalogo) -> dict:
     union = ", y " if "," in precio else " y "
     return _resultado(
         f"{juego.nombre} tiene riesgo {banda} {nia.EMOJI_DEL_NIVEL[banda]} {_mayuscula(precio)}{union}"
-        f"{_critica_hablada(juego, datos)}. ¿Te cuento qué dicen sus reseñas o por qué tiene ese riesgo?",
+        f"{_critica_hablada(juego, datos)}. ¿Te cuento por qué tiene ese riesgo?",
         juegos=[juego.appid],
     )
 
@@ -738,7 +766,7 @@ def _genero_de(texto: str) -> str:
     return next((g for clave, g in _SINONIMOS_GENERO.items() if _dice(texto, clave)), "")
 
 
-def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
+def _filtros_del_catalogo(pregunta: str, texto_original: str, listar: bool = False) -> dict | None:
     genero = _genero_de(pregunta)
     banda = next((b for b in _ORDEN_BANDAS if _dice(pregunta, f"riesgo {b}", f"riesgos {b}s")), "")
     gratis = _dice(pregunta, *_GRATIS)
@@ -748,7 +776,8 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
     dificil = _dice(pregunta, "dificil", "dificiles", "retador", "retadores")
     facil = _dice(pregunta, "facil", "faciles", "relajado", "relajados", "tranquilo")
     nuevo = _dice(pregunta, "nuevo", "nuevos", "reciente", "recientes", "de este ano", "lo mas nuevo")
-    cuantos = _dice(pregunta, "cuantos")
+    # Tras «¿Quieres ver cuáles?», la misma búsqueda se repite para listarlos.
+    cuantos = _dice(pregunta, "cuantos") and not listar
     precio = re.search(r"(\d{2,5})\s*(?:mxn|pesos|\$)?", pregunta)
     precio_max = (
         float(precio.group(1))
@@ -761,13 +790,14 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
         nombres = _lista([j.nombre for j in juegos[:5]])
         return _resultado(
             "No tengo un dato de cooperativo ni de en línea 🎮 Lo más cercano en el catálogo es el género "
-            f"Multijugador masivo, con {len(juegos)}: {nombres}. ¿Te cuento de alguno?",
+            f"Multijugador masivo, con {len(juegos)}: {nombres}. ¿Los ordeno por riesgo?",
             juegos=[j.appid for j in juegos[:5]],
         )
     if facil and not (genero or banda or gratis or precio_max):
         return _resultado(
             "No tengo un dato de qué tan fácil es un juego 🙈 Lo más cercano es el riesgo bajo: menos gente lo "
-            "deja con una reseña negativa en las primeras 2 horas. ¿Te muestro esos?"
+            "deja con una reseña negativa en las primeras 2 horas. ¿Te muestro esos?",
+            oferta=_oferta("buscar", pregunta="Juegos con riesgo bajo"),
         )
     if not (genero or banda or gratis or baratos or caros or poco_tiempo or dificil or nuevo or precio_max):
         return None
@@ -814,20 +844,21 @@ def _filtros_del_catalogo(pregunta: str, texto_original: str) -> dict | None:
     )
     total = len(juegos)
     if not total:
-        return _resultado(f"No hay {descripcion} en el catálogo 🙈 ¿Aflojamos algún filtro?")
+        return _resultado(f"No hay {descripcion} en el catálogo 🙈 ¿Te muestro qué géneros hay en el catálogo?")
     if cuantos:
         return _resultado(
             f"En el catálogo hay {total} {descripcion}, de {len(catalogo.buscar())} 🎯 ¿Quieres ver cuáles?",
+            oferta=_oferta("buscar", pregunta=texto_original),
         )
     mostrados = juegos[: herramientas.MAXIMO_RESULTADOS]
     if baratos:
         nombres = _lista([f"{j.nombre} ({_precio(j)})" for j in mostrados[:5]])
         cabeza = f"¡Los {descripcion} más baratos! 💸"
-        cola = "¿Te cuento de alguno?"
+        cola = "¿Los ordeno por riesgo?"
         return _resultado(f"{cabeza} {nombres}. {cola}", juegos=[j.appid for j in mostrados[:5]])
     if caros:
         nombres = _lista([f"{j.nombre} ({_precio(j)})" for j in mostrados[:5]])
-        return _resultado(f"¡Los {descripcion} más caros! 💰 {nombres}. ¿Te cuento su riesgo?",
+        return _resultado(f"¡Los {descripcion} más caros! 💰 {nombres}. ¿Los ordeno por riesgo?",
                           juegos=[j.appid for j in mostrados[:5]])
     # Si son todos gratis, ordenarlos por precio no dice nada.
     remate = "¿Te cuento de él?" if total == 1 else "¿Los ordeno por riesgo?" if gratis else "¿Los ordeno por precio?"
@@ -908,18 +939,19 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
     if parecidos:
         return _resultado(
             f"Con «{nombre}» hay {len(parecidos)} en el catálogo: {_lista([j.nombre for j in parecidos])} 🎮 "
-            "¿De cuál te cuento?",
+            "¿Te cuento de qué se queja la gente en cada uno?",
             juegos=[j.appid for j in parecidos],
         )
     if datos is not None and _dice(pregunta, "se parece"):
         generos = _lista(datos["generos"]) if datos["generos"] else "sin géneros registrados"
         return _resultado(
             f"No tengo cómo comparar {datos['nombre']} con juegos de fuera del catálogo 🤔 Lo que sí sé: Steam lo "
-            f"clasifica como {generos}. ¿Te cuento qué dicen sus reseñas?"
+            f"clasifica como {generos}. ¿Te cuento qué dicen sus reseñas?",
+            oferta=_oferta("resenas", [datos["appid"]]),
         )
     return _resultado(
         f"No encuentro «{nombre}» en este catálogo de Steam, así que no tengo señal sobre él 🤔 "
-        "¿Te busco algo parecido por género?"
+        "¿Te muestro qué géneros hay en el catálogo?"
     )
 
 
@@ -1017,7 +1049,7 @@ def pide_que_significa_la_senal(pregunta: str) -> bool:
 def _que_significa_la_senal(pregunta: str) -> dict | None:
     if not pide_que_significa_la_senal(pregunta):
         return None
-    return _resultado(f"{nia.EXPLICACION_SENAL} 🔍 ¿Te cuento qué mueve el riesgo de un juego?")
+    return _resultado(f"{nia.EXPLICACION_SENAL} 🔍 ¿Te cuento cómo se calcula el riesgo?")
 
 
 def _del_juego(pregunta: str, datos: dict, appid: int, mensajes: list[MensajeChat]) -> dict | None:
@@ -1244,6 +1276,263 @@ def _no_se(datos: dict | None) -> dict:
     )
 
 
+# ── Ofertas: toda pregunta de cierre se puede cumplir ─────────────────────────
+# La pregunta con que cierra Nia viaja como dato (intención y juegos) y vuelve en el
+# historial; «sí», «cuéntame» o «dale» la cumplen aquí, también con modelo. Así no vuelve a
+# pasar «¿Te cuento sus otros puntos débiles?» → «sí» → «Eso no lo sé».
+
+# Cada cierre y lo que ofrece. Un cierre que no esté aquí ni lleve su oferta explícita no se
+# puede cumplir: calidad/verificar_nia.py lo marca.
+_CIERRES = (
+    (r"te cuento (?:por que .*tiene (?:riesgo \w+|ese riesgo)|su riesgo)|empiezo por su riesgo", "riesgo"),
+    (r"te cuento (?:que (?:mas )?dicen(?: sus resenas| las resenas de .+)?|sus resenas)|sigo con sus motivos"
+     r"|quieres saber de que se queja la gente", "resenas"),
+    (r"te cuento de que se queja la gente en cada uno", "resenas_de_varios"),
+    (r"los ordeno por (precio|riesgo|nota|critica)", "ordenar"),
+    (r"que pesa mas para ti(?:: el precio, el riesgo o la critica)?|por precio, por riesgo o por critica", "ordenar"),
+    (r"te muestro que generos hay(?: en el catalogo)?(?: mientras)?", "generos"),
+    (r"te cuento como se calcula el riesgo", "como_se_calcula"),
+    (r"te cuento de donde salen los datos", "de_donde_salen"),
+    (r"(?:toma un minuto, )?lo armamos", "crear_perfil"),
+    (r"de que juego (?:te cuento|hablamos)|cuales comparo", "elegir_juego"),
+    (r"te lo resumo", "resumen"),
+    (r"te cuento de (?:el|ella|.+)", "ficha"),
+    (r"vemos otro juego o seguimos con este|buscas algo en particular o ya tienes un juego en mente"
+     r"|por donde empezamos(?:: un juego o el catalogo)?|seguimos(?: con alguno)?|que quieres saber"
+     r"|te ayudo con algun juego del catalogo|por cual empiezo|que se te antoja|por cual empezamos", "aclarar"),
+)
+_DE_UN_SOLO_JUEGO = ("riesgo", "resenas", "ficha")
+_CRITERIOS_DICHOS = {"precio": "precio", "critica": "nota", "nota": "nota", "riesgo": "riesgo"}
+
+
+def _pregunta_de_cierre(texto: str) -> str:
+    """La pregunta con que cierra el texto, desde su último «¿», normalizada y sin signos ni
+    emojis. «Toma un minuto, ¿lo armamos?» cierra con «lo armamos»."""
+    limpio = nia.EMOJI.sub("", texto).rstrip()
+    if not limpio.endswith("?"):
+        return ""
+    inicio = limpio.rfind("¿")
+    pregunta = limpio[inicio:] if inicio >= 0 else nia._oraciones(limpio)[-1]
+    return _norm(pregunta).replace("¿", "").replace("¡", "").strip(" ?!.")
+
+
+def oferta_del_cierre(texto: str, juegos: list[int], appid: int | None) -> dict | None:
+    """Lo que ofrece la pregunta con que cierra un texto, con sus juegos: los de sus tarjetas o
+    el de la ficha. None si el cierre no es uno que las reglas sepan cumplir."""
+    cierre = _pregunta_de_cierre(texto)
+    for patron, intencion in _CIERRES:
+        encontrado = re.fullmatch(patron, cierre)
+        if not encontrado:
+            continue
+        criterio = _CRITERIOS_DICHOS.get(encontrado.group(1)) if encontrado.groups() and encontrado.group(1) else None
+        if intencion == "ficha" and cierre not in ("te cuento de el", "te cuento de ella"):
+            nombrados = _nombrados(cierre)
+            if len(nombrados) != 1:
+                return None
+            return _oferta("ficha", [nombrados[0].appid])
+        if intencion in _DE_UN_SOLO_JUEGO:
+            uno = juegos[:1] if len(juegos) == 1 else [appid] if appid is not None else []
+            return _oferta(intencion, uno) if uno else None
+        return _oferta(intencion, juegos, criterio)
+    return None
+
+
+_AFIRMATIVAS = frozenset(
+    "si sii siii sip simon va vale dale ok okay okey claro que sale andale orale bueno perfecto de acuerdo adelante"
+    " por favor porfa porfavor cuentame cuentamelo cuentamelos platicame explicame explicamelo muestramelos"
+    " muestramelo muestrame hazlo me interesa obvio ya venga a ver pues mas sobre eso y lo los tambien yes please"
+    .split()
+)
+_ARRANQUES = frozenset(
+    "si sii siii sip simon va vale dale ok okay okey claro sale andale orale bueno perfecto de adelante por porfa"
+    " porfavor cuentame cuentamelo cuentamelos platicame explicame explicamelo muestramelos muestramelo muestrame"
+    " hazlo me obvio venga a yes".split()
+)
+
+
+def es_afirmacion(pregunta: str) -> bool:
+    """«sí», «sí, cuéntame», «si cuentame mas sobre eso», «dale», «va», «claro que sí»: un sí
+    a lo que Nia ofreció, sin pedir otra cosa."""
+    palabras = re.findall(r"[a-zñ]+", _norm(pregunta))
+    return 0 < len(palabras) <= 8 and palabras[0] in _ARRANQUES and all(p in _AFIRMATIVAS for p in palabras)
+
+
+def _oferta_previa(mensajes: list[MensajeChat]) -> dict | None:
+    anterior = _respuesta_anterior(mensajes)
+    if anterior is None or anterior.oferta is None:
+        return None
+    return anterior.oferta.model_dump()
+
+
+def _criterio_dicho(pregunta: str) -> str | None:
+    """«el precio», «por riesgo», «la crítica»: la respuesta a «¿por cuál los ordeno?»."""
+    if len(pregunta.split()) > 6:
+        return None
+    for palabra, criterio in (("precio", "precio"), ("barato", "precio"), ("riesgo", "riesgo"),
+                              ("critica", "nota"), ("nota", "nota"), ("metacritic", "nota")):
+        if _dice(pregunta, palabra):
+            return criterio
+    return None
+
+
+def responde_al_seguimiento(pregunta: str, mensajes: list[MensajeChat]) -> bool:
+    """Un sí a la oferta anterior, o el criterio que pidió: se cumple con reglas aunque haya
+    modelo, porque lo ofrecido tiene que poder hacerse."""
+    oferta = _oferta_previa(mensajes)
+    if es_afirmacion(pregunta):
+        return True
+    return bool(oferta and oferta["intencion"] == "ordenar" and _criterio_dicho(_norm(pregunta)))
+
+
+def _seguimiento(pregunta: str, datos: dict | None, appid: int | None, mensajes: list[MensajeChat],
+                 sugerencias: list[SugerenciaNia]) -> dict | None:
+    oferta = _oferta_previa(mensajes)
+    if es_afirmacion(pregunta):
+        if oferta is None:
+            # Un sí sin oferta guardada responde al saludo: en la ficha, «¿Te explico por qué
+            # tiene ese riesgo?»; en el catálogo, se pregunta qué busca.
+            oferta = _oferta("riesgo", [appid]) if appid is not None else _oferta("aclarar")
+        return _cumplir(oferta, datos, appid, mensajes, sugerencias)
+    if oferta and oferta["intencion"] == "ordenar" and (criterio := _criterio_dicho(pregunta)):
+        return _ordenar(oferta["juegos"], criterio)
+    return None
+
+
+def _cumplir(oferta: dict, datos: dict | None, appid: int | None, mensajes: list[MensajeChat],
+             sugerencias: list[SugerenciaNia]) -> dict:
+    intencion = oferta["intencion"]
+    juegos = [a for a in oferta.get("juegos") or [] if catalogo.obtener(a) is not None]
+    juego = juegos[0] if juegos else appid
+    if intencion in _DE_UN_SOLO_JUEGO and juego is None:
+        return _pedir_juego()
+    if intencion == "riesgo":
+        return _del_juego_ofrecido(juego, "¿Por qué tiene ese riesgo?", appid, mensajes)
+    if intencion == "resenas":
+        return _del_juego_ofrecido(juego, "¿Qué dicen las reseñas?", appid, mensajes)
+    if intencion == "ficha":
+        return _ficha_corta(catalogo.obtener(juego))
+    if intencion == "resenas_de_varios":
+        if len(juegos) == 1:
+            return _del_juego_ofrecido(juegos[0], "¿Qué dicen las reseñas?", appid, mensajes)
+        return _quejas_de_varios(juegos) if juegos else _pedir_juego()
+    if intencion == "ordenar":
+        return _ordenar(juegos, oferta.get("criterio"))
+    if intencion == "buscar":
+        pregunta = oferta.get("pregunta") or ""
+        return _filtros_del_catalogo(_norm(pregunta), pregunta, listar=True) or _aclarar(datos)
+    if intencion == "generos":
+        return _generos_del_catalogo()
+    if intencion == "como_se_calcula":
+        return _como_se_calcula("como se calcula")
+    if intencion == "de_donde_salen":
+        return _de_donde_salen("de donde salen")
+    if intencion == "crear_perfil":
+        return _resultado(
+            "¡Va! 🎮 Abajo está el botón para crear tu perfil: son unas preguntas sobre cómo juegas y toma un"
+            " minuto. ¿Te muestro qué géneros hay en el catálogo mientras?",
+            pide_perfil=True,
+        )
+    if intencion == "elegir_juego":
+        return _pedir_juego()
+    if intencion == "resumen":
+        return _resumen("resume", mensajes) or _aclarar(datos)
+    return _aclarar(datos)
+
+
+def _del_juego_ofrecido(juego: int, pregunta: str, appid: int | None, mensajes: list[MensajeChat]) -> dict:
+    """Lo ofrecido de un juego, como si lo hubieran preguntado; fuera de su ficha, con tarjeta."""
+    hilo = [*mensajes[:-1], MensajeChat(rol="usuario", contenido=pregunta)]
+    resultado = _del_juego(_norm(pregunta), nia.contexto(juego), juego, hilo)
+    if juego != appid:
+        resultado["juegos"] = [juego]
+    return resultado
+
+
+def _aclarar(datos: dict | None) -> dict:
+    """Un sí a una pregunta abierta («¿Por dónde empezamos?»): se ofrece algo concreto."""
+    if datos is not None:
+        return _resultado(
+            f"Va 🙂 De {datos['nombre']} te cuento su riesgo, sus reseñas, la crítica o el precio. ¿Empiezo por su riesgo?"
+        )
+    return _resultado(
+        "Va 🙂 Puedo filtrar el catálogo por género, precio o riesgo, o contarte de un juego. ¿Te muestro qué"
+        " géneros hay en el catálogo?"
+    )
+
+
+def _quejas_de_varios(appids: list[int]) -> dict:
+    """De qué se queja la gente en cada uno, en conteos y en una frase por juego."""
+    partes, pocas = [], False
+    juegos = [catalogo.obtener(a) for a in appids[:3]]
+    for juego in juegos:
+        datos = nia.contexto(juego.appid)
+        conteos, total = nia.quejas_en_conteos(datos), datos["clasificadas"]
+        if not conteos:
+            partes.append(f"de {juego.nombre} no hay reseñas negativas tempranas que digan por qué")
+            continue
+        pocas |= total < 10
+        motivo, cuantas = conteos[0]
+        if total == 1:
+            partes.append(f"en {juego.nombre}, la única que dice por qué habla de {motivo}")
+        else:
+            partes.append(f"en {juego.nombre}, {cuantas} de {total} {'habla' if cuantas == 1 else 'hablan'} de {motivo}")
+    cautela = " Son pocas, tómalo con cautela." if pocas else ""
+    return _resultado(
+        f"Esto dicen sus reseñas negativas tempranas 🔍 {_mayuscula('; '.join(partes))}.{cautela} ¿Los ordeno por riesgo?",
+        juegos=[j.appid for j in juegos],
+    )
+
+
+_ORDENES = {
+    "precio": ("Del más barato al más caro 💸", "Los más baratos del catálogo 💸"),
+    "riesgo": ("De menor a mayor riesgo 📊", "Los de menor riesgo del catálogo 📊"),
+    "nota": ("De mejor a peor nota de la crítica ⭐", "Los de mejor nota de la crítica ⭐"),
+}
+
+
+def _ordenar(appids: list[int], criterio: str | None) -> dict:
+    """Los juegos ofrecidos (o el catálogo, si no hay) en el orden que pidieron. Ordenar no es
+    elegir: el primero no se corona, y el cierre ofrece sus reseñas."""
+    juegos = [j for j in (catalogo.obtener(a) for a in appids) if j is not None]
+    if criterio is None:
+        return _resultado("Dime cuál y los ordeno 📊 ¿Por precio, por riesgo o por crítica?",
+                          oferta=_oferta("ordenar", [j.appid for j in juegos]))
+    del_catalogo = not juegos
+    juegos = juegos or catalogo.buscar()
+    if criterio == "precio":
+        juegos = sorted(juegos, key=lambda j: (0 if j.es_gratis else 1, j.precio_final if j.precio_final is not None else float("inf")))
+        nombre = lambda j: f"{j.nombre} ({_precio(j)})"
+    elif criterio == "nota":
+        juegos = sorted(juegos, key=lambda j: -(j.metacritic if j.metacritic is not None else -1))
+        nombre = lambda j: f"{j.nombre} ({j.metacritic if j.metacritic is not None else 'sin nota'})"
+    else:
+        juegos = sorted(juegos, key=lambda j: j.riesgo)
+        nombre = lambda j: j.nombre
+    entre, catalogo_entero = _ORDENES[criterio]
+    for cuantos in range(min(5, len(juegos)), 0, -1):
+        visibles = juegos[:cuantos]
+        cabeza = catalogo_entero if del_catalogo else entre
+        texto = (f"{cabeza} {_lista([nombre(j) for j in visibles])}."
+                 f" ¿Te cuento qué dicen las reseñas de {visibles[0].nombre}?")
+        if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
+            break
+    return _resultado(texto, juegos=[j.appid for j in visibles],
+                      oferta=_oferta("resenas", [visibles[0].appid]))
+
+
+def _generos_del_catalogo() -> dict:
+    conteo = Counter(g for j in catalogo.buscar() for g in j.generos)
+    generos = [g for g, _ in conteo.most_common()]
+    for cuantos in range(len(generos), 0, -1):
+        visibles = generos[:cuantos]
+        resto = f" y {len(generos) - cuantos} más" if cuantos < len(generos) else ""
+        texto = (f"Los géneros del catálogo, del más común al menos 🎮 {', '.join(visibles)}{resto}."
+                 f" ¿Te muestro los juegos de {generos[0]}?")
+        if nia.palabras(texto) <= nia.MAXIMO_PALABRAS:
+            break
+    return _resultado(texto, oferta=_oferta("buscar", pregunta=f"Juegos de {generos[0]}"))
+
+
 def responder(
     datos: dict | None,
     appid: int | None,
@@ -1260,6 +1549,8 @@ def responder(
     intentos = (
         lambda: _datos_personales(original),
         lambda: _instrucciones(pregunta),
+        # Antes que todo lo demás: un «sí» cumple lo que Nia ofreció en su respuesta anterior.
+        lambda: _seguimiento(pregunta, datos, appid, mensajes, sugerencias),
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
         lambda: _que_significa_la_senal(pregunta),
@@ -1285,9 +1576,12 @@ def responder(
     )
     resultado = next((r for r in (intento() for intento in intentos) if r is not None), None) or _no_se(datos)
 
-    previas = _respuestas_previas(mensajes)
-    if previas and nia.pulir(resultado["texto"]) == previas[-1]:
-        resultado = _resultado("Ya te lo conté arriba 🙂 ¿Te lo resumo o vemos otra cosa?")
+    # Con cualquier respuesta anterior, no solo la última: un «sí» tras otro alterna riesgo y
+    # reseñas, y al tercero repetía la primera.
+    if not resultado["pide_juego"] and nia.pulir(resultado["texto"]) in _respuestas_previas(mensajes):
+        resultado = _resultado("Ya te lo conté arriba 🙂 ¿Te lo resumo?")
+    if resultado["oferta"] is None:
+        resultado["oferta"] = oferta_del_cierre(resultado["texto"], resultado["juegos"] or resultado["sugerencias"], appid)
     return resultado
 
 

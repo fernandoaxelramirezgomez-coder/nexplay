@@ -46,8 +46,9 @@ const MAXIMO_TEXTO = 500;
 /** Lo mismo que DIAS_DE_RETENCION_NIA en api/valoraciones.py. */
 const DIAS_DE_RETENCION_NIA = 180;
 
-/** Lo que acompaña a cada mensaje, por posición en el hilo. No va dentro del mensaje: los
- * mensajes se reenvían a la API tal cual y ahí solo caben rol y contenido. */
+/** Lo que acompaña a cada mensaje en pantalla, por posición en el hilo. No va dentro del
+ * mensaje: los mensajes se reenvían a la API tal cual, y ahí solo caben rol, contenido y, en
+ * los de Nia, su oferta y los juegos de sus tarjetas. */
 interface Extra {
   /** El id que la API le puso a la respuesta, para votarla. */
   id?: string;
@@ -914,8 +915,16 @@ export class Nia {
   }
 
   private recibir(respuesta: RespuestaNia, pregunta: string): void {
+    // La oferta y los juegos vuelven en el historial: con ellos «sí» cumple lo que Nia ofreció
+    // y «esos dos» sabe cuáles eran.
+    const juegos = (respuesta.juegos.length ? respuesta.juegos : (respuesta.sugerencias ?? [])).slice(0, 8);
     this.agregar(
-      { rol: 'nia', contenido: sinMarkdown(respuesta.respuesta) },
+      {
+        rol: 'nia',
+        contenido: sinMarkdown(respuesta.respuesta),
+        ...(respuesta.oferta ? { oferta: respuesta.oferta } : {}),
+        ...(juegos.length ? { juegos } : {}),
+      },
       {
         id: respuesta.id,
         juegos: respuesta.juegos,

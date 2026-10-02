@@ -177,7 +177,15 @@ impiden el accidente, no a quien mande el id de otra persona a propósito.
 El chat de Nia, con un juego (`appid`) o sobre el catálogo entero. Recibe
 `{ usuario, appid?, mensajes, sugerencias?, generos? }`: hasta 40 mensajes, los tuyos de 500
 caracteres como máximo y los de Nia de 1,500. Al modelo solo llegan los últimos 10 turnos.
-Devuelve `{ respuesta, modo, modelo, aviso, juegos, pide_juego, fuera_de_tema, … }`.
+Devuelve `{ respuesta, modo, modelo, aviso, juegos, oferta, pide_juego, fuera_de_tema, … }`.
+
+`oferta` es la pregunta con que cierra la respuesta, como dato: `{ intencion, juegos, criterio?,
+pregunta? }`, con la intención de una lista cerrada (`riesgo`, `resenas`, `ordenar`, `buscar`…).
+El chat la devuelve dentro del mensaje de Nia en el historial, junto con `juegos` (los de sus
+tarjetas, hasta 8); los mensajes de la persona no pueden llevar ninguno de los dos. Con eso,
+«sí», «cuéntame» o «dale» cumplen lo ofrecido, y «esos dos» sabe cuáles eran; los dos casos se
+contestan con reglas aunque haya modelo. Si responde el modelo, su pregunta final se cambia por
+una de esas ofertas.
 
 `generos` son los géneros que la persona declaró en su perfil (hasta 12). Sirven para decir
 cuáles coinciden con un juego («¿encaja conmigo?»). No mueven el riesgo ni se guardan aparte,

@@ -44,7 +44,7 @@ from api import catalogo, panorama, scoring, valoraciones  # noqa: E402
 from api.nia import agente as nia  # noqa: E402
 from api.nia import herramientas as nia_herramientas  # noqa: E402
 from api.nia import reglas as nia_reglas  # noqa: E402
-from api.schemas import MensajeChat, SugerenciaNia  # noqa: E402
+from api.schemas import MensajeChat, OfertaNia, RespuestaNia, SugerenciaNia  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.
 _PREGUNTAS = [
@@ -1224,6 +1224,198 @@ def _revisar_aspecto() -> list[str]:
     return problemas
 
 
+def _de_nia(salida: dict) -> MensajeChat:
+    """La respuesta como vuelve en el historial: con su oferta y los juegos de sus tarjetas,
+    igual que la guarda el chat (frontend/src/app/chat/nia.ts)."""
+    juegos = (salida["juegos"] or salida.get("sugerencias") or [])[:8]
+    contenido = salida.get("respuesta") or salida.get("texto")
+    return MensajeChat(rol="nia", contenido=contenido, oferta=salida.get("oferta"), juegos=juegos)
+
+
+# Lo que tiene que traer la respuesta a un «sí» según lo ofrecido.
+def _cumple(oferta: dict, salida: dict, nombres: dict[int, str]) -> str | None:
+    texto, intencion = salida["texto"], oferta["intencion"]
+    nombre = nombres.get((oferta["juegos"] or [None])[0], "")
+    esperado = {
+        "riesgo": "riesgo" in texto and ("tiene riesgo" in texto or nombre in texto),
+        "resenas": "reseña" in texto,
+        "ficha": bool(nombre) and nombre in texto,
+        "resenas_de_varios": all(nombres[a] in texto for a in oferta["juegos"][:3]) and "🔍" in texto,
+        "ordenar": (oferta.get("criterio") is None and "¿Por precio, por riesgo o por crítica?" in texto)
+        or (oferta.get("criterio") is not None and bool(salida["juegos"])),
+        "buscar": bool(salida["juegos"]) or texto.startswith("No hay"),
+        "generos": "géneros del catálogo" in texto,
+        "como_se_calcula": texto.startswith("Con datos del juego"),
+        "de_donde_salen": "El catálogo tiene" in texto,
+        "crear_perfil": salida["pide_perfil"],
+        "elegir_juego": salida["pide_juego"],
+        "resumen": texto.startswith(("Va, en corto", "Aún no te he contado", "Más corto")),
+        "aclarar": bool(salida["oferta"]) and salida["oferta"]["intencion"] != "aclarar",
+    }[intencion]
+    return None if esperado else f"«sí» a {intencion} no lo cumple: {texto[:90]}…"
+
+
+_OFERTAS_EN_LA_FICHA = (
+    "Hola", "¿Por qué tiene ese riesgo?", "¿Qué dicen las reseñas?", "¿Cuánto cuesta?", "¿El precio influye?",
+    "¿Cuánto dura?", "¿Qué géneros tiene?", "¿Qué tal la crítica?", "¿Vale la pena?", "¿Encaja conmigo?",
+    "¿Es adecuado para mí si me importa el rendimiento?", "Gracias", "¿Qué opina la gente en los comentarios?",
+)
+_OFERTAS_EN_EL_CATALOGO = (
+    ("Hola",), ("¿Hay algo gratis?",), ("Juegos de Rol",), ("¿Cuántos juegos de Rol hay?",), ("Juegos de terror",),
+    ("Juegos de acción de menos de 300 pesos",), ("Juegos fáciles",), ("Juegos de estrategia más caros",),
+    ("Juegos de estrategia baratos",), ("Algo para jugar con amigos",), ("Compara Hades y Hollow Knight",),
+    ("Compara Hades y Zelda",), ("¿Cuál me compro?",), ("¿Qué me recomiendas?",), ("Dime el mejor juego del catálogo",),
+    ("¿Qué significa la señal?",), ("¿Cómo calculan el riesgo?",), ("¿De dónde salen estos datos?",),
+    ("¿Qué opina la gente en los comentarios?",), ("¿Y Super Mario Odyssey?",), ("¿Qué tal Battlefield?",),
+    ("Resume lo que me dijiste",), ("¿Quién ganó el mundial de 2022?",), ("Ponlo en una tabla",),
+    ("¿Por qué tiene ese riesgo?",), ("¿Hades es para mí si me importan los gráficos?",),
+    ("Compara Hades y Hollow Knight", "¿Y el más barato de esos dos?"),
+    ("Compara Hades y Hollow Knight", "¿Y el más caro de esos?"),
+    ("Compara Hades y Hollow Knight", "¿Cuál de esos tiene mejor nota?"),
+    ("¿Hay algo gratis?", "De esos, ¿cuáles tienen riesgo bajo?"),
+    ("¿Hay algo gratis?", "De esos, ¿cuáles tienen riesgo alto?"),
+    ("Compara Hades y Hollow Knight", "Compara Hades y Hollow Knight"),
+)
+
+
+def _revisar_ofertas() -> list[str]:
+    """Toda pregunta con que Nia cierra es una oferta que las reglas saben cumplir: la
+    respuesta trae la oferta (intención y juegos) y un «sí» la cumple, sin «Eso no lo sé». Va
+    en los 123 juegos (en su ficha y nombrándolos en el chat general) y en el chat general, por
+    reglas: un «sí» va por reglas también con modelo, y eso también se revisa. Al final, cada
+    tipo de oferta tuvo que salir y cumplirse al menos una vez."""
+    problemas, vistas, revisadas = [], set(), 0
+    nombres = {j.appid: j.nombre for j in catalogo.buscar()}
+    de_rol = [SugerenciaNia(appid=j.appid, razones=["coincide en Rol"]) for j in catalogo.buscar(genero="Rol")[:3]]
+
+    def conversar(appid: int | None, preguntas: tuple[str, ...], sugerencias: list[SugerenciaNia]) -> None:
+        nonlocal revisadas
+        datos = nia.contexto(appid) if appid else None
+        hilo: list[MensajeChat] = []
+        for pregunta in preguntas:
+            hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
+            salida = nia_reglas.responder(datos, appid, hilo, sugerencias)
+            hilo.append(_de_nia({**salida, "texto": nia.pulir(salida["texto"])}))
+        donde = f"{nombres.get(appid, 'catálogo')} · {' → '.join(preguntas)}"
+        oferta = salida["oferta"]
+        if oferta is None:
+            problemas.append(f"{donde}: el cierre no es una oferta que se pueda cumplir: {salida['texto'][-70:]}")
+            return
+        OfertaNia(**oferta)
+        vistas.add(oferta["intencion"])
+        for si in ("sí", "si cuentame mas sobre eso"):
+            mensajes = [*hilo, MensajeChat(rol="usuario", contenido=si)]
+            cumplida = nia_reglas.responder(datos, appid, mensajes, sugerencias)
+            cumplida["texto"] = nia.pulir(cumplida["texto"])
+            revisadas += 1
+            if "no lo sé" in cumplida["texto"]:
+                problemas.append(f"{donde} → {si}: «Eso no lo sé» ante su propia oferta ({oferta['intencion']})")
+            elif (falla := _cumple(oferta, cumplida, nombres)) is not None:
+                problemas.append(f"{donde} → {si}: {falla}")
+            if cumplida["oferta"] is None:
+                problemas.append(f"{donde} → {si}: cierra sin una oferta que se pueda cumplir: {cumplida['texto'][-70:]}")
+            # Pedir el juego abre el buscador en el chat: esa es su pregunta.
+            if not cumplida["pide_juego"]:
+                problemas.extend(_voz(cumplida["texto"], f"{donde} → {si}"))
+            if not nia._por_reglas_aunque_haya_modelo(datos, appid, mensajes, sugerencias, si):
+                problemas.append(f"{donde} → {si}: con modelo iría al modelo, que no sabe qué ofreció")
+
+    for juego in catalogo.buscar():
+        for pregunta in _OFERTAS_EN_LA_FICHA:
+            conversar(juego.appid, (pregunta,), [])
+        conversar(None, (f"¿Qué tal {juego.nombre}?",), [])
+    for preguntas in _OFERTAS_EN_EL_CATALOGO:
+        conversar(None, preguntas, [])
+    conversar(None, ("¿Qué me recomiendas?",), de_rol)
+    conversar(None, ("¿Cuál me compro?",), de_rol)
+    faltan = set(OfertaNia.model_fields["intencion"].annotation.__args__) - vistas
+    if faltan:
+        problemas.append(f"tipos de oferta que nunca salieron ni se cumplieron: {sorted(faltan)}")
+    if not problemas:
+        print(f"ofertas: {revisadas} «sí» tras {len(vistas)} tipos de oferta, en los {len(nombres)} juegos y el catálogo")
+    return problemas
+
+
+def _revisar_conversaciones() -> list[str]:
+    """Las dos conversaciones de producción, por el camino completo (sirven en demostración y
+    con --openai): Cuphead y «¿Y el más barato de esos dos?». El historial lleva la oferta y los
+    juegos, como lo manda el chat; las dos van por reglas también con modelo."""
+    problemas = []
+    hilos = (
+        (("dime si el juego de cuphead es adecuado para mi si me gusta el rendimiento del juego?",
+          ("Ojo con eso", "3 hablan de bugs", "ninguna de rendimiento", "tuyo")),
+         ("si cuentame mas sobre eso", ("3 de las 4", "bugs", "Cuphead"))),
+        (("Compara Hades y Hollow Knight", ("Hades", "Hollow Knight", "en cada uno?")),
+         ("¿Y el más barato de esos dos?", ("Hollow Knight", "$179"))),
+    )
+    for turnos in hilos:
+        hilo: list[MensajeChat] = []
+        for pregunta, esperado in turnos:
+            hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
+            salida = nia.responder(None, hilo, "verificador01")
+            RespuestaNia(**salida)
+            texto = salida["respuesta"]
+            faltan = [e for e in esperado if e not in texto]
+            if faltan or "no lo sé" in texto or _DICTAMEN.search(texto) or salida["modo"] == "openai":
+                problemas.append(f"«{pregunta}» ({salida['modo']}): le falta {faltan} o no va por reglas: {texto[:90]}…")
+            hilo.append(_de_nia(salida))
+        if "esos dos" in turnos[-1][0] and (salida["juegos"] != [next(a for a, n in ((j.appid, j.nombre) for j in catalogo.buscar()) if n == "Hollow Knight")]
+                                            or "gratis" in texto):
+            problemas.append(f"«esos dos» no se resolvió con Hades y Hollow Knight: {texto[:90]}… {salida['juegos']}")
+    if not problemas:
+        print("conversaciones: Cuphead y «el más barato de esos dos» se cumplen con el historial, en los dos modos")
+    return problemas
+
+
+def _revisar_cierre_del_modelo() -> list[str]:
+    """Con modelo, su pregunta final se cambia por una oferta que las reglas cumplen, y esa
+    oferta es la que las reglas leerían en el texto: el «sí» siguiente sabe qué hacer."""
+    problemas = []
+    por_nombre = {j.nombre: j.appid for j in catalogo.buscar()}
+    gratis = [j.appid for j in catalogo.buscar() if j.es_gratis]
+    casos = (
+        ("Cuphead parece adecuado si te preocupa la estabilidad: los bugs aparecen en 3 de 4 reseñas 🎮"
+         " ¿Te cuento sus otros puntos débiles?", None, [por_nombre["Cuphead"]], {}, "riesgo"),
+        ("Hades cuesta $283 y la crítica le dio 93 💸 ¿Quieres saber más?", por_nombre["Hades"], [], {}, "resenas"),
+        (f"Hay {len(gratis)} gratis en el catálogo 🎁 ¿Te los ordeno de alguna forma?", None, gratis, {}, "ordenar"),
+        ("¡Hola! ¿Quieres conocer la metodología completa? 🎮", None, [], {}, "como_se_calcula"),
+        ("Con tu perfil te muestro qué juegos coinciden 🎮 ¿Te parece?", None, [], {"pide_perfil": True}, "crear_perfil"),
+        ("¿De cuál juego hablamos? 👀", None, [], {"pide_juego": True}, "elegir_juego"),
+    )
+    for texto, appid, juegos, salida, esperada in casos:
+        nuevo, oferta = nia.con_cierre_cumplible(texto, appid, juegos, salida)
+        leida = nia_reglas.oferta_del_cierre(nuevo, juegos, appid)
+        if oferta["intencion"] != esperada or leida is None or leida["intencion"] != esperada:
+            problemas.append(f"«{texto[:40]}…» cierra con {oferta['intencion']} (leída: {leida}) y se esperaba {esperada}: {nuevo}")
+        if nia.EMOJI.sub("", nuevo).count("?") != 1:
+            problemas.append(f"«{texto[:40]}…» deja más de una pregunta: {nuevo}")
+        problemas += _voz(nuevo, f"cierre del modelo «{texto[:30]}…»")
+    if not problemas:
+        print(f"cierre del modelo: {len(casos)} preguntas finales cambiadas por ofertas que las reglas cumplen")
+    return problemas
+
+
+def _revisar_esquema_de_ofertas() -> list[str]:
+    """La oferta y los juegos solo los lleva un mensaje de Nia, con intención de la lista y
+    hasta 8 juegos: lo demás es un 422."""
+    problemas = []
+    invalidos = (
+        lambda: MensajeChat(rol="usuario", contenido="sí", oferta={"intencion": "riesgo", "juegos": [1]}),
+        lambda: MensajeChat(rol="usuario", contenido="sí", juegos=[1]),
+        lambda: MensajeChat(rol="nia", contenido="¿Te lo compro?", oferta={"intencion": "comprar"}),
+        lambda: MensajeChat(rol="nia", contenido="¿Los ordeno?", juegos=list(range(9))),
+    )
+    for i, crear in enumerate(invalidos):
+        try:
+            crear()
+            problemas.append(f"el esquema acepta una oferta inválida (caso {i + 1})")
+        except ValueError:
+            pass
+    if not problemas:
+        print("esquema: solo Nia lleva oferta y juegos, con intención de la lista y hasta 8 juegos")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1285,6 +1477,10 @@ def main() -> int:
     problemas += _revisar_cual_me_compro()
     problemas += _revisar_nombrados_sin_consultar()
     problemas += _revisar_aspecto()
+    problemas += _revisar_esquema_de_ofertas()
+    problemas += _revisar_cierre_del_modelo()
+    problemas += _revisar_conversaciones()
+    problemas += _revisar_ofertas()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)

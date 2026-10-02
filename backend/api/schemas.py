@@ -271,16 +271,50 @@ MAXIMO_PREGUNTA = 500
 #: pregunta siguiente, y con 4,000 cualquiera podía fabricar un historial de 40 «respuestas»
 #: enormes para que lo mandáramos al modelo.
 MAXIMO_RESPUESTA = 1500
+#: Juegos que puede llevar una oferta o un mensaje de Nia: los de sus tarjetas.
+MAXIMO_JUEGOS_DE_UN_MENSAJE = 8
+
+#: Lo que Nia puede ofrecer al cerrar. Cada una la cumplen las reglas cuando la persona dice
+#: «sí» (api/nia/reglas.py, _cumplir): una pregunta de cierre que no sea una de estas no se
+#: puede cumplir, y calidad/verificar_nia.py lo revisa.
+IntencionOferta = Literal[
+    "riesgo", "resenas", "ficha", "resenas_de_varios", "ordenar", "buscar", "generos", "como_se_calcula",
+    "de_donde_salen", "crear_perfil", "elegir_juego", "resumen", "aclarar",
+]
+
+
+class OfertaNia(BaseModel):
+    """La pregunta con que cerró Nia, como dato: qué ofreció y de qué juegos. Vuelve en el
+    historial para que «sí», «cuéntame» o «dale» la cumplan."""
+
+    intencion: IntencionOferta
+    juegos: list[int] = Field(
+        default_factory=list, max_length=MAXIMO_JUEGOS_DE_UN_MENSAJE,
+        description="De qué juegos es la oferta; vacía si es del catálogo",
+    )
+    criterio: Optional[Literal["precio", "riesgo", "nota"]] = Field(
+        None, description="Para ordenar; None si la oferta es preguntar por cuál"
+    )
+    pregunta: Optional[str] = Field(
+        None, max_length=MAXIMO_PREGUNTA, description="Para buscar: la búsqueda que ofreció, ya escrita"
+    )
 
 
 class MensajeChat(BaseModel):
     rol: Literal["usuario", "nia"]
     contenido: str = Field(..., min_length=1, max_length=MAXIMO_RESPUESTA)
+    oferta: Optional[OfertaNia] = Field(None, description="Solo en mensajes de Nia: lo que ofreció al cerrar")
+    juegos: list[int] = Field(
+        default_factory=list, max_length=MAXIMO_JUEGOS_DE_UN_MENSAJE,
+        description="Solo en mensajes de Nia: los juegos de sus tarjetas, a los que se refieren «esos dos» o «ese juego»",
+    )
 
     @model_validator(mode="after")
     def _limitar_lo_que_escribe_la_persona(self) -> "MensajeChat":
         if self.rol == "usuario" and len(self.contenido) > MAXIMO_PREGUNTA:
             raise ValueError(f"la pregunta no puede pasar de {MAXIMO_PREGUNTA} caracteres")
+        if self.rol == "usuario" and (self.oferta is not None or self.juegos):
+            raise ValueError("solo los mensajes de Nia llevan oferta o juegos")
         return self
 
 
@@ -353,6 +387,9 @@ class RespuestaNia(BaseModel):
     sugerencias: list[int] = Field(
         default_factory=list,
         description="Appids que se pintan como «Sugerencia según tu perfil»: salen de la lista que mandó el navegador",
+    )
+    oferta: Optional[OfertaNia] = Field(
+        None, description="Lo que ofrece la pregunta con que cierra; el chat la devuelve en el historial"
     )
     pide_juego: bool = Field(False, description="La pregunta es de un juego y no hay ninguno fijado: el chat abre el buscador")
     pide_perfil: bool = Field(False, description="Pidieron sugerencias sin perfil: el chat invita a crearlo")

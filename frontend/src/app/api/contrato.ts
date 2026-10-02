@@ -182,10 +182,38 @@ export interface ReaccionComentario {
 }
 
 /** POST /nia: el chat de la ficha. */
+/** Lo que Nia ofrece al cerrar; las reglas lo cumplen cuando la persona dice «sí». */
+export type IntencionOferta =
+  | 'riesgo'
+  | 'resenas'
+  | 'ficha'
+  | 'resenas_de_varios'
+  | 'ordenar'
+  | 'buscar'
+  | 'generos'
+  | 'como_se_calcula'
+  | 'de_donde_salen'
+  | 'crear_perfil'
+  | 'elegir_juego'
+  | 'resumen'
+  | 'aclarar';
+
+/** La pregunta con que cerró Nia, como dato: vuelve en el historial tal cual llegó. */
+export interface OfertaNia {
+  intencion: IntencionOferta;
+  juegos: number[];
+  criterio?: 'precio' | 'riesgo' | 'nota' | null;
+  pregunta?: string | null;
+}
+
 export interface MensajeChat {
   rol: 'usuario' | 'nia';
   /** Hasta 500 caracteres. */
   contenido: string;
+  /** Solo en mensajes de Nia: lo que ofreció al cerrar. */
+  oferta?: OfertaNia | null;
+  /** Solo en mensajes de Nia: los juegos de sus tarjetas («esos dos», «ese juego»). Hasta 8. */
+  juegos?: number[];
 }
 
 /** Un juego sugerido con el perfil, con su porqué ya escrito: es lo único del perfil que
@@ -224,6 +252,8 @@ export interface RespuestaNia {
   juegos: number[];
   /** Appids para las tarjetas «Sugerencia según tu perfil». */
   sugerencias?: number[];
+  /** Lo que ofrece la pregunta con que cierra; vuelve en el historial dentro del mensaje. */
+  oferta?: OfertaNia | null;
   /** La pregunta es de un juego y no hay ninguno fijado: el chat abre el buscador. */
   pide_juego?: boolean;
   /** Pidieron sugerencias sin perfil: el chat invita a crearlo. */

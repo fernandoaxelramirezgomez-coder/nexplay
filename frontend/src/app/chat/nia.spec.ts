@@ -113,6 +113,47 @@ describe('Nia: la respuesta final', () => {
   });
 });
 
+describe('Nia: lo que ofreció vuelve en el historial', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('la oferta y los juegos de la respuesta viajan con el mensaje de Nia, y los de la persona no los llevan', async () => {
+    const { fixture, enviadas } = montar({
+      ...RESPUESTA,
+      respuesta: 'La crítica le dio 93 a Hades y 87 a Portal 2 📊 ¿Te cuento de qué se queja la gente en cada uno?',
+      juegos: [1, 2],
+      oferta: { intencion: 'resenas_de_varios', juegos: [1, 2], criterio: null, pregunta: null },
+    });
+    fixture.componentRef.setInput('appid', null);
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('Compara Hades y Portal 2');
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('sí');
+    await fixture.whenStable();
+
+    expect(enviadas).toHaveLength(2);
+    const [usuario, nia, si] = enviadas[1].mensajes;
+    expect(nia.rol).toBe('nia');
+    expect(nia.oferta).toEqual({ intencion: 'resenas_de_varios', juegos: [1, 2], criterio: null, pregunta: null });
+    expect(nia.juegos).toEqual([1, 2]);
+    expect('oferta' in usuario || 'juegos' in usuario).toBe(false);
+    expect('oferta' in si || 'juegos' in si).toBe(false);
+  });
+
+  it('sin oferta ni tarjetas, el mensaje de Nia viaja solo con rol y contenido', async () => {
+    const { fixture, enviadas } = montar();
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Encaja conmigo?');
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('sí');
+    await fixture.whenStable();
+
+    expect(Object.keys(enviadas[1].mensajes[1]).sort()).toEqual(['contenido', 'rol']);
+  });
+});
+
 /** A propósito desde la ficha con chat (2026-09-20) y el buscador dentro del chat
  * (2026-09-26): elegir otro juego por fuera cambia el contexto y la conversación empieza de
  * cero; fijarlo desde el chat conserva el hilo. No se cambia sin preguntarle al dueño. */

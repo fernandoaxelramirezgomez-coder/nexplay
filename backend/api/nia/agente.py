@@ -247,12 +247,12 @@ Cómo hablas:
   primero responde lo que se preguntó (sí, no, un poco, en parte) y después da la razón en
   una frase natural.
 - **60 palabras o menos.** La primera oración responde lo que se preguntó, directo, y nombra
-  el juego del que hablas; lo demás es el porqué. Cierra siempre con una pregunta corta que invite a seguir ("¿Los ordeno por
-  precio?", "¿Te cuento qué dicen sus reseñas?").
+  el juego del que hablas; lo demás es el porqué. No cierres con una pregunta: NexPlay agrega
+  al final una que sí se puede cumplir ("¿Te cuento qué dicen sus reseñas?").
 - Recuerdas la conversación: si te piden "resume", "en corto" o "lo que dijiste antes",
   resume tus propias respuestas anteriores del hilo, sin repetirlas completas. Si dicen "de
   esos" o "¿y cuál de esos…?", se refieren a la última lista de juegos que diste.
-- Nunca repitas la misma respuesta dos veces seguidas: si ya lo dijiste, ofrece resumirlo o
+- Nunca repitas la misma respuesta dos veces seguidas: si ya lo dijiste, di que puedes resumirlo o
   seguir con otra cosa.
 
 Puedes hablar de UN juego —el que esté abierto— o del catálogo entero. Para lo segundo
@@ -860,6 +860,14 @@ def _preguntar_a_openai(
         )
     else:
         conversacion.append({"role": "system", "content": _contexto_del_catalogo(generos)})
+    anteriores = next((m.juegos for m in reversed(mensajes[:-1]) if m.rol == "nia"), [])
+    nombres_anteriores = [j.nombre for j in (catalogo.obtener(a) for a in anteriores) if j is not None]
+    if nombres_anteriores:
+        conversacion.append({
+            "role": "system",
+            "content": "Los juegos de tu respuesta anterior, a los que se refieren «esos», «esos dos», «ese juego» o"
+            f" «eso»: {', '.join(nombres_anteriores)}.",
+        })
     conversacion += [
         {
             "role": "user" if mensaje.rol == "usuario" else "assistant",
@@ -1028,6 +1036,7 @@ def responder(
                 "aviso": None if modo == "reglas" else _AVISO_DEMOSTRACION,
                 "pide_juego": True,
                 "fuera_de_tema": False,
+                "oferta": pedido["oferta"],
             },
             appid, usuario, ultima,
         )
@@ -1051,6 +1060,7 @@ def responder(
             juegos = _juegos_para_tarjeta(texto, salida["appids"], appid, salida["orden"])
             if juegos:
                 texto = sin_riesgos_enumerados(texto)
+            texto, oferta = con_cierre_cumplible(texto, appid, juegos, salida)
             return _con_constancia(
                 {
                     "respuesta": texto,
@@ -1066,6 +1076,7 @@ def responder(
                     # respuesta del modelo no lleva el aviso de tema. Las reglas no entienden
                     # «¿Cyberpunk vale lo que cuesta?» y lo marcaban fuera de tema.
                     "fuera_de_tema": False,
+                    "oferta": oferta,
                 },
                 appid, usuario, ultima,
             )
@@ -1089,6 +1100,43 @@ def responder(
     )
 
 
+def con_cierre_cumplible(texto: str, appid: int | None, juegos: list[int], salida: dict) -> tuple[str, dict]:
+    """La pregunta final del modelo se cambia por una oferta que las reglas saben cumplir: el
+    modelo ofrecía «¿Te cuento sus otros puntos débiles?» y el «sí» acababa en «Eso no lo sé».
+
+    Con un juego, sus reseñas (o su riesgo, si ya habló de reseñas); con dos o más tarjetas,
+    ordenarlas por riesgo; sin juego, cómo se calcula el riesgo. Si pidió el juego o el perfil,
+    eso."""
+    # Fuera la pregunta final, desde su último «¿», con los emojis que la acompañan.
+    cuerpo = texto.strip()
+    if EMOJI.sub("", cuerpo).rstrip().endswith("?"):
+        inicio = cuerpo.rfind("¿")
+        cuerpo = cuerpo[:inicio] if inicio >= 0 else " ".join(_oraciones(cuerpo)[:-1])
+        cuerpo = cuerpo.rstrip(" ,;:")
+    uno = juegos[0] if len(juegos) == 1 else appid if appid is not None and not juegos else None
+    sugeridos = salida.get("sugerencias") or []
+    if salida.get("pide_juego"):
+        oferta, cierre = {"intencion": "elegir_juego", "juegos": []}, "¿De qué juego te cuento?"
+    elif salida.get("pide_perfil"):
+        oferta, cierre = {"intencion": "crear_perfil", "juegos": []}, "Toma un minuto, ¿lo armamos?"
+    elif uno is not None:
+        nombre = None if uno == appid else catalogo.obtener(uno).nombre
+        if re.search(r"reseñ|queja", cuerpo, re.IGNORECASE):
+            oferta = {"intencion": "riesgo", "juegos": [uno]}
+            cierre = f"¿Te cuento por qué {nombre} tiene ese riesgo?" if nombre else "¿Te cuento por qué tiene ese riesgo?"
+        else:
+            oferta = {"intencion": "resenas", "juegos": [uno]}
+            cierre = f"¿Te cuento qué dicen las reseñas de {nombre}?" if nombre else "¿Te cuento qué dicen sus reseñas?"
+    elif len(juegos) >= 2 or len(sugeridos) >= 2:
+        oferta = {"intencion": "ordenar", "juegos": (juegos or sugeridos)[:8], "criterio": "riesgo"}
+        cierre = "¿Los ordeno por riesgo?"
+    else:
+        oferta, cierre = {"intencion": "como_se_calcula", "juegos": []}, "¿Te cuento cómo se calcula el riesgo?"
+    if not EMOJI.search(cuerpo):
+        cuerpo = f"{cuerpo} 🎮".strip()
+    return ajustar_largo(f"{cuerpo} {cierre}"), oferta
+
+
 _AVISO_DEMOSTRACION = (
     "Modo demostración: respuesta armada con reglas sobre los datos del catálogo, sin modelo de lenguaje."
 )
@@ -1110,7 +1158,9 @@ def _por_reglas_aunque_haya_modelo(
     ese riesgo?» con un juego abierto (el modelo se saltaba el aviso, el descargo o el factor
     que más aporta)."""
     return (
-        reglas.pide_resumen(ultima)
+        reglas.responde_al_seguimiento(ultima, mensajes)
+        or reglas.responde_de_esos(ultima, mensajes)
+        or reglas.pide_resumen(ultima)
         or reglas.pide_que_significa_la_senal(ultima)
         or reglas.pide_como_se_calcula(ultima)
         or reglas.pide_de_donde_salen(ultima)
@@ -1217,6 +1267,7 @@ def _de_reglas(
             "pide_juego": resultado["pide_juego"],
             "pide_perfil": resultado["pide_perfil"],
             "fuera_de_tema": resultado.get("fuera_de_tema", False),
+            "oferta": resultado["oferta"],
         },
         appid, usuario, ultima,
     )
