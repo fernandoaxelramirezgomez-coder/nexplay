@@ -9,13 +9,10 @@ import hashlib
 import io
 import re
 import sqlite3
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.io as pio
 import sklearn
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier
@@ -27,7 +24,10 @@ from sklearn.model_selection import GroupKFold, KFold
 from entrenar_baseline import (  # noqa: F401
     N_SPLITS, SEMILLA, construir_features, construir_pipeline, evaluar_gkf, leer_particion, particion_groupkfold, splits_de,
 )
+from diccionario import QUE_ES, descripciones
 from entrenar_modelo import _scores_oof
+# La paleta y la configuración de gráficas viven en graficas.py; el 00 las sigue llamando como ex.*.
+from graficas import COLOR_GRUPO, COLOR_RELEASE, PALETA, configurar_graficas  # noqa: F401
 from limpieza import PALABRAS_DE_UNA_COPIA, clave_de_copia, es_plantilla, palabras
 
 # La ventana de reembolso de Steam: define la señal, no se elige con datos.
@@ -35,49 +35,6 @@ UMBRAL_REEMBOLSO = 120
 # MAX_RESENAS_POR_JUEGO de ingesta/ingesta_steam.py (importarlo crea carpetas y configura el log).
 # Se piden de 100 en 100, así que un juego que lo alcanza llega hasta 1,599.
 TOPE_DE_LA_INGESTA = 1500
-
-PALETA = {"VERDE_OSC": "#2e8b57", "VERDE_CLA": "#90ee90", "ROJO": "#e53935", "GRIS": "#90a4ae", "AZUL": "#1976d2"}
-# El mismo color para lo mismo en todas las figuras.
-COLOR_GRUPO = {"positiva": PALETA["VERDE_OSC"], "negativa tardía": PALETA["GRIS"], "negativa temprana": PALETA["ROJO"]}
-COLOR_RELEASE = {"data-v1 (83)": PALETA["AZUL"], "externos (40)": PALETA["VERDE_CLA"]}
-
-
-# --- Gráficas -------------------------------------------------------------------------------
-
-def configurar_graficas(exportar_estatico: bool) -> bool:
-    """La plantilla con la paleta fija. Con `exportar_estatico`, cada figura se guarda también
-    como PNG, para que se vea en GitHub. Eso pide kaleido y un Chrome: en Colab, o donde kaleido
-    no logra exportar, se apaga con un aviso y las gráficas quedan solo interactivas. Devuelve si
-    la exportación quedó encendida."""
-    pio.templates["nexplay"] = go.layout.Template(
-        layout=go.Layout(
-            colorway=[PALETA["AZUL"], PALETA["ROJO"], PALETA["VERDE_OSC"], PALETA["GRIS"], PALETA["VERDE_CLA"]],
-            font={"family": "Arial, sans-serif", "size": 13},
-            title={"font": {"size": 16}},
-            margin={"l": 60, "r": 30, "t": 60, "b": 50},
-        )
-    )
-    pio.templates.default = "plotly_white+nexplay"
-    if exportar_estatico:
-        motivo = _por_que_no_exportar()
-        if motivo:
-            print(f"Exportación estática apagada: {motivo}. Las gráficas se ven interactivas, sin PNG.")
-            return False
-        pio.renderers.default = "notebook_connected+png"
-        pio.renderers["png"].width, pio.renderers["png"].height = 900, 480
-    return exportar_estatico
-
-
-def _por_que_no_exportar() -> str | None:
-    """None si kaleido puede guardar un PNG; si no, el motivo en una frase."""
-    if "google.colab" in sys.modules:
-        return "en Colab no hace falta"
-    try:
-        go.Figure().to_image(format="png", width=20, height=20)
-    except Exception as exc:  # kaleido lanza tipos distintos según lo que falte: el paquete o Chrome
-        detalle = str(exc).strip().splitlines()
-        return f"kaleido no pudo exportar una figura de prueba ({detalle[0].rstrip('.') if detalle else type(exc).__name__})"
-    return None
 
 
 # --- Carga ----------------------------------------------------------------------------------
@@ -126,6 +83,7 @@ def precio_imputado(juegos: pd.DataFrame) -> pd.Series:
     return (juegos["es_gratis"] == 0) & juegos["precio_final"].isna()
 
 def esquema(ruta: Path, tabla: str, df: pd.DataFrame) -> pd.DataFrame:
+    """Tipo, nulos y qué es cada columna (diccionario.py; vacío si el diccionario no la tiene)."""
     with contextlib.closing(sqlite3.connect(f"file:{ruta}?mode=ro", uri=True)) as con:
         tipos = {fila[1]: fila[2] for fila in con.execute(f"PRAGMA table_info({tabla})")}
     return pd.DataFrame({
@@ -133,6 +91,7 @@ def esquema(ruta: Path, tabla: str, df: pd.DataFrame) -> pd.DataFrame:
         "dtype": df.dtypes.astype(str),
         "nulos": df.isna().sum(),
         "% nulos": (100 * df.isna().mean()).round(2),
+        QUE_ES: descripciones(tabla, df.columns),
     }).rename_axis("columna")
 
 

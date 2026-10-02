@@ -39,7 +39,8 @@ REPO = Path(__file__).resolve().parents[2]
 NOTEBOOKS = ("00_exploracion", "01_modelo_riesgo", "02_modelos_texto")
 PAQUETES = {"nbclient": "nbclient", "nbformat": "nbformat", "ipykernel": "ipykernel", "plotly": "plotly",
             "lingua": "lingua-language-detector",
-            "sentence_transformers": "sentence-transformers", "pyarrow": "pyarrow", "requests": "requests"}
+            "sentence_transformers": "sentence-transformers", "pyarrow": "pyarrow", "requests": "requests",
+            "wordcloud": "wordcloud"}
 # Las celdas cuya salida depende de la máquina, reconocidas por su código.
 MARCAS_DE_ENTORNO = ("repo_nexplay ya existe", "__version__", "configurar_graficas")
 # Cómo empiezan las líneas con la cifra principal de cada notebook, para verlas sin abrirlos.
