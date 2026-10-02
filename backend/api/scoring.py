@@ -64,7 +64,7 @@ UMBRAL_MIN_CASOS = 5
 
 # Por debajo de este aporte (en log-odds), un factor "casi no mueve la estimación" y se muestra
 # sin flecha. Es el menor umbral que deja 0 flechas contradiciendo la cifra que se muestra
-# (nota contra el promedio del catálogo, precio contra la mediana): con 0.05 quedaban cinco
+# (nota contra el promedio del catálogo, precio contra la mediana): con 0.05 quedaban seis
 # notas de 86 que el modelo lee por debajo de su media de entrenamiento (86.97).
 UMBRAL_TIPICO = 0.10
 
