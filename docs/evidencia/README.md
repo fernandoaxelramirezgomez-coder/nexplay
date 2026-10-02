@@ -58,6 +58,17 @@ rutas de entonces.
   (confianza) de la mejora «Antes de que cierre tu reembolso», contra criterios fijados antes
   de correr (`docs/historial/mejoras/01-antes-del-reembolso.md`). Script:
   `backend/analisis/antes_del_reembolso.py`. Resultado: no se construye.
+- `modelos-texto-prerregistro.md` y `modelos-texto.json` (script: `backend/analisis/texto.py`): la Parte A de
+  los modelos de texto. La pregunta es si el texto de las reseñas negativas distingue las tempranas de las
+  tardías. La pregunta, la máscara de duraciones, los cinco modelos y la regla se commitearon antes del código
+  (`6bbcea6`). El JSON salió de `59694a6`, con el árbol limpio.
+  - Resultado: rama 3, y se guarda TF-IDF + LR.
+  - TF-IDF + LR saca un PR-AUC de 0.369 contra 0.161 del trivial (2.30×, IC 2.05 a 2.53) y le saca +0.184 a la
+    regla «refund» (IC 0.137 a 0.205).
+  - NB y MiniLM quedan por debajo de TF-IDF + LR, con intervalos que no tocan el 0.
+  - Leer la duración sin máscara le sumaba +0.013. Es la sensibilidad y queda fuera de la regla.
+  - Nada de esto entra al score de riesgo.
+  - Lo reproduce `notebooks/02_modelos_texto.ipynb`.
 - `verificar-factores-hoy.txt`: la salida de `backend/calidad/verificar_factores.py` el 2026-09-30,
   antes de la ronda «explicar el riesgo». El primer factor ya es el de mayor aporte en los 123
   juegos. Fallan la evidencia por factor y los avisos (gratis y precio imputado), porque el

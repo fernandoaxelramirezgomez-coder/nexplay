@@ -1,0 +1,261 @@
+{
+  "prerregistro": {
+    "archivo": "docs/evidencia/modelos-texto-prerregistro.md",
+    "commit": "6bbcea6"
+  },
+  "codigo": {
+    "commit": "59694a6",
+    "arbol_limpio": true
+  },
+  "fecha": "2026-10-01",
+  "entorno": {
+    "python": "3.14.4",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "torch": "2.14.0+cpu",
+    "sentence-transformers": "6.1.0",
+    "transformers": "5.17.0",
+    "lingua-language-detector": "2.2.0"
+  },
+  "datos": {
+    "release": "data-v1",
+    "sha256": "2ef8ef40330385af4c03cd072dccb20fc9a4b635e3929e513235c191d14e9ee7",
+    "firma_limpio": "cb1e4b06fdf5a0264471f722446ac73bd06e28db30653819b8f1773c58e3f41e",
+    "negativas": 16836,
+    "tempranas": 2670,
+    "tardias": 14166,
+    "juegos": 83,
+    "con_duracion_enmascarada": 2442,
+    "por_fold": [
+      {
+        "fold": 0,
+        "juegos": 16,
+        "negativas": 3186,
+        "tempranas": 606,
+        "prevalencia": 0.190207
+      },
+      {
+        "fold": 1,
+        "juegos": 16,
+        "negativas": 2690,
+        "tempranas": 447,
+        "prevalencia": 0.166171
+      },
+      {
+        "fold": 2,
+        "juegos": 17,
+        "negativas": 3374,
+        "tempranas": 624,
+        "prevalencia": 0.184944
+      },
+      {
+        "fold": 3,
+        "juegos": 17,
+        "negativas": 4505,
+        "tempranas": 590,
+        "prevalencia": 0.130966
+      },
+      {
+        "fold": 4,
+        "juegos": 17,
+        "negativas": 3081,
+        "tempranas": 403,
+        "prevalencia": 0.130802
+      }
+    ]
+  },
+  "bootstrap": {
+    "replicas": 2000,
+    "semilla": 42,
+    "nivel": 0.95,
+    "por": "juegos, dentro de cada fold"
+  },
+  "modelos": {
+    "trivial": {
+      "nombre": "Trivial",
+      "pr_auc_por_fold": [
+        0.190207,
+        0.166171,
+        0.184944,
+        0.130966,
+        0.130802
+      ],
+      "PR-AUC media": 0.160618,
+      "std entre folds": 0.025559,
+      "IC media": [
+        0.122862,
+        0.195171
+      ],
+      "cociente": 1.0,
+      "IC cociente": [
+        1.0,
+        1.0
+      ]
+    },
+    "refund": {
+      "nombre": "Regla «refund»",
+      "pr_auc_por_fold": [
+        0.230963,
+        0.18792,
+        0.206255,
+        0.13996,
+        0.161402
+      ],
+      "PR-AUC media": 0.1853,
+      "std entre folds": 0.032118,
+      "IC media": [
+        0.14264,
+        0.223698
+      ],
+      "cociente": 1.15367,
+      "IC cociente": [
+        1.105702,
+        1.232684
+      ]
+    },
+    "tfidf_nb": {
+      "nombre": "TF-IDF + NB",
+      "pr_auc_por_fold": [
+        0.258449,
+        0.253254,
+        0.254924,
+        0.173878,
+        0.191726
+      ],
+      "PR-AUC media": 0.226446,
+      "std entre folds": 0.036118,
+      "IC media": [
+        0.176962,
+        0.274895
+      ],
+      "cociente": 1.409844,
+      "IC cociente": [
+        1.334102,
+        1.503877
+      ],
+      "− refund": 0.041146,
+      "IC − refund": [
+        0.02344,
+        0.056437
+      ]
+    },
+    "tfidf_lr": {
+      "nombre": "TF-IDF + LR",
+      "pr_auc_por_fold": [
+        0.464862,
+        0.378016,
+        0.357258,
+        0.309712,
+        0.335803
+      ],
+      "PR-AUC media": 0.36913,
+      "std entre folds": 0.052964,
+      "IC media": [
+        0.287734,
+        0.421421
+      ],
+      "cociente": 2.298189,
+      "IC cociente": [
+        2.04527,
+        2.531058
+      ],
+      "− refund": 0.18383,
+      "IC − refund": [
+        0.137411,
+        0.205476
+      ]
+    },
+    "minilm_lr": {
+      "nombre": "MiniLM + LR",
+      "pr_auc_por_fold": [
+        0.40567,
+        0.319434,
+        0.350626,
+        0.264029,
+        0.275212
+      ],
+      "PR-AUC media": 0.322994,
+      "std entre folds": 0.051714,
+      "IC media": [
+        0.253714,
+        0.371561
+      ],
+      "cociente": 2.010949,
+      "IC cociente": [
+        1.829279,
+        2.201302
+      ],
+      "− refund": 0.137694,
+      "IC − refund": [
+        0.104329,
+        0.156091
+      ]
+    }
+  },
+  "sensibilidad_sin_mascara": {
+    "tfidf_nb": {
+      "con máscara": 0.226446,
+      "sin máscara": 0.230085,
+      "ganancia": 0.003639,
+      "IC ganancia": [
+        0.001913,
+        0.005049
+      ],
+      "pr_auc_por_fold": [
+        0.263476,
+        0.258159,
+        0.257835,
+        0.174122,
+        0.196831
+      ]
+    },
+    "tfidf_lr": {
+      "con máscara": 0.36913,
+      "sin máscara": 0.381848,
+      "ganancia": 0.012718,
+      "IC ganancia": [
+        0.006981,
+        0.017289
+      ],
+      "pr_auc_por_fold": [
+        0.479372,
+        0.390577,
+        0.370183,
+        0.322589,
+        0.346522
+      ]
+    }
+  },
+  "decision": {
+    "mejor": "tfidf_lr",
+    "supera_trivial": true,
+    "supera_refund": true,
+    "mejor_menos_cada_uno": {
+      "tfidf_nb": [
+        0.104305,
+        0.158858
+      ],
+      "tfidf_lr": [
+        0.0,
+        0.0
+      ],
+      "minilm_lr": [
+        0.019716,
+        0.061996
+      ]
+    },
+    "rama": 3,
+    "elegido": "tfidf_lr",
+    "conclusion": "M supera a los dos. Se guarda el modelo más simple cuya diferencia pareada contra M incluye 0 y que supera al trivial y a «refund». Conclusión: las quejas tempranas tienen lenguaje propio, más allá de «refund». Los motivos de la ficha se pueden presentar como propios de ese momento."
+  },
+  "tiempos_s": {
+    "datos": 50.26022,
+    "tfidf_nb": 19.175832,
+    "tfidf_lr": 53.898113,
+    "embeddings": 265.406047,
+    "minilm_lr": 15.907208,
+    "bootstrap": 141.887797,
+    "total": 546.944155
+  }
+}
