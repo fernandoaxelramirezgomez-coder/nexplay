@@ -1,14 +1,78 @@
-% Rúbrica: Modelación (evaluación). Fuentes y figuras: ver el plan del documento.
+% Rúbrica: Modelación (evaluación). Fuente: notebooks/01_modelo_riesgo.ipynb, §6 y §8; docs/evidencia/
+% prueba-externa.json, bootstrap-prueba-externa.json, metacritic-por-banda.md y README.md.
 \section{Evaluación y generalización}\label{sec:evaluacion}
 
-\subsection{Resultados por pliegue}
-\pendiente{redacción}
+El modelo se evalúa dos veces: con la validación agrupada sobre los \cifraJuegosEntrenamiento{}
+juegos de entrenamiento y con los \cifraJuegosExternos{} que nunca vio. En las dos, su PR-AUC se
+lee junto al del trivial (sección~\ref{sec:objetivo-metrica}).
 
-\subsection{Prueba externa en 40 títulos}\label{sec:evaluacion-externa}
-\pendiente{redacción}
+\subsection{Resultados por fold}\label{sec:evaluacion-folds}
+
+La figura~\ref{fig:pr-auc-por-fold} muestra el PR-AUC de cada fold de la partición congelada. El
+modelo le gana al trivial en \cifraPliegosGanados{} de \cifraPliegues{} folds, pero por márgenes
+muy distintos: de \cifraCocienteFoldMin{} a \cifraCocienteFoldMax{} veces. En promedio llega a
+\cifraPRAUCModelo{} contra \cifraPRAUCTrivial{}, \cifraPRAUCCociente{} veces el trivial, con una
+desviación entre folds de \cifraPRAUCModeloStd{}. Es una desviación grande al lado de la media:
+el resultado depende de qué juegos le tocan a cada fold, como ya se vio en la
+sección~\ref{sec:modelacion-validacion}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{pr-auc-por-fold.pdf}
+  \caption{PR-AUC del modelo y del trivial en cada fold de la partición congelada (data-v1) y en
+  la prueba externa. Sobre cada barra, cuántas veces supera el modelo al trivial. Fuente:
+  \texttt{evaluar\_gkf} sobre data-v1 y \texttt{docs/evidencia/prueba-externa.json}.}
+  \label{fig:pr-auc-por-fold}
+\end{figure}
+
+\subsection{Prueba externa en \cifraJuegosExternos{} títulos}\label{sec:evaluacion-externa}
+
+Los \cifraJuegosExternos{} títulos que llegaron con data-v2 se califican con el modelo entrenado
+en data-v1, con sus umbrales y su mediana de Metacritic, igual que lo hace la API. Su PR-AUC es
+\cifraPRAUCExterno{} contra \cifraPRAUCExternoTrivial{} del trivial: \cifraPRAUCExternoCociente{}
+veces, la última pareja de la figura. Para saber qué tan firme es esa ventaja, los títulos se
+remuestrearon \cifraExternoReplicas{} veces con reemplazo. El intervalo al
+\cifraNivelDeConfianza{} del cociente va de \cifraExternoICInf{} a \cifraExternoICSup{}, y solo
+\cifraExternoReplicasSinVentaja{} réplicas quedan en 1 o menos. Hay señal fuera de muestra, pero
+es modesta: el extremo inferior queda cerca de 1.
+
+Entrenar con los \cifraJuegosCatalogo{} juegos juntos bajaría el ruido entre folds, pero se
+perdería la única evaluación con juegos que el modelo no vio. Por eso el modelo se queda
+entrenado con data-v1.
 
 \subsection{Por qué cae fuera de muestra}\label{sec:evaluacion-caida}
-\pendiente{redacción}
 
-\subsection{Casos al filo del corte}
-\pendiente{redacción}
+Una parte de la caída se ve en la variable que más pesa en el modelo, la crítica
+(sección~\ref{sec:exploracion-critica}): de los \cifraAltoCatalogo{} juegos de riesgo alto del
+catálogo, \cifraAltoSinNotaCatalogo{} no tienen nota. La tabla~\ref{tab:bandas} da la tasa real
+por banda y cobertura de crítica en los dos cortes. En los de entrenamiento es solo descriptiva,
+porque el modelo ya los vio; los externos son los que evalúan algo.
+
+\begin{table}[htbp]
+  \centering\small
+  \input{tables/bandas}
+  \caption{Tasa de señal por banda de riesgo y cobertura de crítica. Fuente: releases data-v1 y
+  data-v2 con las bandas de \texttt{backend/referencias/bandas\_referencia.json}; replica
+  \texttt{docs/evidencia/metacritic-por-banda.md}.}
+  \label{tab:bandas}
+\end{table}
+
+Por reseña, en los de entrenamiento la banda alta sin nota tiene
+\cifraTasaAltoSinNotaEntrenamientoPorResena{} contra \cifraTasaBajoEntrenamientoPorResena{} de la
+baja. En los externos la distancia se acorta: \cifraTasaAltoSinNotaExternosPorResena{} contra
+\cifraTasaBajoExternosPorResena{}. La falta de nota sigue señalando más riesgo, pero separa menos
+en los títulos nuevos, y la baja y la media se invierten (\cifraTasaBajoExternosPorResena{} contra
+\cifraTasaMedioExternosPorResena{}). Con el promedio por juego la lectura es la misma:
+\cifraTasaAltoSinNotaExternosPromJuegos{} contra \cifraTasaBajoExternosPromJuegos{} en los
+externos. La fila de alto con nota junta solo \cifraJuegosAltoConNota{} juegos entre los dos
+cortes, así que es una pista y no una conclusión. Además, los externos traen otra mezcla de
+juegos (sección~\ref{sec:exploracion-externos}).
+
+\subsection{Casos al filo del corte}\label{sec:evaluacion-filo}
+
+Las bandas cortan un score continuo, y un juego cerca de un corte puede cambiar de banda con un
+cambio mínimo en los datos o en el reentrenamiento. Los dos más cercanos son Hollow Knight, con
+\cifraScoreHollowKnight{} contra el corte de \cifraUmbralMedio{}, que queda en la banda baja, y
+Warframe, con \cifraScoreWarframe{} contra \cifraUmbralAlto{}, que queda en la alta. Por eso no
+se usan como casos de demostración, y la ficha acompaña la banda con los factores que la
+explican (sección~\ref{sec:interpretabilidad-factores}).

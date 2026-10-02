@@ -179,7 +179,9 @@ def cifras_de_datos(cifras: Cifras, rutas: dict[str, Path]) -> None:
         cifras.agregar(f"Prevalencia{nombre}PorResena", porcentaje(c["prevalencia"]), ref)
 
 
-def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> None:
+def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> dict:
+    """El PR-AUC por fold del modelo y del trivial, los cortes de las bandas y el modelo entrenado con todo
+    data-v1, como lo arma entrenar_modelo.py."""
     df = cargar_datos(rutas["data-v1"])
     X, y, grupos = construir_features(df, conjunto="juego")
     with contextlib.redirect_stdout(io.StringIO()):
@@ -195,9 +197,17 @@ def cifras_del_modelo(cifras: Cifras, rutas: dict[str, Path]) -> None:
     cifras.agregar("PliegosGanados", str(int((modelo > trivial).sum())), fuente + ": pliegues donde el modelo supera al trivial")
     cifras.agregar("Pliegues", str(len(modelo)), fuente)
 
-    oof = _scores_oof(X, y, grupos)
-    cifras.agregar("UmbralMedio", decimal(np.percentile(oof, 100 / 3), 4), "percentil 33.3 de los scores fuera de pliegue")
-    cifras.agregar("UmbralAlto", decimal(np.percentile(oof, 200 / 3), 4), "percentil 66.7 de los scores fuera de pliegue")
+    cortes = np.percentile(_scores_oof(X, y, grupos), [100 / 3, 200 / 3])
+    cifras.agregar("UmbralMedio", decimal(cortes[0], 4), "percentil 33.3 de los scores fuera de pliegue")
+    cifras.agregar("UmbralAlto", decimal(cortes[1], 4), "percentil 66.7 de los scores fuera de pliegue")
+
+    cocientes = modelo / trivial
+    cifras.agregar("PRAUCFoldMin", decimal(modelo.min(), 4), fuente + ": el fold más bajo")
+    cifras.agregar("PRAUCFoldMax", decimal(modelo.max(), 4), fuente + ": el fold más alto")
+    cifras.agregar("CocienteFoldMin", decimal(cocientes.min(), 1), fuente + ": modelo entre trivial, el fold más bajo")
+    cifras.agregar("CocienteFoldMax", decimal(cocientes.max(), 1), fuente + ": modelo entre trivial, el fold más alto")
+    return {"modelo": modelo, "trivial": trivial, "cortes": cortes, "pipeline": construir_pipeline().fit(X, y),
+            "mediana_metacritic": df["metacritic"].median()}
 
 
 def cifras_de_bandas(cifras: Cifras) -> None:
@@ -222,6 +232,7 @@ def cifras_de_evidencia(cifras: Cifras) -> None:
     cifras.agregar("ExternoICSup", decimal(sup, 2), "docs/evidencia/bootstrap-prueba-externa.json")
     cifras.agregar("ExternoReplicasSinVentaja", str(bootstrap["bootstrap"]["replicas_con_cociente_hasta_1"]),
                    "réplicas del bootstrap con cociente ≤ 1")
+    cifras.agregar("ExternoReplicas", entero(bootstrap["bootstrap"]["replicas"]), "docs/evidencia/bootstrap-prueba-externa.json")
 
     biblioteca = json.loads((EVIDENCIA / "senal-por-biblioteca.json").read_text())["original"]
     for grupo in ("novatos", "veteranos"):
@@ -492,6 +503,101 @@ def cifras_de_la_particion(cifras: Cifras, juegos: pd.DataFrame, resenas: pd.Dat
     cifras.agregar("PRAUCParticionAlternativa", decimal(resumen["pr_auc_media"], 4), fuente)
     cifras.agregar("PRAUCParticionAlternativaStd", decimal(resumen["pr_auc_std"], 4), fuente)
     cifras.agregar("PliegosGanadosAlternativa", str(resumen["folds_donde_gana_el_modelo"]), fuente)
+
+
+# Los grupos de §10.3: en las bandas baja y media todos los juegos tienen nota de Metacritic.
+GRUPOS_POR_BANDA = (("bajo", True, "Bajo"), ("medio", True, "Medio"), ("alto", True, "AltoConNota"), ("alto", False, "AltoSinNota"))
+MACROS_POR_BANDA = {("Entrenamiento", "Bajo"), ("Entrenamiento", "AltoSinNota"), ("Externos", "Bajo"), ("Externos", "Medio"),
+                    ("Externos", "AltoSinNota")}
+
+
+def tabla_por_banda(cifras: Cifras, rutas: dict[str, Path]) -> Path:
+    """§10.3: la tasa de señal por banda y cobertura de crítica en los 83 (descriptivo: el modelo los vio) y en
+    los 40 externos, por reseña y como promedio por juego. Replica docs/evidencia/metacritic-por-banda.md con
+    los releases y las bandas de referencia."""
+    bandas = {int(appid): b["banda"] for appid, b in json.loads((BACKEND / "referencias" / "bandas_referencia.json").read_text())["bandas"].items()}
+    juegos_v1, resenas_v1 = ex.cargar_release(rutas["data-v1"])
+    juegos_v2, resenas_v2 = ex.cargar_release(rutas["data-v2"])
+    externos = set(juegos_v2["appid"]) - set(juegos_v1["appid"])
+    cortes = {"Entrenamiento": ex.tasa_por_juego(resenas_v1, juegos_v1),
+              "Externos": ex.tasa_por_juego(resenas_v2[resenas_v2["appid"].isin(externos)], juegos_v2[juegos_v2["appid"].isin(externos)])}
+    titulos = {"Entrenamiento": f"Los {len(cortes['Entrenamiento'])} de entrenamiento (descriptivo)",
+               "Externos": f"Los {len(cortes['Externos'])} externos"}
+    filas, alto_con_nota, alto_sin_nota = [], 0, 0
+    for corte, por_juego in cortes.items():
+        por_juego = por_juego.assign(banda=por_juego.index.map(bandas), con_nota=por_juego["metacritic"].notna())
+        if (~por_juego["con_nota"] & (por_juego["banda"] != "alto")).any():
+            raise ValueError("hay juegos sin nota fuera de la banda alta")
+        filas += ["\\midrule", f"\\multicolumn{{5}}{{l}}{{\\textit{{{titulos[corte]}}}}} \\\\"]
+        for banda, con_nota, nombre in GRUPOS_POR_BANDA:
+            grupo = por_juego[(por_juego["banda"] == banda) & (por_juego["con_nota"] == con_nota)]
+            por_resena, promedio = grupo["y1"].sum() / grupo["reseñas"].sum(), grupo["tasa"].mean()
+            if (corte, nombre) in MACROS_POR_BANDA:
+                fuente = f"{corte.lower()}: banda {banda}, {'con' if con_nota else 'sin'} nota (bandas_referencia.json)"
+                cifras.agregar(f"Tasa{nombre}{corte}PorResena", porcentaje(por_resena), fuente)
+                cifras.agregar(f"Tasa{nombre}{corte}PromJuegos", porcentaje(promedio), fuente)
+            alto_con_nota += len(grupo) if nombre == "AltoConNota" else 0
+            alto_sin_nota += len(grupo) if nombre == "AltoSinNota" else 0
+            filas.append(f"{banda} & {'con nota' if con_nota else 'sin nota'} & {len(grupo)} & {porcentaje(por_resena)} & "
+                         f"{porcentaje(promedio)} \\\\")
+    cifras.agregar("JuegosAltoConNota", str(alto_con_nota), "los 123: banda alta con nota de Metacritic")
+    cifras.agregar("AltoSinNotaCatalogo", str(alto_sin_nota), "los 123: banda alta sin nota de Metacritic")
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabular}{llrrr}", "\\toprule",
+        "Banda & Crítica & Juegos & Tasa por reseña & Promedio por juego \\\\",
+        *filas, "\\bottomrule", "\\end{tabular}",
+    ]
+    ruta = TABLAS / "bandas.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def cifras_de_casos_al_filo(cifras: Cifras, rutas: dict[str, Path], modelo: dict) -> None:
+    """§10.4: los juegos más cerca de un corte. Califica los 123 como la API (la nota que falta, con la mediana
+    de data-v1) y comprueba que salgan las bandas de referencia."""
+    juegos = ex.cargar_release(rutas[SERVIDO_REF])[0].set_index("appid")
+    X = pd.DataFrame({
+        "es_gratis": juegos["es_gratis"].fillna(0).astype(int), "log_precio_final": np.log1p(juegos["precio_final"].fillna(0)),
+        "descuento": juegos["descuento"].fillna(0), "metacritic_disponible": juegos["metacritic"].notna().astype(int),
+        "metacritic": juegos["metacritic"].fillna(modelo["mediana_metacritic"]),
+    })
+    scores = pd.Series(modelo["pipeline"].predict_proba(X)[:, 1], index=juegos.index)
+    medio, alto = modelo["cortes"]
+    banda = pd.Series(np.select([scores < medio, scores < alto], ["bajo", "medio"], "alto"), index=juegos.index)
+    referencia = {int(appid): b["banda"] for appid, b in json.loads((BACKEND / "referencias" / "bandas_referencia.json").read_text())["bandas"].items()}
+    if any(referencia[appid] != banda[appid] for appid in juegos.index):
+        raise ValueError("los scores ya no dan las bandas de referencia")
+    distancia = np.minimum((scores - medio).abs(), (scores - alto).abs()).sort_values()
+    # El texto nombra los dos juegos más cerca de un corte.
+    if list(juegos.loc[distancia.index[:2], "nombre"]) != ["Hollow Knight", "Warframe"]:
+        raise ValueError("cambiaron los juegos más cerca de un corte")
+    fuente = "modelo juego entrenado con data-v1, sobre los atributos de " + SERVIDO_REF
+    for appid, nombre in zip(distancia.index[:2], ("ScoreHollowKnight", "ScoreWarframe")):
+        cifras.agregar(nombre, decimal(scores[appid], 4), fuente)
+
+
+def figura_pr_auc_por_fold(modelo: np.ndarray, trivial: np.ndarray) -> Path:
+    """F6: el PR-AUC del modelo y del trivial en cada fold de la partición congelada y en la prueba externa."""
+    externa = json.loads((EVIDENCIA / "prueba-externa.json").read_text())["resumen"]
+    etiquetas = [f"fold {i + 1}" for i in range(len(modelo))] + [f"{externa['titulos_nuevos']} externos"]
+    del_modelo = [*modelo, externa["pr_auc_externo"]]
+    del_trivial = [*trivial, externa["pr_auc_trivial"]]
+    x = np.arange(len(etiquetas), dtype=float)
+    x[-1] += 0.6
+    ancho = 0.36
+    fig, eje = plt.subplots(figsize=(ANCHO_DE_TEXTO, 2.4))
+    eje.bar(x - ancho / 2, del_trivial, ancho, color=PALETA["neutro"], alpha=0.35, label="trivial (la prevalencia)")
+    eje.bar(x + ancho / 2, del_modelo, ancho, color=PALETA["serie"], label="modelo")
+    for xi, m, t in zip(x, del_modelo, del_trivial):
+        eje.annotate(f"{m / t:.1f}×", xy=(xi + ancho / 2, m), xytext=(0, 2), textcoords="offset points", ha="center",
+                     va="bottom", fontsize=7.5, color=PALETA["tinta"])
+    eje.axvline((x[-2] + x[-1]) / 2, color=PALETA["tinta_suave"], linewidth=0.8, linestyle=(0, (3, 3)))
+    eje.set_xticks(x, etiquetas)
+    eje.set_ylabel("PR-AUC")
+    eje.set_ylim(0, max(del_modelo) * 1.18)
+    eje.legend(frameon=False, loc="upper center", fontsize=8)
+    return guardar_figura(fig, "pr-auc-por-fold")
 
 
 def conjunto_limpio(resenas: pd.DataFrame) -> tuple[pd.DataFrame, list]:
@@ -892,7 +998,7 @@ def main() -> None:
 
     cifras = Cifras()
     cifras_de_datos(cifras, rutas)
-    cifras_del_modelo(cifras, rutas)
+    modelo = cifras_del_modelo(cifras, rutas)
     cifras_de_bandas(cifras)
     cifras_de_evidencia(cifras)
     cifras_del_periodo(cifras, rutas)
@@ -907,11 +1013,13 @@ def main() -> None:
     tablas = [tabla_de_releases(rutas), tabla_de_calidad(cifras, rutas), tabla_de_umbrales(sensibilidad),
               tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
               tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1),
-              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1)]
+              tabla_de_conjuntos(cifras, juegos_v1, resenas_v1), tabla_por_banda(cifras, rutas)]
+    cifras_de_casos_al_filo(cifras, rutas, modelo)
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),
-               figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego)]
+               figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego),
+               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"])]
     capturas = copiar_capturas()
     copiar_logo()
 

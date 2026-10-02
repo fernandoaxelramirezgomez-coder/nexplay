@@ -188,6 +188,28 @@ CANONICAS = {
     "CoefGratisICInf": "−0.12",
     "CoefGratisICSup": "0.79",
     "CoefPrecioReplicasPositivas": "96.6" + PORCIENTO,
+    # evaluación (§10), contrastadas con el 01 (celda 31), docs/evidencia/metacritic-por-banda.md,
+    # bootstrap-prueba-externa.json y README.md (casos al filo). Los promedios por juego no tenían
+    # registro anterior: salen de las mismas tasas por juego de los releases.
+    "PRAUCFoldMin": "0.0367",
+    "PRAUCFoldMax": "0.1459",
+    "CocienteFoldMin": "1.8",
+    "CocienteFoldMax": "5.8",
+    "ExternoReplicas": "2,000",
+    "TasaBajoEntrenamientoPorResena": "0.66" + PORCIENTO,
+    "TasaBajoEntrenamientoPromJuegos": "0.66" + PORCIENTO,
+    "TasaAltoSinNotaEntrenamientoPorResena": "5.37" + PORCIENTO,
+    "TasaAltoSinNotaEntrenamientoPromJuegos": "5.78" + PORCIENTO,
+    "TasaBajoExternosPorResena": "1.86" + PORCIENTO,
+    "TasaBajoExternosPromJuegos": "1.86" + PORCIENTO,
+    "TasaMedioExternosPorResena": "1.63" + PORCIENTO,
+    "TasaMedioExternosPromJuegos": "1.61" + PORCIENTO,
+    "TasaAltoSinNotaExternosPorResena": "3.66" + PORCIENTO,
+    "TasaAltoSinNotaExternosPromJuegos": "3.64" + PORCIENTO,
+    "JuegosAltoConNota": "10",
+    "AltoSinNotaCatalogo": "33",
+    "ScoreHollowKnight": "0.2857",
+    "ScoreWarframe": "0.3918",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")
