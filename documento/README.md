@@ -7,8 +7,8 @@ localizable desde el índice.
 - `sections/`: una sección por archivo (`00-resumen.tex` … `17-siguientes-pasos.tex`, `anexo.tex`).
 - `tables/`: tablas y `cifras.tex`, las macros `\cifra…` con cada número del texto. Las genera
   `generar_figuras.py`: **ninguna cifra se escribe a mano**.
-- `figures/`: figuras que genera `generar_figuras.py`, las capturas (copiadas de
-  `docs/capturas/documento/`) y los escudos de la portada.
+- `figures/`: figuras que genera `generar_figuras.py` (PDF de matplotlib y el diagrama de arquitectura en
+  TikZ), las capturas (copiadas de `docs/capturas/documento/`) y los escudos de la portada.
 - `references.bib`: solo referencias abiertas y verificadas antes de citarlas.
 - `generar_figuras.py`: de los releases (verificados por sha256) y `docs/evidencia/` a `figures/` y
   `tables/`. Necesita `documento/requirements-documento.txt`.

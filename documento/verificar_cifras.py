@@ -220,6 +220,8 @@ CANONICAS = {
     "NotaPromedioCatalogo": "85.5",
     "PrecioMedianoCatalogo": "349.88",
     "MediaNotaModelo": "86.97",
+    # arquitectura (§12): las rutas de backend/api/main.py, como en el plan (T11, 17 endpoints)
+    "Endpoints": "17",
 }
 
 _MACRO = re.compile(r"^\\newcommand\{\\cifra(?P<nombre>[A-Za-z]+)\}\{(?P<valor>.*)\}\s*(%.*)?$")

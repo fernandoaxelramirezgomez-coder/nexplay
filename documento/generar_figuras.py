@@ -44,7 +44,7 @@ import limpieza as li  # noqa: E402
 import motivos  # noqa: E402
 
 from bootstrap_prueba_externa import RELEASES as RELEASES_V1_V2  # noqa: E402
-from despliegue.preparar_entorno import SERVIDO_REF, SERVIDO_SHA256  # noqa: E402
+from despliegue.preparar_entorno import ENTRENAMIENTO_REF, SERVIDO_REF, SERVIDO_SHA256  # noqa: E402
 from despliegue.utilidades import GITHUB_REPO, descargar_verificado  # noqa: E402
 from entrenar_baseline import cargar_datos, construir_features, construir_pipeline, evaluar_gkf  # noqa: E402
 from entrenar_modelo import _scores_oof  # noqa: E402
@@ -712,6 +712,78 @@ def figura_de_motivos(barras: pd.Series) -> Path:
     return guardar_figura(fig, "motivos")
 
 
+# T11: los endpoints de backend/api/main.py por grupo, según el primer tramo de la ruta.
+GRUPOS_DE_ENDPOINTS = {
+    "Riesgo": (("catalogo", "perfil", "prediccion", "explicacion", "panorama"),
+               "buscar juegos; el perfil declarado; banda, factores y motivos de un título; el panorama"),
+    "Comunidad": (("valoraciones", "comentarios"), "calificaciones, comentarios y reacciones"),
+    "Nia": (("nia",), "el chat, sus opiniones del Inicio y los votos a sus respuestas"),
+}
+
+
+def tabla_de_endpoints(cifras: Cifras) -> Path:
+    """§12.3 (T11): los endpoints de la API, leídos de backend/api/main.py sin importarlo."""
+    endpoints = []
+    for nodo in ast.parse((BACKEND / "api" / "main.py").read_text(encoding="utf-8")).body:
+        for decorador in getattr(nodo, "decorator_list", []):
+            if isinstance(decorador, ast.Call) and getattr(decorador.func, "attr", "") in ("get", "post", "put", "delete"):
+                endpoints.append((decorador.func.attr.upper(), ast.literal_eval(decorador.args[0])))
+    filas, agrupados = [], 0
+    for grupo, (prefijos, descripcion) in GRUPOS_DE_ENDPOINTS.items():
+        # Una entrada por ruta, con sus métodos juntos: GET · PUT · DELETE /valoraciones/{appid}.
+        por_ruta: dict[str, list[str]] = {}
+        for metodo, ruta in endpoints:
+            if ruta.split("/")[1] in prefijos:
+                por_ruta.setdefault(ruta, []).append(metodo)
+        cuantos = sum(len(metodos) for metodos in por_ruta.values())
+        agrupados += cuantos
+        lista = "; ".join(" · ".join(metodos) + " \\texttt{" + ruta.replace("_", "\\_").replace("{", "\\{").replace("}", "\\}") + "}"
+                          for ruta, metodos in por_ruta.items())
+        filas.append(f"{grupo} ({cuantos}) & {lista} & {descripcion} \\\\")
+    if agrupados != len(endpoints):
+        raise ValueError("hay endpoints de backend/api/main.py que no caen en ningún grupo")
+    cifras.agregar("Endpoints", str(len(endpoints)), "backend/api/main.py: rutas con @app.get/post/put/delete")
+    contenido = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}p{2.2cm} >{\\raggedright\\arraybackslash\\footnotesize}X "
+        ">{\\raggedright\\arraybackslash}p{3.7cm}}",
+        "\\toprule", "Grupo & Endpoints & Para qué \\\\", "\\midrule", *filas, "\\bottomrule", "\\end{tabularx}",
+    ]
+    ruta = TABLAS / "endpoints.tex"
+    ruta.write_text("\n".join(contenido) + "\n", encoding="utf-8")
+    return ruta
+
+
+def figura_de_arquitectura() -> Path:
+    """F10: de la API de Steam a la interfaz, en TikZ. Los tags salen del código: los releases, de
+    preparar_entorno.py; el del código, de CODIGO_REF en el notebook 01."""
+    codigo = re.search(r'CODIGO_REF = \\"([^"\\]+)\\"', (RAIZ / "notebooks" / "01_modelo_riesgo.ipynb").read_text(encoding="utf-8"))[1]
+    cajas = {
+        "steam": (0, 0, "API de Steam\\\\\\texttt{appreviews}\\\\y \\texttt{appdetails}", "neutro"),
+        "ingesta": (3.95, 0, "Ingesta\\\\\\texttt{ingesta\\_steam.py}", "neutro"),
+        "releases": (7.9, 0, f"Releases con tag fijo\\\\{ENTRENAMIENTO_REF} y {SERVIDO_REF}\\\\con su sha256", "neutro"),
+        "build": (11.85, 0, f"Build en Render\\\\entrena con {ENTRENAMIENTO_REF}\\\\y compara las bandas", "neutro"),
+        "notebooks": (3.95, -1.9, f"Notebooks 00 y 01\\\\código del tag {codigo}", "neutro"),
+        "frontend": (7.9, -1.9, "Frontend Angular\\\\en Vercel", "acento"),
+        "api": (11.85, -1.9, "API FastAPI\\\\en Render", "acento"),
+    }
+    lineas = [
+        "% Generado por documento/generar_figuras.py. No se edita a mano.",
+        "\\begin{tikzpicture}[caja/.style={draw=#1, fill=#1!7, rounded corners=2pt, align=center, font=\\footnotesize,",
+        "  minimum width=3.5cm, minimum height=1.25cm, inner sep=3pt}, flecha/.style={-{Stealth[length=5pt]}, draw=neutro, thick}]",
+    ]
+    lineas += [f"\\node[caja={color}] ({nombre}) at ({x}, {y}) {{{texto}}};" for nombre, (x, y, texto, color) in cajas.items()]
+    lineas += [
+        "\\draw[flecha] (steam) -- (ingesta);", "\\draw[flecha] (ingesta) -- (releases);", "\\draw[flecha] (releases) -- (build);",
+        "\\draw[flecha] (releases.south) -- (notebooks.north east);", "\\draw[flecha] (build) -- (api);",
+        "\\draw[flecha, {Stealth[length=5pt]}-{Stealth[length=5pt]}] (frontend) -- (api);",
+        "\\end{tikzpicture}",
+    ]
+    ruta = FIGURAS / "arquitectura.tex"
+    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    return ruta
+
+
 def figura_pr_auc_por_fold(modelo: np.ndarray, trivial: np.ndarray) -> Path:
     """F6: el PR-AUC del modelo y del trivial en cada fold de la partición congelada y en la prueba externa."""
     externa = json.loads((EVIDENCIA / "prueba-externa.json").read_text())["resumen"]
@@ -1149,14 +1221,15 @@ def main() -> None:
               tabla_de_correlaciones(cifras, por_juego), tabla_de_externos(cifras, rutas),
               tabla_de_limpieza(cifras, limpio, pasos), tabla_de_variables(juegos_v1, resenas_v1),
               tabla_de_conjuntos(cifras, juegos_v1, resenas_v1), tabla_por_banda(cifras, rutas),
-              tabla_de_factores(cifras, rutas, modelo)]
+              tabla_de_factores(cifras, rutas, modelo), tabla_de_endpoints(cifras)]
     motivos_por_resena = cifras_de_motivos(cifras, limpio)
     cifras_de_casos_al_filo(cifras, rutas, modelo)
     ruta_cifras = cifras.escribir()
     estilo_de_figuras()
     figuras = [figura_resenas_por_mes(rutas), figura_minutos_al_resenar(rutas),
                figura_tasa_por_juego(por_juego, ex.senal(resenas_v1).mean()), figura_tasa_contra_nota(por_juego),
-               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]), figura_de_motivos(motivos_por_resena)]
+               figura_pr_auc_por_fold(modelo["modelo"], modelo["trivial"]), figura_de_motivos(motivos_por_resena),
+               figura_de_arquitectura()]
     capturas = copiar_capturas()
     copiar_logo()
 
