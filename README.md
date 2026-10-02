@@ -1,12 +1,13 @@
 # NexPlay
 
-**Una segunda opinión antes de comprar tu próximo juego.** NexPlay estima qué tan seguido un juego deja a
-sus compradores arrepentidos en las primeras horas, según las reseñas de Steam, y te dice por qué, con los
-motivos que aparecen en reseñas reales y no con una nota genérica. Es el proyecto del Módulo V del Diplomado
-en Ciencia de Datos de la FES Acatlán (UNAM).
+**Una segunda opinión antes de comprar tu próximo juego.** NexPlay estima qué tan seguido un juego deja la
+señal de arrepentimiento temprano, las reseñas negativas de Steam escritas en las primeras dos horas, y te dice
+por qué, con los motivos que aparecen en reseñas reales y no con una nota genérica. Es el proyecto del Módulo V
+del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 
 [![Open in Colab: 00_exploracion](https://img.shields.io/badge/Open_in_Colab-00__exploracion-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb)
 [![Open in Colab: 01_modelo_riesgo](https://img.shields.io/badge/Open_in_Colab-01__modelo__riesgo-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb)
+[![Open in Colab: 02_modelos_texto](https://img.shields.io/badge/Open_in_Colab-02__modelos__texto-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requisitos-previos)
 [![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend/README.md)
 
@@ -16,7 +17,7 @@ un poco.
 
 > **En 30 segundos**
 >
-> - **El problema:** comprar un juego en Steam y arrepentirte en las primeras horas.
+> - **El problema:** comprar un juego en Steam que te decepciona en las primeras horas, cuando todavía lo puedes devolver.
 > - **Qué estima:** para cada uno de los 123 juegos del catálogo, una banda de riesgo (bajo, medio o alto) de la
 >   señal de arrepentimiento temprano, con los factores que la mueven y los motivos de queja de las reseñas.
 > - **Qué tan bien:** PR-AUC de 0.0694 ± 0.0415 con GroupKFold por juego, 3.2 veces el clasificador trivial. En
@@ -150,7 +151,7 @@ make api         # terminal 1: API en http://localhost:8000 (contrato en /docs)
 make web         # terminal 2: frontend en http://localhost:4200
 
 make test        # verificadores del backend y pruebas del frontend
-make notebooks   # opcional: ejecuta el 00 y el 01 y los compara con las salidas guardadas
+make notebooks   # opcional: ejecuta el 00, el 01 y el 02 y los compara con las salidas guardadas
 ```
 
 Si corres `make` sin objetivo, te muestra la lista. Cada objetivo revisa antes lo que necesita: si falta
