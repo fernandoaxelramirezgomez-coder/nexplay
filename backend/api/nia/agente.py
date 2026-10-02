@@ -1063,6 +1063,7 @@ def _por_reglas_aunque_haya_modelo(
     return (
         reglas.pide_resumen(ultima)
         or reglas.pide_que_significa_la_senal(ultima)
+        or reglas.pide_como_se_calcula(ultima)
         or reglas.pide_explicar_el_riesgo(ultima, datos)
         or reglas.pide_el_mejor(ultima)
         or (reglas.sin_relacion_con_juegos(ultima) and reglas.es_fuera_de_tema(datos, appid, mensajes, sugerencias, generos))

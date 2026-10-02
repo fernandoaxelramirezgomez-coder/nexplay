@@ -12,7 +12,7 @@ junta las primeras oraciones de lo que ya dijo: el hilo es lo único que se recu
 
 import re
 
-from .. import catalogo, panorama
+from .. import catalogo, panorama, scoring
 from ..schemas import JuegoCatalogo, MensajeChat, SugerenciaNia
 from . import agente as nia
 from . import herramientas
@@ -808,13 +808,37 @@ def _fuera_del_catalogo(pregunta: str, original: str, datos: dict | None) -> dic
 
 
 def _de_donde_salen(pregunta: str) -> dict | None:
-    if not _dice(pregunta, "de donde salen", "de donde sacas", "metodologia", "como calculas", "como se calcula",
-                 "que datos", "fuentes"):
+    if not _dice(pregunta, "de donde salen", "de donde sacas", "metodologia", "que datos", "fuentes"):
         return None
     p = panorama.resumen()
     return _resultado(
         f"Salen de {p.resenas_descargadas:,} reseñas de Steam y de los datos de cada juego 📊 {nia.EXPLICACION_SENAL}"
         " ¿Te cuento cómo se calcula el riesgo?"
+    )
+
+
+# «¿Cómo calculan el riesgo?»: corto y en llano, con lo mismo que dicen la línea fija de
+# arriba del chat y la metodología. Con modelo también va por reglas: el modelo contestaba
+# «¿Quieres conocer la metodología completa?» sin contestar.
+_COMO_SE_CALCULA = (
+    "como calculan", "como calculas", "como se calcula", "como sacan", "como obtienen", "como estiman",
+    "como se estima", "como se obtiene el riesgo", "como funciona el riesgo", "que mide el riesgo",
+)
+
+
+def pide_como_se_calcula(pregunta: str) -> bool:
+    return _dice(_norm(pregunta), *_COMO_SE_CALCULA)
+
+
+def _como_se_calcula(pregunta: str) -> dict | None:
+    if not pide_como_se_calcula(pregunta):
+        return None
+    juegos = scoring.ficha_del_modelo()["juegos_entrenamiento"] or "varios"
+    return _resultado(
+        f"Con datos del juego, no con tus gustos 🧮 Un modelo aprendió de {juegos} juegos de Steam cómo se relacionan"
+        " la gratuidad, el precio, el descuento y la crítica con las reseñas de gente que no lo recomendó tras jugar"
+        " menos de 2 horas. Bajo, medio y alto son tres partes iguales del catálogo. ¿Te cuento de dónde salen"
+        " los datos?"
     )
 
 
@@ -1079,6 +1103,7 @@ def responder(
         lambda: _saludo_o_gracias(pregunta, datos),
         lambda: _resumen(pregunta, mensajes),
         lambda: _que_significa_la_senal(pregunta),
+        lambda: _como_se_calcula(pregunta),
         # Antes que las sugerencias: con un juego, «¿es para mí?» es medir ese juego.
         lambda: _encaja(pregunta, original, appid, mensajes, generos),
         lambda: _el_mejor(pregunta),

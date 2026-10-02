@@ -983,6 +983,29 @@ def _revisar_titulo_suelto() -> list[str]:
     return problemas
 
 
+def _revisar_como_se_calcula() -> list[str]:
+    """«¿Cómo calculan el riesgo?» se contesta por reglas, también con modelo: corto, en llano y
+    con lo mismo que la línea fija y la metodología (datos del juego, los juegos del
+    entrenamiento, reseñas de menos de 2 horas, tres partes)."""
+    problemas = []
+    usuario = lambda texto: [MensajeChat(rol="usuario", contenido=texto)]
+    juegos = scoring.ficha_del_modelo()["juegos_entrenamiento"]
+    hades = next(j.appid for j in catalogo.buscar() if j.nombre == "Hades")
+    for appid, pregunta in ((None, "¿Cómo calculan el riesgo?"), (None, "¿Cómo se calcula el riesgo?"),
+                            (None, "¿Cómo sacan el riesgo?"), (hades, "¿Cómo calculan el riesgo?")):
+        datos = nia.contexto(appid) if appid else None
+        texto = nia.pulir(nia_reglas.responder(datos, appid, usuario(pregunta), [])["texto"])
+        faltan = [f for f in ("Con datos del juego", f"{juegos} juegos", "menos de 2 horas", "tres partes") if f not in texto]
+        if faltan:
+            problemas.append(f"«{pregunta}» no explica cómo se calcula: le falta {faltan} ({texto[:50]}…)")
+        problemas += _voz(texto, pregunta)
+        if not nia._por_reglas_aunque_haya_modelo(datos, appid, usuario(pregunta), [], pregunta):
+            problemas.append(f"«{pregunta}» iría al modelo")
+    if not problemas:
+        print("cálculo: «¿Cómo calculan el riesgo?» se contesta por reglas, en llano, también con modelo")
+    return problemas
+
+
 def _revisar_herramientas() -> list[str]:
     """Las herramientas solo devuelven lo que hay, y en un orden que no recomienda."""
     problemas = []
@@ -1038,6 +1061,7 @@ def main() -> int:
     problemas += _revisar_senal_fija()
     problemas += _revisar_conectores()
     problemas += _revisar_titulo_suelto()
+    problemas += _revisar_como_se_calcula()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
