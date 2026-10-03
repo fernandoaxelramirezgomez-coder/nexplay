@@ -13,6 +13,7 @@ import {
 
 import { NexplayApi } from '../api/nexplay-api';
 import { VotoNiaValor } from '../api/contrato';
+import { ActividadStore } from '../estado/actividad-store';
 import { UsuarioStore } from '../estado/usuario-store';
 
 /** Los mismos cuatro que acepta la API (MOTIVOS_VOTO_NIA en api/valoraciones.py): un
@@ -155,6 +156,7 @@ export class VotoNia {
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
+  private readonly actividad = inject(ActividadStore);
 
   protected readonly motivos = MOTIVOS_VOTO;
   protected readonly voto = signal<VotoNiaValor | null>(null);
@@ -220,7 +222,10 @@ export class VotoNia {
         ...(motivo ? { motivo } : {}),
       })
       .subscribe({
-        next: (respuesta) => this.confirmar(respuesta.voto, respuesta.motivo),
+        next: (respuesta) => {
+          this.actividad.respuestaVotada(this.idRespuesta(), true);
+          this.confirmar(respuesta.voto, respuesta.motivo);
+        },
         error: () => this.fallar(),
       });
   }
@@ -232,7 +237,10 @@ export class VotoNia {
     this.guardando.set(true);
     this.error.set('');
     this.api.quitarVotoDeNia(this.idRespuesta(), this.usuario.id).subscribe({
-      next: () => this.confirmar(null, null),
+      next: () => {
+        this.actividad.respuestaVotada(this.idRespuesta(), false);
+        this.confirmar(null, null);
+      },
       error: () => this.fallar(),
     });
   }

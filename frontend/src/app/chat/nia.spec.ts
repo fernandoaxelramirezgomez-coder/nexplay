@@ -7,6 +7,7 @@ import { RespuestaNia, SolicitudNia } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { juegoDePrueba } from '../dominio/juego-prueba';
 import { ValoresPerfil } from '../dominio/opciones-perfil';
+import { ActividadStore } from '../estado/actividad-store';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
 import { PerfilStore } from '../estado/perfil-store';
@@ -245,5 +246,23 @@ describe('Nia: la explicación de la señal, fija arriba', () => {
     await fixture.whenStable();
     expect(html.querySelector('[data-testid="nia-senal"]')?.textContent?.trim()).toBe(EXPLICACION_SENAL);
     vi.unstubAllGlobals();
+  });
+});
+
+describe('Nia: lo que cuenta la vista de Administración', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('cada pregunta suma un mensaje, y la primera de un hilo vacío abre una conversación', async () => {
+    const { fixture } = montar();
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Cuánto cuesta?');
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Qué dicen las reseñas?');
+    await fixture.whenStable();
+
+    expect(TestBed.inject(ActividadStore).actividad()).toMatchObject({ conversacionesNia: 1, mensajesNia: 2 });
   });
 });

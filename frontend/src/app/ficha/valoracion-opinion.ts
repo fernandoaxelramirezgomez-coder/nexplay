@@ -4,6 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { NexplayApi } from '../api/nexplay-api';
 import { ResumenValoraciones } from '../api/contrato';
 import { textoCalificacion } from '../dominio/calificacion';
+import { ActividadStore } from '../estado/actividad-store';
 import { UsuarioStore } from '../estado/usuario-store';
 import { Estrellas } from './estrellas';
 
@@ -74,6 +75,7 @@ export class ValoracionOpinion {
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
+  private readonly actividad = inject(ActividadStore);
 
   protected readonly guardando = signal(false);
   protected readonly aviso = signal('');
@@ -94,8 +96,10 @@ export class ValoracionOpinion {
   protected valorar(calificacion: number): void {
     this.guardando.set(true);
     this.api.guardarValoracion(this.appid(), { usuario: this.usuario.id, calificacion }).subscribe({
-      next: (resumen) =>
-        this.terminar(resumen, `Gracias, quedó calificada con ${calificacion} de 5 estrellas.`),
+      next: (resumen) => {
+        this.actividad.juegoValorado(this.appid(), true);
+        this.terminar(resumen, `Gracias, quedó calificada con ${calificacion} de 5 estrellas.`);
+      },
       error: () => this.fallar(),
     });
   }
@@ -103,7 +107,10 @@ export class ValoracionOpinion {
   protected quitar(): void {
     this.guardando.set(true);
     this.api.borrarValoracion(this.appid(), this.usuario.id).subscribe({
-      next: (resumen) => this.terminar(resumen, 'Quitamos tu calificación.'),
+      next: (resumen) => {
+        this.actividad.juegoValorado(this.appid(), false);
+        this.terminar(resumen, 'Quitamos tu calificación.');
+      },
       error: () => this.fallar(),
     });
   }

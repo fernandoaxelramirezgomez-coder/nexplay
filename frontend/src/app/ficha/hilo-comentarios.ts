@@ -16,6 +16,7 @@ import { Comentario } from '../api/contrato';
 import { NexplayApi } from '../api/nexplay-api';
 import { hace } from '../dominio/tiempo';
 import { IconoPulgar } from '../compartido/icono-pulgar';
+import { ActividadStore } from '../estado/actividad-store';
 import { UsuarioStore } from '../estado/usuario-store';
 
 const MAXIMO_TEXTO = 500;
@@ -311,6 +312,7 @@ export class HiloComentarios {
 
   private readonly api = inject(NexplayApi);
   private readonly usuario = inject(UsuarioStore);
+  private readonly actividad = inject(ActividadStore);
   private readonly lista = viewChild<ElementRef<HTMLElement>>('lista');
 
   protected readonly maximo = MAXIMO_TEXTO;
@@ -382,6 +384,7 @@ export class HiloComentarios {
     this.aviso.set('');
     this.api.comentar(this.appid(), { usuario: this.usuario.id, texto }).subscribe({
       next: (hilo) => {
+        this.actividad.comentarioPublicado();
         this.recurso.set(hilo);
         this.texto.set('');
         this.enviando.set(false);
