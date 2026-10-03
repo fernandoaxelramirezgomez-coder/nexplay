@@ -61,7 +61,8 @@ export class App {
    * la burbuja sería la misma, ofrecida dos veces. En el resto del sitio acompaña. */
   protected readonly muestraNiaFlotante = computed(() => {
     const ruta = this.ruta().split(/[?#]/)[0];
-    return !ruta.startsWith('/juego/') && ruta !== '/nia';
+    // Ni en la ficha ni en /nia, donde el chat ya está en la página, ni en Administración.
+    return !ruta.startsWith('/juego/') && ruta !== '/nia' && ruta !== '/admin';
   });
 
   /** La vista abierta, para que el color de acción (fondo, menú y botón principal) sea uno
@@ -84,6 +85,7 @@ const VISTAS: Record<string, string> = {
   panorama: 'panorama',
   historial: 'neutro',
   'como-funciona': 'neutro',
+  admin: 'admin',
 };
 
 /** La primera parte de la ruta decide la vista; la raíz y cualquier otra, el inicio. */

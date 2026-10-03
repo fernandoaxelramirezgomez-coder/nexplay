@@ -35,6 +35,7 @@ import {
 } from '../dominio/textos-nia';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { CompararStore, MAXIMO_COMPARAR } from '../estado/comparar-store';
+import { ActividadStore } from '../estado/actividad-store';
 import { HistorialStore } from '../estado/historial-store';
 import { PanoramaStore } from '../estado/panorama-store';
 import { PerfilStore } from '../estado/perfil-store';
@@ -628,6 +629,7 @@ export class Nia {
   private readonly catalogo = inject(CatalogoStore);
   private readonly panorama = inject(PanoramaStore);
   private readonly historial = inject(HistorialStore);
+  private readonly actividad = inject(ActividadStore);
   protected readonly comparar = inject(CompararStore);
   private readonly router = inject(Router);
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
@@ -857,6 +859,8 @@ export class Nia {
     if (!contenido || this.esperando()) {
       return;
     }
+    // Para la vista de Administración: la primera pregunta de un hilo vacío abre una conversación.
+    this.actividad.preguntaANia(this.mensajes().length === 0);
     this.agregar({ rol: 'usuario', contenido });
     this.texto.set('');
     // [value] solo escribe en el DOM cuando el valor cambia respecto al último que pintó.

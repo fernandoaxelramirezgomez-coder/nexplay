@@ -1,7 +1,7 @@
 # calidad/
 
 Lo que comprueba que nada se rompió y lo que reproduce la evidencia de `docs/evidencia/`. Nada de esto
-corre en producción. Todo se corre desde `backend/`; `make test`, desde la raíz, junta los cinco
+corre en producción. Todo se corre desde `backend/`; `make test`, desde la raíz, junta los seis
 verificadores con las pruebas del frontend.
 
 Verificadores (salen con 1 si algo falla):
@@ -10,6 +10,8 @@ Verificadores (salen con 1 si algo falla):
 - `verificar_factores.py`: la regla de «Qué mueve esta estimación» en los 123 juegos.
 - `verificar_niveles.py`: una sola definición de los niveles (percentiles 33.3 y 66.7 de las estimaciones
   fuera de pliegue del entrenamiento) y ningún texto de frontend/src ni de api con la anterior.
+- `verificar_estado.py`: que `GET /estado` diga el sistema de un vistazo sin la clave de OpenAI y sin abrir la
+  base.
 - `verificar_preparar_entorno.py`: que `preparar_entorno.py --force` no pise una base que no salió de un
   release. Sin red, en un directorio temporal.
 - `correr_notebooks.py`: ejecuta el 00 y el 01 con el último commit en una carpeta temporal y compara sus

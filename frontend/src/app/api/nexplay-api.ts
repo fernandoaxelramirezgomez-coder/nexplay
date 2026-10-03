@@ -4,7 +4,9 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import {
+  BuzonSugerencias,
   Comentario,
+  EstadoSistema,
   ExplicacionJuego,
   FiltrosCatalogo,
   FormularioAlta,
@@ -51,6 +53,10 @@ export class NexplayApi {
 
   explicacion(appid: number): Observable<ExplicacionJuego> {
     return this.http.get<ExplicacionJuego>(`${this.base}/explicacion/${appid}`);
+  }
+
+  estado(): Observable<EstadoSistema> {
+    return this.http.get<EstadoSistema>(`${this.base}/estado`);
   }
 
   panorama(): Observable<PanoramaCatalogo> {
@@ -108,6 +114,10 @@ export class NexplayApi {
   }
 
   /** Crea o cambia el voto de esta persona para esa respuesta de Nia. */
+  buzonDeSugerencias(): Observable<BuzonSugerencias> {
+    return this.http.get<BuzonSugerencias>(`${this.base}/nia/sugerencias`);
+  }
+
   votarRespuestaDeNia(idRespuesta: string, solicitud: SolicitudVotoNia): Observable<VotoNia> {
     return this.http.put<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, solicitud);
   }

@@ -284,6 +284,8 @@ export interface SolicitudVotoNia {
   voto: VotoNiaValor;
   /** Solo acompaña al 👎, y solo uno de MOTIVOS_VOTO_NIA. */
   motivo?: string;
+  /** Solo con 👎 y «otro motivo»: qué mejorar, hasta 280 caracteres. Se ve sin nombre en el buzón de /admin. */
+  sugerencia?: string;
 }
 
 /** DELETE /nia/valoracion/{id}: el usuario va en el cuerpo, no en la URL. */
@@ -295,6 +297,30 @@ export interface VotoNia {
   id_respuesta: string;
   voto: VotoNiaValor | null;
   motivo: string | null;
+  sugerencia?: string | null;
+}
+
+/** GET /estado: el sistema de un vistazo, para /admin. De OpenAI solo el booleano y el
+ * nombre del modelo: la clave nunca sale de la API. */
+export interface EstadoSistema {
+  nia_con_openai: boolean;
+  modelo_nia: string | null;
+  /** Release de datos del catálogo servido (data-v3); null si la base no trae su marca. */
+  datos_release: string | null;
+  juegos_catalogo: number;
+  modelo_version: string;
+  modelo_datos: string | null;
+  modelo_juegos_entrenamiento: number | null;
+}
+
+/** GET /nia/sugerencias: el buzón de /admin. Sin usuario ni pregunta: /admin no tiene contraseña. */
+export interface BuzonSugerencias {
+  votos_a_favor: number;
+  votos_en_contra: number;
+  /** Los 👎 por motivo, con «sin motivo» al final. */
+  por_motivo: { motivo: string; cuantos: number }[];
+  /** Las de «otro motivo» con texto, de la más reciente. */
+  sugerencias: { texto: string; cuando: string }[];
 }
 
 /** GET /panorama: la muestra de reseñas detrás del catálogo. Es descriptivo —sale de

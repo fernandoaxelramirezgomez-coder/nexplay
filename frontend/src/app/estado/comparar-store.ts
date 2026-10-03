@@ -2,13 +2,13 @@ import { Injectable, computed, signal } from '@angular/core';
 
 export const MAXIMO_COMPARAR = 4;
 
-const CLAVE = 'nexplay.comparar.v1';
+export const CLAVE_COMPARAR = 'nexplay.comparar.v1';
 
 export type ResultadoComparar = 'agregado' | 'quitado' | 'lleno';
 
 function guardados(): number[] {
   try {
-    const crudo = localStorage.getItem(CLAVE);
+    const crudo = localStorage.getItem(CLAVE_COMPARAR);
     const lista: unknown = crudo ? JSON.parse(crudo) : [];
     return Array.isArray(lista)
       ? [...new Set(lista.filter((appid): appid is number => Number.isInteger(appid) && appid > 0))].slice(
@@ -69,7 +69,7 @@ export class CompararStore {
 
   private guardar(): void {
     try {
-      localStorage.setItem(CLAVE, JSON.stringify(this.elegidos()));
+      localStorage.setItem(CLAVE_COMPARAR, JSON.stringify(this.elegidos()));
     } catch {
       // Sin almacenamiento la selección dura lo que dure la pestaña.
     }

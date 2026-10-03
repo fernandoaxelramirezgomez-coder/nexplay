@@ -106,6 +106,27 @@ modelo extrapola en los gratis (en el entrenamiento había solo 2) lo dice `avis
 `pc`, aclarando que no existe fuente de entrenamiento propia para PlayStation/Xbox/
 Nintendo (el lado del juego transfiere, pero la señal viene de reseñas de Steam).
 
+### `GET /estado`
+
+El sistema de un vistazo, para la vista de Administración (`/admin`):
+
+```json
+{
+  "nia_con_openai": true,
+  "modelo_nia": "gpt-4.1-mini",
+  "datos_release": "data-v3",
+  "juegos_catalogo": 123,
+  "modelo_version": "logreg-juego-2026-10-01",
+  "modelo_datos": "data-v1",
+  "modelo_juegos_entrenamiento": 83
+}
+```
+
+Solo booleanos, versiones y conteos, y sin consultas a la base: todo está en memoria, y el release se lee una
+vez al arrancar de la marca que deja `preparar_entorno.py` (`datos/nexplay.db.origen.json`; sin ella,
+`datos_release` es `null`). De OpenAI solo dice si hay clave y qué modelo usa Nia (el valor de
+`NEXPLAY_MODELO_NIA`): la clave nunca sale ni se escribe en los logs. Como es barato, también sirve para saber si Render ya despertó.
+
 ### `GET /panorama`
 
 Cuántas reseñas hay detrás del catálogo, de cuándo son y cuántas traen la señal, más los motivos agregados
@@ -239,6 +260,16 @@ appid que no está en el catálogo se omite.
 El 👍 o 👎 a una respuesta de Nia. El 👎 puede llevar uno de los motivos de una lista fija; con 👍 el motivo
 se ignora. Se guarda en `datos/valoraciones.db` con el mismo id anónimo y tiene su propio tope por minuto
 (`NEXPLAY_VOTOS_NIA_POR_MINUTO`, 30). Qué se guarda y cuánto tiempo, en `docs/evidencia/valoraciones-nia.md`.
+
+Con el motivo «otro motivo», el 👎 puede llevar además una `sugerencia`: qué mejorar, hasta 280 caracteres.
+Antes de guardarla se le quitan correos y teléfonos, y se borra con el voto a los 180 días, igual que la
+pregunta.
+
+### `GET /nia/sugerencias`
+
+El buzón de sugerencias de `/admin`: cuántos 👍 y 👎 recibió Nia, los 👎 por motivo (con «sin motivo» al
+final) y las 10 sugerencias de texto más recientes, con su fecha. No trae el usuario ni la pregunta: `/admin`
+no tiene contraseña, así que todo lo que sale aquí lo puede ver cualquiera.
 
 **Para verificar a Nia**, desde `backend/`:
 
