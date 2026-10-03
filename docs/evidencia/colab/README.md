@@ -50,6 +50,17 @@ Lo que dicen sus salidas y su metadata:
   CPU), en una carpeta vacía, contando el clon del tag y la descarga de los datos. Ahí, sin ipywidgets, el 00 y el
   02 avisan de tqdm («IProgress not found»); en Colab no.
 
+## Los notebooks de `notebooks/` después de la corrida
+
+Después de la corrida con `codigo-v8`, los notebooks de `notebooks/` cambiaron solo en texto:
+
+- los títulos, con el mismo esquema en los tres (`afd9a35`);
+- tres rutas del markdown del 01, que ahora llevan `backend/` (`18bc4f0`);
+- un comentario de una a tres líneas al inicio de cada celda de código que no tenía ninguno (`2cba734`).
+
+Ninguna línea de código ni ninguna salida cambió: quitando esos comentarios, cada celda de código es idéntica a la de
+`codigo-v8`, con sus salidas. Por eso la corrida de arriba sigue valiendo para ellos.
+
 ## Los tres: 2026-10-02, `codigo-v6`
 
 Las tres descargas están aquí tal cual, byte por byte, sin corregir la metadata. Cada notebook se ejecutó entero en
