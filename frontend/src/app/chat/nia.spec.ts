@@ -44,6 +44,7 @@ function montar(respuesta: RespuestaNia = RESPUESTA) {
             enviadas.push(solicitud);
             return of(respuesta);
           },
+          votarRespuestaDeNia: () => of({ id_respuesta: respuesta.id, voto: -1, motivo: null }),
         },
       },
       { provide: CatalogoStore, useValue: { juegos: signal(JUEGOS), porAppid: signal(new Map(JUEGOS.map((j) => [j.appid, j]))) } },
@@ -314,5 +315,34 @@ describe('Nia: lo que cuenta la vista de Administración', () => {
     await fixture.whenStable();
 
     expect(TestBed.inject(ActividadStore).actividad()).toMatchObject({ conversacionesNia: 1, mensajesNia: 2 });
+  });
+});
+
+describe('Nia: los motivos del 👎 no se quedan ocupando el chat', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    valores.set(null);
+  });
+
+  it('si la persona sigue escribiendo sin elegir motivo, los chips se cierran y el foco se queda en el campo', async () => {
+    const { fixture } = montar();
+    const html = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    fixture.componentInstance.preguntar('¿Cuánto cuesta?');
+    await fixture.whenStable();
+
+    html.querySelector<HTMLButtonElement>('[data-testid="voto-nia-abajo"]')!.click();
+    await fixture.whenStable();
+    expect(html.querySelector('[data-testid="voto-nia-motivos"]')).not.toBeNull();
+
+    const campo = html.querySelector<HTMLTextAreaElement>('[data-testid="nia-pregunta"]')!;
+    campo.focus();
+    campo.value = '¿Y';
+    campo.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+
+    expect(html.querySelector('[data-testid="voto-nia-motivos"]')).toBeNull();
+    expect(html.querySelector('[data-testid="voto-nia-abajo"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(document.activeElement).toBe(campo);
   });
 });

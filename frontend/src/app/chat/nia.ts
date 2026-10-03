@@ -11,6 +11,7 @@ import {
   signal,
   untracked,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -254,7 +255,7 @@ interface Extra {
           data-testid="nia-pregunta"
           [value]="texto()"
           [disabled]="esperando()"
-          (input)="texto.set($any($event.target).value)"
+          (input)="texto.set($any($event.target).value); plegarMotivos()"
           (keydown.enter)="$event.preventDefault(); preguntar(texto())"
         ></textarea>
       </label>
@@ -635,6 +636,7 @@ export class Nia {
   private readonly conversacion = viewChild<ElementRef<HTMLElement>>('conversacion');
   private readonly cuerpo = viewChild<ElementRef<HTMLElement>>('cuerpo');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
+  private readonly votos = viewChildren(VotoNia);
 
   protected readonly maximo = MAXIMO_TEXTO;
   /** El mismo número que aplica api/valoraciones.py (DIAS_DE_RETENCION_NIA): si allá
@@ -861,6 +863,7 @@ export class Nia {
     }
     // Para la vista de Administración: la primera pregunta de un hilo vacío abre una conversación.
     this.actividad.preguntaANia(this.mensajes().length === 0);
+    this.plegarMotivos();
     this.agregar({ rol: 'usuario', contenido });
     this.texto.set('');
     // [value] solo escribe en el DOM cuando el valor cambia respecto al último que pintó.
@@ -873,6 +876,14 @@ export class Nia {
       campo.value = '';
     }
     this.consultar(this.mensajes(), contenido);
+  }
+
+  /** Seguir escribiendo o preguntar sin elegir motivo cierra los chips del 👎: son opcionales
+   * y en un chat chico ocupaban el hilo. */
+  protected plegarMotivos(): void {
+    for (const voto of this.votos()) {
+      voto.plegar();
+    }
   }
 
   private agregar(mensaje: MensajeChat, extra?: Extra): void {
