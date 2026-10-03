@@ -118,6 +118,9 @@ def _crear_esquema() -> None:
                    PRIMARY KEY (usuario, id_respuesta)
                )"""
         )
+        # Bases de antes del buzón de sugerencias: la columna se agrega, porque adentro hay votos.
+        if "sugerencia" not in {fila[1] for fila in con.execute("PRAGMA table_info(valoraciones_nia)")}:
+            con.execute("ALTER TABLE valoraciones_nia ADD COLUMN sugerencia TEXT")
         con.commit()
     finally:
         con.close()
@@ -315,7 +318,14 @@ MOTIVOS_VOTO_NIA = (
     "dato incorrecto",
     "muy larga",
     "me recomendó algo",
+    "otro motivo",
 )
+# El único motivo que lleva texto: qué mejorar, en palabras de quien votó. Se ve, sin nombre, en
+# el buzón de sugerencias de /admin.
+MOTIVO_LIBRE = "otro motivo"
+MAXIMO_SUGERENCIA = 280
+# Cuántas sugerencias de texto enseña el buzón: las más recientes.
+SUGERENCIAS_EN_EL_BUZON = 10
 
 
 class RespuestaNiaInexistente(Exception):
@@ -370,7 +380,7 @@ def voto_nia(id_respuesta: str, usuario: str) -> dict:
     con = _conectar()
     try:
         fila = con.execute(
-            "SELECT voto, motivo FROM valoraciones_nia WHERE id_respuesta = ? AND usuario = ?",
+            "SELECT voto, motivo, sugerencia FROM valoraciones_nia WHERE id_respuesta = ? AND usuario = ?",
             (id_respuesta, usuario),
         ).fetchone()
     finally:
@@ -379,31 +389,65 @@ def voto_nia(id_respuesta: str, usuario: str) -> dict:
         "id_respuesta": id_respuesta,
         "voto": fila[0] if fila else None,
         "motivo": fila[1] if fila else None,
+        "sugerencia": fila[2] if fila else None,
     }
 
 
-def guardar_voto_nia(id_respuesta: str, usuario: str, voto: int, motivo: str | None = None) -> dict:
+def guardar_voto_nia(
+    id_respuesta: str, usuario: str, voto: int, motivo: str | None = None, sugerencia: str | None = None
+) -> dict:
     """Crea o cambia el voto. El motivo solo acompaña al 👎: con 👍 no hay nada que
-    explicar y guardarlo sería ruido."""
+    explicar y guardarlo sería ruido. La sugerencia, solo con «otro motivo», recortada; quien
+    llama ya le quitó los datos personales (main.py)."""
     if motivo is not None and (voto != -1 or motivo not in MOTIVOS_VOTO_NIA):
         motivo = None
+    sugerencia = (sugerencia or "").strip()[:MAXIMO_SUGERENCIA] or None
+    if motivo != MOTIVO_LIBRE:
+        sugerencia = None
     ahora = _ahora()
     con = _conectar()
     try:
         _exigir_respuesta(con, id_respuesta)
         con.execute(
-            """INSERT INTO valoraciones_nia (usuario, id_respuesta, voto, motivo, creado, actualizado)
-               VALUES (?, ?, ?, ?, ?, ?)
+            """INSERT INTO valoraciones_nia (usuario, id_respuesta, voto, motivo, sugerencia, creado, actualizado)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT (usuario, id_respuesta) DO UPDATE SET
                    voto = excluded.voto,
                    motivo = excluded.motivo,
+                   sugerencia = excluded.sugerencia,
                    actualizado = excluded.actualizado""",
-            (usuario, id_respuesta, voto, motivo, ahora, ahora),
+            (usuario, id_respuesta, voto, motivo, sugerencia, ahora, ahora),
         )
         con.commit()
     finally:
         con.close()
     return voto_nia(id_respuesta, usuario)
+
+
+def buzon_de_sugerencias() -> dict:
+    """Lo que la gente le dice a Nia, para /admin: cuántos 👍 y 👎, cuántos 👎 por motivo y las
+    sugerencias de texto más recientes. Sin usuario ni pregunta: /admin no tiene contraseña."""
+    con = _conectar()
+    try:
+        votos = dict(con.execute("SELECT voto, COUNT(*) FROM valoraciones_nia GROUP BY voto").fetchall())
+        por_motivo = dict(
+            con.execute("SELECT motivo, COUNT(*) FROM valoraciones_nia WHERE voto = -1 GROUP BY motivo").fetchall()
+        )
+        sugerencias = con.execute(
+            """SELECT sugerencia, actualizado FROM valoraciones_nia
+               WHERE voto = -1 AND motivo = ? AND sugerencia IS NOT NULL
+               ORDER BY actualizado DESC LIMIT ?""",
+            (MOTIVO_LIBRE, SUGERENCIAS_EN_EL_BUZON),
+        ).fetchall()
+    finally:
+        con.close()
+    return {
+        "votos_a_favor": votos.get(1, 0),
+        "votos_en_contra": votos.get(-1, 0),
+        "por_motivo": [{"motivo": m, "cuantos": por_motivo.get(m, 0)} for m in MOTIVOS_VOTO_NIA]
+        + [{"motivo": "sin motivo", "cuantos": por_motivo.get(None, 0)}],
+        "sugerencias": [{"texto": texto, "cuando": cuando} for texto, cuando in sugerencias],
+    }
 
 
 def borrar_voto_nia(id_respuesta: str, usuario: str) -> dict:

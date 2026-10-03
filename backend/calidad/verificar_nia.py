@@ -44,7 +44,7 @@ from api import catalogo, panorama, scoring, valoraciones  # noqa: E402
 from api.nia import agente as nia  # noqa: E402
 from api.nia import herramientas as nia_herramientas  # noqa: E402
 from api.nia import reglas as nia_reglas  # noqa: E402
-from api.schemas import MensajeChat, OfertaNia, RespuestaNia, SugerenciaNia  # noqa: E402
+from api.schemas import MensajeChat, OfertaNia, RespuestaNia, SolicitudVotoNia, SugerenciaNia  # noqa: E402
 
 # Las dos preguntas de la revisión, más una de motivos para ver que no se cruzan.
 _PREGUNTAS = [
@@ -654,10 +654,42 @@ def _revisar_votos() -> list[str]:
     if {"r1", "r3"} - quedan:
         problemas.append(f"la retención se llevó respuestas recientes ({sorted(quedan)})")
 
+    # El buzón de sugerencias: el texto solo con «otro motivo» y 👎, recortado, sin datos
+    # personales (los quita el endpoint), y el buzón cuenta igual que la base, sin usuarios.
+    from api import main  # noqa: PLC0415
+    valoraciones.registrar_respuesta_nia("r4", usuario, None, "x", "x", "demostracion", None, "reglas")
+    voto = valoraciones.guardar_voto_nia("r4", usuario, -1, "otro motivo", "  Que cuente más del modo historia  ")
+    if voto["sugerencia"] != "Que cuente más del modo historia":
+        problemas.append(f"la sugerencia con «otro motivo» no se guardó limpia ({voto})")
+    for motivo, valor in (("muy larga", -1), ("otro motivo", 1)):
+        voto = valoraciones.guardar_voto_nia("r4", otro, valor, motivo, "no debería guardarse")
+        if voto["sugerencia"] is not None:
+            problemas.append(f"se guardó una sugerencia con {motivo!r} y {valor} ({voto})")
+    voto = valoraciones.guardar_voto_nia("r4", "pruebalocal03", -1, "otro motivo", "x" * 400)
+    if len(voto["sugerencia"] or "") != valoraciones.MAXIMO_SUGERENCIA:
+        problemas.append("la sugerencia larga no se recortó al tope")
+    por_api = main.votar_respuesta_de_nia("r4", SolicitudVotoNia(
+        usuario="pruebalocal04", voto=-1, motivo="otro motivo", sugerencia="escríbeme a ana@correo.com o al 55 1234 5678"))
+    if "ana@correo.com" in (por_api.sugerencia or "") or "1234" in (por_api.sugerencia or ""):
+        problemas.append(f"la sugerencia guardó datos personales ({por_api.sugerencia})")
+    buzon = main.buzon_de_sugerencias()
+    con = sqlite3.connect(temporal)
+    en_contra = con.execute("SELECT COUNT(*) FROM valoraciones_nia WHERE voto = -1").fetchone()[0]
+    a_favor = con.execute("SELECT COUNT(*) FROM valoraciones_nia WHERE voto = 1").fetchone()[0]
+    con.close()
+    if (buzon.votos_a_favor, buzon.votos_en_contra) != (a_favor, en_contra):
+        problemas.append(f"el buzón no cuenta como la base ({buzon.votos_a_favor}, {buzon.votos_en_contra})")
+    if sum(m.cuantos for m in buzon.por_motivo) != en_contra or [m.motivo for m in buzon.por_motivo][-1] != "sin motivo":
+        problemas.append(f"los 👎 por motivo no suman los 👎 o falta «sin motivo» ({buzon.por_motivo})")
+    textos = [s.texto for s in buzon.sugerencias]
+    if "Que cuente más del modo historia" not in textos or "pruebalocal" in buzon.model_dump_json():
+        problemas.append(f"el buzón no trae la sugerencia o trae usuarios ({buzon.model_dump()})")
+
     if not problemas:
         print(
             f"votos:    un voto por persona y respuesta, el motivo solo con 👎, y la retención de"
-            f" {valoraciones.DIAS_DE_RETENCION_NIA} días borra lo vencido con sus votos"
+            f" {valoraciones.DIAS_DE_RETENCION_NIA} días borra lo vencido con sus votos; el buzón cuenta y"
+            " solo trae sugerencias de «otro motivo», sin datos personales ni usuarios"
         )
     return problemas
 

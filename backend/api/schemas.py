@@ -427,6 +427,12 @@ class SolicitudVotoNia(BaseModel):
         max_length=60,
         description="Solo acompaña al 👎, y solo uno de los motivos de la lista; con 👍 se ignora",
     )
+    sugerencia: Optional[str] = Field(
+        None,
+        max_length=280,
+        description="Solo con 👎 y el motivo «otro motivo»: qué mejorar, en texto libre. Se le quitan correos y"
+        " teléfonos, y se ve sin nombre en el buzón de sugerencias de /admin",
+    )
 
 
 class SolicitudQuitarVotoNia(BaseModel):
@@ -443,6 +449,27 @@ class VotoNia(BaseModel):
     id_respuesta: str
     voto: Optional[Literal[-1, 1]] = Field(None, description="None si esa persona no ha votado esta respuesta")
     motivo: Optional[str] = None
+    sugerencia: Optional[str] = None
+
+
+class ConteoMotivoNia(BaseModel):
+    motivo: str
+    cuantos: int
+
+
+class SugerenciaRecibida(BaseModel):
+    texto: str
+    cuando: str = Field(..., description="ISO, en UTC: cuándo se escribió o se cambió por última vez")
+
+
+class BuzonSugerencias(BaseModel):
+    """GET /nia/sugerencias: lo que la gente le dice a Nia, para el buzón de /admin. Sin usuario ni
+    pregunta, porque /admin no tiene contraseña."""
+
+    votos_a_favor: int
+    votos_en_contra: int
+    por_motivo: list[ConteoMotivoNia] = Field(..., description="Los 👎 por motivo, con «sin motivo» al final")
+    sugerencias: list[SugerenciaRecibida] = Field(..., description="Las de «otro motivo» con texto, de la más reciente")
 
 
 class ExplicacionJuego(BaseModel):

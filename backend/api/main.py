@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import catalogo, estado, limites, nia, panorama, scoring, valoraciones
 from .config import configuracion
 from .schemas import (
+    BuzonSugerencias,
     Comentario,
     EstadoSistema,
     ExplicacionJuego,
@@ -339,10 +340,24 @@ def _exigir_cupo_de_voto(usuario: str) -> None:
 @app.put("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
 def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> VotoNia:
     _exigir_cupo_de_voto(solicitud.usuario)
+    # La sugerencia se ve en el buzón de /admin: sin correos ni teléfonos, igual que las preguntas.
+    sugerencia = nia.agente.sin_datos_personales(solicitud.sugerencia) if solicitud.sugerencia else None
     with _errores_de_voto():
-        voto = valoraciones.guardar_voto_nia(id_respuesta, solicitud.usuario, solicitud.voto, solicitud.motivo)
-    logger.info("voto a Nia %s motivo=%r", "👍" if solicitud.voto == 1 else "👎", voto["motivo"])
+        voto = valoraciones.guardar_voto_nia(
+            id_respuesta, solicitud.usuario, solicitud.voto, solicitud.motivo, sugerencia
+        )
+    logger.info(
+        "voto a Nia %s motivo=%r con sugerencia=%s", "👍" if solicitud.voto == 1 else "👎", voto["motivo"],
+        voto["sugerencia"] is not None,
+    )
     return VotoNia(**voto)
+
+
+@app.get("/nia/sugerencias", response_model=BuzonSugerencias)
+def buzon_de_sugerencias() -> BuzonSugerencias:
+    """El buzón de /admin: cuántos 👍 y 👎 recibió Nia, los 👎 por motivo y las últimas
+    sugerencias de texto, sin usuario ni pregunta."""
+    return BuzonSugerencias(**valoraciones.buzon_de_sugerencias())
 
 
 @app.delete("/nia/valoracion/{id_respuesta}", response_model=VotoNia)

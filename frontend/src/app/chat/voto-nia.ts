@@ -16,14 +16,20 @@ import { VotoNiaValor } from '../api/contrato';
 import { ActividadStore } from '../estado/actividad-store';
 import { UsuarioStore } from '../estado/usuario-store';
 
-/** Los mismos cuatro que acepta la API (MOTIVOS_VOTO_NIA en api/valoraciones.py): un
+/** Los mismos cinco que acepta la API (MOTIVOS_VOTO_NIA en api/valoraciones.py): un
  * motivo fuera de la lista se guarda como ninguno, así que aquí no se inventan otros. */
 export const MOTIVOS_VOTO = [
   'no respondió lo que pregunté',
   'dato incorrecto',
   'muy larga',
   'me recomendó algo',
+  'otro motivo',
 ] as const;
+/** El único motivo que abre un texto: qué mejorar, para el buzón de sugerencias de /admin. */
+export const MOTIVO_LIBRE = 'otro motivo';
+export const MAXIMO_SUGERENCIA = 280;
+/** Lo que se dice al elegir un motivo: alguien lo va a leer. */
+export const GRACIAS_POR_EL_MOTIVO = '¡Gracias! Atenderemos tus requerimientos.';
 
 /** Cuánto se espera antes de mandar un cambio de motivo. Probar los cuatro chips son
  * cuatro peticiones que se pisan entre sí; con la espera, solo viaja el último. */
@@ -81,6 +87,32 @@ const ESPERA_MOTIVO_MS = 800;
           >
             {{ motivo }}
           </button>
+        }
+        @if (motivo() === motivoLibre) {
+          <div class="libre" data-testid="voto-nia-sugerencia">
+            <label class="meta" [for]="idCampo">Cuéntanos qué mejorar</label>
+            <textarea
+              [id]="idCampo"
+              rows="2"
+              [maxLength]="maximo"
+              [value]="borrador()"
+              (input)="borrador.set($any($event.target).value)"
+              data-testid="voto-nia-sugerencia-texto"
+            ></textarea>
+            <div class="pie-libre">
+              <span class="meta">Se ve sin tu nombre en el buzón de sugerencias; no pongas datos personales.</span>
+              <span class="meta mono">{{ borrador().length }}/{{ maximo }}</span>
+              <button
+                type="button"
+                class="compacto"
+                data-testid="voto-nia-sugerencia-enviar"
+                [disabled]="guardando() || !borrador().trim() || borrador().trim() === enviada()"
+                (click)="enviarSugerencia()"
+              >
+                Enviar sugerencia
+              </button>
+            </div>
+          </div>
         }
       </div>
     }
@@ -148,6 +180,25 @@ const ESPERA_MOTIVO_MS = 800;
     .aviso {
       font-size: var(--texto-caption);
     }
+    .libre {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-4);
+      flex-basis: 100%;
+    }
+    .libre textarea {
+      width: 100%;
+      resize: vertical;
+    }
+    .pie-libre {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--espacio-8);
+    }
+    .pie-libre .compacto {
+      margin-left: auto;
+    }
   `,
 })
 export class VotoNia {
@@ -159,8 +210,16 @@ export class VotoNia {
   private readonly actividad = inject(ActividadStore);
 
   protected readonly motivos = MOTIVOS_VOTO;
+  protected readonly motivoLibre = MOTIVO_LIBRE;
+  protected get idCampo(): string {
+    return `sugerencia-${this.idRespuesta()}`;
+  }
+  protected readonly maximo = MAXIMO_SUGERENCIA;
   protected readonly voto = signal<VotoNiaValor | null>(null);
   protected readonly motivo = signal<string | null>(null);
+  /** Lo que se escribe en «otro motivo», y lo último que la API guardó. */
+  protected readonly borrador = signal('');
+  protected readonly enviada = signal<string | null>(null);
   protected readonly guardando = signal(false);
   private readonly error = signal('');
 
@@ -171,7 +230,9 @@ export class VotoNia {
 
   private readonly panelMotivos = viewChild<ElementRef<HTMLElement>>('panel');
 
-  protected readonly aviso = computed(() => this.error() || (this.voto() ? 'Gracias.' : ''));
+  protected readonly aviso = computed(
+    () => this.error() || (this.motivo() ? GRACIAS_POR_EL_MOTIVO : this.voto() ? 'Gracias.' : ''),
+  );
 
   constructor() {
     // Al abrirse, los chips quedaban bajo el borde del hilo y nadie los veía.
@@ -207,23 +268,33 @@ export class VotoNia {
     this.mandar(-1, elegido, ESPERA_MOTIVO_MS);
   }
 
-  private mandar(valor: VotoNiaValor, motivo: string | null, espera: number): void {
+  private mandar(valor: VotoNiaValor, motivo: string | null, espera: number, sugerencia?: string): void {
     clearTimeout(this.reloj);
     this.error.set('');
-    this.reloj = setTimeout(() => this.guardar(valor, motivo), espera);
+    this.reloj = setTimeout(() => this.guardar(valor, motivo, sugerencia), espera);
   }
 
-  private guardar(valor: VotoNiaValor, motivo: string | null): void {
+  /** El texto de «otro motivo» viaja con el 👎 y su motivo; la API le quita los datos personales. */
+  protected enviarSugerencia(): void {
+    const texto = this.borrador().trim().slice(0, MAXIMO_SUGERENCIA);
+    if (texto) {
+      this.mandar(-1, MOTIVO_LIBRE, 0, texto);
+    }
+  }
+
+  private guardar(valor: VotoNiaValor, motivo: string | null, sugerencia?: string): void {
     this.guardando.set(true);
     this.api
       .votarRespuestaDeNia(this.idRespuesta(), {
         usuario: this.usuario.id,
         voto: valor,
         ...(motivo ? { motivo } : {}),
+        ...(sugerencia ? { sugerencia } : {}),
       })
       .subscribe({
         next: (respuesta) => {
           this.actividad.respuestaVotada(this.idRespuesta(), true);
+          this.enviada.set(respuesta.sugerencia ?? null);
           this.confirmar(respuesta.voto, respuesta.motivo);
         },
         error: () => this.fallar(),

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import {
+  BuzonSugerencias,
   Comentario,
   ExplicacionJuego,
   FiltrosCatalogo,
@@ -108,6 +109,10 @@ export class NexplayApi {
   }
 
   /** Crea o cambia el voto de esta persona para esa respuesta de Nia. */
+  buzonDeSugerencias(): Observable<BuzonSugerencias> {
+    return this.http.get<BuzonSugerencias>(`${this.base}/nia/sugerencias`);
+  }
+
   votarRespuestaDeNia(idRespuesta: string, solicitud: SolicitudVotoNia): Observable<VotoNia> {
     return this.http.put<VotoNia>(`${this.base}/nia/valoracion/${idRespuesta}`, solicitud);
   }

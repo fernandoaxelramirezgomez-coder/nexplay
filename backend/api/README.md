@@ -260,6 +260,16 @@ El 👍 o 👎 a una respuesta de Nia. El 👎 puede llevar uno de los motivos d
 se ignora. Se guarda en `datos/valoraciones.db` con el mismo id anónimo y tiene su propio tope por minuto
 (`NEXPLAY_VOTOS_NIA_POR_MINUTO`, 30). Qué se guarda y cuánto tiempo, en `docs/evidencia/valoraciones-nia.md`.
 
+Con el motivo «otro motivo», el 👎 puede llevar además una `sugerencia`: qué mejorar, hasta 280 caracteres.
+Antes de guardarla se le quitan correos y teléfonos, y se borra con el voto a los 180 días, igual que la
+pregunta.
+
+### `GET /nia/sugerencias`
+
+El buzón de sugerencias de `/admin`: cuántos 👍 y 👎 recibió Nia, los 👎 por motivo (con «sin motivo» al
+final) y las 10 sugerencias de texto más recientes, con su fecha. No trae el usuario ni la pregunta: `/admin`
+no tiene contraseña, así que todo lo que sale aquí lo puede ver cualquiera.
+
 **Para verificar a Nia**, desde `backend/`:
 
 ```bash

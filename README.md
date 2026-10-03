@@ -241,7 +241,8 @@ ejemplos, lo explica [backend/api/README.md](backend/api/README.md).
 | `PUT /comentarios/{appid}/{id}/reaccion` | Pulgar arriba a un comentario, en toggle. |
 | `POST /nia` | El chat de Nia, sobre un juego o sobre el catálogo. |
 | `GET /nia/opiniones?appids=` | La opinión corta de Nia sobre hasta 6 juegos, sin modelo de lenguaje. |
-| `PUT` y `DELETE /nia/valoracion/{id}` | El 👍 o 👎 a una respuesta de Nia. |
+| `PUT` y `DELETE /nia/valoracion/{id}` | El 👍 o 👎 a una respuesta de Nia; el 👎 con «otro motivo» puede llevar una sugerencia. |
+| `GET /nia/sugerencias` | El buzón de `/admin`: los 👍 y 👎 a Nia, los 👎 por motivo y las últimas sugerencias, sin usuario. |
 
 Por ejemplo, así pides el riesgo de Hades:
 

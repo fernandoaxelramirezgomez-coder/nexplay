@@ -3,7 +3,7 @@ import { of, throwError } from 'rxjs';
 
 import { NexplayApi } from '../api/nexplay-api';
 import { UsuarioStore } from '../estado/usuario-store';
-import { VotoNia } from './voto-nia';
+import { GRACIAS_POR_EL_MOTIVO, VotoNia } from './voto-nia';
 
 function montar(api: Partial<NexplayApi>) {
   TestBed.configureTestingModule({
@@ -109,6 +109,64 @@ describe('VotoNia', () => {
     expect(votar).toHaveBeenCalledTimes(1);
     expect(votar).toHaveBeenCalledWith('r1', { usuario: 'usuario-de-prueba', voto: -1, motivo: 'dato incorrecto' });
     expect(motivos(fixture).filter((c) => c.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+  });
+
+  it('al elegir un motivo dice que se atenderá; sin motivo, solo «Gracias.»', () => {
+    const votar = vi
+      .fn()
+      .mockReturnValueOnce(of({ id_respuesta: 'r1', voto: -1, motivo: null }))
+      .mockReturnValueOnce(of({ id_respuesta: 'r1', voto: -1, motivo: 'dato incorrecto' }));
+    const fixture = montar({ votarRespuestaDeNia: votar } as Partial<NexplayApi>);
+    const aviso = () => fixture.nativeElement.querySelector('.aviso')?.textContent?.trim();
+
+    boton(fixture, 'voto-nia-abajo')!.click();
+    vi.advanceTimersByTime(ESPERA);
+    fixture.detectChanges();
+    expect(aviso()).toBe('Gracias.');
+
+    motivos(fixture).find((chip) => chip.textContent?.includes('dato incorrecto'))!.click();
+    vi.advanceTimersByTime(ESPERA);
+    fixture.detectChanges();
+    expect(aviso()).toBe(GRACIAS_POR_EL_MOTIVO);
+  });
+
+  it('«otro motivo» abre un texto que viaja con el 👎 y su motivo', () => {
+    const votar = vi
+      .fn()
+      .mockReturnValueOnce(of({ id_respuesta: 'r1', voto: -1, motivo: null }))
+      .mockReturnValueOnce(of({ id_respuesta: 'r1', voto: -1, motivo: 'otro motivo', sugerencia: null }))
+      .mockReturnValueOnce(
+        of({ id_respuesta: 'r1', voto: -1, motivo: 'otro motivo', sugerencia: 'Que diga más del modo historia' }),
+      );
+    const fixture = montar({ votarRespuestaDeNia: votar } as Partial<NexplayApi>);
+    const html = fixture.nativeElement as HTMLElement;
+
+    boton(fixture, 'voto-nia-abajo')!.click();
+    vi.advanceTimersByTime(ESPERA);
+    fixture.detectChanges();
+    expect(html.querySelector('[data-testid="voto-nia-sugerencia"]')).toBeNull();
+
+    motivos(fixture).find((chip) => chip.textContent?.includes('otro motivo'))!.click();
+    vi.advanceTimersByTime(ESPERA);
+    fixture.detectChanges();
+    const campo = html.querySelector<HTMLTextAreaElement>('[data-testid="voto-nia-sugerencia-texto"]')!;
+    expect(campo.maxLength).toBe(280);
+    campo.value = '  Que diga más del modo historia ';
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    boton(fixture, 'voto-nia-sugerencia-enviar')!.click();
+    vi.advanceTimersByTime(0);
+    fixture.detectChanges();
+
+    expect(votar).toHaveBeenLastCalledWith('r1', {
+      usuario: 'usuario-de-prueba',
+      voto: -1,
+      motivo: 'otro motivo',
+      sugerencia: 'Que diga más del modo historia',
+    });
+    expect(html.querySelector('.aviso')?.textContent?.trim()).toBe(GRACIAS_POR_EL_MOTIVO);
+    // Ya enviada, el mismo texto no se vuelve a mandar.
+    expect(boton(fixture, 'voto-nia-sugerencia-enviar')!.disabled).toBe(true);
   });
 
   it('el mismo pulgar dos veces quita el voto', () => {
