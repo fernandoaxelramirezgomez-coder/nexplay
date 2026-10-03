@@ -53,6 +53,7 @@ backend/     todo el Python; los comandos corren desde aquí (rutas de docstring
   calidad/     verificadores y scripts de evidencia · ingesta/ · publicacion/ · operacion/
 frontend/    Angular, el único frontend (Vercel, Root Directory frontend)
 notebooks/   00_exploracion y 01_modelo_riesgo · docs/ evidencia, capturas, diseño e historial
+entregables/ lo que se califica: nicho, presentación y el PDF del documento · documento/ solo su fuente LaTeX
 ```
 
 Una regla por carpeta, con un README corto que dice qué va ahí y qué no. `backend/api/scoring.py` expone

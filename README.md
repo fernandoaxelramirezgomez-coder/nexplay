@@ -11,7 +11,7 @@ del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requisitos-previos)
 [![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend/README.md)
 
-**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) · [🎤 Presentación](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/presentacion/NexPlay-presentacion-final.pdf).
+**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/documento-entregafinal.pdf) · [🎤 Presentación](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/presentacion-entregafinal.pdf).
 La API está en el plan gratis de Render y se duerme cuando nadie la usa, así que la primera carga puede tardar
 un poco.
 
@@ -19,9 +19,9 @@ un poco.
 
 | Entregable | Ver en línea | Descargar |
 |---|---|---|
-| 📄 Documento final | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/documento/documento-entregafinal.pdf) |
-| 🎤 Presentación (PDF) | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/presentacion/NexPlay-presentacion-final.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/presentacion/NexPlay-presentacion-final.pdf) |
-| 💡 El nicho en simples palabras | [NICHO.md](NICHO.md) | — |
+| 📄 Documento final | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/documento-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/entregables/documento-entregafinal.pdf) |
+| 🎤 Presentación (PDF) | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/presentacion-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/entregables/presentacion-entregafinal.pdf) |
+| 💡 El nicho en simples palabras | [nicho.md](entregables/nicho.md) | — |
 
 > Hay miles de juegos en Steam y poco tiempo para elegir. NexPlay es para quien compra pocos juegos al año y no
 > quiere gastar su dinero en uno que dejará a las dos horas. Con sus gustos, reduce el catálogo a los juegos que
@@ -31,8 +31,9 @@ un poco.
 > **En 30 segundos**
 >
 > - **El problema:** comprar un juego en Steam que te decepciona en las primeras horas, cuando todavía lo puedes devolver.
-> - **Qué estima:** para cada uno de los 123 juegos del catálogo, una banda de riesgo (bajo, medio o alto) de la
->   señal de arrepentimiento temprano, con los factores que la mueven y los motivos de queja de las reseñas.
+> - **Qué estima:** para cada uno de los 123 juegos del catálogo, un riesgo de arrepentimiento (bajo, medio o
+>   alto), según qué tan seguido deja la señal de arrepentimiento temprano, con los factores que lo mueven y los
+>   motivos de queja de las reseñas.
 > - **Qué tan bien:** PR-AUC de 0.0694 ± 0.0415 con GroupKFold por juego, 3.2 veces el clasificador trivial. En
 >   40 juegos que el modelo no vio, 0.0356 contra 0.0234, 1.5 veces el trivial.
 > - **Qué no hace:** no predice lo que vas a sentir tú (el riesgo es del juego), no es una probabilidad y no te
@@ -276,10 +277,11 @@ banda) está en [docs/evidencia/](docs/evidencia/README.md), con el script que l
 ```
 nexplay/
 ├── README.md            este archivo
-├── NICHO.md             el nicho en simples palabras
 ├── Makefile             make help lista los objetivos
 ├── .env.example         plantilla de variables; el .env real no se versiona
 ├── CLAUDE.md · AGENTS.md  decisiones y convenciones del proyecto
+├── entregables/         lo que se califica: el nicho, la presentación y el documento final
+├── notebooks/           00_exploracion, 01_modelo_riesgo y 02_modelos_texto, con su ruta de ejecución
 ├── backend/             todo el Python; los comandos corren desde aquí
 │   ├── api/               FastAPI: endpoints, esquemas, scoring y el chat de Nia (nia/)
 │   ├── modelado/          entrenamiento y comparación de bandas
@@ -292,16 +294,14 @@ nexplay/
 │   ├── operacion/         exportar y moderar comentarios
 │   └── requirements*.txt  uno por uso (ver backend/README.md)
 ├── frontend/            Angular: src/, public/, fuentes/ (la hoja de Nia) y scripts/
-├── notebooks/           00_exploracion, 01_modelo_riesgo y 02_modelos_texto, con su ruta de ejecución
-├── documento/           el documento final en LaTeX (make doc)
-├── presentacion/        la presentación final en PDF
+├── documento/           solo la fuente LaTeX del documento final (make doc)
 └── docs/                evidencia, capturas, diseño e historial
 ```
 
 Cada carpeta tiene un `README.md` corto que dice qué va ahí y qué no. Cuando corres el proyecto aparecen, sin
 versionarse, `backend/datos/`, `backend/modelo/`, `backend/extracto/` y `backend/registros/`. El documento
 final está en LaTeX, en `documento/`: `make doc` genera sus figuras y cifras, lo compila y deja el PDF en
-`documento/documento-entregafinal.pdf`.
+`entregables/documento-entregafinal.pdf`.
 
 ## 💾 Datos y releases
 

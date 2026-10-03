@@ -10,5 +10,7 @@ a `backend/` y los notebooks a `notebooks/`. No se corrigen, para que cada plan 
 - `fase-6-revision-usuario.md` y `reorganizacion-5-vistas.md`: planes de la interfaz.
 - `mejoras/01-antes-del-reembolso.md`: la ficha de la mejora 01. Su resultado está en
   `docs/evidencia/antes-del-reembolso.md`.
+- `dudas-documento.md`: las decisiones que se tomaron sin preguntar al condensar el documento final, con su
+  porqué y su alternativa (antes `documento/DUDAS.md`).
 - `mockups/`: los mockups y `capturar_mockup.py`, que los captura en tres anchos y dos temas (las capturas
   no se versionan).

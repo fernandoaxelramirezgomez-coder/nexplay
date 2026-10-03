@@ -4,13 +4,11 @@ El documento final en LaTeX: el texto que entrega el proyecto, con cada criterio
 localizable desde el índice.
 
 - `main.tex`: preámbulo, portada, resumen, índice y un `\input` por sección.
-- `sections/`: una sección por archivo (`00-resumen.tex` … `17-siguientes-pasos.tex`, `anexo.tex`).
+- `sections/`: una sección por archivo (`00-resumen.tex` … `09-conclusiones.tex`, `anexo.tex`).
 - `tables/`: tablas y `cifras.tex`, las macros `\cifra…` con cada número del texto. Las genera
   `generar_figuras.py`: **ninguna cifra se escribe a mano**.
 - `figures/`: figuras que genera `generar_figuras.py` (PDF de matplotlib y el diagrama de arquitectura en
   TikZ), las capturas (copiadas de `docs/capturas/documento/`) y los escudos de la portada.
-- `DUDAS.md`: las decisiones que se tomaron sin preguntar al condensar el documento, con su porqué y su
-  alternativa.
 - `references.bib`: solo referencias abiertas y verificadas antes de citarlas.
 - `generar_figuras.py`: de los releases (verificados por sha256) y `docs/evidencia/` a `figures/` y
   `tables/`. Necesita `documento/requirements-documento.txt`.
@@ -20,13 +18,16 @@ localizable desde el índice.
   hasta regenerarlas desde el tag de entrega.
 
 Compilar, desde la raíz: `make doc`. Hace estos pasos y copia el PDF a
-`documento/documento-entregafinal.pdf`, el único PDF de esta carpeta que se versiona:
+`entregables/documento-entregafinal.pdf`; en esta carpeta no se versiona ningún PDF:
 
 ```
 .venv/bin/python documento/generar_figuras.py
 .venv/bin/python documento/verificar_cifras.py
 cd documento && latexmk        # LuaLaTeX + biber; el PDF queda en documento/build/main.pdf
 ```
+
+Las decisiones que se tomaron sin preguntar al condensar el documento, con su porqué y su alternativa, están en
+`docs/historial/dudas-documento.md`.
 
 No va aquí: evidencia nueva (`docs/evidencia/` con su script en `backend/calidad/`) ni cambios al
 modelo o a la API.

@@ -22,8 +22,8 @@ Solo documentación. Nada de lo que necesitan la API, el modelo o el frontend vi
   done
   ```
 - `diseno/`: las referencias de estilo de la interfaz (`referencia-estilo.md` y `referencia-neon.md`).
-- `historial/`: planes, revisiones por fase y mockups de cómo se llegó aquí. No se citan desde el README y
-  conservan las rutas de cuando se escribieron.
+- `historial/`: planes, revisiones por fase, mockups y las dudas del documento: cómo se llegó aquí. No se
+  citan desde el README y conservan las rutas de cuando se escribieron.
 
 No va aquí: valores de referencia que lee el código (`backend/referencias/`), scripts ni recursos del
 frontend (la hoja de Nia está en `frontend/fuentes/`).

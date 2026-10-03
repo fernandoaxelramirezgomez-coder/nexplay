@@ -82,7 +82,7 @@ notebooks: _venv
 
 # --- Documento ----------------------------------------------------------------
 
-## doc: genera figuras y cifras, compila el documento en LaTeX y deja documento/documento-entregafinal.pdf
+## doc: genera figuras y cifras, compila el documento en LaTeX y deja entregables/documento-entregafinal.pdf
 doc: _venv
 	@command -v latexmk >/dev/null || { \
 		echo "Falta LaTeX. En Ubuntu: sudo apt install latexmk texlive-luatex texlive-latex-extra texlive-lang-spanish texlive-bibtex-extra biber texlive-pictures fonts-inter"; exit 1; }
@@ -90,8 +90,8 @@ doc: _venv
 	$(PY) documento/generar_figuras.py
 	$(PY) documento/verificar_cifras.py
 	cd documento && latexmk
-	cp documento/build/main.pdf documento/documento-entregafinal.pdf
-	@echo "Listo: documento/documento-entregafinal.pdf"
+	cp documento/build/main.pdf entregables/documento-entregafinal.pdf
+	@echo "Listo: entregables/documento-entregafinal.pdf"
 
 # --- Comprobaciones previas (no se listan en help) ----------------------------
 
