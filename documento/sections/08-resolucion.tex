@@ -77,8 +77,8 @@ que sirve la API, como buscar juegos, abrir la ficha de uno o consultar el panor
 calificaciones ni los comentarios de la gente. Cada juego que menciona tiene que salir de esas
 herramientas, y la respuesta se valida contra ellas antes de mostrarse. Como el resto del sitio,
 no le dice a nadie qué comprar: a «¿cuál me compro?» contesta que elegir es de la persona y ofrece
-comparar. Las preguntas que deben contestarse siempre igual, como «¿por qué tiene ese riesgo?», un
-juego fuera del catálogo o cualquier tema ajeno a los juegos, van por reglas aunque haya modelo. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
+comparar. Las preguntas que deben contestarse siempre igual, como «¿por qué tiene ese riesgo?», van
+por reglas aunque haya modelo; ante la duda, van al modelo con el historial. Una etiqueta junto al chat dice quién escribió la última respuesta: «Con IA» si fue el
 modelo de lenguaje y «Sin IA» si fueron las reglas (\texttt{frontend/src/app/chat/nia.ts};
 figura~\ref{fig:nia}). Si la
 pregunta trae algo que parece un correo o un teléfono, se borra antes de anotarla:
@@ -95,12 +95,13 @@ pasó \cifraPreguntasNiaAprobadas{} de las \cifraPreguntasNia{} preguntas de reg
 de las \cifraPreguntasTrampa{} preguntas trampa y legítimas del \cifraFechaCorridaTrampas{}, sobre
 \texttt{\cifraCommitTrampas}, anterior a los arreglos de lenguaje de Nia, quedaron
 \cifraTrampasPorRevisar{} casos por revisar\footnote{El detalle está en
-\texttt{docs/evidencia/nia-pruebas.md}.}; no se repitió sobre el tag de entrega. La evidencia del camino con IA sobre el código de entrega
+\texttt{docs/evidencia/nia-pruebas.md}.}; no se repitió sobre el tag de entrega. La evidencia del camino con IA
 es \texttt{verificar\_nia.py --openai}, que manda el recorrido de preguntas al modelo de lenguaje de
-OpenAI: corrió el \cifraFechaCorridaNiaIA{} sobre \mbox{\texttt{codigo-v7}} y terminó sin
-problemas\footnote{La salida completa está en
-\texttt{docs/evidencia/verificar-nia-openai-2026-10-02.txt}.}. El código de Nia es idéntico en
-\mbox{\texttt{\cifraTagCodigo}}, y el generador de este documento lo comprueba con \texttt{git diff}.
+OpenAI. Terminó sin problemas el \cifraFechaCorridaNiaIA{} sobre \mbox{\texttt{codigo-v7}}, cuyo código de
+Nia es idéntico en \mbox{\texttt{\cifraTagCodigo}}, y el \cifraFechaCorridaNiaProduccion{} sobre los arreglos
+posteriores que corren en producción (\texttt{\cifraCommitNiaProduccion})\footnote{Las salidas están en
+\texttt{docs/evidencia/verificar-nia-openai-2026-10-02.txt} y \texttt{…-2026-10-03.txt}; el generador
+de este documento comprueba con \texttt{git diff} que el código de Nia no cambió.}.
 
 \subsection{Cómo responde las preguntas del proyecto}\label{sec:resolucion-pregunta}
 

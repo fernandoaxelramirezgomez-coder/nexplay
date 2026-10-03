@@ -741,6 +741,10 @@ GRUPOS_DE_ENDPOINTS = {
 # La prueba con IA (verificar_nia.py --openai) corrió sobre codigo-v7. El documento dice que el código de Nia es
 # idéntico en el tag de entrega: todo lo que puede cambiar lo que Nia contesta o cómo se etiqueta.
 TAG_PRUEBA_NIA_IA = "codigo-v7"
+CORRIDA_NIA_IA_TAG = EVIDENCIA / "verificar-nia-openai-2026-10-02.txt"
+# Producción corre los arreglos de Nia posteriores al tag; la misma prueba con IA corrió sobre este commit.
+COMMIT_NIA_PRODUCCION = "334fc71"
+CORRIDA_NIA_IA_PRODUCCION = EVIDENCIA / "verificar-nia-openai-2026-10-03.txt"
 RUTAS_DE_NIA = ("backend/api/nia/", "backend/api/main.py", "backend/api/schemas.py", "backend/api/config.py",
                 "backend/api/catalogo.py", "backend/api/panorama.py", "backend/api/scoring.py", "backend/api/valoraciones.py",
                 "backend/analisis/motivos.py", "frontend/src/app/chat/", ":(exclude)frontend/src/app/chat/*.spec.ts",
@@ -774,12 +778,16 @@ def cifras_de_nia(cifras: Cifras) -> None:
     tag = tag_de_codigo()
     if subprocess.run(["git", "diff", "--quiet", TAG_PRUEBA_NIA_IA, tag, "--", *RUTAS_DE_NIA], cwd=RAIZ).returncode != 0:
         raise ValueError(f"el código de Nia cambió entre {TAG_PRUEBA_NIA_IA} y {tag}: la prueba con IA ya no lo cubre")
-    # La prueba local del camino con IA: la fecha sale del nombre de su salida, que tiene que terminar limpia.
-    corrida = max(EVIDENCIA.glob("verificar-nia-openai-*.txt"))
-    if not corrida.read_text(encoding="utf-8").rstrip().endswith("sin problemas: 6 juegos × 3 preguntas"):
-        raise ValueError(f"{corrida.name} no termina sin problemas")
-    fecha = datetime.strptime(corrida.stem.removeprefix("verificar-nia-openai-"), "%Y-%m-%d")
-    cifras.agregar("FechaCorridaNiaIA", fecha_larga(fecha), f"docs/evidencia/{corrida.name}: verificar_nia.py --openai")
+    # Las pruebas locales del camino con IA, la del tag y la del Nia de producción: la fecha sale del nombre de cada
+    # salida, que tiene que terminar limpia.
+    for macro, corrida in (("FechaCorridaNiaIA", CORRIDA_NIA_IA_TAG), ("FechaCorridaNiaProduccion", CORRIDA_NIA_IA_PRODUCCION)):
+        if not corrida.read_text(encoding="utf-8").rstrip().endswith("sin problemas: 6 juegos × 3 preguntas"):
+            raise ValueError(f"{corrida.name} no termina sin problemas")
+        fecha = datetime.strptime(corrida.stem.removeprefix("verificar-nia-openai-"), "%Y-%m-%d")
+        cifras.agregar(macro, fecha_larga(fecha), f"docs/evidencia/{corrida.name}: verificar_nia.py --openai")
+    if subprocess.run(["git", "diff", "--quiet", COMMIT_NIA_PRODUCCION, "HEAD", "--", *RUTAS_DE_NIA], cwd=RAIZ).returncode != 0:
+        raise ValueError(f"el código de Nia cambió después de {COMMIT_NIA_PRODUCCION}: la prueba con IA ya no lo cubre")
+    cifras.agregar("CommitNiaProduccion", COMMIT_NIA_PRODUCCION, "git: el Nia de producción que probó verificar_nia.py --openai")
 
 
 def cifras_de_endpoints(cifras: Cifras) -> None:
