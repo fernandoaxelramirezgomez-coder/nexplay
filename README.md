@@ -230,6 +230,7 @@ ejemplos, lo explica [backend/api/README.md](backend/api/README.md).
 | Método y ruta | Qué hace |
 |---|---|
 | `GET /catalogo?q=` | Busca juegos por nombre; sin `q`, el catálogo completo con la banda de cada uno. |
+| `GET /estado` | El sistema de un vistazo: si Nia usa OpenAI, el release de datos, cuántos juegos y con qué modelo de riesgo. Sin la clave. |
 | `GET /panorama` | Cuántas reseñas hay detrás del catálogo, de cuándo son y cuántas traen la señal. |
 | `POST /perfil` | Recibe el formulario de alta y devuelve el perfil derivado. |
 | `POST /prediccion` | Recibe perfil y `appid`; devuelve riesgo, nivel y los factores que más aportan. |

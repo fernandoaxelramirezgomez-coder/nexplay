@@ -491,6 +491,21 @@ class FichaModelo(BaseModel):
     resenas_entrenamiento: Optional[int] = None
 
 
+class EstadoSistema(BaseModel):
+    """GET /estado: lo que la vista de Administración muestra del sistema, de un vistazo. Solo
+    booleanos, versiones y conteos: la clave de OpenAI nunca sale de aquí, solo si hay una."""
+
+    nia_con_openai: bool = Field(..., description="Si Nia puede usar un modelo de lenguaje; sin clave, responde por reglas")
+    modelo_nia: Optional[str] = Field(None, description="El modelo de OpenAI que usa Nia; None en modo demostración")
+    datos_release: Optional[str] = Field(
+        None, description="Release de datos del catálogo servido, p. ej. data-v3; None si la base no trae su marca"
+    )
+    juegos_catalogo: int = Field(..., description="Cuántos juegos sirve el catálogo")
+    modelo_version: str = Field(..., description="Versión del modelo de riesgo servido")
+    modelo_datos: Optional[str] = Field(None, description="Release con que se entrenó el modelo de riesgo, p. ej. data-v1")
+    modelo_juegos_entrenamiento: Optional[int] = Field(None, description="Con cuántos juegos se entrenó")
+
+
 class CalidadMuestra(BaseModel):
     """Qué tan buena es la muestra de reseñas, en proporciones sobre el total descargado."""
 

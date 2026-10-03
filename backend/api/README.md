@@ -106,6 +106,27 @@ modelo extrapola en los gratis (en el entrenamiento había solo 2) lo dice `avis
 `pc`, aclarando que no existe fuente de entrenamiento propia para PlayStation/Xbox/
 Nintendo (el lado del juego transfiere, pero la señal viene de reseñas de Steam).
 
+### `GET /estado`
+
+El sistema de un vistazo, para la vista de Administración (`/admin`):
+
+```json
+{
+  "nia_con_openai": true,
+  "modelo_nia": "gpt-4.1-mini",
+  "datos_release": "data-v3",
+  "juegos_catalogo": 123,
+  "modelo_version": "logreg-juego-2026-10-01",
+  "modelo_datos": "data-v1",
+  "modelo_juegos_entrenamiento": 83
+}
+```
+
+Solo booleanos, versiones y conteos, y sin consultas a la base: todo está en memoria, y el release se lee una
+vez al arrancar de la marca que deja `preparar_entorno.py` (`datos/nexplay.db.origen.json`; sin ella,
+`datos_release` es `null`). De OpenAI solo dice si hay clave y qué modelo usa Nia (el valor de
+`NEXPLAY_MODELO_NIA`): la clave nunca sale ni se escribe en los logs. Como es barato, también sirve para saber si Render ya despertó.
+
 ### `GET /panorama`
 
 Cuántas reseñas hay detrás del catálogo, de cuándo son y cuántas traen la señal, más los motivos agregados

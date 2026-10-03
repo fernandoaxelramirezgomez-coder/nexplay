@@ -8,10 +8,11 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import catalogo, limites, nia, panorama, scoring, valoraciones
+from . import catalogo, estado, limites, nia, panorama, scoring, valoraciones
 from .config import configuracion
 from .schemas import (
     Comentario,
+    EstadoSistema,
     ExplicacionJuego,
     RespuestaNia,
     FormularioAlta,
@@ -109,6 +110,13 @@ def predecir_riesgo(solicitud: SolicitudPrediccion) -> PrediccionRiesgo:
     if catalogo.obtener(solicitud.appid) is None:
         raise HTTPException(status_code=404, detail="appid no encontrado en el catálogo")
     return scoring.predecir(solicitud.perfil, solicitud.appid)
+
+
+@app.get("/estado", response_model=EstadoSistema)
+def ver_estado() -> EstadoSistema:
+    """El sistema de un vistazo, para la vista de Administración: sin consultas a la base, así
+    que en Render también dice, rápido, si el servicio ya despertó."""
+    return estado.estado()
 
 
 @app.get("/panorama", response_model=PanoramaCatalogo)
