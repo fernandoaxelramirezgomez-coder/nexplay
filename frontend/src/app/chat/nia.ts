@@ -407,6 +407,8 @@ interface Extra {
       font-size: 17px;
       line-height: 1.5;
       overflow-wrap: anywhere;
+      /* La explicación completa del juego va una idea por línea. */
+      white-space: pre-line;
     }
     .invitar {
       display: inline-flex;

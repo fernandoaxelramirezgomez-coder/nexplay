@@ -278,7 +278,7 @@ MAXIMO_JUEGOS_DE_UN_MENSAJE = 8
 #: «sí» (api/nia/reglas.py, _cumplir): una pregunta de cierre que no sea una de estas no se
 #: puede cumplir, y calidad/verificar_nia.py lo revisa.
 IntencionOferta = Literal[
-    "riesgo", "resenas", "ficha", "resenas_de_varios", "ordenar", "buscar", "generos", "como_se_calcula",
+    "presentar", "riesgo", "resenas", "ficha", "resenas_de_varios", "ordenar", "buscar", "generos", "como_se_calcula",
     "de_donde_salen", "crear_perfil", "elegir_juego", "resumen", "aclarar",
 ]
 

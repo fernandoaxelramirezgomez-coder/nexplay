@@ -1180,13 +1180,20 @@ def _sobre_el_precio(pregunta: str, datos: dict, juego: JuegoCatalogo) -> str:
 
 def _sobre_las_quejas(datos: dict) -> str:
     """De qué se queja la gente, en conteos: con 5 reseñas, «100%» suena más firme de lo que es."""
+    apertura, cuerpo = _quejas_en_frase(datos)
+    return f"{apertura} 🔍 {cuerpo}"
+
+
+def _quejas_en_frase(datos: dict) -> tuple[str, str]:
+    """La apertura («Sobre todo, de bugs») y el cuerpo con los conteos: la explicación completa
+    del juego usa el cuerpo como conclusión."""
     nombre, n = datos["nombre"], datos["n_casos"]
     conteos = nia.quejas_en_conteos(datos)
     if not conteos:
         if n == 0:
-            return f"Nada todavía 🔍 {nombre} no tiene reseñas negativas tempranas en los datos."
+            return "Nada todavía", f"{nombre} no tiene reseñas negativas tempranas en los datos."
         cuantas = "una sola reseña negativa temprana" if n == 1 else f"solo {n} reseñas negativas tempranas"
-        return f"Muy poco 🔍 De {nombre} hay {cuantas}: no alcanza para saber de qué se queja la gente."
+        return "Muy poco", f"De {nombre} hay {cuantas}: no alcanza para saber de qué se queja la gente."
     total = datos["clasificadas"]
     principal, primero = conteos[0]
     empatados = [m for m, c in conteos if c == primero]
@@ -1204,7 +1211,7 @@ def _sobre_las_quejas(datos: dict) -> str:
                   f" {'habla' if primero == 1 else 'hablan'} de {principal}"
                   + (f", {_lista(otros)}" if otros else "") + ".")
     cautela = " Son pocas, tómalo con cautela." if total < 10 else ""
-    return f"{apertura} 🔍 {cuerpo}{cautela}"
+    return apertura, f"{cuerpo}{cautela}"
 
 
 def _porque_del_riesgo(datos: dict, cuantos: int) -> str:
@@ -1342,7 +1349,7 @@ _CIERRES = (
      r"|por donde empezamos(?:: un juego o el catalogo)?|seguimos(?: con alguno)?|que quieres saber"
      r"|te ayudo con algun juego del catalogo|por cual empiezo|que se te antoja|por cual empezamos", "aclarar"),
 )
-_DE_UN_SOLO_JUEGO = ("riesgo", "resenas", "ficha")
+_DE_UN_SOLO_JUEGO = ("presentar", "riesgo", "resenas", "ficha")
 _CRITERIOS_DICHOS = {"precio": "precio", "critica": "nota", "nota": "nota", "riesgo": "riesgo"}
 
 
@@ -1455,8 +1462,8 @@ def _seguimiento(pregunta: str, datos: dict | None, appid: int | None, mensajes:
     if es_afirmacion(pregunta):
         if oferta is None:
             # Un sí sin oferta guardada responde al saludo: en la ficha, «¿Te explico por qué
-            # tiene ese riesgo?»; en el catálogo, se pregunta qué busca.
-            oferta = _oferta("riesgo", [appid]) if appid is not None else _oferta("aclarar")
+            # tiene ese riesgo?», que es la explicación completa; en el catálogo, se pregunta qué busca.
+            oferta = _oferta("presentar", [appid]) if appid is not None else _oferta("aclarar")
         return _cumplir(oferta, datos, appid, mensajes, sugerencias)
     if oferta and oferta["intencion"] == "ordenar" and (criterio := _criterio_dicho(pregunta)):
         return _ordenar(oferta["juegos"], criterio)
@@ -1470,6 +1477,8 @@ def _cumplir(oferta: dict, datos: dict | None, appid: int | None, mensajes: list
     juego = juegos[0] if juegos else appid
     if intencion in _DE_UN_SOLO_JUEGO and juego is None:
         return _pedir_juego()
+    if intencion == "presentar":
+        return _presentacion_del_juego(catalogo.obtener(juego))
     if intencion == "riesgo":
         return _del_juego_ofrecido(juego, "¿Por qué tiene ese riesgo?", appid, mensajes)
     if intencion == "resenas":
@@ -1502,6 +1511,99 @@ def _cumplir(oferta: dict, datos: dict | None, appid: int | None, mensajes: list
     if intencion == "resumen":
         return _resumen("resume", mensajes) or _aclarar(datos)
     return _aclarar(datos)
+
+
+# La primera opción de la ficha («Sí, explícamelo» al saludo): el juego completo, una idea por
+# línea. De qué trata, lo que baja y lo que sube su riesgo con la pista de cada cosa, los avisos
+# y, como conclusión, las reseñas. Es la única respuesta que pasa de 60 palabras y 3 emojis
+# (MAXIMO_PALABRAS_PRESENTACION y MAXIMO_EMOJIS_PRESENTACION en agente.py).
+_TOPE_DESCRIPCION = 26
+_ARRANQUE_EN_MINUSCULA = ("Las ", "La ", "Los ", "El ", "De ", "Su ", "Sus ")
+_OJO = re.compile(r"^ojo[:,]?\s*", re.IGNORECASE)
+_PALABRAS_DE_ENLACE = frozenset("y e o u el la los las un una de del al a en con por para que su sus".split())
+
+
+# Lo que Nia no dice nunca, aunque lo diga Steam: «la banda de Van der Linde» saldría como «el
+# riesgo de Van der Linde», y «un futuro por el que vale la pena luchar» suena a recomendación.
+_NO_SE_CITA = re.compile(r"banda|vale la pena|abandono|recomiend|c[oó]mpra|insatisfacci", re.IGNORECASE)
+
+
+def _oraciones_de_steam(descripcion: str | None) -> list[str]:
+    # Steam a veces pega las oraciones: «¡Enhorabuena!Su nombre…».
+    return [o.strip() for o in re.split(r"(?<=[.!?])\s*(?=[¡¿A-ZÁÉÍÓÚÑ])", (descripcion or "").strip()) if o.strip()]
+
+
+def _sirve_para_contar(oracion: str) -> bool:
+    """Una oración que dice de qué trata: no un eslogan en mayúsculas, ni dos palabras, ni algo
+    que Nia no puede decir."""
+    letras = [c for c in oracion if c.isalpha()]
+    gritada = sum(c.isupper() for c in letras) > 0.5 * max(1, len(letras))
+    return len(oracion.split()) >= 6 and not gritada and not _NO_SE_CITA.search(oracion)
+
+
+def _de_que_trata(juego: JuegoCatalogo, tope: int = _TOPE_DESCRIPCION) -> str:
+    """La primera oración de la descripción de Steam; si es larga, hasta su última coma antes
+    del tope. Sin descripción en español, sus géneros."""
+    oracion = next((o for o in _oraciones_de_steam(juego.descripcion) if _sirve_para_contar(o)), None)
+    if oracion is None:
+        generos = _lista(juego.generos) if juego.generos else "sin géneros registrados"
+        return f"🎮 De qué trata: Steam lo clasifica como {generos}."
+    palabras = oracion.split()
+    if len(palabras) > tope:
+        recorte = palabras[:tope]
+        # Sin coma que sirva, no se deja colgando un «y el…» ni un «de la…».
+        while len(recorte) > 1 and _norm(recorte[-1]) in _PALABRAS_DE_ENLACE:
+            recorte.pop()
+        recorte = " ".join(recorte)
+        hasta_la_coma = recorte[: recorte.rfind(",")] if recorte.count(",") else ""
+        oracion = (hasta_la_coma if len(hasta_la_coma.split()) >= tope // 2 else recorte).rstrip(",;:.… ") + "…"
+    elif not oracion.endswith((".", "!", "?", "…")):
+        oracion += "."
+    return f"🎮 De qué trata (según Steam): {oracion}"
+
+
+def _presentacion_del_juego(juego: JuegoCatalogo) -> dict:
+    datos = nia.contexto(juego.appid)
+    banda = datos["banda"]
+    # La pista de cada factor, en el orden de la ficha: «otra pista confiable» solo después de
+    # una confiable. Los neutrales no mueven nada y el precio que falta lo dice su aviso.
+    lados, hubo_confiable = {"baja": [], "sube": []}, False
+    for factor in datos["factores"]:
+        if factor["efecto"] is None or factor["imputado"]:
+            continue
+        if factor["debil"]:
+            pista = nia.PISTA_DEBIL
+        else:
+            pista = "otra pista confiable" if hubo_confiable else nia.PISTA_SOLIDA
+            hubo_confiable = True
+        lados[factor["efecto"]].append(f"{factor['idea']}, {pista}")
+    a_favor = ("🌟 A favor, lo que baja su riesgo: " + "; ".join(lados["baja"]) + "."
+               if lados["baja"] else "🌟 A favor: ninguno de sus datos baja su riesgo.")
+    en_contra = ("🚧 En contra, lo que lo sube: " + "; ".join(lados["sube"]) + "."
+                 if lados["sube"] else "🚧 En contra: ninguno de sus datos lo sube.")
+    resto = [a_favor, en_contra]
+    if datos["avisos_hablados"]:
+        resto.append("⚠️ Ojo: " + " ".join(f"{_mayuscula(_OJO.sub('', aviso))}." for aviso in datos["avisos_hablados"]))
+    _, quejas = _quejas_en_frase(datos)
+    # El nombre ya está arriba: «las 5 reseñas negativas tempranas que dicen por qué…».
+    quejas = quejas.replace(f" de {juego.nombre} que dicen", " que dicen")
+    if quejas.startswith(_ARRANQUE_EN_MINUSCULA):
+        quejas = quejas[0].lower() + quejas[1:]
+    resto.append(f"💬 En conclusión, sus reseñas: {quejas}")
+    genero = juego.generos[0] if juego.generos else None
+    if banda != "bajo" and genero:
+        resto.append(f"¿Te muestro otros juegos de {genero} con riesgo bajo?")
+        oferta = _oferta("buscar", pregunta=f"Juegos de {genero} con riesgo bajo")
+    else:
+        resto.append("¿Te cuento cómo se calcula el riesgo?")
+        oferta = _oferta("como_se_calcula")
+    # Si no cabe, se acorta lo que dice Steam, nunca los datos.
+    encabezado = f"{juego.nombre} tiene riesgo {banda} {nia.EMOJI_DEL_NIVEL[banda]}"
+    for tope in range(_TOPE_DESCRIPCION, 7, -2):
+        texto = "\n".join([encabezado, _de_que_trata(juego, tope), *resto])
+        if nia.palabras(texto) <= nia.MAXIMO_PALABRAS_PRESENTACION:
+            break
+    return _resultado(texto, oferta=oferta, presentacion=True)
 
 
 def _del_juego_ofrecido(juego: int, pregunta: str, appid: int | None, mensajes: list[MensajeChat]) -> dict:

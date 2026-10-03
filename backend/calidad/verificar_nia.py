@@ -376,14 +376,17 @@ def _revisar_lo_que_recibe_openai() -> list[str]:
     return problemas
 
 
-def _voz(texto: str, donde: str) -> list[str]:
-    """Lo que toda respuesta de Nia cumple, venga del modelo o de las reglas."""
+def _voz(texto: str, donde: str, presentacion: bool = False) -> list[str]:
+    """Lo que toda respuesta de Nia cumple, venga del modelo o de las reglas. La explicación
+    completa de la primera opción de la ficha tiene sus propios topes."""
     problemas = []
-    if nia.palabras(texto) > nia.MAXIMO_PALABRAS:
-        problemas.append(f"{donde}: {nia.palabras(texto)} palabras (máximo {nia.MAXIMO_PALABRAS})")
+    maximo_palabras = nia.MAXIMO_PALABRAS_PRESENTACION if presentacion else nia.MAXIMO_PALABRAS
+    maximo_emojis = nia.MAXIMO_EMOJIS_PRESENTACION if presentacion else nia.MAXIMO_EMOJIS
+    if nia.palabras(texto) > maximo_palabras:
+        problemas.append(f"{donde}: {nia.palabras(texto)} palabras (máximo {maximo_palabras})")
     emojis = len(nia.EMOJI.findall(texto))
-    if not 1 <= emojis <= nia.MAXIMO_EMOJIS:
-        problemas.append(f"{donde}: {emojis} emojis (de 1 a {nia.MAXIMO_EMOJIS})")
+    if not 1 <= emojis <= maximo_emojis:
+        problemas.append(f"{donde}: {emojis} emojis (de 1 a {maximo_emojis})")
     if not nia.EMOJI.sub("", texto).rstrip().endswith("?"):
         problemas.append(f"{donde}: no cierra con una pregunta")
     bajo = texto.lower()
@@ -1276,6 +1279,7 @@ def _cumple(oferta: dict, salida: dict, nombres: dict[int, str]) -> str | None:
         "elegir_juego": salida["pide_juego"],
         "resumen": texto.startswith(("Va, en corto", "Aún no te he contado", "Más corto")),
         "aclarar": bool(salida["oferta"]) and salida["oferta"]["intencion"] != "aclarar",
+        "presentar": "\n🎮 De qué trata" in texto and "\n💬 En conclusión, sus reseñas:" in texto,
     }[intencion]
     return None if esperado else f"«sí» a {intencion} no lo cumple: {texto[:90]}…"
 
@@ -1313,15 +1317,25 @@ def _revisar_ofertas() -> list[str]:
     nombres = {j.appid: j.nombre for j in catalogo.buscar()}
     de_rol = [SugerenciaNia(appid=j.appid, razones=["coincide en Rol"]) for j in catalogo.buscar(genero="Rol")[:3]]
 
-    def conversar(appid: int | None, preguntas: tuple[str, ...], sugerencias: list[SugerenciaNia]) -> None:
+    def pulida(salida: dict) -> dict:
+        """Como la entrega la API: la explicación completa conserva los emojis de sus secciones."""
+        tope = nia.MAXIMO_EMOJIS_PRESENTACION if salida.get("presentacion") else nia.MAXIMO_EMOJIS
+        return {**salida, "texto": nia.pulir(salida["texto"], tope)}
+
+    def conversar(appid: int | None, preguntas: tuple[str, ...], sugerencias: list[SugerenciaNia],
+                  inicio: tuple[MensajeChat, ...] = ()) -> None:
+        """Las preguntas y, al final, un «sí» a lo último que ofreció Nia. Con `inicio` y sin
+        preguntas, el «sí» va al saludo de la ficha."""
         nonlocal revisadas
         datos = nia.contexto(appid) if appid else None
-        hilo: list[MensajeChat] = []
+        hilo: list[MensajeChat] = list(inicio)
         for pregunta in preguntas:
             hilo.append(MensajeChat(rol="usuario", contenido=pregunta))
-            salida = nia_reglas.responder(datos, appid, hilo, sugerencias)
-            hilo.append(_de_nia({**salida, "texto": nia.pulir(salida["texto"])}))
-        donde = f"{nombres.get(appid, 'catálogo')} · {' → '.join(preguntas)}"
+            salida = pulida(nia_reglas.responder(datos, appid, hilo, sugerencias))
+            hilo.append(_de_nia(salida))
+        donde = f"{nombres.get(appid, 'catálogo')} · {' → '.join(preguntas) or 'saludo de la ficha'}"
+        if not preguntas:
+            salida = {"texto": hilo[-1].contenido, "oferta": hilo[-1].oferta.model_dump()}
         oferta = salida["oferta"]
         if oferta is None:
             problemas.append(f"{donde}: el cierre no es una oferta que se pueda cumplir: {salida['texto'][-70:]}")
@@ -1330,8 +1344,7 @@ def _revisar_ofertas() -> list[str]:
         vistas.add(oferta["intencion"])
         for si in ("sí", "si te me lo acabas de preguntar"):
             mensajes = [*hilo, MensajeChat(rol="usuario", contenido=si)]
-            cumplida = nia_reglas.responder(datos, appid, mensajes, sugerencias)
-            cumplida["texto"] = nia.pulir(cumplida["texto"])
+            cumplida = pulida(nia_reglas.responder(datos, appid, mensajes, sugerencias))
             revisadas += 1
             if "no lo sé" in cumplida["texto"]:
                 problemas.append(f"{donde} → {si}: «Eso no lo sé» ante su propia oferta ({oferta['intencion']})")
@@ -1341,11 +1354,12 @@ def _revisar_ofertas() -> list[str]:
                 problemas.append(f"{donde} → {si}: cierra sin una oferta que se pueda cumplir: {cumplida['texto'][-70:]}")
             # Pedir el juego abre el buscador en el chat: esa es su pregunta.
             if not cumplida["pide_juego"]:
-                problemas.extend(_voz(cumplida["texto"], f"{donde} → {si}"))
+                problemas.extend(_voz(cumplida["texto"], f"{donde} → {si}", cumplida.get("presentacion", False)))
             if not nia._por_reglas_aunque_haya_modelo(datos, appid, mensajes, sugerencias, si):
                 problemas.append(f"{donde} → {si}: con modelo iría al modelo, que no sabe qué ofreció")
 
     for juego in catalogo.buscar():
+        conversar(juego.appid, (), [], (_saludo_de_la_ficha(juego),))
         for pregunta in _OFERTAS_EN_LA_FICHA:
             conversar(juego.appid, (pregunta,), [])
         conversar(None, (f"¿Qué tal {juego.nombre}?",), [])
@@ -1527,7 +1541,7 @@ def _saludo_de_la_ficha(juego) -> MensajeChat:
     """El saludo como lo manda el chat de la ficha (mensajeDeSaludo en textos-nia.ts)."""
     nivel = juego.banda_riesgo.value
     return MensajeChat(rol="nia", contenido=f"¿Te explico por qué {juego.nombre} tiene riesgo {nivel}? {nia.EMOJI_DEL_NIVEL[nivel]}",
-                       oferta={"intencion": "riesgo", "juegos": [juego.appid]})
+                       oferta={"intencion": "presentar", "juegos": [juego.appid]})
 
 
 def _revisar_saludo_en_el_hilo() -> list[str]:
@@ -1660,6 +1674,68 @@ def _revisar_enrutador() -> list[str]:
     return problemas
 
 
+_DICTAMEN_EN_LA_PRESENTACION = re.compile(r"adecuad|te conviene|es para ti|vale la pena|te lo recomiendo", re.IGNORECASE)
+_SECCIONES = ("🎮 De qué trata", "🌟 A favor", "🚧 En contra", "💬 En conclusión, sus reseñas:")
+
+
+def _revisar_presentacion() -> list[str]:
+    """La primera opción de la ficha («Sí, explícamelo» al saludo) cuenta el juego completo, una
+    idea por línea: de qué trata, lo que baja y lo que sube su riesgo con la pista de la ficha,
+    los avisos y, como conclusión, las reseñas. En los 123 juegos, por reglas, y por el camino
+    completo para ver que no se pierden los emojis. «¿Por qué tiene ese riesgo?» escrito sigue
+    con la explicación corta."""
+    problemas = []
+    usuario = lambda texto: MensajeChat(rol="usuario", contenido=texto)
+    nombres = {j.appid: j.nombre for j in catalogo.buscar()}
+    for juego in catalogo.buscar():
+        datos = nia.contexto(juego.appid)
+        hilo = [_saludo_de_la_ficha(juego), usuario("Sí, explícamelo")]
+        salida = nia_reglas.responder(datos, juego.appid, hilo, [])
+        texto = nia.pulir(salida["texto"], nia.MAXIMO_EMOJIS_PRESENTACION)
+        donde = f"{juego.nombre}, «Sí, explícamelo» al saludo"
+        lineas = texto.split("\n")
+        posiciones = [next((i for i, l in enumerate(lineas) if l.startswith(s)), -1) for s in _SECCIONES]
+        if -1 in posiciones or posiciones != sorted(posiciones) or posiciones[-1] != len(lineas) - 2:
+            problemas.append(f"{donde}: faltan secciones o no van en orden, con las reseñas al final: {lineas}")
+            continue
+        if not lineas[0].startswith(f"{juego.nombre} tiene riesgo {datos['banda']}"):
+            problemas.append(f"{donde}: no abre con su riesgo: {lineas[0]}")
+        a_favor, en_contra = lineas[posiciones[1]], lineas[posiciones[2]]
+        for factor in datos["factores"]:
+            idea = factor["idea"]
+            lado = a_favor if factor["efecto"] == "baja" else en_contra if factor["efecto"] == "sube" else None
+            if factor["imputado"] or factor["efecto"] is None:
+                if idea in a_favor or idea in en_contra:
+                    problemas.append(f"{donde}: «{idea}» no mueve su riesgo o es un precio que falta, y va como razón")
+            elif idea not in lado:
+                problemas.append(f"{donde}: «{idea}» no va del lado de su efecto ({factor['efecto']})")
+            elif f"{idea}, {nia.PISTA_DEBIL}" in lado and not factor["debil"]:
+                problemas.append(f"{donde}: «{idea}» dice pista débil y en la ficha es sólida")
+        for aviso in datos["avisos_hablados"]:
+            if nia_reglas._OJO.sub("", aviso)[1:] not in texto:
+                problemas.append(f"{donde}: le falta el aviso «{aviso}»")
+        if _DICTAMEN_EN_LA_PRESENTACION.search(texto):
+            problemas.append(f"{donde}: da un dictamen")
+        if salida["oferta"] is None or _cumple(
+                {"intencion": "presentar", "juegos": [juego.appid]}, {**salida, "texto": texto}, nombres):
+            problemas.append(f"{donde}: no se cumple como presentación o no ofrece nada al cerrar")
+        problemas += _voz(texto, donde, presentacion=True)
+        if not nia._por_reglas_aunque_haya_modelo(datos, juego.appid, hilo, [], "Sí, explícamelo"):
+            problemas.append(f"{donde}: con modelo iría al modelo")
+        corta = nia.pulir(nia_reglas.responder(datos, juego.appid, [usuario("¿Por qué tiene ese riesgo?")], [])["texto"])
+        if "🎮 De qué trata" in corta or nia.palabras(corta) > nia.MAXIMO_PALABRAS:
+            problemas.append(f"{donde}: «¿Por qué tiene ese riesgo?» escrito ya no es la explicación corta")
+    # Por el camino completo: la API no le quita los emojis de las secciones.
+    juego = next(j for j in catalogo.buscar() if j.nombre == "A Short Hike")
+    salida = nia.responder(juego.appid, [_saludo_de_la_ficha(juego), usuario("Sí, explícamelo")], "verificador01")
+    if any(s not in salida["respuesta"] for s in _SECCIONES) or salida["modo"] == "openai":
+        problemas.append(f"por la API, la presentación pierde secciones o emojis: {salida['respuesta'][:120]}…")
+    if not problemas:
+        print(f"presentación: «Sí, explícamelo» al saludo cuenta el juego completo en los {len(nombres)} juegos,"
+              " con las reseñas como conclusión")
+    return problemas
+
+
 def _revisar_esquema_de_ofertas() -> list[str]:
     """La oferta y los juegos solo los lleva un mensaje de Nia, con intención de la lista y
     hasta 8 juegos: lo demás es un 422."""
@@ -1750,6 +1826,7 @@ def main() -> int:
     problemas += _revisar_saludo_en_el_hilo()
     problemas += _revisar_afirmaciones()
     problemas += _revisar_enrutador()
+    problemas += _revisar_presentacion()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()
     problemas += _revisar_herramientas()

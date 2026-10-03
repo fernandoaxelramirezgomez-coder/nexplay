@@ -184,6 +184,7 @@ export interface ReaccionComentario {
 /** POST /nia: el chat de la ficha. */
 /** Lo que Nia ofrece al cerrar; las reglas lo cumplen cuando la persona dice «sí». */
 export type IntencionOferta =
+  | 'presentar'
   | 'riesgo'
   | 'resenas'
   | 'ficha'

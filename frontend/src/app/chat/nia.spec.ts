@@ -163,7 +163,7 @@ describe('Nia: el saludo de la ficha es una oferta', () => {
     valores.set(null);
   });
 
-  it('en la ficha, el saludo viaja primero en el historial con su oferta: explicar el riesgo de ese juego', async () => {
+  it('en la ficha, el saludo viaja primero en el historial con su oferta: la explicación completa del juego', async () => {
     const { fixture, enviadas } = montar();
     await fixture.whenStable();
     fixture.componentInstance.preguntar('Si te me lo acabas de preguntar');
@@ -173,7 +173,7 @@ describe('Nia: el saludo de la ficha es una oferta', () => {
     expect(saludo).toEqual({
       rol: 'nia',
       contenido: saludoDeJuego('Portal 2', JUEGOS[1].banda_riesgo),
-      oferta: { intencion: 'riesgo', juegos: [2] },
+      oferta: { intencion: 'presentar', juegos: [2] },
     });
     expect(pregunta).toEqual({ rol: 'usuario', contenido: 'Si te me lo acabas de preguntar' });
   });
@@ -188,7 +188,7 @@ describe('Nia: el saludo de la ficha es una oferta', () => {
     await fixture.whenStable();
 
     expect(enviadas[0].mensajes).toEqual([
-      { rol: 'nia', contenido: saludoDeJuego('Portal 2', JUEGOS[1].banda_riesgo), oferta: { intencion: 'riesgo', juegos: [2] } },
+      { rol: 'nia', contenido: saludoDeJuego('Portal 2', JUEGOS[1].banda_riesgo), oferta: { intencion: 'presentar', juegos: [2] } },
       { rol: 'usuario', contenido: 'sí' },
     ]);
   });

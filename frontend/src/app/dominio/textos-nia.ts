@@ -44,13 +44,14 @@ export function saludoDeJuego(nombre: string, nivel: string): string {
   return `¿Te explico por qué ${nombre} tiene riesgo ${nivel}? ${EMOJI_DEL_NIVEL[nivel] ?? '🤔'}`;
 }
 
-/** El saludo de la ficha como mensaje del historial, con su oferta (explicar el riesgo de ese
- * juego), igual que las ofertas del backend: así «sí» o «sí, explícamelo» la cumplen. */
+/** El saludo de la ficha como mensaje del historial, con su oferta, igual que las ofertas del
+ * backend: «sí» o «Sí, explícamelo» la cumplen con la explicación completa del juego (de qué
+ * trata, lo que baja y lo que sube su riesgo y, como conclusión, sus reseñas). */
 export function mensajeDeSaludo(juego: Pick<JuegoCatalogo, 'appid' | 'nombre' | 'banda_riesgo'>): MensajeChat {
   return {
     rol: 'nia',
     contenido: saludoDeJuego(juego.nombre, juego.banda_riesgo),
-    oferta: { intencion: 'riesgo', juegos: [juego.appid] },
+    oferta: { intencion: 'presentar', juegos: [juego.appid] },
   };
 }
 

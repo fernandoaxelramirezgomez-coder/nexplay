@@ -399,6 +399,10 @@ Reglas que no puedes romper:
 # ⌛ o ⭐. Las flechas de texto (→), ™ y ® no son emojis y no cuentan.
 EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF]\ufe0f?")
 MAXIMO_EMOJIS = 3
+# La explicación completa de la primera opción de la ficha va por secciones, una por línea, y
+# cada una lleva su emoji: es la única respuesta que pasa de 60 palabras y 3 emojis.
+MAXIMO_PALABRAS_PRESENTACION = 130
+MAXIMO_EMOJIS_PRESENTACION = 6
 
 # "banda" es jerga del proyecto: la gente ve "riesgo". El prompt lo pide y aun así se
 # escapa ("su banda de arrepentimiento temprano es baja"), así que se corrige a la salida.
@@ -499,9 +503,9 @@ def palabras(texto: str) -> int:
     return len([p for p in EMOJI.sub(" ", texto).split() if p.strip("¡!¿?.,;:")])
 
 
-def pulir(texto: str) -> str:
+def pulir(texto: str, maximo_emojis: int = MAXIMO_EMOJIS) -> str:
     """Lo que el prompt pide y a veces no se cumple: sin "banda" ni "abandono" y con 3 emojis
-    como máximo."""
+    como máximo (6 en la explicación completa del juego)."""
     for patron, reemplazo in _BANDA:
         texto = patron.sub(reemplazo, texto)
     vistos = 0
@@ -509,7 +513,7 @@ def pulir(texto: str) -> str:
     def uno(m: re.Match) -> str:
         nonlocal vistos
         vistos += 1
-        return m.group(0) if vistos <= MAXIMO_EMOJIS else ""
+        return m.group(0) if vistos <= maximo_emojis else ""
 
     texto = EMOJI.sub(uno, texto)
     return re.sub(r"[ \t]{2,}", " ", texto).strip()
@@ -1362,7 +1366,9 @@ def _de_reglas(
     resultado = reglas.responder(datos, appid, mensajes, sugerencias, generos)
     return _con_constancia(
         {
-            "respuesta": pulir(resultado["texto"]),
+            "respuesta": pulir(
+                resultado["texto"], MAXIMO_EMOJIS_PRESENTACION if resultado.get("presentacion") else MAXIMO_EMOJIS
+            ),
             "modo": modo,
             "modelo": None,
             "aviso": aviso,
