@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant U as Usuario
+    participant W as Angular
+    participant A as API
+    participant S as scoring.py
+    U->>W: abre /juego/:appid
+    W->>A: GET /catalogo (una vez, al iniciar)
+    A-->>W: juegos con su banda de riesgo
+    W->>A: POST /prediccion {perfil, appid}
+    A->>S: predecir(perfil, appid)
+    S-->>A: riesgo, nivel y los factores que más aportan
+    A-->>W: PrediccionRiesgo
+    W->>A: GET /explicacion/{appid}
+    A-->>W: motivos de las reseñas con señal
+    W-->>U: banda, factores y motivos (nunca el score)

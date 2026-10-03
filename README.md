@@ -98,41 +98,24 @@ tempranas). Los detalles, en [notebooks/README.md](notebooks/README.md).
 
 ## 🏗️ Arquitectura
 
-```mermaid
-flowchart LR
-    steam["API pública de Steam<br/>appreviews · appdetails"] -->|ingesta, ya hecha| releases["Releases con tag fijo<br/>data-v1 · data-v2 · data-v3<br/>cada asset con su sha256"]
-    releases -->|make data| datos[("backend/datos/<br/>nexplay.db (data-v3)<br/>nexplay_data-v1.db")]
-    datos -->|make train| modelo["backend/modelo/<br/>nexplay.pkl"]
-    datos --> api["API FastAPI<br/>backend/api<br/>scoring · catálogo · Nia"]
-    modelo --> api
-    openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
-    api -->|HTTP/JSON| web["Angular<br/>frontend/"]
-    releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
-    tag["tag codigo-v8"] -->|git clone| nb
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagramas/01-arquitectura.svg">
+  <img alt="Arquitectura de NexPlay: la API pública de Steam alimenta los releases con tag fijo; de ahí salen backend/datos, el modelo, la API FastAPI (con OpenAI opcional para Nia) y el frontend en Angular; los notebooks clonan el tag codigo-v8 y leen los releases" src="docs/diagramas/01-arquitectura-claro.svg">
+</picture>
+
+<sub>Fuente: [docs/diagramas/01-arquitectura.mmd](docs/diagramas/01-arquitectura.mmd)</sub>
 
 En producción, Render construye la API con `backend/despliegue/Dockerfile`: baja los datos, entrena el modelo
 y, si alguna de las 123 bandas cambia, el build falla. Vercel publica el frontend.
 
 Esto es lo que pasa cuando abres la ficha de un juego:
 
-```mermaid
-sequenceDiagram
-    participant U as Usuario
-    participant W as Angular
-    participant A as API
-    participant S as scoring.py
-    U->>W: abre /juego/:appid
-    W->>A: GET /catalogo (una vez, al iniciar)
-    A-->>W: juegos con su banda de riesgo
-    W->>A: POST /prediccion {perfil, appid}
-    A->>S: predecir(perfil, appid)
-    S-->>A: riesgo, nivel y los factores que más aportan
-    A-->>W: PrediccionRiesgo
-    W->>A: GET /explicacion/{appid}
-    A-->>W: motivos de las reseñas con señal
-    W-->>U: banda, factores y motivos (nunca el score)
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagramas/02-ficha-de-un-juego.svg">
+  <img alt="Al abrir la ficha de un juego, Angular pide el catálogo, la predicción (la API llama a scoring.py) y la explicación, y muestra banda, factores y motivos, nunca el score" src="docs/diagramas/02-ficha-de-un-juego-claro.svg">
+</picture>
+
+<sub>Fuente: [docs/diagramas/02-ficha-de-un-juego.mmd](docs/diagramas/02-ficha-de-un-juego.mmd)</sub>
 
 ## 🧰 Requisitos previos
 

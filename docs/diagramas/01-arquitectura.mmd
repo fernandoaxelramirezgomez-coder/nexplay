@@ -1,0 +1,10 @@
+flowchart LR
+    steam["API pública de Steam<br/>appreviews · appdetails"] -->|ingesta, ya hecha| releases["Releases con tag fijo<br/>data-v1 · data-v2 · data-v3<br/>cada asset con su sha256"]
+    releases -->|make data| datos[("backend/datos/<br/>nexplay.db (data-v3)<br/>nexplay_data-v1.db")]
+    datos -->|make train| modelo["backend/modelo/<br/>nexplay.pkl"]
+    datos --> api["API FastAPI<br/>backend/api<br/>scoring · catálogo · Nia"]
+    modelo --> api
+    openai["OpenAI<br/>(opcional)"] -.->|chat de Nia| api
+    api -->|HTTP/JSON| web["Angular<br/>frontend/"]
+    releases -->|Parquet y SQLite| nb["Notebooks 00, 01 y 02<br/>(Colab)"]
+    tag["tag codigo-v8"] -->|git clone| nb
