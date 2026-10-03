@@ -11,8 +11,8 @@ import { FRICCION, ValoresPerfil, rangoDeComprasCorto, rangoDeHoras } from '../d
 // el perfil activo. v3 fue el formulario que arranca vacío: hasta v2 venía con respuestas
 // puestas, así que esos no se migraron, como tampoco el cambio de "tamaño de la
 // biblioteca" a "compras al año" de v2.
-const CLAVE = 'nexplay.perfil.v4';
-const CLAVE_V3 = 'nexplay.perfil.v3';
+export const CLAVE_PERFIL = 'nexplay.perfil.v4';
+export const CLAVE_PERFIL_V3 = 'nexplay.perfil.v3';
 
 /** El perfil neutro lo deriva la API: se manda a /perfil para no duplicar aquí
  * las heurísticas de segmento y disponibilidad. */
@@ -62,12 +62,12 @@ export function migrarV3(viejo: GuardadoV3): Guardado {
 
 function leerGuardado(): Guardado | null {
   try {
-    const crudo = localStorage.getItem(CLAVE);
+    const crudo = localStorage.getItem(CLAVE_PERFIL);
     if (crudo) {
       const guardado = JSON.parse(crudo) as Guardado;
       return valido(guardado) ? guardado : null;
     }
-    const viejo = localStorage.getItem(CLAVE_V3);
+    const viejo = localStorage.getItem(CLAVE_PERFIL_V3);
     if (!viejo) {
       return null;
     }
@@ -76,8 +76,8 @@ function leerGuardado(): Guardado | null {
       return null;
     }
     const migrado = migrarV3(v3);
-    localStorage.setItem(CLAVE, JSON.stringify(migrado));
-    localStorage.removeItem(CLAVE_V3);
+    localStorage.setItem(CLAVE_PERFIL, JSON.stringify(migrado));
+    localStorage.removeItem(CLAVE_PERFIL_V3);
     return migrado;
   } catch {
     // Modo privado, almacenamiento bloqueado o dato corrupto: se sigue sin perfil.
@@ -120,7 +120,7 @@ export class PerfilStore {
       titulo: resumenDeValores(valores, perfil),
     });
     try {
-      localStorage.setItem(CLAVE, JSON.stringify({ valores, perfil }));
+      localStorage.setItem(CLAVE_PERFIL, JSON.stringify({ valores, perfil }));
     } catch {
       // Sin almacenamiento, el perfil vive solo en esta pestaña.
     }
@@ -129,7 +129,7 @@ export class PerfilStore {
   borrar(): void {
     this.guardado.set(null);
     try {
-      localStorage.removeItem(CLAVE);
+      localStorage.removeItem(CLAVE_PERFIL);
     } catch {
       // Nada que limpiar si el almacenamiento no está disponible.
     }

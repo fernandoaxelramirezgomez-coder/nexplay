@@ -2,7 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import { NivelRiesgo } from '../api/contrato';
 
-const CLAVE = 'nexplay.historial.v1';
+export const CLAVE_HISTORIAL = 'nexplay.historial.v1';
 /** Tope de entradas guardadas: lo viejo se cae por el fondo. */
 export const MAXIMO_HISTORIAL = 100;
 
@@ -32,7 +32,7 @@ function esEntrada(valor: unknown): valor is EntradaHistorial {
 
 function leerGuardado(): EntradaHistorial[] {
   try {
-    const crudo = localStorage.getItem(CLAVE);
+    const crudo = localStorage.getItem(CLAVE_HISTORIAL);
     const lista: unknown = crudo ? JSON.parse(crudo) : [];
     return Array.isArray(lista) ? lista.filter(esEntrada).slice(0, MAXIMO_HISTORIAL) : [];
   } catch {
@@ -79,7 +79,7 @@ export class HistorialStore {
 
   private guardar(): void {
     try {
-      localStorage.setItem(CLAVE, JSON.stringify(this._entradas()));
+      localStorage.setItem(CLAVE_HISTORIAL, JSON.stringify(this._entradas()));
     } catch {
       // Sin almacenamiento el historial dura lo que dure la pestaña.
     }

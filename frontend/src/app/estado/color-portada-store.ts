@@ -2,11 +2,11 @@ import { Injectable, signal } from '@angular/core';
 
 import { colorDominante } from '../dominio/color-portada';
 
-const CLAVE = 'nexplay.color-portada.v1';
+export const CLAVE_COLOR_PORTADA = 'nexplay.color-portada.v1';
 
 function leerGuardados(): Map<number, string> {
   try {
-    const crudo = JSON.parse(localStorage.getItem(CLAVE) ?? '{}') as Record<string, string>;
+    const crudo = JSON.parse(localStorage.getItem(CLAVE_COLOR_PORTADA) ?? '{}') as Record<string, string>;
     return new Map(
       Object.entries(crudo)
         .filter(([, color]) => /^#[0-9a-f]{6}$/.test(color))
@@ -72,7 +72,7 @@ export class ColorPortadaStore {
       const guardados = Object.fromEntries(
         [...this.colores()].filter(([, valor]) => valor).map(([id, valor]) => [String(id), valor]),
       );
-      localStorage.setItem(CLAVE, JSON.stringify(guardados));
+      localStorage.setItem(CLAVE_COLOR_PORTADA, JSON.stringify(guardados));
     } catch {
       // Sin almacenamiento el color se vuelve a calcular en la próxima visita.
     }

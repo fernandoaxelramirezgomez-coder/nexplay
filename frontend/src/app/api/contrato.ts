@@ -299,6 +299,19 @@ export interface VotoNia {
   sugerencia?: string | null;
 }
 
+/** GET /estado: el sistema de un vistazo, para /admin. De OpenAI solo el booleano y el
+ * nombre del modelo: la clave nunca sale de la API. */
+export interface EstadoSistema {
+  nia_con_openai: boolean;
+  modelo_nia: string | null;
+  /** Release de datos del catálogo servido (data-v3); null si la base no trae su marca. */
+  datos_release: string | null;
+  juegos_catalogo: number;
+  modelo_version: string;
+  modelo_datos: string | null;
+  modelo_juegos_entrenamiento: number | null;
+}
+
 /** GET /nia/sugerencias: el buzón de /admin. Sin usuario ni pregunta: /admin no tiene contraseña. */
 export interface BuzonSugerencias {
   votos_a_favor: number;

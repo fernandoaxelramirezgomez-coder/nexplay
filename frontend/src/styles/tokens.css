@@ -38,6 +38,9 @@
   --c-perfil: #f472b6;
   --c-panorama: #a3e635;
   --c-neutro: #94a3d6;
+  /* Administración: el azul de estado (--canal-info), lejos de los colores del riesgo y de
+     los de las otras vistas. */
+  --c-admin: #60a5fa;
   --canal-inicio: 34 211 238;
   --canal-explorar: 45 212 191;
   --canal-comparar: 245 197 66;
@@ -45,6 +48,7 @@
   --canal-perfil: 244 114 182;
   --canal-panorama: 163 230 53;
   --canal-neutro: 148 163 214;
+  --canal-admin: 96 165 250;
   /* El azul de estado info, como canal: lo usa el bloque de opinión de la ficha. */
   --canal-info: 96 165 250;
   --t-inicio: var(--c-inicio);
@@ -54,6 +58,7 @@
   --t-perfil: var(--c-perfil);
   --t-panorama: var(--c-panorama);
   --t-neutro: var(--c-neutro);
+  --t-admin: var(--c-admin);
 
   /* La acción de la vista abierta. Sin vista (o en Historial y Cómo funciona), el cian del
      inicio; cada [data-vista] de más abajo la cambia. */
@@ -217,6 +222,8 @@
   --t-perfil: #be185d;
   --t-panorama: #497510;
   --t-neutro: #475585;
+  /* 6.70:1 sobre blanco y 5.96:1 sobre --superficie-2. */
+  --t-admin: #1d4ed8;
 
   --enlace: #0e738f;
   --foco: #0e738f;
@@ -300,6 +307,7 @@
 [data-vista='perfil'] { --accion: var(--c-perfil); --accion-tinta: var(--t-perfil); --accion-canal: var(--canal-perfil); }
 [data-vista='panorama'] { --accion: var(--c-panorama); --accion-tinta: var(--t-panorama); --accion-canal: var(--canal-panorama); }
 [data-vista='neutro'] { --accion: var(--c-neutro); --accion-tinta: var(--t-neutro); --accion-canal: var(--canal-neutro); }
+[data-vista='admin'] { --accion: var(--c-admin); --accion-tinta: var(--t-admin); --accion-canal: var(--canal-admin); }
 :root:not([data-tema='claro']) [data-vista='inicio'] { --nebulosa: 0.18; }
 :root:not([data-tema='claro']) [data-vista='explorar'] { --nebulosa: 0.18; }
 :root:not([data-tema='claro']) [data-vista='comparar'] { --nebulosa: 0.16; }
@@ -307,3 +315,4 @@
 :root:not([data-tema='claro']) [data-vista='perfil'] { --nebulosa: 0.28; }
 :root:not([data-tema='claro']) [data-vista='panorama'] { --nebulosa: 0.15; }
 :root:not([data-tema='claro']) [data-vista='neutro'] { --nebulosa: 0.24; }
+:root:not([data-tema='claro']) [data-vista='admin'] { --nebulosa: 0.18; }

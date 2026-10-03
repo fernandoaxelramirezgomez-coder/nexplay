@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import {
   BuzonSugerencias,
   Comentario,
+  EstadoSistema,
   ExplicacionJuego,
   FiltrosCatalogo,
   FormularioAlta,
@@ -52,6 +53,10 @@ export class NexplayApi {
 
   explicacion(appid: number): Observable<ExplicacionJuego> {
     return this.http.get<ExplicacionJuego>(`${this.base}/explicacion/${appid}`);
+  }
+
+  estado(): Observable<EstadoSistema> {
+    return this.http.get<EstadoSistema>(`${this.base}/estado`);
   }
 
   panorama(): Observable<PanoramaCatalogo> {
