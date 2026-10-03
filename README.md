@@ -11,17 +11,17 @@ del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requisitos-previos)
 [![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend/README.md)
 
-**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) · [🎤 Presentación](presentacion/NexPlay-presentacion-final.pdf).
+**Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) · [🎤 Presentación](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/presentacion/NexPlay-presentacion-final.pdf).
 La API está en el plan gratis de Render y se duerme cuando nadie la usa, así que la primera carga puede tardar
 un poco.
 
 ## Entregables
 
-| Entregable | Dónde está |
-|---|---|
-| [Documento final (PDF)](documento/documento-entregafinal.pdf) | `documento/documento-entregafinal.pdf`, con su fuente LaTeX en `documento/` |
-| [Presentación (PDF)](presentacion/NexPlay-presentacion-final.pdf) | `presentacion/NexPlay-presentacion-final.pdf` |
-| [El nicho en simples palabras](NICHO.md) | `NICHO.md` |
+| Entregable | Ver en línea | Descargar |
+|---|---|---|
+| 📄 Documento final | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/documento/documento-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/documento/documento-entregafinal.pdf) |
+| 🎤 Presentación (PDF) | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/presentacion/NexPlay-presentacion-final.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/presentacion/NexPlay-presentacion-final.pdf) |
+| 💡 El nicho en simples palabras | [NICHO.md](NICHO.md) | — |
 
 > Hay miles de juegos en Steam y poco tiempo para elegir. NexPlay es para quien compra pocos juegos al año y no
 > quiere gastar su dinero en uno que dejará a las dos horas. Con sus gustos, reduce el catálogo a los juegos que
