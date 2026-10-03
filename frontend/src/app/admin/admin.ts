@@ -39,6 +39,8 @@ export type Conexion = 'conectando' | 'despertando' | 'conectado' | 'sin-conexio
 
 const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' });
 
+const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
 /** Administración: el estado del sistema y lo que hizo esta persona en este navegador, de un
  * vistazo. No está en el menú de las cinco vistas (la presentación se arma sobre ellas): se
  * llega con el escudo del pie del menú. Sin burbuja de Nia. /admin no tiene contraseña, así
@@ -469,7 +471,7 @@ export class Admin {
         valor: valorados + votadas + comentarios ? String(valorados + votadas + comentarios) : '—',
         detalle:
           valorados + votadas + comentarios
-            ? `${valorados} juegos con estrellas · ${votadas} votos a Nia · ${comentarios} comentarios.`
+            ? `${contar(valorados, 'juego con estrellas', 'juegos con estrellas')} · ${contar(votadas, 'voto a Nia', 'votos a Nia')} · ${contar(comentarios, 'comentario', 'comentarios')}.`
             : '',
       },
     ];

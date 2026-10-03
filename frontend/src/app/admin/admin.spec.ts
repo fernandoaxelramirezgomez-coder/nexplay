@@ -171,7 +171,7 @@ describe('Administración: tu sesión en este navegador', () => {
     expect(texto(html, 'admin-comparaciones')).toContain('1');
     expect(texto(html, 'admin-perfil')).toContain('Completado');
     expect(texto(html, 'admin-perfil')).toContain('2 géneros elegidos');
-    expect(texto(html, 'admin-valoraciones')).toContain('1 juegos con estrellas · 2 votos a Nia · 1 comentarios');
+    expect(texto(html, 'admin-valoraciones')).toContain('1 juego con estrellas · 2 votos a Nia · 1 comentario');
   });
 });
 

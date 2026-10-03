@@ -186,9 +186,23 @@ const ESPERA_MOTIVO_MS = 800;
       gap: var(--espacio-4);
       flex-basis: 100%;
     }
+    /* El mismo campo que el de los comentarios de la ficha. */
     .libre textarea {
       width: 100%;
+      font: inherit;
+      letter-spacing: inherit;
+      color: var(--texto);
+      background: var(--superficie-lienzo);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-tarjeta);
+      padding: var(--espacio-8) var(--espacio-12);
       resize: vertical;
+      transition: border-color var(--duracion-rapida) var(--curva);
+    }
+    .libre textarea:focus-visible {
+      outline: 2px solid var(--foco);
+      outline-offset: 2px;
+      border-color: var(--neon);
     }
     .pie-libre {
       display: flex;
