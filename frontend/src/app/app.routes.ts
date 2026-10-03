@@ -33,6 +33,12 @@ export const routes: Routes = [
     title: 'NexPlay · Tu perfil',
     loadComponent: () => import('./perfil/perfil').then((m) => m.Perfil),
   },
+  // Fuera del menú de las cinco: se llega con el escudo del pie de la barra lateral.
+  {
+    path: 'admin',
+    title: 'NexPlay · Administración',
+    loadComponent: () => import('./admin/admin').then((m) => m.Admin),
+  },
   // Las tres vistas que salieron del menú en la reorganización a cinco: sus enlaces viejos
   // llevan a donde vive ahora su contenido, con el ancla que lo abre.
   {

@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -129,5 +129,45 @@ describe('App (shell)', () => {
     expect(pagina.hasAttribute('inert')).toBe(false);
     // El foco vuelve a donde estaba: al botón que abrió el cajón.
     expect(document.activeElement).toBe(hamburguesa);
+  });
+});
+
+@Component({ selector: 'app-vacio', template: '' })
+class Vacio {}
+
+describe('App en /admin', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    vi.stubGlobal('matchMedia', (consulta: string) => ({ matches: false, media: consulta }));
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([
+          { path: 'admin', component: Vacio },
+          { path: '**', component: Vacio },
+        ]),
+        { provide: PanoramaStore, useValue: { datos: signal(undefined) } },
+        { provide: NexplayApi, useValue: API },
+      ],
+    }).compileComponents();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sin burbuja de Nia, con su color y el escudo activo; el menú sigue con las cinco vistas', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('app-nia-flotante')).not.toBeNull();
+
+    await TestBed.inject(Router).navigateByUrl('/admin');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(html.querySelector('app-nia-flotante')).toBeNull();
+    expect(html.querySelector('.armazon')?.getAttribute('data-vista')).toBe('admin');
+    const escudo = html.querySelector('[data-testid="nav-admin"]')!;
+    expect(escudo.getAttribute('aria-label')).toBe('Administración');
+    expect(escudo.classList.contains('activo')).toBe(true);
+    expect(html.querySelectorAll('app-barra-lateral nav a.item')).toHaveLength(5);
   });
 });

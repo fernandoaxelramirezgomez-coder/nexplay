@@ -232,6 +232,21 @@ import { TemaStore } from '../estado/tema-store';
           </span>
           <span class="etiqueta">{{ destinoTema() }}</span>
         </button>
+        <!-- Administración: fuera de las cinco vistas, un escudo discreto junto a encoger. -->
+        <a
+          routerLink="/admin"
+          routerLinkActive="activo"
+          ariaCurrentWhenActive="page"
+          class="icono admin"
+          data-testid="nav-admin"
+          aria-label="Administración"
+          title="Administración"
+          (click)="barra.cerrarCajon()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 4.5 6v5.5c0 4.4 3.2 8.3 7.5 9.5 4.3-1.2 7.5-5.1 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" />
+          </svg>
+        </a>
         <button
           type="button"
           class="icono colapsar"
@@ -511,6 +526,11 @@ import { TemaStore } from '../estado/tema-store';
     .icono:hover,
     .interruptor:hover {
       border-color: var(--neon);
+    }
+    .admin.activo {
+      border-color: var(--neon);
+      color: var(--neon);
+      box-shadow: var(--resplandor);
     }
     .astro {
       display: grid;
