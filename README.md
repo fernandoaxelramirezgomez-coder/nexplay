@@ -15,6 +15,19 @@ del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 La API está en el plan gratis de Render y se duerme cuando nadie la usa, así que la primera carga puede tardar
 un poco.
 
+## Entregables
+
+| Entregable | Dónde está |
+|---|---|
+| [Documento final (PDF)](documento/documento-entregafinal.pdf) | `documento/documento-entregafinal.pdf`, con su fuente LaTeX en `documento/` |
+| [Presentación (PDF)](presentacion/NexPlay-presentacion-final.pdf) | `presentacion/NexPlay-presentacion-final.pdf` |
+| [El nicho en simples palabras](NICHO.md) | `NICHO.md` |
+
+> Hay miles de juegos en Steam y poco tiempo para elegir. NexPlay es para quien compra pocos juegos al año y no
+> quiere gastar su dinero en uno que dejará a las dos horas. Con sus gustos, reduce el catálogo a los juegos que
+> encajan con esa persona y le dice el riesgo de arrepentirse de cada uno antes de pagar, sin prisa y sin comprar a
+> ciegas. La decisión siempre es suya.
+
 > **En 30 segundos**
 >
 > - **El problema:** comprar un juego en Steam que te decepciona en las primeras horas, cuando todavía lo puedes devolver.
@@ -40,6 +53,7 @@ un poco.
 
 ## 📑 Índice
 
+- [Entregables](#entregables)
 - [Qué es NexPlay](#-qué-es-nexplay)
 - [Arquitectura](#%EF%B8%8F-arquitectura)
 - [Requisitos previos](#-requisitos-previos)
@@ -279,6 +293,7 @@ banda) está en [docs/evidencia/](docs/evidencia/README.md), con el script que l
 ```
 nexplay/
 ├── README.md            este archivo
+├── NICHO.md             el nicho en simples palabras
 ├── Makefile             make help lista los objetivos
 ├── .env.example         plantilla de variables; el .env real no se versiona
 ├── CLAUDE.md · AGENTS.md  decisiones y convenciones del proyecto
@@ -296,6 +311,7 @@ nexplay/
 ├── frontend/            Angular: src/, public/, fuentes/ (la hoja de Nia) y scripts/
 ├── notebooks/           00_exploracion, 01_modelo_riesgo y 02_modelos_texto, con su ruta de ejecución
 ├── documento/           el documento final en LaTeX (make doc)
+├── presentacion/        la presentación final en PDF
 └── docs/                evidencia, capturas, diseño e historial
 ```
 
