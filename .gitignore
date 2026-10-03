@@ -22,6 +22,8 @@ docs/historial/mockups/capturas/
 *.deb
 .agents/
 .artifacts/
+# la caché que deja Angular si se corre ng desde la raíz (la de frontend/ la ignora frontend/.gitignore)
+/.angular/
 
 # lo que genera la compilación del documento y los releases que baja generar_figuras.py
 documento/build/
