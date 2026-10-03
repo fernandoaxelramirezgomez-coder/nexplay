@@ -40,6 +40,7 @@ export type Conexion = 'conectando' | 'despertando' | 'conectado' | 'sin-conexio
 const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' });
 
 const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+const cifra = (n: number | undefined) => (n ? String(n) : '—');
 
 /** Administración: el estado del sistema y lo que hizo esta persona en este navegador, de un
  * vistazo. No está en el menú de las cinco vistas (la presentación se arma sobre ellas): se
@@ -60,18 +61,25 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
         </p>
       </header>
 
-      <section class="bloque" aria-labelledby="titulo-sistema">
-        <h2 id="titulo-sistema" class="rotulo-seccion">Sistema</h2>
+      <section class="seccion" aria-labelledby="titulo-sistema">
+        <div class="seccion-cabecera">
+          <h2 id="titulo-sistema" class="rotulo-seccion">Sistema</h2>
+          <p class="meta">La API, la IA de Nia, los datos servidos y el modelo de riesgo.</p>
+        </div>
         <div class="rejilla" aria-live="polite">
           <article class="tarjeta" [attr.data-estado]="conexion() === 'sin-conexion' ? 'no-disponible' : 'ok'" data-testid="admin-backend">
-            <p class="nombre">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" />
-                <path d="M7 7.5h.01M7 16.5h.01" />
-              </svg>
-              Backend
-              <span class="meta">API en Render</span>
-            </p>
+            <header class="tarjeta-cabecera">
+              <span class="insignia">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" />
+                  <path d="M7 7.5h.01M7 16.5h.01" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="nombre">Backend</h3>
+                <p class="meta">API en Render</p>
+              </div>
+            </header>
             <p class="estado" data-testid="admin-backend-estado">
               @switch (conexion()) {
                 @case ('conectado') {
@@ -113,13 +121,17 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
           </article>
 
           <article class="tarjeta" [attr.data-estado]="estado() ? 'ok' : 'no-disponible'" data-testid="admin-openai">
-            <p class="nombre">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8" />
-              </svg>
-              OpenAI
-              <span class="meta">Nia</span>
-            </p>
+            <header class="tarjeta-cabecera">
+              <span class="insignia">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="nombre">OpenAI</h3>
+                <p class="meta">La IA de Nia</p>
+              </div>
+            </header>
             @if (estado(); as e) {
               <p class="estado">{{ e.nia_con_openai ? 'Configurado' : 'Modo demostración (reglas)' }}</p>
               <p class="detalle meta">
@@ -131,14 +143,18 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
           </article>
 
           <article class="tarjeta" [attr.data-estado]="estado() ? 'ok' : 'no-disponible'" data-testid="admin-datos">
-            <p class="nombre">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
-                <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
-              </svg>
-              Datos
-              <span class="meta">Release activo</span>
-            </p>
+            <header class="tarjeta-cabecera">
+              <span class="insignia">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+                  <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="nombre">Datos</h3>
+                <p class="meta">Release activo</p>
+              </div>
+            </header>
             @if (estado(); as e) {
               <p class="estado mono">{{ e.datos_release ?? '—' }}</p>
               <p class="detalle meta">{{ e.juegos_catalogo }} juegos en el catálogo.</p>
@@ -148,14 +164,18 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
           </article>
 
           <article class="tarjeta" [attr.data-estado]="estado() ? 'ok' : 'no-disponible'" data-testid="admin-modelo">
-            <p class="nombre">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="6" y="6" width="12" height="12" rx="2" />
-                <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
-              </svg>
-              Modelo activo
-              <span class="meta">Riesgo y Nia</span>
-            </p>
+            <header class="tarjeta-cabecera">
+              <span class="insignia">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                  <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="nombre">Modelo activo</h3>
+                <p class="meta">Riesgo y Nia</p>
+              </div>
+            </header>
             @if (estado(); as e) {
               <p class="estado mono">{{ e.modelo_version }}</p>
               <p class="detalle meta">
@@ -169,37 +189,76 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
         </div>
       </section>
 
-      <section class="bloque" aria-labelledby="titulo-sesion">
-        <h2 id="titulo-sesion" class="rotulo-seccion">Tu sesión en este navegador</h2>
+      <section class="seccion" aria-labelledby="titulo-sesion">
+        <div class="seccion-cabecera">
+          <h2 id="titulo-sesion" class="rotulo-seccion">Tu sesión en este navegador</h2>
+          <p class="meta">Cuenta desde octubre de 2026; «—» es que todavía no hay dato.</p>
+        </div>
         <div class="rejilla">
-          @for (cifra of sesion(); track cifra.id) {
-            <article class="tarjeta" [attr.data-estado]="cifra.valor === '—' ? 'no-disponible' : 'ok'" [attr.data-testid]="'admin-' + cifra.id">
-              <p class="nombre">{{ cifra.nombre }}</p>
-              <p class="estado cifra mono">{{ cifra.valor }}</p>
-              @if (cifra.detalle) {
-                <p class="detalle meta">{{ cifra.detalle }}</p>
+          @for (c of cifras(); track c.id) {
+            <article class="tarjeta" [attr.data-estado]="c.valor === '—' ? 'no-disponible' : 'ok'" [attr.data-testid]="'admin-' + c.id">
+              <h3 class="etiqueta">{{ c.nombre }}</h3>
+              <p class="cifra">{{ c.valor }}</p>
+              @if (c.detalle) {
+                <p class="detalle meta">{{ c.detalle }}</p>
               }
             </article>
           }
+
+          <article class="tarjeta ancha" [attr.data-estado]="perfilResumen().completo ? 'ok' : 'no-disponible'" data-testid="admin-perfil">
+            <h3 class="etiqueta">Perfil</h3>
+            <p class="cifra palabra">{{ perfilResumen().completo ? 'Completado' : 'Pendiente' }}</p>
+            @if (perfilResumen().completo) {
+              <p class="detalle meta">{{ perfilResumen().detalle }}</p>
+              @if (perfilResumen().generos.length) {
+                <ul class="generos">
+                  @for (g of perfilResumen().generos; track g) {
+                    <li>{{ g }}</li>
+                  }
+                </ul>
+              }
+            } @else {
+              <p class="detalle meta">Todavía no lo llenas.</p>
+            }
+          </article>
+
+          <article class="tarjeta ancha" [attr.data-estado]="valoraciones() ? 'ok' : 'no-disponible'" data-testid="admin-valoraciones">
+            <h3 class="etiqueta">Valoraciones y comentarios</h3>
+            @if (valoraciones(); as v) {
+              <dl class="trio">
+                @for (parte of v; track parte.id) {
+                  <div [attr.data-testid]="'admin-valoraciones-' + parte.id">
+                    <dt class="meta">{{ parte.etiqueta }}</dt>
+                    <dd class="cifra">{{ parte.valor }}</dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p class="cifra">—</p>
+            }
+          </article>
         </div>
       </section>
 
-      <section class="bloque" aria-labelledby="titulo-buzon">
-        <h2 id="titulo-buzon" class="rotulo-seccion">Buzón de sugerencias</h2>
-        <p class="meta explica">Lo que la gente le dice a Nia con 👍 y 👎, de todos los visitantes y sin nombres.</p>
+      <section class="seccion" aria-labelledby="titulo-buzon">
+        <div class="seccion-cabecera">
+          <h2 id="titulo-buzon" class="rotulo-seccion">Buzón de sugerencias</h2>
+          <p class="meta">Lo que la gente le dice a Nia con 👍 y 👎, de todos los visitantes y sin nombres.</p>
+        </div>
         @if (buzon(); as b) {
           <div class="buzon" data-testid="admin-buzon">
             <article class="tarjeta" data-estado="ok">
-              <p class="nombre">Votos a Nia</p>
-              <p class="estado cifra mono" data-testid="admin-buzon-votos">👍 {{ b.votos_a_favor }} · 👎 {{ b.votos_en_contra }}</p>
+              <h3 class="etiqueta">Votos a Nia</h3>
+              <p class="cifra votos" data-testid="admin-buzon-votos">👍 {{ b.votos_a_favor }} · 👎 {{ b.votos_en_contra }}</p>
               <ul class="motivos" data-testid="admin-buzon-motivos">
                 @for (m of b.por_motivo; track m.motivo) {
                   <li><span>{{ m.motivo }}</span><span class="mono">{{ m.cuantos }}</span></li>
                 }
               </ul>
             </article>
-            <article class="tarjeta ancha" data-estado="ok">
-              <p class="nombre">Qué mejorar <span class="meta">«otro motivo», lo más reciente</span></p>
+            <article class="tarjeta" data-estado="ok">
+              <h3 class="etiqueta">Qué mejorar</h3>
+              <p class="meta">Lo más reciente que escribieron con «otro motivo».</p>
               @if (b.sugerencias.length) {
                 <ul class="sugerencias" data-testid="admin-buzon-sugerencias">
                   @for (s of b.sugerencias; track $index) {
@@ -210,8 +269,7 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
                   }
                 </ul>
               } @else {
-                <p class="estado">—</p>
-                <p class="detalle meta">Todavía nadie escribió una sugerencia.</p>
+                <p class="vacio meta">Todavía nadie escribió una sugerencia.</p>
               }
             </article>
           </div>
@@ -222,12 +280,20 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
         }
       </section>
 
-      <section class="bloque" aria-labelledby="titulo-restablecer">
-        <h2 id="titulo-restablecer" class="rotulo-seccion">Restablecer</h2>
+      <section class="seccion" aria-labelledby="titulo-restablecer">
+        <div class="seccion-cabecera">
+          <h2 id="titulo-restablecer" class="rotulo-seccion">Restablecer</h2>
+        </div>
         @if (!confirmando()) {
-          <button type="button" class="boton-cta toque-amplio" data-testid="admin-restablecer" (click)="pedirConfirmacion()">
-            Restablecer datos de esta sesión
-          </button>
+          <div class="tarjeta restablecer" data-estado="ok">
+            <p class="lectura">
+              Borra de este navegador tu perfil, tu historial, tu lista de Comparar y lo que cuenta esta vista. Tus
+              comentarios públicos y tus preferencias se quedan.
+            </p>
+            <button type="button" class="boton-cta toque-amplio" data-testid="admin-restablecer" (click)="pedirConfirmacion()">
+              Restablecer datos de esta sesión
+            </button>
+          </div>
         } @else {
           <div class="confirmacion" role="alertdialog" aria-labelledby="titulo-confirmar" aria-describedby="texto-confirmar" data-testid="admin-confirmar">
             <p id="titulo-confirmar" class="estado">¿Borrar los datos de esta sesión?</p>
@@ -258,10 +324,13 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
     </ng-template>
   `,
   styles: `
+    /* Aire: 48 px entre secciones, 24 px entre tarjetas y dentro de cada una. Las secciones
+       no llevan caja propia: una caja dentro de otra era lo que hacía ver todo apretado. */
     .admin {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-24);
+      gap: var(--espacio-48);
+      max-width: 1280px;
     }
     .cabecera {
       display: flex;
@@ -272,27 +341,38 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
       max-width: var(--medida-lectura);
       color: var(--texto-2);
     }
-    .bloque {
+    .seccion {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-12);
+      gap: var(--espacio-24);
+    }
+    .seccion-cabecera {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-4);
     }
     .rejilla {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: var(--espacio-16);
+      gap: var(--espacio-24);
+    }
+    /* Perfil y valoraciones traen más que una cifra: ocupan dos columnas y la fila queda
+       completa, sin un hueco al final. */
+    .ancha {
+      grid-column: span 2;
     }
     .buzon {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-      gap: var(--espacio-16);
+      gap: var(--espacio-24);
     }
     /* El glow va en el borde de la tarjeta, nunca en el texto. */
     .tarjeta {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-8);
-      padding: var(--espacio-16);
+      gap: var(--espacio-12);
+      min-width: 0;
+      padding: var(--espacio-24);
       border: 1px solid color-mix(in srgb, var(--neon) 45%, var(--linea));
       border-radius: var(--radio-tarjeta);
       background: var(--superficie-tarjeta);
@@ -302,35 +382,114 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
       border-color: var(--linea);
       box-shadow: none;
     }
-    .nombre {
+    .tarjeta-cabecera {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: var(--espacio-8);
-      font-family: var(--fuente-display);
-      font-size: var(--texto-subheading);
-      font-weight: 700;
+      gap: var(--espacio-12);
+      margin-bottom: var(--espacio-4);
     }
-    .nombre .meta {
-      font-family: var(--fuente-texto);
-      font-weight: 400;
+    .insignia {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid color-mix(in srgb, var(--neon) 55%, var(--linea));
+      border-radius: 12px;
+      background: rgb(var(--accion-canal) / 0.1);
+    }
+    .tarjeta[data-estado='no-disponible'] .insignia {
+      border-color: var(--borde-control);
+      background: none;
+    }
+    .nombre {
+      margin: 0;
+      font-family: var(--fuente-display);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .tarjeta-cabecera .meta {
+      margin: 0;
+      font-size: var(--texto-caption);
     }
     .estado {
       display: flex;
       align-items: center;
       gap: var(--espacio-8);
-      font-size: var(--texto-body);
-      font-weight: 600;
+      margin: 0;
+      font-family: var(--fuente-display);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.25;
       color: var(--neon);
+    }
+    .estado.mono {
+      font-family: var(--fuente-mono);
+      font-size: 18px;
+      overflow-wrap: anywhere;
     }
     .tarjeta[data-estado='no-disponible'] .estado {
       color: var(--texto-2);
     }
+    .etiqueta {
+      margin: 0;
+      color: var(--texto-2);
+      font-family: var(--fuente-texto);
+      font-size: var(--texto-caption);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    /* La cifra es lo que se lee de un vistazo: más grande que su etiqueta, en tinta de texto. */
     .cifra {
-      font-size: var(--texto-heading-sm);
+      margin: 0;
       color: var(--texto);
+      font-family: var(--fuente-display);
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .cifra.palabra {
+      font-size: var(--texto-heading-sm);
+    }
+    .cifra.votos {
+      font-size: var(--texto-heading-sm);
+    }
+    .tarjeta[data-estado='no-disponible'] .cifra {
+      color: var(--texto-2);
     }
     .detalle {
+      margin: 0;
+    }
+    .generos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--espacio-8);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .generos li {
+      padding: var(--espacio-4) var(--espacio-12);
+      border: 1px solid var(--borde-control);
+      border-radius: var(--radio-pildora);
+      font-size: var(--texto-caption);
+    }
+    .trio {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--espacio-24);
+      margin: 0;
+    }
+    /* En el DOM va la etiqueta y luego la cifra (dt, dd); en pantalla, la cifra arriba. */
+    .trio div {
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: flex-end;
+      gap: var(--espacio-8);
+    }
+    .trio dd,
+    .trio dt {
       margin: 0;
     }
     svg {
@@ -362,14 +521,10 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
         animation: none;
       }
     }
-    .explica {
-      margin-top: calc(-1 * var(--espacio-4));
-    }
     .motivos,
     .sugerencias {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-8);
       margin: 0;
       padding: 0;
       list-style: none;
@@ -377,19 +532,45 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
     .motivos li {
       display: flex;
       justify-content: space-between;
-      gap: var(--espacio-8);
+      gap: var(--espacio-16);
+      padding: var(--espacio-8) 0;
+      border-top: 1px solid var(--linea);
       font-size: var(--texto-body-sm);
     }
     .sugerencias li {
-      padding-bottom: var(--espacio-8);
-      border-bottom: 1px solid var(--linea);
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-4);
+      padding: var(--espacio-12) 0;
+      border-top: 1px solid var(--linea);
       overflow-wrap: anywhere;
+    }
+    .sugerencias p {
+      margin: 0;
+    }
+    .vacio {
+      margin: auto 0;
+      padding: var(--espacio-24) 0;
+      text-align: center;
+    }
+    .restablecer {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--espacio-24);
+    }
+    .restablecer .lectura {
+      flex: 1 1 320px;
+      max-width: var(--medida-lectura);
+      margin: 0;
+      color: var(--texto-2);
     }
     .confirmacion {
       display: flex;
       flex-direction: column;
-      gap: var(--espacio-12);
-      padding: var(--espacio-16);
+      gap: var(--espacio-16);
+      padding: var(--espacio-24);
       border: 1px solid var(--neon);
       border-radius: var(--radio-tarjeta);
       background: var(--superficie-tarjeta);
@@ -406,6 +587,9 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
       min-height: 44px;
       align-self: flex-start;
     }
+    .restablecer .boton-cta {
+      align-self: center;
+    }
     .boton-cta {
       box-shadow: var(--resplandor);
     }
@@ -415,9 +599,25 @@ const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
       }
     }
     @media (max-width: 640px) {
+      .admin {
+        gap: var(--espacio-40);
+      }
       .rejilla,
       .buzon {
         grid-template-columns: minmax(0, 1fr);
+        gap: var(--espacio-16);
+      }
+      .ancha {
+        grid-column: auto;
+      }
+      .tarjeta {
+        padding: 20px;
+      }
+      .cifra {
+        font-size: 36px;
+      }
+      .trio {
+        gap: var(--espacio-16);
       }
     }
   `,
@@ -441,40 +641,40 @@ export class Admin {
   private suscripcion?: Subscription;
   private aviso?: ReturnType<typeof setTimeout>;
 
-  /** Lo de la fila 2. «—» cuando no hay dato: 0 sería afirmar algo que no se midió. */
-  protected readonly sesion = computed(() => {
+  /** Las cuatro cifras de la fila 2. «—» cuando no hay dato: 0 sería afirmar algo que no se midió. */
+  protected readonly cifras = computed(() => {
     const entradas = this.historial.entradas();
     const actividad = this.actividad.actividad();
-    const valores = this.perfil.valores();
-    const cifra = (n: number | undefined) => (n ? String(n) : '—');
     const vistos = entradas.filter((e) => e.tipo === 'visto').length;
     const comparados = entradas.filter((e) => e.tipo === 'comparado').length;
-    const valorados = actividad?.juegosValorados.length ?? 0;
-    const votadas = actividad?.respuestasVotadas.length ?? 0;
-    const comentarios = actividad?.comentarios ?? 0;
     return [
       { id: 'conversaciones', nombre: 'Conversaciones con Nia', valor: cifra(actividad?.conversacionesNia), detalle: '' },
       { id: 'mensajes', nombre: 'Mensajes a Nia', valor: cifra(actividad?.mensajesNia), detalle: '' },
       { id: 'juegos', nombre: 'Juegos consultados', valor: cifra(vistos), detalle: vistos ? 'Fichas distintas que abriste.' : '' },
       { id: 'comparaciones', nombre: 'Comparaciones', valor: cifra(comparados), detalle: '' },
-      {
-        id: 'perfil',
-        nombre: 'Perfil',
-        valor: this.perfil.hayPerfil() ? 'Completado' : 'Pendiente',
-        detalle: this.perfil.hayPerfil()
-          ? `${valores?.generos.length ?? 0} ${(valores?.generos.length ?? 0) === 1 ? 'género elegido' : 'géneros elegidos'}.`
-          : 'Todavía no lo llenas.',
-      },
-      {
-        id: 'valoraciones',
-        nombre: 'Valoraciones y comentarios',
-        valor: valorados + votadas + comentarios ? String(valorados + votadas + comentarios) : '—',
-        detalle:
-          valorados + votadas + comentarios
-            ? `${contar(valorados, 'juego con estrellas', 'juegos con estrellas')} · ${contar(votadas, 'voto a Nia', 'votos a Nia')} · ${contar(comentarios, 'comentario', 'comentarios')}.`
-            : '',
-      },
     ];
+  });
+
+  protected readonly perfilResumen = computed(() => {
+    const generos = this.perfil.valores()?.generos ?? [];
+    return {
+      completo: this.perfil.hayPerfil(),
+      generos,
+      detalle: `${contar(generos.length, 'género elegido', 'géneros elegidos')}.`,
+    };
+  });
+
+  /** Estrellas, votos a Nia y comentarios, cada uno con su cifra; null si no hay ninguno. */
+  protected readonly valoraciones = computed(() => {
+    const actividad = this.actividad.actividad();
+    const partes = [
+      { id: 'estrellas', n: actividad?.juegosValorados.length ?? 0, uno: 'juego con estrellas', varios: 'juegos con estrellas' },
+      { id: 'votos', n: actividad?.respuestasVotadas.length ?? 0, uno: 'voto a Nia', varios: 'votos a Nia' },
+      { id: 'comentarios', n: actividad?.comentarios ?? 0, uno: 'comentario', varios: 'comentarios' },
+    ];
+    return partes.some((parte) => parte.n)
+      ? partes.map((parte) => ({ id: parte.id, valor: cifra(parte.n), etiqueta: parte.n === 1 ? parte.uno : parte.varios }))
+      : null;
   });
 
   constructor() {

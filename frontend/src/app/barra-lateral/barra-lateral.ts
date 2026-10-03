@@ -207,6 +207,24 @@ import { TemaStore } from '../estado/tema-store';
         </a>
       }
 
+      <!-- Administración: fuera de las cinco vistas, un enlace discreto en gris encima del pie.
+           Junto a encoger no cabía: «Modo oscuro» se recortaba. Encogida queda el escudo. -->
+      <a
+        routerLink="/admin"
+        routerLinkActive="activo"
+        ariaCurrentWhenActive="page"
+        class="admin"
+        data-testid="nav-admin"
+        aria-label="Administración"
+        [attr.title]="barra.expandida() ? null : 'Administración'"
+        (click)="barra.cerrarCajon()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3 4.5 6v5.5c0 4.4 3.2 8.3 7.5 9.5 4.3-1.2 7.5-5.1 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" />
+        </svg>
+        <span class="etiqueta">Administración</span>
+      </a>
+
       <div class="pie-riel">
         <!-- Dice el modo al que cambia, con su ícono: «Modo oscuro» y la luna estando en
              claro. Por eso es un botón y no un role="switch": un interruptor lleva una
@@ -232,21 +250,6 @@ import { TemaStore } from '../estado/tema-store';
           </span>
           <span class="etiqueta">{{ destinoTema() }}</span>
         </button>
-        <!-- Administración: fuera de las cinco vistas, un escudo discreto junto a encoger. -->
-        <a
-          routerLink="/admin"
-          routerLinkActive="activo"
-          ariaCurrentWhenActive="page"
-          class="icono admin"
-          data-testid="nav-admin"
-          aria-label="Administración"
-          title="Administración"
-          (click)="barra.cerrarCajon()"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 4.5 6v5.5c0 4.4 3.2 8.3 7.5 9.5 4.3-1.2 7.5-5.1 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" />
-          </svg>
-        </a>
         <button
           type="button"
           class="icono colapsar"
@@ -527,10 +530,27 @@ import { TemaStore } from '../estado/tema-store';
     .interruptor:hover {
       border-color: var(--neon);
     }
+    .admin {
+      display: flex;
+      align-items: center;
+      gap: var(--espacio-8);
+      min-height: 44px;
+      padding: 0 var(--espacio-12);
+      border-radius: var(--radio-pildora);
+      color: var(--texto-2);
+      font-size: var(--texto-caption);
+      text-decoration: none;
+    }
+    .admin svg {
+      width: 18px;
+      height: 18px;
+    }
+    .admin:hover,
     .admin.activo {
-      border-color: var(--neon);
       color: var(--neon);
-      box-shadow: var(--resplandor);
+    }
+    .admin.activo svg {
+      filter: drop-shadow(0 0 4px rgb(var(--accion-canal) / 0.6));
     }
     .astro {
       display: grid;
@@ -558,6 +578,11 @@ import { TemaStore } from '../estado/tema-store';
       :host(.corta) .grupos,
       :host(.corta) .pie-riel {
         align-self: stretch;
+      }
+      :host(.corta) .admin {
+        justify-content: center;
+        width: 44px;
+        padding: 0;
       }
       :host(.corta) .marca {
         flex: none;

@@ -171,7 +171,12 @@ describe('Administración: tu sesión en este navegador', () => {
     expect(texto(html, 'admin-comparaciones')).toContain('1');
     expect(texto(html, 'admin-perfil')).toContain('Completado');
     expect(texto(html, 'admin-perfil')).toContain('2 géneros elegidos');
-    expect(texto(html, 'admin-valoraciones')).toContain('1 juego con estrellas · 2 votos a Nia · 1 comentario');
+    // Cada parte: su cifra (dd) y su etiqueta en singular o plural (dt).
+    const parte = (id: string) =>
+      ['dd', 'dt'].map((celda) => html.querySelector(`[data-testid="admin-valoraciones-${id}"] ${celda}`)?.textContent?.trim());
+    expect(parte('estrellas')).toEqual(['1', 'juego con estrellas']);
+    expect(parte('votos')).toEqual(['2', 'votos a Nia']);
+    expect(parte('comentarios')).toEqual(['1', 'comentario']);
   });
 });
 
