@@ -27,16 +27,16 @@ votos:    un voto por persona y respuesta, el motivo solo con 👎, y la retenci
 límites:  la IP sale de CF-Connecting-IP; cada persona su tope, la IP el de 6 personas y, con modelo, un total para Nia
 herramientas: 5 declaradas, orden alfabético por omisión y sin appids inventados
 openai: [catálogo] '¿Qué juegos de acción tienen riesgo bajo?'
-          ¡Sí! Hay 25 juegos de acción con riesgo bajo: Apex Legends™, Celeste, Company of Heroes 3, Cuphead, Dead Cells, Dead Space, Destiny 2 y Devil May Cry 5. Los otros 17 están en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
+          Hay 25 juegos de acción con riesgo bajo: Apex Legends™, Celeste, Company of Heroes 3, Cuphead, Dead Cells, Dead Space, Destiny 2 y Devil May Cry 5. Los otros 17 están en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
           pasos: Buscando en el catálogo…
 openai: [catálogo] '¿Hay algo gratis en el catálogo?'
-          Sí, hay 7 juegos gratis en el catálogo: Apex Legends™, Destiny 2, Overwatch®, Path of Exile, Team Fortress 2, The Sims™ 4 y Warframe. Son cuatro con riesgo bajo y tres con riesgo alto. 🎮 ¿Los ordeno por riesgo?
+          Sí, hay 7 juegos gratis en el catálogo: Apex Legends™, Destiny 2, Overwatch®, Path of Exile, Team Fortress 2, The Sims™ 4 y Warframe. Cuatro tienen riesgo bajo y tres alto. 🎮 ¿Los ordeno por riesgo?
           pasos: Buscando en el catálogo…
 openai: [catálogo] 'Juegos de estrategia de menos de 300 pesos'
-          ¡Hay 9 juegos de estrategia por menos de $300! Company of Heroes 3, Don't Starve Together, Dorfromantik, Frostpunk, Inscryption, Kenshi, Sid Meier's Civilization V y Sid Meier’s Civilization VI; queda 1 más en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
+          Hay 9 juegos de estrategia por menos de $300: Company of Heroes 3, Don't Starve Together, Dorfromantik, Frostpunk, Inscryption, Kenshi, Sid Meier's Civilization V y Sid Meier’s Civilization VI; hay 1 más en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
           pasos: Buscando en el catálogo…
 openai: [catálogo] '¿Tienen Elden Ring?'
-          Sí, ELDEN RING está en el catálogo de NexPlay. 🎮 ¿Te cuento qué dicen las reseñas de ELDEN RING?
+          Sí, ELDEN RING está en el catálogo de NexPlay. Cuesta $979, tiene 94 en Metacritic y pertenece a Acción y Rol. 🎮 ¿Te cuento qué dicen las reseñas de ELDEN RING?
           pasos: Buscando en el catálogo…
 reglas: [catálogo] '¿Y Super Mario Odyssey?'
           No encuentro «Super Mario Odyssey» en este catálogo de Steam, así que no tengo señal sobre él 🤔 ¿Te muestro qué géneros hay en el catálogo?
@@ -49,7 +49,7 @@ reglas: [catálogo] '¿De dónde salen estos datos?'
 reglas: [catálogo] '¿Cómo calculan el riesgo?'
           Con datos del juego, no con tus gustos 🧮 Un modelo aprendió de 83 juegos cómo se relacionan la gratuidad, el precio, el descuento y la crítica con las reseñas de gente que no lo recomendó tras jugar menos de 2 horas. Bajo, medio y alto comparan su estimación con las del entrenamiento. ¿Te cuento de dónde salen los datos?
 openai: [catálogo] 'Compara Hades y Hollow Knight'
-          Hades y Hollow Knight se distinguen sobre todo por género, precio y crítica. Hades suma rol, cuesta $283 y tiene 93; Hollow Knight suma aventura, cuesta $179 y tiene 87. Ambos comparten acción e indie. 🎮 ¿Te cuento de qué se queja la gente en cada uno?
+          Hades y Hollow Knight se diferencian sobre todo en precio, géneros y horas típicas. Hades cuesta $283, tiene 93 de crítica y mezcla acción, indie y rol; Hollow Knight cuesta $179, tiene 87 y suma aventura. Quienes los recomiendan jugaron 30.6 h y 42.7 h de mediana, respectivamente. 🎮 ¿Te cuento de qué se queja la gente en cada uno?
           pasos: Buscando ese juego… · Leyendo la ficha de Hades… · Leyendo la ficha de Hollow Knight…
 reglas: [catálogo] '¿Y el más barato de esos dos?'
           De esos 2, el más barato de pago es Hollow Knight, a $179 💸 ¿Te cuento qué dicen sus reseñas?
