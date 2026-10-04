@@ -401,13 +401,16 @@ panel de Render.
 | `NEXPLAY_MODELO_NIA` | vacío | El modelo de OpenAI de Nia. Vacío, también modo demostración. | `.env` o entorno |
 | `NEXPLAY_NIA_MAX_TOKENS` | 400 | El largo máximo de la respuesta. | `.env` o entorno |
 | `NEXPLAY_NIA_TIMEOUT` | 20 | Segundos de espera al modelo. | `.env` o entorno |
-| `NEXPLAY_NIA_POR_MINUTO` | 10 | Mensajes a Nia por minuto, por usuario e IP. | `.env` o entorno |
+| `NEXPLAY_NIA_POR_MINUTO` | 10 | Mensajes a Nia por minuto de cada persona. | `.env` o entorno |
+| `NEXPLAY_NIA_POR_MINUTO_IP` | 6 veces el anterior | Mensajes a Nia por minuto de una IP: un salón con el mismo Wi-Fi la comparte. | `.env` o entorno |
+| `NEXPLAY_NIA_POR_MINUTO_GLOBAL` | 120 | Mensajes a Nia por minuto de todos juntos, solo con modelo: acota el gasto de OpenAI. | `.env` o entorno |
 | `NEXPLAY_NIA_RAZONAMIENTO` | false | En true, pide 1,200 tokens y esfuerzo bajo (para un modelo de razonamiento). | `.env` o entorno |
 | `NEXPLAY_CORS_ORIGENES` | vacío | Orígenes extra separados por coma. `http://localhost:4200` siempre está permitido. | entorno |
 | `NEXPLAY_VALORACIONES_DB` | `backend/datos/valoraciones.db` | Dónde guardar calificaciones, comentarios y votos. | entorno |
-| `NEXPLAY_COMENTARIOS_POR_MINUTO` | 3 | Comentarios por minuto, por usuario e IP. | entorno |
-| `NEXPLAY_REACCIONES_POR_MINUTO` | 30 | Reacciones por minuto. | entorno |
-| `NEXPLAY_VOTOS_NIA_POR_MINUTO` | 30 | Votos a respuestas de Nia por minuto. | entorno |
+| `NEXPLAY_COMENTARIOS_POR_MINUTO` | 3 | Comentarios por minuto de cada persona. | entorno |
+| `NEXPLAY_REACCIONES_POR_MINUTO` | 30 | Reacciones por minuto de cada persona. | entorno |
+| `NEXPLAY_VOTOS_NIA_POR_MINUTO` | 30 | Votos a respuestas de Nia por minuto de cada persona. | entorno |
+| `NEXPLAY_*_POR_MINUTO_IP` | 6 veces el de una persona | El tope de una IP para comentarios, reacciones y votos (`NEXPLAY_COMENTARIOS_POR_MINUTO_IP`, etc.). La IP sale de `CF-Connecting-IP`, que pone Cloudflare y el cliente no puede cambiar. | entorno |
 
 ## 🔌 API
 
