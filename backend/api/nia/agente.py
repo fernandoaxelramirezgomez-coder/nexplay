@@ -1235,9 +1235,13 @@ def con_cierre_cumplible(
         cierre = "¿Los ordeno por riesgo?"
     else:
         oferta, cierre = {"intencion": "como_se_calcula", "juegos": []}, "¿Te cuento cómo se calcula el riesgo?"
-    if not EMOJI.search(cuerpo):
-        cuerpo = f"{cuerpo} 🎮".strip()
-    return ajustar_largo(f"{cuerpo} {cierre}"), oferta
+    # De 1 a 3 emojis: si no queda ninguno, uno antes de la pregunta. Se revisa después de recortar,
+    # porque el cierre suele ser más largo que la pregunta del modelo y el recorte se llevaba la
+    # oración a la que se había pegado el emoji (dos corridas con IA del 2026-10-04, al comparar).
+    final = ajustar_largo(f"{cuerpo} {cierre}")
+    if not EMOJI.search(final) and final.endswith(cierre):
+        final = f"{final[: -len(cierre)].rstrip()} 🎮 {cierre}"
+    return final, oferta
 
 
 _AVISO_DEMOSTRACION = (

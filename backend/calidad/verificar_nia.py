@@ -1568,6 +1568,13 @@ _COMPARACIONES_DEL_MODELO = (
     "En riesgo están igual, los dos bajo 🎮 Hades tiene mejor nota (93 contra 87). ¿Seguimos?",
     "Hades cuesta $283, tiene riesgo bajo y la crítica le dio 93; Hollow Knight, $179 🎮 ¿Te cuento más?",
     "Riesgo: bajo para ambos 🙂 ¿Te digo cuál es más barato?",
+    # Larga y con su único emoji en la pregunta final, como en las dos corridas con IA del
+    # 2026-10-04: al cambiar la pregunta por el cierre, más largo, el recorte a 60 palabras se
+    # llevaba la oración a la que se había pegado el emoji de repuesto.
+    "Hades y Hollow Knight se diferencian sobre todo en precio, géneros y horas típicas. Hades cuesta $283, tiene"
+    " 93 de crítica y mezcla acción, indie y rol; Hollow Knight cuesta $179, tiene 87 y suma aventura. Quienes los"
+    " recomiendan jugaron muchas horas en los dos, así que rinden bastante. Las quejas tempranas hablan de"
+    " dificultad. ¿Quieres que te cuente más? 🎮",
 )
 
 
