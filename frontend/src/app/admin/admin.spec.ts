@@ -71,6 +71,7 @@ describe('Administración: el estado del sistema', () => {
     expect(texto(html, 'admin-modelo')).toContain('logreg-juego-2026-10-01');
     expect(texto(html, 'admin-modelo')).toContain('Entrenado con 83 juegos (data-v1)');
     expect(texto(html, 'admin-buzon-votos')).toBe('👍 4 · 👎 2');
+    expect(texto(html, 'admin-buzon-reinicio')).toContain('se reinician cuando el servidor se duerme (plan gratuito)');
     expect(texto(html, 'admin-buzon-sugerencias')).toContain('Que cuente más del modo historia');
   });
 

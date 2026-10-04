@@ -44,6 +44,10 @@ const MAXIMO_TEXTO = 500;
       <p class="meta aviso-publico" data-testid="aviso-publico">
         Los comentarios son públicos y anónimos: cualquiera puede verlos. No compartas datos personales.
       </p>
+      <p class="meta aviso-publico" data-testid="aviso-reinicio">
+        Los comentarios, las calificaciones y los votos se reinician cuando el servidor se duerme (plan gratuito),
+        tras unos minutos sin uso.
+      </p>
 
       @if (recurso.error()) {
         <p class="meta">No se pudieron cargar los comentarios.</p>

@@ -244,6 +244,10 @@ const cifra = (n: number | undefined) => (n ? String(n) : '—');
         <div class="seccion-cabecera">
           <h2 id="titulo-buzon" class="rotulo-seccion">Buzón de sugerencias</h2>
           <p class="meta">Lo que la gente le dice a Nia con 👍 y 👎, de todos los visitantes y sin nombres.</p>
+          <p class="meta" data-testid="admin-buzon-reinicio">
+            Los datos se reinician cuando el servidor se duerme (plan gratuito), tras unos minutos sin uso: por eso
+            puede estar vacío.
+          </p>
         </div>
         @if (buzon(); as b) {
           <div class="buzon" data-testid="admin-buzon">

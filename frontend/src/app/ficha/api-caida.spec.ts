@@ -60,6 +60,15 @@ describe('Con la API caída nada truena', () => {
     expect(texto(fixture.nativeElement)).toContain('No se pudieron cargar los comentarios.');
   });
 
+  it('el hilo avisa que se reinicia cuando el servidor se duerme, aun sin API', async () => {
+    const fixture = TestBed.createComponent(HiloComentarios);
+    fixture.componentRef.setInput('appid', JUEGO.appid);
+    await fixture.whenStable();
+
+    const aviso = fixture.nativeElement.querySelector('[data-testid="aviso-reinicio"]');
+    expect(texto(aviso)).toContain('se reinician cuando el servidor se duerme (plan gratuito)');
+  });
+
   it('la valoración se pinta sin conteo', async () => {
     const fixture = TestBed.createComponent(ValoracionOpinion);
     fixture.componentRef.setInput('appid', JUEGO.appid);
