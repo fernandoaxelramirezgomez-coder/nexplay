@@ -21,6 +21,8 @@ Solo documentación. Nada de lo que necesitan la API, el modelo o el frontend vi
       -t default -b transparent -c docs/diagramas/mermaid.json
   done
   ```
+- `guion-demo.md`: el guion de la demo en vivo de 5 minutos, con las preguntas probables y de dónde sale cada
+  cifra.
 - `diseno/`: las referencias de estilo de la interfaz (`referencia-estilo.md` y `referencia-neon.md`).
 - `historial/`: planes, revisiones por fase, mockups y las dudas del documento: cómo se llegó aquí. No se
   citan desde el README y conservan las rutas de cuando se escribieron.
