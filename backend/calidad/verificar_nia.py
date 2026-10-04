@@ -598,27 +598,30 @@ def _revisar_casos_de_produccion() -> list[str]:
     return problemas
 
 
+def _peticion_de_prueba(*encabezados: tuple[str, str]):
+    """Una petición HTTP falsa, desde la IP 10.0.0.7, para llamar a los endpoints directo."""
+    from starlette.requests import Request
+
+    return Request({"type": "http", "headers": [(k.encode(), v.encode()) for k, v in encabezados],
+                    "client": ("10.0.0.7", 4321)})
+
+
 def _revisar_limites() -> list[str]:
     """Los topes por minuto: la IP sale de CF-Connecting-IP y no de X-Forwarded-For, que el cliente
     falsificaba para saltarse el tope; cada persona tiene el suyo y la IP compartida (un salón con el
     mismo Wi-Fi) el de VECES_POR_IP personas; con modelo de pago, Nia tiene además un tope total.
     Se prueban con topes chicos puestos aquí, y los de verdad se restauran al final."""
     from fastapi import HTTPException
-    from starlette.requests import Request
 
     from api import limites
     from api import main as api_main
     from api.config import VECES_POR_IP, configuracion
 
-    def peticion(*encabezados: tuple[str, str]) -> Request:
-        return Request({"type": "http", "headers": [(k.encode(), v.encode()) for k, v in encabezados],
-                        "client": ("10.0.0.7", 4321)})
-
     problemas = []
     falsa = ("x-forwarded-for", "203.0.113.9")
-    if api_main._ip_del_cliente(peticion(("cf-connecting-ip", "198.51.100.7"), falsa)) != "198.51.100.7":
+    if api_main._ip_del_cliente(_peticion_de_prueba(("cf-connecting-ip", "198.51.100.7"), falsa)) != "198.51.100.7":
         problemas.append("la IP no sale de CF-Connecting-IP: un X-Forwarded-For falso la cambiaría")
-    if api_main._ip_del_cliente(peticion(falsa)) != "10.0.0.7":
+    if api_main._ip_del_cliente(_peticion_de_prueba(falsa)) != "10.0.0.7":
         problemas.append("sin Cloudflare, la IP no es la del socket")
 
     # Cuatro personas desde la misma IP con tope de 3 por IP: la cuarta espera. Una persona desde
@@ -748,7 +751,8 @@ def _revisar_votos() -> list[str]:
     if len(voto["sugerencia"] or "") != valoraciones.MAXIMO_SUGERENCIA:
         problemas.append("la sugerencia larga no se recortó al tope")
     por_api = main.votar_respuesta_de_nia("r4", SolicitudVotoNia(
-        usuario="pruebalocal04", voto=-1, motivo="otro motivo", sugerencia="escríbeme a ana@correo.com o al 55 1234 5678"))
+        usuario="pruebalocal04", voto=-1, motivo="otro motivo", sugerencia="escríbeme a ana@correo.com o al 55 1234 5678"),
+        _peticion_de_prueba())
     if "ana@correo.com" in (por_api.sugerencia or "") or "1234" in (por_api.sugerencia or ""):
         problemas.append(f"la sugerencia guardó datos personales ({por_api.sugerencia})")
     buzon = main.buzon_de_sugerencias()
