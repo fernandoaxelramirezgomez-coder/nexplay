@@ -8,7 +8,7 @@ del Diplomado en Ciencia de Datos de la FES Acatlán (UNAM).
 [![Open in Colab: 00_exploracion](https://img.shields.io/badge/Open_in_Colab-00__exploracion-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb)
 [![Open in Colab: 01_modelo_riesgo](https://img.shields.io/badge/Open_in_Colab-01__modelo__riesgo-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb)
 [![Open in Colab: 02_modelos_texto](https://img.shields.io/badge/Open_in_Colab-02__modelos__texto-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb)
-[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requisitos-previos)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#1-lo-que-necesitas)
 [![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend/README.md)
 
 **Pruébalo:** [la app en vivo](https://nexplay-six.vercel.app) · [la API y su contrato (/docs)](https://nexplay-api-345o.onrender.com/docs) · [📄 Documento final](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/documento-entregafinal.pdf) · [🎤 Presentación](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/presentacion-entregafinal.pdf).
@@ -52,19 +52,23 @@ un poco.
 
 ## 📑 Índice
 
-- [Entregables](#entregables)
 - [Qué es NexPlay](#-qué-es-nexplay)
-- [Arquitectura](#%EF%B8%8F-arquitectura)
-- [Requisitos previos](#-requisitos-previos)
-- [Puesta en marcha](#-puesta-en-marcha)
-- [Configuración (.env)](#%EF%B8%8F-configuración-env)
-- [API](#-api)
-- [Calidad](#-calidad)
-- [Estructura del repositorio](#%EF%B8%8F-estructura-del-repositorio)
-- [Datos y releases](#-datos-y-releases)
-- [Despliegue](#%EF%B8%8F-despliegue)
-- [Contenido de usuarios y moderación](#-contenido-de-usuarios-y-moderación)
-- [Solución de problemas](#%EF%B8%8F-solución-de-problemas)
+- [Hazlo tú: la ruta completa](#-hazlo-tú-la-ruta-completa), del clon al sitio publicado
+  1. [Lo que necesitas](#1-lo-que-necesitas)
+  2. [Consigue el código](#2-consigue-el-código)
+  3. [Instala](#3-instala)
+  4. [Consigue los datos](#4-consigue-los-datos)
+  5. [Explora los datos](#5-explora-los-datos)
+  6. [Entrena y valida el modelo](#6-entrena-y-valida-el-modelo)
+  7. [Levanta la API y la app](#7-levanta-la-api-y-la-app)
+  8. [Dale un modelo de lenguaje a Nia (opcional)](#8-dale-un-modelo-de-lenguaje-a-nia-opcional)
+  9. [Comprueba que todo está en orden](#9-comprueba-que-todo-está-en-orden)
+  10. [Publícalo](#10-publícalo)
+  11. [Cuéntalo: el documento](#11-cuéntalo-el-documento)
+- Referencia: [Arquitectura](#%EF%B8%8F-arquitectura) · [Configuración (.env)](#%EF%B8%8F-configuración-env) ·
+  [API](#-api) · [Calidad](#-calidad) · [Estructura del repositorio](#%EF%B8%8F-estructura-del-repositorio) ·
+  [Datos y releases](#-datos-y-releases) · [Contenido de usuarios y moderación](#-contenido-de-usuarios-y-moderación) ·
+  [Solución de problemas](#%EF%B8%8F-solución-de-problemas)
 - [Autor y datos](#-autor-y-datos)
 
 ## 🎮 Qué es NexPlay
@@ -89,11 +93,279 @@ lo hizo.
 - **La app.** Te muestra la banda de riesgo (bajo, medio o alto, nunca un número), los factores que más la
   mueven, los motivos de queja más frecuentes y a Nia, un chat que te explica los datos del juego sin
   recomendarte que lo compres. El perfil que declares sirve para contarte qué tanto encaja un juego contigo;
-  no cambia el riesgo.
+  no cambia el riesgo. Fuera de sus cinco vistas, **Administración** (`/admin`, en el pie del menú) dice de un
+  vistazo si la API, Nia, los datos y el modelo están en orden, cuenta lo que hiciste en ese navegador y junta
+  el buzón de sugerencias a Nia.
 
 La historia completa está en tres notebooks que corren en Colab: `00_exploracion` (los datos, antes del
 modelo), `01_modelo_riesgo` (el modelo) y `02_modelos_texto` (si el texto distingue las negativas
 tempranas). Los detalles, en [notebooks/README.md](notebooks/README.md).
+
+## 🧭 Hazlo tú: la ruta completa
+
+Estos son los pasos que seguí, en orden, para llegar del código al sitio publicado. Cada uno dice para qué
+sirve, qué comando correr y cómo saber que salió bien. Si solo quieres ver el análisis, ve directo al
+[paso 5](#5-explora-los-datos): los notebooks corren en Colab sin instalar nada. Los comandos con `make` corren
+desde la raíz del repo; los de Python sueltos, desde `backend/`.
+
+### 1. Lo que necesitas
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Python | 3.12 o más nuevo (probado con 3.14, la del Dockerfile) | backend, modelo y notebooks |
+| Node.js con npm | `^22.22.3`, `^24.15.0` o `>=26` | frontend |
+| git | cualquiera reciente | clonar; `make notebooks` exporta el último commit |
+| make | GNU make | los atajos de cada paso (Linux, macOS o WSL) |
+| Chrome | opcional | las gráficas del 00 en PNG y las capturas de la UI |
+| Clave de OpenAI | opcional | Nia con modelo de lenguaje; sin clave responde con reglas |
+| LaTeX (latexmk, LuaLaTeX y biber) | opcional | compilar el documento con `make doc` |
+| Cuentas de Render y Vercel | opcional, gratis | publicar la API y el sitio (paso 10) |
+
+No necesitas cuenta ni credenciales de Steam ni de GitHub para correrlo: todo lo que se descarga es público. La
+instalación base con los datos ocupa algo más de 1 GB (`.venv` 575 MB, `node_modules` 366 MB y los datos
+102 MB). Si además corres los notebooks, sus paquetes (torch CPU, lingua y transformers, entre otros) suman
+otros 1.6 GB.
+
+### 2. Consigue el código
+
+```bash
+git clone https://github.com/fernandoaxelramirezgomez-coder/nexplay.git
+cd nexplay
+```
+
+Si lo vas a publicar con tus cuentas (paso 10), primero haz un *fork* en GitHub y clona el tuyo: Render y
+Vercel despliegan desde tu repositorio.
+
+### 3. Instala
+
+```bash
+make setup
+```
+
+Crea `.venv` con lo que necesitan la API y el modelo (`backend/requirements.txt` y
+`backend/requirements-modelo.txt`) e instala el frontend con `npm ci`.
+
+**Salió bien si** termina con `Listo. Siguiente paso: make data`. Si te dice que hace falta Python 3.12, elige
+otro intérprete: `make setup PYTHON=python3.14`.
+
+<details>
+<summary>Sin make</summary>
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate            # en Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt -r backend/requirements-modelo.txt
+cd frontend && npm ci
+```
+
+</details>
+
+### 4. Consigue los datos
+
+**La ruta corta, la del proyecto:** bajar los releases publicados.
+
+```bash
+make data
+```
+
+Baja dos bases de los releases de GitHub y verifica el sha256 de cada una antes de abrirla: data-v3, el
+catálogo de 123 juegos que sirve la API, a `backend/datos/nexplay.db`, y data-v1, los 83 juegos con los que se
+entrena, a `backend/datos/entrenamiento/`.
+
+**Salió bien si** ves esto:
+
+```
+descarga verificada (data-v3): 15.9 MB, sha256 OK
+descarga verificada (data-v1): 10.9 MB, sha256 OK
+Datos listos: datos/nexplay.db (data-v3) y datos/entrenamiento/nexplay_data-v1.db (data-v1).
+```
+
+<details>
+<summary>La ruta larga: recolectar tus propios datos de Steam</summary>
+
+Solo hace falta si quieres otros juegos o reseñas más nuevas. Los juegos salen de
+[`backend/ingesta/appids.txt`](backend/ingesta/appids.txt), un appid por línea; el criterio con el que elegí los
+123 está en los comentarios de ese archivo. Desde `backend/`:
+
+```bash
+python ingesta/ingesta_steam.py --catalogo       # precio, gratuidad y nota de cada juego
+python ingesta/ingesta_steam.py --resenas        # hasta 1,500 reseñas por juego; tarda horas y reanuda si se corta
+python ingesta/ingesta_steam.py --estado         # cuánto llevas
+```
+
+La ingesta escribe en `backend/datos/nexplay.db`, el mismo archivo que llena `make data`. Esa base no se
+recupera de ningún release, así que respáldala: por eso `preparar_entorno.py --force` se niega a pisarla.
+
+Para que otros (y Render) usen tus datos, publícalos como un release nuevo:
+
+```bash
+python publicacion/extracto_datos.py             # extracto/nexplay_extracto.parquet, sin texto, para el 01
+python publicacion/extracto_reproducible.py      # extracto/nexplay_reproducible.db.xz, sin steamid
+```
+
+Sube los dos archivos a un release de GitHub con un tag nuevo (`data-v4`, por ejemplo), desde la web o con
+`gh release create`. Nunca reemplaces los assets de un release publicado. Después pon el tag y los sha256 que
+imprime cada script en `backend/despliegue/preparar_entorno.py` (`SERVIDO_REF`, `SERVIDO_SHA256` y
+`BASES_DE_RELEASE`, o los de `ENTRENAMIENTO_` si es la base de entrenamiento) y en los notebooks. Si no
+coinciden, la descarga se rechaza a propósito.
+
+Con otros juegos o datos, las bandas cambian y el paso 6 va a decir que no coinciden con la referencia. Revisa
+el modelo en el 01 y, cuando estés conforme, reescribe la referencia con
+`python modelado/verificar_bandas.py --generar` y versiona `backend/referencias/bandas_referencia.json`.
+
+</details>
+
+### 5. Explora los datos
+
+Abre el notebook `00_exploracion` y ejecútalo completo: *Entorno de ejecución → Ejecutar todas*.
+
+| Notebook | Qué hace | Abrir |
+|---|---|---|
+| `00_exploracion` | Valida, limpia y explora los datos; fija las decisiones que los otros dos dan por hechas | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) |
+| `01_modelo_riesgo` | Construye y mide el modelo: GroupKFold por `appid`, prueba externa y señal por banda | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
+| `02_modelos_texto` | Si el texto distingue las negativas tempranas, contra una regla prerregistrada | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
+
+Cada notebook clona el tag `codigo-v8` y baja los datos verificando su sha256, así que en Colab no necesitas
+nada de los pasos anteriores ni te pide credenciales. Los tres corrieron en Colab el 2026-10-02 con `codigo-v8`,
+el tag de entrega, sin errores ni avisos; la evidencia está en
+[docs/evidencia/colab/](docs/evidencia/colab/README.md), junto con las corridas anteriores.
+
+En tu máquina, después del paso 3, `make notebooks` ejecuta los tres en una carpeta temporal y compara cada
+salida con la guardada, sin sobrescribirla. La primera vez instala sus paquetes (unos 1.6 GB).
+
+### 6. Entrena y valida el modelo
+
+```bash
+make train
+```
+
+Entrena la regresión logística con data-v1 y la partición congelada
+(`backend/referencias/particion_gkf_data-v1.csv`), deja el modelo en `backend/modelo/nexplay.pkl` y compara la
+banda de cada uno de los 123 juegos contra la referencia validada. La partición está congelada porque cada
+versión de scikit-learn desempata `GroupKFold` distinto, y las cifras tienen que salir iguales en cualquier
+máquina.
+
+**Salió bien si** termina con:
+
+```
+filas=123972  juegos=83  prevalencia=0.0219
+bandas idénticas a la referencia: 123 juegos (modelo actual logreg-juego-AAAA-MM-DD)
+```
+
+La fecha es la del día en que entrenas. El porqué de cada decisión (las variables, la validación, la prueba
+externa, por qué PR-AUC) está en el notebook `01_modelo_riesgo`, y lo que se midió para decidirlo, en
+[docs/evidencia/](docs/evidencia/README.md).
+
+### 7. Levanta la API y la app
+
+En dos terminales:
+
+```bash
+make api         # terminal 1: la API en http://localhost:8000 (contrato en /docs)
+make web         # terminal 2: el sitio en http://localhost:4200
+```
+
+Abre el sitio como `http://localhost:4200` y no como `127.0.0.1`: el CORS de la API solo permite el primero.
+
+**Salió bien si** en Administración (el enlace «Administración» con el escudo, en el pie del menú) ves el
+backend «Conectado», los datos `data-v3` con 123 juegos y el modelo `logreg-juego-…` «entrenado con 83 juegos
+(data-v1)». Lo mismo, sin el navegador:
+
+```bash
+curl -s http://localhost:8000/estado
+# {"nia_con_openai":false,"modelo_nia":null,"datos_release":"data-v3","juegos_catalogo":123,
+#  "modelo_version":"logreg-juego-AAAA-MM-DD","modelo_datos":"data-v1","modelo_juegos_entrenamiento":83}
+```
+
+<details>
+<summary>Sin make</summary>
+
+```bash
+cd backend && uvicorn api.main:app --reload       # terminal 1, con .venv activado
+cd frontend && npx ng serve                       # terminal 2
+```
+
+</details>
+
+### 8. Dale un modelo de lenguaje a Nia (opcional)
+
+Sin clave, Nia contesta por reglas sobre los datos, sin costo. Con clave, usa un modelo de OpenAI para lo que
+no tiene respuesta fija:
+
+```bash
+cp .env.example .env      # y llena OPENAI_API_KEY y NEXPLAY_MODELO_NIA
+```
+
+Reinicia `make api`. **Salió bien si** Administración dice OpenAI «Configurado» con el nombre del modelo y las
+respuestas del chat llevan la etiqueta «Con IA». `.env` está en `.gitignore`: la clave nunca va en un archivo
+del repo, y `/estado` dice si hay clave, nunca cuál es. Las demás variables están en
+[Configuración](#%EF%B8%8F-configuración-env).
+
+### 9. Comprueba que todo está en orden
+
+```bash
+make test
+```
+
+Revisa que las 123 bandas sigan idénticas, a Nia sin gastar llamadas (contexto, reglas, votos y buzón), los
+factores de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `/estado` no deje
+salir la clave, que `preparar_entorno --force` no pise bases ajenas y todas las pruebas del frontend.
+
+**Salió bien si** termina sin errores, con `bandas idénticas a la referencia: 123 juegos`, `sin problemas: 6
+juegos × 3 preguntas` y las pruebas del frontend en verde (`Tests … passed`). Para el build de producción del
+frontend: `cd frontend && npx ng build`. Qué revisa cada comando, en [Calidad](#-calidad).
+
+### 10. Publícalo
+
+**La API, en Render** (plan gratis, como servicio Docker):
+
+1. *New → Web Service*, desde tu fork, con *Runtime* Docker.
+2. *Root Directory* `backend`, *Dockerfile Path* `despliegue/Dockerfile` y *Docker Build Context Directory* `.`
+   (un solo punto: la misma carpeta `backend/`).
+3. En *Environment*, `NEXPLAY_CORS_ORIGENES` con la URL que te dará Vercel (por ejemplo,
+   `https://tu-app.vercel.app`, sin `/` al final) y, si quieres a Nia con modelo, `OPENAI_API_KEY` y
+   `NEXPLAY_MODELO_NIA`.
+4. Opcional: en *Build Filters*, incluye solo lo que copia el Dockerfile, para que cambiar un README no
+   dispare un deploy: `backend/api/**`, `backend/modelado/**`, `backend/analisis/motivos.py`,
+   `backend/despliegue/**`, `backend/referencias/bandas_referencia.json`,
+   `backend/referencias/particion_gkf_data-v1.csv`, `backend/requirements.txt` y
+   `backend/requirements-modelo.txt`; ignora `**/README.md`.
+
+El build hace lo mismo que los pasos 4 y 6: baja los datos con su sha256, entrena y corre
+`verificar_bandas.py`. Si una banda cambia, o si llega torch a la imagen, el build falla.
+**Salió bien si** `curl -s https://tu-api.onrender.com/estado` devuelve `"datos_release":"data-v3"` y
+`"juegos_catalogo":123`.
+
+**El sitio, en Vercel:**
+
+1. En `frontend/src/environments/environment.ts`, cambia `apiUrl` por la URL de tu API en Render, sin `/` al
+   final, y súbelo a tu fork.
+2. *Add New → Project*, desde tu fork, con *Root Directory* `frontend`. `frontend/vercel.json` ya reescribe
+   toda ruta a `index.html`.
+
+**Salió bien si** `https://tu-app.vercel.app/admin` dice backend «Conectado». Si dice «Despertando…», Render
+estaba dormido: el plan gratis duerme la API tras 15 minutos sin uso y tarda hasta un minuto en despertar. Si
+dice «Sin conexión», revisa que `NEXPLAY_CORS_ORIGENES` tenga exactamente el origen de tu sitio. En ese plan el
+disco es efímero: las calificaciones, los comentarios y los votos a Nia se borran cada vez que el servicio se
+reinicia.
+
+### 11. Cuéntalo: el documento
+
+```bash
+make doc
+```
+
+Genera las figuras y las cifras del documento desde el código y los datos, comprueba cada cifra contra su
+fuente, lo compila con LaTeX y deja el PDF en `entregables/documento-entregafinal.pdf`. Ninguna cifra del texto
+se escribe a mano: todas son macros de `documento/tables/cifras.tex`, y `documento/verificar_cifras.py` falla
+si alguna no cuadra. Necesita LaTeX (paso 1); en Ubuntu, `make doc` te dice qué paquetes instalar si falta.
+También usa los paquetes de los notebooks: si no corriste `make notebooks`, instálalos antes, con torch para CPU
+primero para no bajar el de GPU:
+
+```bash
+.venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+.venv/bin/pip install -r backend/requirements-notebooks.txt
+```
 
 ## 🏗️ Arquitectura
 
@@ -116,97 +388,12 @@ Esto es lo que pasa cuando abres la ficha de un juego:
 
 <sub>Fuente: [docs/diagramas/02-ficha-de-un-juego.mmd](docs/diagramas/02-ficha-de-un-juego.mmd)</sub>
 
-## 🧰 Requisitos previos
-
-| Herramienta | Versión | Para qué |
-|---|---|---|
-| Python | 3.12 o más nuevo (probado con 3.14, la del Dockerfile) | backend, modelo y notebooks |
-| Node.js con npm | `^22.22.3`, `^24.15.0` o `>=26` | frontend |
-| git | cualquiera reciente | clonar; `make notebooks` exporta el último commit |
-| make | GNU make | la opción A (Linux, macOS o WSL) |
-| Chrome | opcional | las gráficas del 00 en PNG y las capturas de la UI |
-| Clave de OpenAI | opcional | Nia con modelo; sin clave responde con reglas |
-| LaTeX (latexmk, LuaLaTeX y biber) | opcional | compilar el documento con `make doc` |
-
-No necesitas cuenta ni credenciales de Steam ni de GitHub: todo lo que se descarga es público. La instalación
-base con los datos ocupa algo más de 1 GB (`.venv` 575 MB, `node_modules` 366 MB y los datos 102 MB). Si
-además corres los notebooks, sus paquetes (torch CPU, lingua y transformers, entre otros) suman otros 1.6 GB.
-
-## 🚀 Puesta en marcha
-
-### Opción A: con make
-
-```bash
-git clone https://github.com/fernandoaxelramirezgomez-coder/nexplay.git
-cd nexplay
-
-make setup       # .venv con backend/requirements*.txt y npm ci en frontend/
-make data        # baja data-v3 y data-v1 a backend/datos/ y verifica su sha256
-make train       # entrena backend/modelo/nexplay.pkl y compara las 123 bandas con la referencia
-
-make api         # terminal 1: API en http://localhost:8000 (contrato en /docs)
-make web         # terminal 2: frontend en http://localhost:4200
-
-make test        # verificadores del backend y pruebas del frontend
-make notebooks   # opcional: ejecuta el 00, el 01 y el 02 y los compara con las salidas guardadas
-```
-
-Si corres `make` sin objetivo, te muestra la lista. Cada objetivo revisa antes lo que necesita: si falta
-`.venv`, las bases o el modelo, te dice qué correr primero. Abre el frontend como `localhost` y no como
-`127.0.0.1`, porque el CORS de la API solo permite `http://localhost:4200`.
-
-### Opción B: manual, paso a paso
-
-```bash
-git clone https://github.com/fernandoaxelramirezgomez-coder/nexplay.git
-cd nexplay
-
-python3 -m venv .venv
-source .venv/bin/activate            # en Windows: .venv\Scripts\activate
-pip install -r backend/requirements.txt -r backend/requirements-modelo.txt
-
-cd backend
-python despliegue/preparar_entorno.py      # baja los datos, entrena y prueba que la API responda
-python modelado/verificar_bandas.py        # las 123 bandas, idénticas a la referencia
-uvicorn api.main:app --reload              # http://localhost:8000
-
-# en otra terminal, desde la raíz del repo
-cd frontend
-npm ci
-npx ng serve                               # http://localhost:4200
-```
-
-`preparar_entorno.py` no pisa lo que ya existe. Con `--force` reconstruye, pero solo las bases que salieron de
-un release. Todos los comandos de Python corren desde `backend/`.
-
-### Opción C: los notebooks en Colab
-
-| Notebook | Abrir |
-|---|---|
-| `00_exploracion`: valida, limpia y explora los datos | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/00_exploracion.ipynb) |
-| `01_modelo_riesgo`: construye y mide el modelo | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/01_modelo_riesgo.ipynb) |
-| `02_modelos_texto`: si el texto distingue las negativas tempranas | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fernandoaxelramirezgomez-coder/nexplay/blob/master/notebooks/02_modelos_texto.ipynb) |
-
-Abre cualquiera de los tres y usa *Entorno de ejecución → Ejecutar todas*. Cada notebook clona el tag
-`codigo-v8` y baja los datos verificando su sha256, así que no necesitas nada de lo anterior y no te pide
-credenciales.
-
-Los tres corrieron en Colab el 2026-10-02 con `codigo-v8`, el tag de entrega, sin errores ni avisos; evidencia en
-[docs/evidencia/colab/](docs/evidencia/colab/README.md), junto con las corridas anteriores (`codigo-v3`, `codigo-v4`
-y `codigo-v6`). Los tres guardan en `notebooks/` las salidas de
-una corrida local, para que sus gráficas también se vean como PNG en GitHub.
-
 ## ⚙️ Configuración (.env)
 
-Si quieres que Nia use un modelo de lenguaje, copia la plantilla en la raíz y llena la clave:
-
-```bash
-cp .env.example .env
-```
-
-`.env` está en `.gitignore`, y la clave nunca va en un archivo del repo; en Render se carga en *Environment*.
-La API lee el `.env` de la raíz aunque corra desde `backend/`, pero solo para las variables de Nia. Las demás
-las toma del entorno del proceso: expórtalas en la terminal antes de `make api` o ponlas en el panel de Render.
+`.env` va en la raíz (`cp .env.example .env`) y está en `.gitignore`; en Render, las variables se cargan en
+*Environment*. La API lee el `.env` de la raíz aunque corra desde `backend/`, pero solo para las variables de
+Nia. Las demás las toma del entorno del proceso: expórtalas en la terminal antes de `make api` o ponlas en el
+panel de Render.
 
 | Variable | Por omisión | Qué hace | Se lee de |
 |---|---|---|---|
@@ -262,7 +449,7 @@ de pliegue del entrenamiento; en el catálogo quedan 43, 37 y 43.
 
 | Comando | Qué revisa |
 |---|---|
-| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas y votos, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `preparar_entorno --force` no pise bases ajenas y las pruebas del frontend. |
+| `make test` | Que las 123 bandas sean las de `backend/referencias/bandas_referencia.json`. También revisa a Nia (contexto, reglas, votos y buzón, sin gastar llamadas), las nueve reglas de «Qué mueve esta estimación», que los niveles tengan una sola definición, que `/estado` no deje salir la clave, que `preparar_entorno --force` no pise bases ajenas y las pruebas del frontend. |
 | `make notebooks` | Ejecuta el 00, el 01 y el 02 con el último commit y compara cada salida con la guardada, sin sobrescribirla. Falla si un notebook no termina; las celdas distintas las lista con su diff. |
 | `cd frontend && npx ng build` | El build de producción del frontend. |
 | `python calidad/capturar_ui.py`, desde `backend/` | Recorre la UI con Playwright (API y frontend corriendo), guarda capturas en `docs/capturas/angular/` y reporta problemas de texto y contraste. |
@@ -300,9 +487,7 @@ nexplay/
 ```
 
 Cada carpeta tiene un `README.md` corto que dice qué va ahí y qué no. Cuando corres el proyecto aparecen, sin
-versionarse, `backend/datos/`, `backend/modelo/`, `backend/extracto/` y `backend/registros/`. El documento
-final está en LaTeX, en `documento/`: `make doc` genera sus figuras y cifras, lo compila y deja el PDF en
-`entregables/documento-entregafinal.pdf`.
+versionarse, `backend/datos/`, `backend/modelo/`, `backend/extracto/` y `backend/registros/`.
 
 ## 💾 Datos y releases
 
@@ -314,47 +499,18 @@ final está en LaTeX, en `documento/`: `make doc` genera sus figuras y cifras, l
 
 Cada release trae `nexplay_reproducible.db.xz`, una copia sanitizada de la base sin la columna `steamid`, y
 `nexplay_extracto.parquet`, un extracto sin texto para el 01. Antes de abrirlos se verifica su sha256
-(`descargar_verificado`, en `backend/despliegue/utilidades.py`).
-
-**Regenerar un release (solo mantenedores).** Solo hace falta si vuelves a ingestar Steam o cambia el esquema.
-Desde `backend/`:
-
-```bash
-python ingesta/ingesta_steam.py --catalogo
-python ingesta/ingesta_steam.py --resenas          # tarda horas; reanuda si se interrumpe
-
-python publicacion/extracto_datos.py               # extracto/nexplay_extracto.parquet
-python publicacion/extracto_reproducible.py        # extracto/nexplay_reproducible.db.xz
-gh release create data-v4 extracto/nexplay_extracto.parquet extracto/nexplay_reproducible.db.xz
-```
-
-Cada extracto nuevo va con un tag nuevo; nunca se reemplazan los assets de uno publicado. Después pones los
-sha256 que imprime cada script en `backend/despliegue/preparar_entorno.py` (`SERVIDO_SHA256` y
-`ENTRENAMIENTO_SHA256`) y en los notebooks. Si no coinciden, la descarga se rechaza a propósito.
-
-## ☁️ Despliegue
-
-- **API en Render**, como servicio Docker, en https://nexplay-api-345o.onrender.com. Su configuración:
-  - Root Directory: `backend`
-  - Dockerfile Path: `despliegue/Dockerfile`
-  - Docker Build Context Directory: `.` (un solo punto, la misma carpeta `backend/`)
-
-  El build instala `requirements.txt` y `requirements-modelo.txt` (sin pyarrow), baja los datos, entrena y
-  corre `verificar_bandas.py`. Los Build Filters incluyen solo lo que copia el Dockerfile, así que cambiar un
-  README no dispara un deploy.
-- **Frontend en Vercel**, con Root Directory `frontend`, en https://nexplay-six.vercel.app.
-  `frontend/vercel.json` reescribe toda ruta a `index.html`, y `frontend/src/environments/environment.ts`
-  apunta a la API de Render. El origen de Vercel se agrega a la API con `NEXPLAY_CORS_ORIGENES`.
-
-En el plan gratis de Render el disco es efímero: `valoraciones.db` se borra cada vez que el servicio se
-reinicia.
+(`descargar_verificado`, en `backend/despliegue/utilidades.py`). Cada extracto nuevo va con un tag nuevo; nunca
+se reemplazan los assets de uno publicado. Cómo se arma uno, en la ruta larga del
+[paso 4](#4-consigue-los-datos).
 
 ## 💬 Contenido de usuarios y moderación
 
 Las calificaciones, los comentarios y los votos a Nia viven en `backend/datos/valoraciones.db`, aparte del
 catálogo. No salen de ningún release: `make data` no los toca, y respaldarlos es copiar el archivo. La
 identidad es un id anónimo que genera el navegador. Identifica, pero no autentica, así que no sirve como
-control de acceso.
+control de acceso. Por eso `/admin` no tiene contraseña y no muestra nada que no pueda ver cualquiera: el
+buzón junta los votos a Nia por motivo y las sugerencias de «otro motivo», sin usuario ni pregunta, y a esas
+sugerencias la API les quita correos y teléfonos antes de guardarlas.
 
 Desde `backend/`:
 
@@ -370,6 +526,7 @@ Desde `backend/`:
 | `make` dice «Falta el entorno .venv», «Faltan las bases» o «Falta el modelo» | Un paso anterior no se corrió. | Corre lo que indica, en orden: `make setup`, `make data`, `make train`. |
 | `make setup` dice que hace falta Python 3.12 | `python3` es más viejo (numpy 2.5 pide 3.12). | `make setup PYTHON=python3.14`, o el Python 3.12+ que tengas. |
 | El frontend carga pero no trae juegos | Lo abriste como `127.0.0.1`, o la API no está corriendo. | Ábrelo como `http://localhost:4200` y revisa que `make api` siga arriba. |
+| `/admin` dice «Despertando…» o «Sin conexión» | La API de Render estaba dormida, o el CORS no deja pasar tu sitio. | Espera hasta un minuto y usa «Reintentar». Si sigue, revisa `NEXPLAY_CORS_ORIGENES` (paso 10). |
 | `make api` dice que el puerto 8000 está en uso | Ya hay otra API corriendo. | Apágala, o usa `make api PUERTO=8001` (el frontend en desarrollo espera el 8000). |
 | `preparar_entorno.py --force` dice «No piso …» | Esa base no salió de un release (por ejemplo, la base original de la ingesta). | Respáldala o muévela y vuelve a correr. Es a propósito: esa base no se recupera de un release. |
 | «sha256 … no coincide» al bajar datos | El asset cambió o la descarga se cortó. | Vuelve a intentar. Si persiste, no sigas: el release no es el esperado. |

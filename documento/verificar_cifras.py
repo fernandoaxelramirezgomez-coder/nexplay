@@ -225,10 +225,11 @@ CANONICAS = {
     "PrecioMedianoCatalogo": "349.88",
     "MediaNotaModelo": "86.97",
     # arquitectura (§12): las rutas de backend/api/main.py, como en el plan (T11, 17 endpoints)
-    "Endpoints": "17",
+    "Endpoints": "19",
     "EndpointsRiesgo": "5",
     "EndpointsComunidad": "8",
-    "EndpointsNia": "4",
+    "EndpointsNia": "5",
+    "EndpointsSistema": "1",
     # planteamiento y estrategia (secciones 2 y 3): docs/evidencia/senal-por-biblioteca.md, las capturas del
     # recorrido (los mismos precios, notas y motivos) y frontend/src/styles/base.css
     "UmbralVeterano": "20",

@@ -735,6 +735,7 @@ GRUPOS_DE_ENDPOINTS = {
     "Riesgo": ("catalogo", "perfil", "prediccion", "explicacion", "panorama"),
     "Comunidad": ("valoraciones", "comentarios"),
     "Nia": ("nia",),
+    "Sistema": ("estado",),
 }
 
 
