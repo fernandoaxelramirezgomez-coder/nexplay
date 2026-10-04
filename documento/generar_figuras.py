@@ -744,8 +744,8 @@ GRUPOS_DE_ENDPOINTS = {
 TAG_PRUEBA_NIA_IA = "codigo-v7"
 CORRIDA_NIA_IA_TAG = EVIDENCIA / "verificar-nia-openai-2026-10-02.txt"
 # Producción corre los arreglos de Nia posteriores al tag; la misma prueba con IA corrió sobre este commit.
-COMMIT_NIA_PRODUCCION = "334fc71"
-CORRIDA_NIA_IA_PRODUCCION = EVIDENCIA / "verificar-nia-openai-2026-10-03.txt"
+COMMIT_NIA_PRODUCCION = "636caf8"
+CORRIDA_NIA_IA_PRODUCCION = EVIDENCIA / "verificar-nia-openai-2026-10-04.txt"
 RUTAS_DE_NIA = ("backend/api/nia/", "backend/api/main.py", "backend/api/schemas.py", "backend/api/config.py",
                 "backend/api/catalogo.py", "backend/api/panorama.py", "backend/api/scoring.py", "backend/api/valoraciones.py",
                 "backend/analisis/motivos.py", "frontend/src/app/chat/", ":(exclude)frontend/src/app/chat/*.spec.ts",

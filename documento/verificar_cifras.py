@@ -266,9 +266,10 @@ CANONICAS = {
     "CommitTrampas": "c5478f6",
     # docs/evidencia/verificar-nia-openai-2026-10-02.txt: la prueba local del camino con IA
     "FechaCorridaNiaIA": "2 de octubre de 2026",
-    # docs/evidencia/verificar-nia-openai-2026-10-03.txt: la misma prueba sobre el Nia de producción, posterior al tag
-    "FechaCorridaNiaProduccion": "3 de octubre de 2026",
-    "CommitNiaProduccion": "334fc71",
+    # docs/evidencia/verificar-nia-openai-2026-10-04.txt: la misma prueba sobre el Nia de producción, posterior al tag
+    # (la tercera corrida de ese día: las dos primeras, sobre 4411a61, fallaron por un emoji; se corrigió en 636caf8)
+    "FechaCorridaNiaProduccion": "4 de octubre de 2026",
+    "CommitNiaProduccion": "636caf8",
     # contexto de mercado (sección 2): docs/evidencia/contexto-mercado.json, con la cita textual de cada fuente,
     # verificadas el 2026-10-02 (GamingOnLinux con datos de SteamDB; Alinea Analytics)
     "LanzamientosSteam": "19,008",

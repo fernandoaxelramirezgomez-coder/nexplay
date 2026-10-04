@@ -1,0 +1,128 @@
+ficha:    492 respuestas en los 123 juegos dicen cada factor con la dirección y la evidencia de la ficha, y «en lo normal» solo en la banda neutral
+lenguaje: 123 juegos × 6 preguntas sin etiquetas, jerga, porcentajes ni sonrisas con riesgo alto; «¿encaja conmigo?» dice qué géneros coinciden y cuáles no
+openai:   el contexto y ficha_juego de los 123 juegos y las sugerencias llegan con ideas, conteos y géneros, sin etiquetas, jerga ni porcentajes; el prompt lleva la regla
+resumen:  cubre toda la conversación, aunque la primera respuesta abra con «¡Hola!» y las demás con una respuesta corta
+tarjetas: comparar y «¿cuál me compro?» no repiten el riesgo de cada tarjeta, y lo que el modelo enumera se quita a la salida
+duración: «No hay duración oficial; quienes lo recomiendan jugaron X h (mediana)» en 123 juegos, y sin ese dato en 0
+señal:    la explicación está fija arriba y es la misma que Nia da si preguntan; ninguna respuesta la repite y el filtro solo quita oraciones completas que son el descargo
+conectores: en 123 juegos «también» y «en cambio» siguen la dirección de cada factor, y «otra pista confiable» va después de una confiable
+títulos: «¿Y Super Mario Odyssey?» no está en el catálogo, por reglas; «¿Y Hades?» sí está
+cálculo: «¿Cómo calculan el riesgo?» se contesta por reglas, en llano, también con modelo
+cifras: El catálogo tiene 123 juegos y 184,367 reseñas de Steam; el modelo aprendió de 83 de esos juegos, con 123,972 reseñas, y los otros 40 sirven para probarlo.
+comentarios: Nia dice que no lee los de NexPlay y qué sí tiene de Steam
+elección: con perfil o sin él, elegir es de quien pregunta; el perfil muestra coincidencias
+nombrados: en la ficha puede nombrar su juego sin tarjeta; a ningún otro
+aspecto: Cuphead y 738 preguntas de aspecto en los 123 juegos, en conteos y sin dictamen
+esquema: solo Nia lleva oferta y juegos, con intención de la lista y hasta 8 juegos
+cierre del modelo: 6 preguntas finales cambiadas por ofertas que las reglas cumplen
+comparar: 9 redacciones del modelo y las reglas cierran igual y sin el riesgo de las tarjetas
+conversaciones: Cuphead y «el más barato de esos dos» se cumplen con el historial, en los dos modos
+ficha abierta: «este juego», «este» y «el juego» son A Short Hike; sin «No encuentro» ni «no lo sé»
+saludo: va en el hilo con su oferta; «sí» explica el riesgo y el resumen no lo cuenta
+afirmaciones: 18 formas de decir sí cumplen la oferta anterior y 12 que piden otra cosa no; la conversación de A Short Hike se cumple completa
+enrutador: 10 casos; con modelo, las reglas solo toman lo seguro y lo dudoso va al modelo
+presentación: «Sí, explícamelo» al saludo cuenta el juego completo en los 123 juegos, con las reseñas como conclusión
+ofertas: 3758 «sí» tras 14 tipos de oferta, en los 123 juegos y el catálogo
+votos:    un voto por persona y respuesta, el motivo solo con 👎, y la retención de 180 días borra lo vencido con sus votos; el buzón cuenta y solo trae sugerencias de «otro motivo», sin datos personales ni usuarios
+límites:  la IP sale de CF-Connecting-IP; cada persona su tope, la IP el de 6 personas y, con modelo, un total para Nia
+herramientas: 5 declaradas, orden alfabético por omisión y sin appids inventados
+openai: [catálogo] '¿Qué juegos de acción tienen riesgo bajo?'
+          Hay 25 juegos de acción con riesgo bajo: Apex Legends™, Celeste, Company of Heroes 3, Cuphead, Dead Cells, Dead Space, Destiny 2 y Devil May Cry 5. Los otros 17 están en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
+          pasos: Buscando en el catálogo…
+openai: [catálogo] '¿Hay algo gratis en el catálogo?'
+          Sí, hay 7 juegos gratis en el catálogo: Apex Legends™, Destiny 2, Overwatch®, Path of Exile, Team Fortress 2, The Sims™ 4 y Warframe. Cuatro tienen riesgo bajo y tres alto. 🎮 ¿Los ordeno por riesgo?
+          pasos: Buscando en el catálogo…
+openai: [catálogo] 'Juegos de estrategia de menos de 300 pesos'
+          Hay 9 juegos de estrategia por menos de $300: Company of Heroes 3, Don't Starve Together, Dorfromantik, Frostpunk, Inscryption, Kenshi, Sid Meier's Civilization V y Sid Meier’s Civilization VI; hay 1 más en Explorar con esos filtros. 🎮 ¿Los ordeno por riesgo?
+          pasos: Buscando en el catálogo…
+openai: [catálogo] '¿Tienen Elden Ring?'
+          Sí, ELDEN RING está en el catálogo de NexPlay. Cuesta $979, tiene 94 en Metacritic y pertenece a Acción y Rol. 🎮 ¿Te cuento qué dicen las reseñas de ELDEN RING?
+          pasos: Buscando en el catálogo…
+reglas: [catálogo] '¿Y Super Mario Odyssey?'
+          No encuentro «Super Mario Odyssey» en este catálogo de Steam, así que no tengo señal sobre él 🤔 ¿Te muestro qué géneros hay en el catálogo?
+reglas: [catálogo] '¿Cuál me compro?'
+          Elegir es tuyo 🤔 pero te ayudo a comparar. ¿Qué pesa más para ti: el precio, el riesgo o la crítica?
+reglas: [catálogo] '¿Cuál es el mejor juego del catálogo?'
+          No corono a ningún juego 🙂 Depende de lo que busques: te los ordeno por precio, por riesgo o por la nota de la crítica. ¿Por cuál empezamos?
+reglas: [catálogo] '¿De dónde salen estos datos?'
+          De Steam 📊 El catálogo tiene 123 juegos y 184,367 reseñas de Steam; el modelo aprendió de 83 de esos juegos, con 123,972 reseñas, y los otros 40 sirven para probarlo. La nota de la crítica es la de Metacritic que muestra Steam. ¿Te cuento cómo se calcula el riesgo?
+reglas: [catálogo] '¿Cómo calculan el riesgo?'
+          Con datos del juego, no con tus gustos 🧮 Un modelo aprendió de 83 juegos cómo se relacionan la gratuidad, el precio, el descuento y la crítica con las reseñas de gente que no lo recomendó tras jugar menos de 2 horas. Bajo, medio y alto comparan su estimación con las del entrenamiento. ¿Te cuento de dónde salen los datos?
+openai: [catálogo] 'Compara Hades y Hollow Knight'
+          Hades y Hollow Knight se diferencian sobre todo en precio, géneros y horas típicas. Hades cuesta $283, tiene 93 de crítica y mezcla acción, indie y rol; Hollow Knight cuesta $179, tiene 87 y suma aventura. Quienes los recomiendan jugaron 30.6 h y 42.7 h de mediana, respectivamente. 🎮 ¿Te cuento de qué se queja la gente en cada uno?
+          pasos: Buscando ese juego… · Leyendo la ficha de Hades… · Leyendo la ficha de Hollow Knight…
+reglas: [catálogo] '¿Y el más barato de esos dos?'
+          De esos 2, el más barato de pago es Hollow Knight, a $179 💸 ¿Te cuento qué dicen sus reseñas?
+reglas: [catálogo] '¿Qué opina la gente en los comentarios?'
+          Los comentarios de NexPlay no los leo; están en la ficha de cada juego 💬 De las reseñas de Steam sí sé, contado por tema, de qué se queja quien no recomendó un juego tras jugar menos de 2 horas. ¿De qué juego te cuento?
+reglas: [catálogo] '¿Quién ganó el mundial de 2022?'
+          Eso no lo sé con estos datos 🙈 Puedo filtrar el catálogo por género, precio o riesgo, o contarte de un juego. ¿Qué se te antoja?
+reglas: [1145360] '¿Por qué quedó en esa banda?'
+          Hades tiene riesgo bajo sobre todo porque la crítica especializada sí lo reseñó, la pista más confiable del modelo 🙂 También lo baja que la crítica le dio 93, arriba de lo normal del catálogo (85.5), otra pista confiable. ¿Te cuento qué dicen sus reseñas?
+openai: [1145360] '¿Cuánto cuesta?'
+          Hades cuesta $283, algo menos que lo normal del catálogo, que es $350. 🎮 ¿Te cuento qué dicen sus reseñas?
+catálogo: las 15 preguntas del recorrido pasan con el modelo
+producción: trivia, correo e instrucciones van a reglas y 8 preguntas legítimas al modelo; negritas, correo, instrucciones y jugar con amigos con su respuesta; no corona; el resumen cubre todo y no deja media lista; horas típicas; 60 palabras; 7 tarjetas; nombres con ™, ® y ©; «Apex» y «Battlefield» a medias; «GTA V»; el historial al modelo con tope
+contexto: Apex Legends™ (riesgo bajo) → 3 factores
+          - Es gratis: eso baja su riesgo. Es una pista débil.
+          - La crítica especializada sí lo reseñó: eso baja su riesgo. Es la pista más confiable del modelo.
+          - La crítica le dio 88, en lo normal del catálogo (85.5): casi no mueve la estimación; no es razón de su riesgo.
+          aviso: ojo: al entrenar, el modelo vio muy pocos juegos gratis, así que tómalo con cuidado
+reglas:   Apex Legends™ · ¿Por qué quedó en riesgo medio?
+          Apex Legends™ tiene riesgo bajo sobre todo porque es gratis, aunque es una pista débil 🙂 También lo baja que la crítica especializada sí lo reseñó, la pista más confiable del modelo. Ojo: al entrenar, el modelo vio muy pocos juegos gratis, así que tómalo con cuidado. ¿Te cuento qué dicen sus reseñas?
+reglas:   Apex Legends™ · ¿El precio influye?
+          Un poco 💸 Apex Legends™ es gratis, y en el modelo eso baja su riesgo. Pero es una pista débil. ¿Te cuento qué dicen sus reseñas?
+reglas:   Apex Legends™ · ¿Qué motivos aparecen en las reseñas?
+          De rendimiento y controles 🔍 2 de las 4 reseñas negativas tempranas de Apex Legends™ que dicen por qué hablan de rendimiento, 2 de controles. Son pocas, tómalo con cautela. ¿Te cuento por qué tiene riesgo bajo?
+contexto: A Short Hike (riesgo medio) → 3 factores
+          - La crítica especializada sí lo reseñó: eso baja su riesgo. Es la pista más confiable del modelo.
+          - La crítica le dio 82, abajo de lo normal del catálogo (85.5): eso sube su riesgo. Es la pista más confiable del modelo.
+          - Cuesta $93, menos de un tercio de lo normal del catálogo ($350): eso baja su riesgo. Es una pista débil.
+reglas:   A Short Hike · ¿Por qué quedó en riesgo medio?
+          A Short Hike tiene riesgo medio 🤔 Lo que más pesa es que la crítica especializada sí lo reseñó, y eso baja su riesgo; es la pista más confiable del modelo. En cambio, lo sube que la crítica le dio 82, abajo de lo normal del catálogo (85.5), otra pista confiable. ¿Te cuento qué dicen sus reseñas?
+reglas:   A Short Hike · ¿El precio influye?
+          Un poco 💸 A Short Hike cuesta $93, menos de un tercio de lo normal del catálogo ($350), y en el modelo eso baja su riesgo. Pero es una pista débil, y lo que más pesa es que la crítica especializada sí lo reseñó, que lo baja. ¿Te cuento qué dicen sus reseñas?
+reglas:   A Short Hike · ¿Qué motivos aparecen en las reseñas?
+          De contenido 🔍 Las 5 reseñas negativas tempranas de A Short Hike que dicen por qué hablan de contenido, y 1 también de precio. Son pocas, tómalo con cautela. ¿Te cuento por qué tiene riesgo medio?
+contexto: Amnesia: The Bunker (riesgo alto) → 2 factores
+          - La crítica especializada no lo reseñó: eso sube su riesgo. Es la pista más confiable del modelo.
+          - No tiene descuento: casi no mueve la estimación; no es razón de su riesgo.
+reglas:   Amnesia: The Bunker · ¿Por qué quedó en riesgo medio?
+          Amnesia: The Bunker tiene riesgo alto sobre todo porque la crítica especializada no lo reseñó, la pista más confiable del modelo 😬 ¿Te cuento qué dicen sus reseñas?
+reglas:   Amnesia: The Bunker · ¿El precio influye?
+          Casi no 💸 Amnesia: The Bunker cuesta $283, algo menos que lo normal del catálogo ($350) y no tiene descuento, y en el modelo eso casi no mueve la estimación. ¿Te cuento qué dicen sus reseñas?
+reglas:   Amnesia: The Bunker · ¿Qué motivos aparecen en las reseñas?
+          Sobre todo, de rendimiento 🔍 5 de las 11 reseñas negativas tempranas de Amnesia: The Bunker que dicen por qué hablan de rendimiento, 4 de dificultad y 3 de bugs. ¿Te cuento por qué tiene riesgo alto?
+contexto: Grand Theft Auto V Legacy (riesgo bajo) → 3 factores
+          - Steam no dio su precio y el modelo lo tomó como 0: eso baja su riesgo. Es una pista débil.
+          - La crítica le dio 96, arriba de lo normal del catálogo (85.5): eso baja su riesgo. Es la pista más confiable del modelo.
+          - La crítica especializada sí lo reseñó: eso baja su riesgo. Es la pista más confiable del modelo.
+          aviso: Steam no dio su precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo
+reglas:   Grand Theft Auto V Legacy · ¿Por qué quedó en riesgo medio?
+          Grand Theft Auto V Legacy tiene riesgo bajo, pero tómalo con cuidado 🤔 Steam no dio su precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo. También lo baja que la crítica le dio 96, arriba de lo normal del catálogo (85.5), la pista más confiable del modelo. ¿Te cuento qué dicen sus reseñas?
+reglas:   Grand Theft Auto V Legacy · ¿El precio influye?
+          No se sabe 💸 Steam no dio el precio de Grand Theft Auto V Legacy y el modelo lo tomó como 0, lo que tiende a bajar su riesgo: tómalo con cuidado. ¿Te cuento qué dicen sus reseñas?
+reglas:   Grand Theft Auto V Legacy · ¿Qué motivos aparecen en las reseñas?
+          De rendimiento y controles 🔍 1 de las 2 reseñas negativas tempranas de Grand Theft Auto V Legacy que dicen por qué habla de rendimiento, 1 de controles. Son pocas, tómalo con cautela. ¿Te cuento por qué tiene riesgo bajo?
+contexto: New World: Aeternum (riesgo alto) → 2 factores
+          - La crítica especializada no lo reseñó: eso sube su riesgo. Es la pista más confiable del modelo.
+          - Steam no dio su precio y el modelo lo tomó como 0: eso baja su riesgo. Es una pista débil.
+          aviso: Steam no dio su precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo
+reglas:   New World: Aeternum · ¿Por qué quedó en riesgo medio?
+          New World: Aeternum tiene riesgo alto sobre todo porque la crítica especializada no lo reseñó, la pista más confiable del modelo 😬 Steam no dio su precio y el modelo lo tomó como 0, lo que tiende a bajar su riesgo. ¿Te cuento qué dicen sus reseñas?
+reglas:   New World: Aeternum · ¿El precio influye?
+          No se sabe 💸 Steam no dio el precio de New World: Aeternum y el modelo lo tomó como 0, lo que tiende a bajar su riesgo: tómalo con cuidado. ¿Te cuento qué dicen sus reseñas?
+reglas:   New World: Aeternum · ¿Qué motivos aparecen en las reseñas?
+          De bugs y contenido 🔍 1 de las 2 reseñas negativas tempranas de New World: Aeternum que dicen por qué habla de bugs, 1 de contenido. Son pocas, tómalo con cautela. ¿Te cuento por qué tiene riesgo alto?
+contexto: Cyberpunk 2077 (riesgo medio) → 3 factores
+          - La crítica especializada sí lo reseñó: eso baja su riesgo. Es la pista más confiable del modelo.
+          - Cuesta $999, casi el triple de lo normal del catálogo ($350): eso sube su riesgo. Es una pista débil.
+          - La crítica le dio 86, en lo normal del catálogo (85.5): casi no mueve la estimación; no es razón de su riesgo.
+reglas:   Cyberpunk 2077 · ¿Por qué quedó en riesgo medio?
+          Cyberpunk 2077 tiene riesgo medio 🤔 Lo que más pesa es que la crítica especializada sí lo reseñó, y eso baja su riesgo; es la pista más confiable del modelo. En cambio, lo sube que cuesta $999, casi el triple de lo normal del catálogo ($350), aunque es una pista débil. ¿Te cuento qué dicen sus reseñas?
+reglas:   Cyberpunk 2077 · ¿El precio influye?
+          Un poco 💸 Cyberpunk 2077 cuesta $999, casi el triple de lo normal del catálogo ($350), y en el modelo eso sube su riesgo. Pero es una pista débil, y lo que más pesa es que la crítica especializada sí lo reseñó, que lo baja. ¿Te cuento qué dicen sus reseñas?
+reglas:   Cyberpunk 2077 · ¿Qué motivos aparecen en las reseñas?
+          Muy poco 🔍 De Cyberpunk 2077 hay solo 4 reseñas negativas tempranas: no alcanza para saber de qué se queja la gente. ¿Te cuento por qué tiene riesgo medio?
+
+sin problemas: 6 juegos × 3 preguntas
