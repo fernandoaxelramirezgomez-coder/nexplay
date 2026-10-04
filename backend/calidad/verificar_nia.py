@@ -598,6 +598,82 @@ def _revisar_casos_de_produccion() -> list[str]:
     return problemas
 
 
+def _revisar_limites() -> list[str]:
+    """Los topes por minuto: la IP sale de CF-Connecting-IP y no de X-Forwarded-For, que el cliente
+    falsificaba para saltarse el tope; cada persona tiene el suyo y la IP compartida (un salón con el
+    mismo Wi-Fi) el de VECES_POR_IP personas; con modelo de pago, Nia tiene además un tope total.
+    Se prueban con topes chicos puestos aquí, y los de verdad se restauran al final."""
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from api import limites
+    from api import main as api_main
+    from api.config import VECES_POR_IP, configuracion
+
+    def peticion(*encabezados: tuple[str, str]) -> Request:
+        return Request({"type": "http", "headers": [(k.encode(), v.encode()) for k, v in encabezados],
+                        "client": ("10.0.0.7", 4321)})
+
+    problemas = []
+    falsa = ("x-forwarded-for", "203.0.113.9")
+    if api_main._ip_del_cliente(peticion(("cf-connecting-ip", "198.51.100.7"), falsa)) != "198.51.100.7":
+        problemas.append("la IP no sale de CF-Connecting-IP: un X-Forwarded-For falso la cambiaría")
+    if api_main._ip_del_cliente(peticion(falsa)) != "10.0.0.7":
+        problemas.append("sin Cloudflare, la IP no es la del socket")
+
+    # Cuatro personas desde la misma IP con tope de 3 por IP: la cuarta espera. Una persona desde
+    # tres IP con tope de 2 por persona: la tercera espera.
+    persona, salon = limites.LimitePorVentana(2), limites.LimitePorVentana(3)
+    if [limites.revisar_juntos((persona, f"u{n}"), (salon, "ip-del-salon")) > 0 for n in range(4)] != [False] * 3 + [True]:
+        problemas.append("el tope por IP no deja pasar a VECES_POR_IP personas, o deja pasar a más")
+    if [limites.revisar_juntos((persona, "u-sola"), (salon, f"ip{n}")) > 0 for n in range(3)] != [False, False, True]:
+        problemas.append("el tope por persona no se cumple al cambiar de IP")
+
+    for nombre, por_persona, por_ip, variable in (
+        ("comentarios", api_main._LIMITE_COMENTARIOS, api_main._LIMITE_COMENTARIOS_IP, "NEXPLAY_COMENTARIOS_POR_MINUTO_IP"),
+        ("reacciones", api_main._LIMITE_REACCIONES, api_main._LIMITE_REACCIONES_IP, "NEXPLAY_REACCIONES_POR_MINUTO_IP"),
+        ("votos a Nia", api_main._LIMITE_VOTOS_NIA, api_main._LIMITE_VOTOS_NIA_IP, "NEXPLAY_VOTOS_NIA_POR_MINUTO_IP"),
+        ("Nia", api_main._LIMITE_NIA, api_main._LIMITE_NIA_IP, "NEXPLAY_NIA_POR_MINUTO_IP"),
+    ):
+        if variable not in os.environ and por_ip._maximo != VECES_POR_IP * por_persona._maximo:
+            problemas.append(f"{nombre}: el tope por IP ({por_ip._maximo}) no es {VECES_POR_IP} veces el de una persona")
+
+    # El voto también cuenta por IP: tres personas desde la misma IP con tope de 2.
+    originales = (api_main._LIMITE_VOTOS_NIA_IP, api_main._LIMITE_NIA, api_main._LIMITE_NIA_IP, api_main._LIMITE_NIA_GLOBAL,
+                  configuracion.openai_api_key, configuracion.nexplay_modelo_nia)
+    try:
+        api_main._LIMITE_VOTOS_NIA_IP = limites.LimitePorVentana(2)
+        codigos = []
+        for n in range(3):
+            try:
+                api_main._exigir_cupo_de_voto(f"votante{n:02d}", "ip-del-salon")
+                codigos.append(200)
+            except HTTPException as error:
+                codigos.append(error.status_code)
+        if codigos != [200, 200, 429]:
+            problemas.append(f"el voto no cuenta por IP: {codigos}")
+
+        # El tope total de Nia: con modelo cuenta a todos, sin modelo no existe.
+        api_main._LIMITE_NIA, api_main._LIMITE_NIA_IP = limites.LimitePorVentana(100), limites.LimitePorVentana(100)
+        api_main._LIMITE_NIA_GLOBAL = limites.LimitePorVentana(2)
+        configuracion.openai_api_key, configuracion.nexplay_modelo_nia = "", ""
+        sin_modelo = [api_main._exigir_cupo_de_nia(f"p{n}", f"ip{n}") > 0 for n in range(3)]
+        configuracion.openai_api_key, configuracion.nexplay_modelo_nia = "clave-de-prueba", "modelo-de-prueba"
+        con_modelo = [api_main._exigir_cupo_de_nia(f"q{n}", f"jp{n}") > 0 for n in range(3)]
+        if sin_modelo != [False] * 3:
+            problemas.append("sin modelo, Nia tiene tope total: no hay gasto que acotar")
+        if con_modelo != [False, False, True]:
+            problemas.append("con modelo, el tope total de Nia no frena a personas con distinta IP")
+    finally:
+        (api_main._LIMITE_VOTOS_NIA_IP, api_main._LIMITE_NIA, api_main._LIMITE_NIA_IP, api_main._LIMITE_NIA_GLOBAL,
+         configuracion.openai_api_key, configuracion.nexplay_modelo_nia) = originales
+
+    if not problemas:
+        print(f"límites:  la IP sale de CF-Connecting-IP; cada persona su tope, la IP el de {VECES_POR_IP} personas "
+              "y, con modelo, un total para Nia")
+    return problemas
+
+
 def _revisar_votos() -> list[str]:
     """El almacén de los votos, contra la base temporal que se fijó al importar."""
     temporal = _BASE_DE_PRUEBA
@@ -1861,6 +1937,7 @@ def main() -> int:
     problemas += _revisar_presentacion()
     problemas += _revisar_ofertas()
     problemas += _revisar_votos()
+    problemas += _revisar_limites()
     problemas += _revisar_herramientas()
     problemas += _revisar_recorrido(argumentos.openai)
     problemas += _revisar_casos_de_produccion()

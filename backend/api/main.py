@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import catalogo, estado, limites, nia, panorama, scoring, valoraciones
-from .config import configuracion
+from .config import VECES_POR_IP, configuracion
 from .schemas import (
     BuzonSugerencias,
     Comentario,
@@ -166,11 +166,28 @@ def quitar_valoracion(appid: int, usuario: str = _USUARIO) -> ResumenValoracione
     return ResumenValoraciones(**valoraciones.borrar(appid, usuario))
 
 
+def _ip_del_cliente(peticion: Request) -> str:
+    """La IP de quien pide, para los topes por IP. Render está detrás de Cloudflare, que pone la
+    IP de origen en CF-Connecting-IP y sobrescribe la que mande el cliente. X-Forwarded-For, la
+    que toma uvicorn con --forwarded-allow-ips='*', la controla el cliente: con una falsa en cada
+    petición se saltaba el tope. Sin Cloudflare (en local), la del socket."""
+    cloudflare = peticion.headers.get("cf-connecting-ip", "").strip()
+    if cloudflare:
+        return cloudflare
+    return peticion.client.host if peticion.client else "sin-ip"
+
+
+def _topes(variable: str, por_omision: int) -> tuple[limites.LimitePorVentana, limites.LimitePorVentana]:
+    """El tope por persona y, aparte, el de la IP: un salón con el mismo Wi-Fi comparte la IP,
+    así que su tope es VECES_POR_IP el de una persona, salvo que <variable>_IP diga otro."""
+    por_persona = int(os.environ.get(variable, str(por_omision)))
+    por_ip = int(os.environ.get(f"{variable}_IP", str(VECES_POR_IP * por_persona)))
+    return limites.LimitePorVentana(por_persona, 60.0), limites.LimitePorVentana(por_ip, 60.0)
+
+
 # Los comentarios son un hilo público: se insertan y no se editan. El tope por ventana
 # frena el spam sin moderación; al reiniciar la API los contadores vuelven a cero.
-_LIMITE_COMENTARIOS = limites.LimitePorVentana(
-    maximo=int(os.environ.get("NEXPLAY_COMENTARIOS_POR_MINUTO", "3")), ventana_segundos=60.0
-)
+_LIMITE_COMENTARIOS, _LIMITE_COMENTARIOS_IP = _topes("NEXPLAY_COMENTARIOS_POR_MINUTO", 3)
 
 
 @contextmanager
@@ -196,8 +213,10 @@ def ver_comentarios(appid: int, usuario: str | None = _USUARIO_OPCIONAL) -> list
 def comentar(appid: int, solicitud: SolicitudComentario, peticion: Request) -> list[Comentario]:
     _exigir_juego(appid)
 
-    ip = peticion.client.host if peticion.client else "sin-ip"
-    espera = _LIMITE_COMENTARIOS.revisar(f"usuario:{solicitud.usuario}", f"ip:{ip}")
+    espera = limites.revisar_juntos(
+        (_LIMITE_COMENTARIOS, f"usuario:{solicitud.usuario}"),
+        (_LIMITE_COMENTARIOS_IP, f"ip:{_ip_del_cliente(peticion)}"),
+    )
     if espera:
         logger.info("comentario rechazado por frecuencia appid=%s", appid)
         raise HTTPException(
@@ -233,9 +252,7 @@ def borrar_comentario(appid: int, id_comentario: int, usuario: str = _USUARIO) -
 
 # Reaccionar es un clic, no escribir: el tope es más alto que el de publicar, pero existe
 # para que no sea un hueco de spam.
-_LIMITE_REACCIONES = limites.LimitePorVentana(
-    maximo=int(os.environ.get("NEXPLAY_REACCIONES_POR_MINUTO", "30")), ventana_segundos=60.0
-)
+_LIMITE_REACCIONES, _LIMITE_REACCIONES_IP = _topes("NEXPLAY_REACCIONES_POR_MINUTO", 30)
 
 
 @app.put("/comentarios/{appid}/{id_comentario}/reaccion", response_model=ReaccionComentario)
@@ -244,8 +261,10 @@ def reaccionar(
 ) -> ReaccionComentario:
     _exigir_juego(appid)
 
-    ip = peticion.client.host if peticion.client else "sin-ip"
-    espera = _LIMITE_REACCIONES.revisar(f"reaccion-usuario:{solicitud.usuario}", f"reaccion-ip:{ip}")
+    espera = limites.revisar_juntos(
+        (_LIMITE_REACCIONES, f"reaccion-usuario:{solicitud.usuario}"),
+        (_LIMITE_REACCIONES_IP, f"reaccion-ip:{_ip_del_cliente(peticion)}"),
+    )
     if espera:
         logger.info("reacción rechazada por frecuencia appid=%s id=%s", appid, id_comentario)
         raise HTTPException(
@@ -275,8 +294,20 @@ def opiniones_de_nia(
     ]
 
 
-# Nia consulta un modelo de pago: el tope por ventana es un límite de costo.
-_LIMITE_NIA = limites.LimitePorVentana(maximo=configuracion.nexplay_nia_por_minuto, ventana_segundos=60.0)
+# Nia consulta un modelo de pago: el tope por ventana es un límite de costo. El global solo
+# cuenta con modelo y acota el gasto aunque alguien cambie de id y de IP en cada pregunta.
+_LIMITE_NIA = limites.LimitePorVentana(configuracion.nexplay_nia_por_minuto, 60.0)
+_LIMITE_NIA_IP = limites.LimitePorVentana(
+    configuracion.nexplay_nia_por_minuto_ip or VECES_POR_IP * configuracion.nexplay_nia_por_minuto, 60.0
+)
+_LIMITE_NIA_GLOBAL = limites.LimitePorVentana(configuracion.nexplay_nia_por_minuto_global, 60.0)
+
+
+def _exigir_cupo_de_nia(usuario: str, ip: str) -> float:
+    topes = [(_LIMITE_NIA, f"nia-usuario:{usuario}"), (_LIMITE_NIA_IP, f"nia-ip:{ip}")]
+    if configuracion.hay_openai:
+        topes.append((_LIMITE_NIA_GLOBAL, "nia-global"))
+    return limites.revisar_juntos(*topes)
 
 
 @app.post("/nia", response_model=RespuestaNia)
@@ -285,8 +316,7 @@ def preguntar_a_nia(solicitud: SolicitudNia, peticion: Request) -> RespuestaNia:
     if solicitud.appid is not None:
         _exigir_juego(solicitud.appid)
 
-    ip = peticion.client.host if peticion.client else "sin-ip"
-    espera = _LIMITE_NIA.revisar(f"nia-usuario:{solicitud.usuario}", f"nia-ip:{ip}")
+    espera = _exigir_cupo_de_nia(solicitud.usuario, _ip_del_cliente(peticion))
     if espera:
         logger.info("pregunta a Nia rechazada por frecuencia appid=%s", solicitud.appid)
         raise HTTPException(
@@ -322,13 +352,13 @@ def _errores_de_voto():
 # El voto no comparte el tope con los comentarios: escribir un comentario es publicar y
 # cambiar de opinión sobre un motivo es corregirse, y corregirse dos veces seguidas no es
 # spam. Con el tope de los comentarios, probar los cuatro motivos daba 429.
-_LIMITE_VOTOS_NIA = limites.LimitePorVentana(
-    maximo=int(os.environ.get("NEXPLAY_VOTOS_NIA_POR_MINUTO", "30")), ventana_segundos=60.0
-)
+_LIMITE_VOTOS_NIA, _LIMITE_VOTOS_NIA_IP = _topes("NEXPLAY_VOTOS_NIA_POR_MINUTO", 30)
 
 
-def _exigir_cupo_de_voto(usuario: str) -> None:
-    espera = _LIMITE_VOTOS_NIA.revisar(f"voto-nia:{usuario}")
+def _exigir_cupo_de_voto(usuario: str, ip: str) -> None:
+    espera = limites.revisar_juntos(
+        (_LIMITE_VOTOS_NIA, f"voto-nia:{usuario}"), (_LIMITE_VOTOS_NIA_IP, f"voto-nia-ip:{ip}")
+    )
     if espera:
         raise HTTPException(
             status_code=429,
@@ -338,8 +368,8 @@ def _exigir_cupo_de_voto(usuario: str) -> None:
 
 
 @app.put("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
-def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia) -> VotoNia:
-    _exigir_cupo_de_voto(solicitud.usuario)
+def votar_respuesta_de_nia(id_respuesta: str, solicitud: SolicitudVotoNia, peticion: Request) -> VotoNia:
+    _exigir_cupo_de_voto(solicitud.usuario, _ip_del_cliente(peticion))
     # La sugerencia se ve en el buzón de /admin: sin correos ni teléfonos, igual que las preguntas.
     sugerencia = nia.agente.sin_datos_personales(solicitud.sugerencia) if solicitud.sugerencia else None
     with _errores_de_voto():
@@ -361,9 +391,9 @@ def buzon_de_sugerencias() -> BuzonSugerencias:
 
 
 @app.delete("/nia/valoracion/{id_respuesta}", response_model=VotoNia)
-def quitar_voto_de_nia(id_respuesta: str, solicitud: SolicitudQuitarVotoNia) -> VotoNia:
+def quitar_voto_de_nia(id_respuesta: str, solicitud: SolicitudQuitarVotoNia, peticion: Request) -> VotoNia:
     """El usuario va en el cuerpo, como en el PUT: en la URL acabaría escrito en los
     registros del servidor y en el historial del navegador."""
-    _exigir_cupo_de_voto(solicitud.usuario)
+    _exigir_cupo_de_voto(solicitud.usuario, _ip_del_cliente(peticion))
     with _errores_de_voto():
         return VotoNia(**valoraciones.borrar_voto_nia(id_respuesta, solicitud.usuario))

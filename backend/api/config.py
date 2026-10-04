@@ -25,10 +25,18 @@ class ConfiguracionNia(BaseSettings):
     nexplay_nia_razonamiento: bool = False
     nexplay_nia_timeout: float = 20.0
     nexplay_nia_por_minuto: int = 10
+    # Por IP, aparte: un salón con el mismo Wi-Fi comparte la IP. Sin valor, VECES_POR_IP el de una persona.
+    nexplay_nia_por_minuto_ip: int | None = None
+    # De todos juntos, solo con modelo de pago: acota el gasto aunque alguien cambie de id y de IP.
+    nexplay_nia_por_minuto_global: int = 120
 
     @property
     def hay_openai(self) -> bool:
         return bool(self.openai_api_key.strip() and self.nexplay_modelo_nia.strip())
+
+
+# Cuántas personas caben en el tope de una IP compartida.
+VECES_POR_IP = 6
 
 
 configuracion = ConfiguracionNia()
