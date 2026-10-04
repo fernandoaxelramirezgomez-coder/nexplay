@@ -46,6 +46,15 @@ entrenamiento (6.99×); fuera de ellos la diferencia existe y es más chica (1.9
 misma lectura que el PR-AUC externo ya reportado (0.0356 contra 0.0234 del trivial): hay
 señal, y es modesta.
 
+**Decisión del 2026-10-04.** El dueño cambió la regla: el número honesto para presumir es el de los
+40 que el modelo no vio, con la misma lógica con que se presenta el PR-AUC externo. El Inicio muestra
+**1.9×** «en riesgo alto que en bajo, en los 40 juegos que el modelo no vio», con su intervalo (0.87× a
+3.50×) y la advertencia de que con 40 juegos es una tendencia, no una conclusión firme. Explica también
+por qué ahí el riesgo medio sale un poco abajo del bajo (el medio no se separa del bajo en juegos nuevos,
+y con 13 o 14 juegos por nivel esa diferencia es ruido) y menciona el 4.2× de los 123, aclarando que
+incluye a los 83 de entrenamiento. Las cifras las calcula `api/panorama.py` (`senal_por_nivel`) con el
+mismo bootstrap que este script, y `calidad/verificar_niveles.py` comprueba que coinciden con esta tabla.
+
 ## Cómo se reproduce
 
 ```

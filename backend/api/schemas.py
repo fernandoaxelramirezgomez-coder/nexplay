@@ -572,6 +572,27 @@ class JuegoPanorama(BaseModel):
     )
 
 
+class NivelSenal(BaseModel):
+    nivel: NivelRiesgo
+    juegos: int
+    resenas: int
+    casos_senal: int
+    tasa: float = Field(..., ge=0, le=1, description="Reseñas con señal entre reseñas, juntando los juegos del nivel")
+
+
+class SenalPorNivel(BaseModel):
+    """Cuánta señal deja cada nivel de riesgo en un corte del catálogo. En «catalogo» cuentan los
+    juegos con que se entrenó el modelo, donde la señal fue su etiqueta; «externos» son los que el
+    modelo no vio, y ahí el cociente sí evalúa algo. Por eso solo ese corte lleva intervalo."""
+
+    corte: Literal["catalogo", "externos"]
+    juegos: int
+    niveles: list[NivelSenal]
+    cociente_alto_bajo: float = Field(..., ge=0, description="La tasa del nivel alto entre la del bajo")
+    ic_inferior: Optional[float] = Field(None, description="Intervalo de 95 % del cociente, por remuestreo de juegos")
+    ic_superior: Optional[float] = None
+
+
 class PanoramaCatalogo(BaseModel):
     """Panorama de la muestra de reseñas con la que trabaja NexPlay. Es descriptivo: sale
     de contar la base, no de predecir nada, así que ninguna cifra de aquí es un score."""
@@ -592,3 +613,6 @@ class PanoramaCatalogo(BaseModel):
     )
     resenas_clasificadas: int = Field(..., description="Casos Y=1 que mencionan al menos un motivo")
     por_juego: list[JuegoPanorama]
+    senal_por_nivel: list[SenalPorNivel] = Field(
+        default_factory=list, description="La señal por nivel en todo el catálogo y en los juegos que el modelo no vio"
+    )

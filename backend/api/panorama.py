@@ -9,19 +9,24 @@ Se calcula **una sola vez al importar el módulo**, como el catálogo: los agreg
 SQL de milisegundos y recorrer los textos de los ~4,100 casos Y=1 para contar motivos
 toma medio segundo. Pedirlo en cada request sería repetir ese trabajo para siempre."""
 
+import csv
 import logging
+import random
 import sqlite3
 import statistics
 from pathlib import Path
 
-from . import scoring
+from . import catalogo, scoring
 from .schemas import (
     CalidadMuestra,
     DescargasMuestra,
     FichaModelo,
     JuegoPanorama,
     MotivoInsatisfaccion,
+    NivelRiesgo,
+    NivelSenal,
     PanoramaCatalogo,
+    SenalPorNivel,
     TramoPlaytime,
     VentanaMuestra,
 )
@@ -29,6 +34,8 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "datos" / "nexplay.db"
+# Los juegos con que se entrenó el modelo son los de la partición congelada de data-v1.
+_PARTICION = Path(__file__).resolve().parent.parent / "referencias" / "particion_gkf_data-v1.csv"
 
 # El primer tramo es la ventana de reembolso de Steam: ahí se define la etiqueta.
 _TRAMOS = (
@@ -72,6 +79,61 @@ _VACIO = PanoramaCatalogo(
 
 def _proporcion(parte: int | None, total: int) -> float:
     return round((parte or 0) / total, 4) if total else 0.0
+
+
+def juegos_de_entrenamiento(ruta: Path = _PARTICION) -> set[int]:
+    with ruta.open(encoding="utf-8") as archivo:
+        return {int(fila["appid"]) for fila in csv.DictReader(archivo)}
+
+
+def tasa(juegos: list[tuple[int, int]]) -> float:
+    """La señal por reseña de un grupo de juegos, cada uno como (reseñas, reseñas con señal)."""
+    resenas = sum(r for r, _ in juegos)
+    return sum(s for _, s in juegos) / resenas if resenas else 0.0
+
+
+def intervalo_del_cociente(
+    bajo: list[tuple[int, int]], alto: list[tuple[int, int]], repeticiones: int = 2000, semilla: int = 42
+) -> tuple[float, float]:
+    """Intervalo de 95 % del cociente alto/bajo, remuestreando juegos dentro de cada nivel: con 13
+    juegos por nivel, uno con muchas reseñas mueve la cifra. El orden de los juegos importa para la
+    semilla: es el de catalogo.buscar(), el mismo de calidad/senal_por_nivel.py."""
+    azar = random.Random(semilla)
+    cocientes = []
+    for _ in range(repeticiones):
+        b = tasa([azar.choice(bajo) for _ in bajo])
+        a = tasa([azar.choice(alto) for _ in alto])
+        if b:
+            cocientes.append(a / b)
+    cocientes.sort()
+    return cocientes[int(0.025 * len(cocientes))], cocientes[int(0.975 * len(cocientes)) - 1]
+
+
+def senal_por_nivel(conteos: dict[int, tuple[int, int]], entrenamiento: set[int]) -> list[SenalPorNivel]:
+    """La señal de cada nivel en todo el catálogo y en los juegos que el modelo no vio."""
+    juegos = catalogo.buscar()
+    cortes = {"catalogo": juegos, "externos": [j for j in juegos if j.appid not in entrenamiento]}
+    salida = []
+    for corte, lista in cortes.items():
+        por_nivel = {
+            nivel: [conteos[j.appid] for j in lista if j.banda_riesgo == nivel and j.appid in conteos]
+            for nivel in NivelRiesgo
+        }
+        bajo, alto = por_nivel[NivelRiesgo.BAJO], por_nivel[NivelRiesgo.ALTO]
+        inferior, superior = intervalo_del_cociente(bajo, alto) if corte == "externos" else (None, None)
+        salida.append(SenalPorNivel(
+            corte=corte,
+            juegos=sum(len(filas) for filas in por_nivel.values()),
+            niveles=[
+                NivelSenal(nivel=nivel, juegos=len(filas), resenas=sum(r for r, _ in filas),
+                           casos_senal=sum(c for _, c in filas), tasa=round(tasa(filas), 6))
+                for nivel, filas in por_nivel.items()
+            ],
+            cociente_alto_bajo=round(tasa(alto) / tasa(bajo), 4) if tasa(bajo) else 0.0,
+            ic_inferior=None if inferior is None else round(inferior, 4),
+            ic_superior=None if superior is None else round(superior, 4),
+        ))
+    return salida
 
 
 def _calcular() -> PanoramaCatalogo:
@@ -204,6 +266,9 @@ def _calcular() -> PanoramaCatalogo:
         motivos=motivos,
         resenas_clasificadas=clasificadas,
         por_juego=filas,
+        senal_por_nivel=senal_por_nivel(
+            {fila.appid: (fila.resenas, fila.casos_senal) for fila in filas}, juegos_de_entrenamiento()
+        ),
     )
     logger.info(
         "panorama: %s reseñas de %s juegos, %s con señal (%.2f%%), %s clasificadas",
