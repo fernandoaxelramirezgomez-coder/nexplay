@@ -21,10 +21,10 @@ texto, que deben calcularse fuera de la API.
 
 La API, hecha con FastAPI, expone \cifraEndpoints{} endpoints: \cifraEndpointsRiesgo{} de riesgo
 (\texttt{/catalogo}, \texttt{/perfil}, \texttt{/prediccion}, \texttt{/explicacion} y
-\texttt{/panorama}), \cifraEndpointsComunidad{} para calificaciones, comentarios y reacciones, y
-\cifraEndpointsNia{} de Nia, descritos en su página \texttt{/docs}\footnote{FastAPI arma esa página
-con el contrato OpenAPI de cada endpoint: qué recibe, qué devuelve y qué errores da.}. Todo lo que
-entra se valida con Pydantic\footnote{Una biblioteca de Python que revisa el tipo y el rango de cada
+\texttt{/panorama}), \cifraEndpointsComunidad{} para calificaciones, comentarios y reacciones,
+\cifraEndpointsNia{} de Nia y \cifraEndpointsSistema{} de estado (\texttt{/estado}), descritos en su
+página \texttt{/docs}\footnote{FastAPI arma esa página con el contrato OpenAPI de cada endpoint: qué
+recibe, qué devuelve y qué errores da.}. Todo lo que entra se valida con Pydantic\footnote{Una biblioteca de Python que revisa el tipo y el rango de cada
 dato de entrada y rechaza la solicitud si no cumple.}. \texttt{/prediccion} sigue recibiendo el
 perfil por compatibilidad, sin que el riesgo cambie (sección~\ref{sec:modelacion-bmas}). El
 frontend, en Angular, es un sitio estático en Vercel.
