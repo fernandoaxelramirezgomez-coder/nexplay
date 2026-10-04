@@ -68,6 +68,13 @@ import { HistogramaPrecios } from './histograma-precios';
                 <span class="linea" data-testid="antes-linea">{{ barras.linea }}</span>
               </p>
               <app-grafica-barras [segmentos]="segmentos()" [maximo]="tope()" idPrueba="antes-barras" />
+              @if (barras.notas.length) {
+                <div class="notas" data-testid="antes-notas">
+                  @for (nota of barras.notas; track nota) {
+                    <p>{{ nota }}</p>
+                  }
+                </div>
+              }
             }
           </div>
         </div>
@@ -185,6 +192,18 @@ import { HistogramaPrecios } from './histograma-precios';
       font-size: 19px;
       line-height: 1.4;
     }
+    .notas {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-8);
+      margin-top: var(--espacio-8);
+      color: var(--texto-meta);
+      font-size: var(--texto-body-sm);
+      line-height: 1.5;
+    }
+    .notas p {
+      margin: 0;
+    }
     /* Las barras crecen despacio: con la duración de la interfaz (rápida) no se notaba. */
     app-grafica-barras {
       --duracion: 0.7s;
@@ -280,7 +299,12 @@ export class AntesDePagar {
   protected readonly visible = signal(false);
 
   protected readonly barras = computed(() =>
-    barrasAntesDePagar(this.metrica(), this.catalogo.juegos(), this.panorama.porAppid()),
+    barrasAntesDePagar(
+      this.metrica(),
+      this.catalogo.juegos(),
+      this.panorama.porAppid(),
+      this.panorama.datos()?.senal_por_nivel ?? [],
+    ),
   );
   /** Antes de verse, las barras en cero y con su escala ya puesta: al entrar, crecen. */
   protected readonly segmentos = computed(() => {

@@ -1,6 +1,6 @@
 import { JuegoPanorama } from '../api/contrato';
 import { PESTANAS_ANTES_DE_PAGAR, barrasAntesDePagar, histogramaDePrecios } from './antes-de-pagar';
-import { juegoDePrueba } from './juego-prueba';
+import { juegoDePrueba, senalDePrueba } from './juego-prueba';
 
 const JUEGOS = [
   juegoDePrueba({ appid: 1, banda_riesgo: 'bajo', precio_final: 150 }),
@@ -35,14 +35,33 @@ const POR_APPID = new Map<number, JuegoPanorama>([
 ]);
 
 describe('«Antes de pagar, esto importa»', () => {
-  it('la señal: cuántas veces más en riesgo alto, con una barra por nivel', () => {
-    const barras = barrasAntesDePagar('senal', JUEGOS, POR_APPID)!;
-    expect(barras.cifra).toBe('4.0×');
+  it('la señal: cuántas veces más en riesgo alto que en bajo, en los juegos que el modelo no vio', () => {
+    const barras = barrasAntesDePagar('senal', JUEGOS, POR_APPID, senalDePrueba())!;
+    expect(barras.cifra).toBe('1.9×');
+    expect(barras.linea).toBe(
+      'más señal de arrepentimiento temprano en riesgo alto que en bajo, en los 40 juegos que el modelo no vio',
+    );
     expect(barras.segmentos.map((s) => [s.etiqueta, s.cifra])).toEqual([
-      ['Riesgo bajo', '1.00%'],
-      ['Riesgo medio', '2.00%'],
-      ['Riesgo alto', '4.00%'],
+      ['Riesgo bajo', '1.86%'],
+      ['Riesgo medio', '1.63%'],
+      ['Riesgo alto', '3.58%'],
     ]);
+  });
+
+  it('dice el intervalo, que es una tendencia, por qué el medio sale abajo y de dónde sale el 4.2×', () => {
+    const barras = barrasAntesDePagar('senal', JUEGOS, POR_APPID, senalDePrueba())!;
+    expect(barras.notas).toEqual([
+      'Intervalo de 95 %: de 0.87× a 3.50×. Con 40 juegos es una tendencia, no una conclusión firme.',
+      'El riesgo medio sale un poco abajo del bajo: en juegos que el modelo no vio, el medio no se separa del bajo, ' +
+        'y con 13 o 14 juegos por nivel esa diferencia es ruido. Lo que se sostiene es el riesgo alto.',
+      'En los 123 juegos son 4.2×, pero ahí cuentan los 83 con que se entrenó el modelo.',
+    ]);
+  });
+
+  it('si el medio no sale abajo del bajo, no lo explica; sin el corte de los externos, no hay cifra', () => {
+    const barras = barrasAntesDePagar('senal', JUEGOS, POR_APPID, senalDePrueba({ resenas: 20000, casos: 500 }))!;
+    expect(barras.notas.some((n) => n.startsWith('El riesgo medio'))).toBe(false);
+    expect(barrasAntesDePagar('senal', JUEGOS, POR_APPID, senalDePrueba().slice(0, 1))).toBeNull();
   });
 
   it('no hay pestaña de precio: el precio entra al modelo y compararlo por nivel es circular', () => {
@@ -69,8 +88,8 @@ describe('«Antes de pagar, esto importa»', () => {
     const textos = [
       ...PESTANAS_ANTES_DE_PAGAR.map((p) => p.nombre),
       ...PESTANAS_ANTES_DE_PAGAR.flatMap((p) => {
-        const barras = barrasAntesDePagar(p.id, JUEGOS, POR_APPID)!;
-        return [barras.linea, ...barras.segmentos.map((s) => `${s.etiqueta} ${s.detalle}`)];
+        const barras = barrasAntesDePagar(p.id, JUEGOS, POR_APPID, senalDePrueba())!;
+        return [barras.linea, ...barras.notas, ...barras.segmentos.map((s) => `${s.etiqueta} ${s.detalle}`)];
       }),
       ...histogramaDePrecios(JUEGOS).map((r) => r.detalle),
     ];

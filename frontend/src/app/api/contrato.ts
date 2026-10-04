@@ -384,4 +384,25 @@ export interface PanoramaCatalogo {
   motivos: MotivoInsatisfaccion[];
   resenas_clasificadas: number;
   por_juego: JuegoPanorama[];
+  senal_por_nivel: SenalPorNivel[];
+}
+
+/** La señal de un nivel de riesgo, juntando las reseñas de sus juegos. */
+export interface NivelSenal {
+  nivel: NivelRiesgo;
+  juegos: number;
+  resenas: number;
+  casos_senal: number;
+  tasa: number;
+}
+
+/** GET /panorama: la señal por nivel en todo el catálogo y en los juegos que el modelo no vio.
+ * En el catálogo cuentan los 83 con que se entrenó; solo los externos traen intervalo. */
+export interface SenalPorNivel {
+  corte: 'catalogo' | 'externos';
+  juegos: number;
+  niveles: NivelSenal[];
+  cociente_alto_bajo: number;
+  ic_inferior: number | null;
+  ic_superior: number | null;
 }

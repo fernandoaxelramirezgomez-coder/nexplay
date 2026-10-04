@@ -1,8 +1,8 @@
-import { JuegoCatalogo, JuegoPanorama, NivelRiesgo, PanoramaCatalogo } from '../api/contrato';
+import { JuegoCatalogo, JuegoPanorama, NivelRiesgo, PanoramaCatalogo, SenalPorNivel } from '../api/contrato';
 import { Segmento } from '../compartido/graficas/segmento';
 import { ORDEN_BANDAS } from './estantes';
 import { numero, porcentaje, porcentajeFino } from './formato';
-import { positivosPorBanda, senalPorBanda } from './panorama';
+import { positivosPorBanda } from './panorama';
 
 /** «Antes de pagar, esto importa», en el Inicio: lo que le sirve a quien va a comprar,
  * en dos gráficas con los datos de la API. Nada va escrito a mano: las cifras salen del
@@ -15,11 +15,13 @@ export const PESTANAS_ANTES_DE_PAGAR: readonly { id: MetricaAntesDePagar; nombre
   { id: 'positivas', nombre: 'Reseñas positivas' },
 ];
 
-/** Una pestaña: la cifra grande, su línea y una barra por nivel. */
+/** Una pestaña: la cifra grande, su línea, una barra por nivel y, debajo, lo que hay que saber
+ * para leerla. */
 export interface BarrasAntesDePagar {
   cifra: string;
   linea: string;
   segmentos: Segmento[];
+  notas: string[];
 }
 
 export const NOMBRE_NIVEL: Record<NivelRiesgo, string> = {
@@ -30,24 +32,63 @@ export const NOMBRE_NIVEL: Record<NivelRiesgo, string> = {
 
 type PorAppid = ReadonlyMap<number, JuegoPanorama>;
 
-function barrasSenal(juegos: readonly JuegoCatalogo[], porAppid: PorAppid): BarrasAntesDePagar | null {
-  const filas = senalPorBanda(juegos, porAppid);
-  const alto = filas.find((f) => f.banda === 'alto')?.prevalencia;
-  const bajo = filas.find((f) => f.banda === 'bajo')?.prevalencia;
-  if (!alto || !bajo) {
+const veces = (cociente: number, decimales: number) => `${cociente.toFixed(decimales)}×`;
+
+/** «13 o 14»: cuántos juegos tiene cada nivel, sin repetir. */
+function juegosPorNivel(corte: SenalPorNivel): string {
+  const distintos = [...new Set(corte.niveles.map((n) => n.juegos))].sort((a, b) => a - b);
+  return distintos.length > 1 ? `${distintos.slice(0, -1).join(', ')} o ${distintos.at(-1)}` : `${distintos[0]}`;
+}
+
+/** La señal en los juegos que el modelo no vio: el número honesto, como el PR-AUC externo. En los
+ * 123 el cociente es mayor porque ahí cuentan los 83 de entrenamiento, donde la señal fue su
+ * etiqueta; se menciona en una nota, con lo que lo distingue. */
+function barrasSenal(cortes: readonly SenalPorNivel[]): BarrasAntesDePagar | null {
+  const externos = cortes.find((c) => c.corte === 'externos');
+  const catalogo = cortes.find((c) => c.corte === 'catalogo');
+  if (!externos?.cociente_alto_bajo) {
     return null;
   }
+  const nivel = (n: NivelRiesgo) => externos.niveles.find((f) => f.nivel === n);
+  const notas: string[] = [];
+  if (externos.ic_inferior !== null && externos.ic_superior !== null) {
+    notas.push(
+      `Intervalo de 95 %: de ${veces(externos.ic_inferior, 2)} a ${veces(externos.ic_superior, 2)}. ` +
+        `Con ${externos.juegos} juegos es una tendencia, no una conclusión firme.`,
+    );
+  }
+  const bajo = nivel('bajo');
+  const medio = nivel('medio');
+  if (bajo && medio && medio.tasa < bajo.tasa) {
+    notas.push(
+      'El riesgo medio sale un poco abajo del bajo: en juegos que el modelo no vio, el medio no se separa ' +
+        `del bajo, y con ${juegosPorNivel(externos)} juegos por nivel esa diferencia es ruido. ` +
+        'Lo que se sostiene es el riesgo alto.',
+    );
+  }
+  if (catalogo?.cociente_alto_bajo) {
+    notas.push(
+      `En los ${catalogo.juegos} juegos son ${veces(catalogo.cociente_alto_bajo, 1)}, pero ahí cuentan los ` +
+        `${catalogo.juegos - externos.juegos} con que se entrenó el modelo.`,
+    );
+  }
   return {
-    // Con un decimal, como en el resto del sitio: 4.2× y no 4×.
-    cifra: `${(alto / bajo).toFixed(1)}×`,
-    linea: 'más señal de arrepentimiento temprano en riesgo alto',
-    segmentos: filas.map((f) => ({
-      etiqueta: NOMBRE_NIVEL[f.banda],
-      valor: f.prevalencia,
-      cifra: porcentajeFino(f.prevalencia),
-      banda: f.banda,
-      detalle: `${NOMBRE_NIVEL[f.banda]}: ${porcentajeFino(f.prevalencia)} de sus reseñas con señal de arrepentimiento temprano`,
-    })),
+    // Con un decimal, como en el resto del sitio: 1.9× y no 2×.
+    cifra: veces(externos.cociente_alto_bajo, 1),
+    linea: `más señal de arrepentimiento temprano en riesgo alto que en bajo, en los ${externos.juegos} juegos que el modelo no vio`,
+    segmentos: ORDEN_BANDAS.flatMap((banda) => {
+      const fila = nivel(banda);
+      return fila
+        ? [{
+            etiqueta: NOMBRE_NIVEL[banda],
+            valor: fila.tasa,
+            cifra: porcentajeFino(fila.tasa),
+            banda,
+            detalle: `${NOMBRE_NIVEL[banda]}: ${porcentajeFino(fila.tasa)} de sus reseñas con señal de arrepentimiento temprano, en ${fila.juegos} juegos que el modelo no vio`,
+          }]
+        : [];
+    }),
+    notas,
   };
 }
 
@@ -67,6 +108,7 @@ function barrasPositivas(juegos: readonly JuegoCatalogo[], porAppid: PorAppid): 
       banda: f.banda,
       detalle: `${NOMBRE_NIVEL[f.banda]}: ${f.positivas} de ${f.total} juegos con reseñas muy o extremadamente positivas en Steam`,
     })),
+    notas: [],
   };
 }
 
@@ -74,10 +116,11 @@ export function barrasAntesDePagar(
   metrica: MetricaAntesDePagar,
   juegos: readonly JuegoCatalogo[],
   porAppid: PorAppid,
+  senalPorNivel: readonly SenalPorNivel[] = [],
 ): BarrasAntesDePagar | null {
   switch (metrica) {
     case 'senal':
-      return barrasSenal(juegos, porAppid);
+      return barrasSenal(senalPorNivel);
     case 'positivas':
       return barrasPositivas(juegos, porAppid);
   }

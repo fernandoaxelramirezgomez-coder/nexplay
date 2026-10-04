@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { JuegoPanorama } from '../api/contrato';
-import { juegoDePrueba } from '../dominio/juego-prueba';
+import { juegoDePrueba, senalDePrueba } from '../dominio/juego-prueba';
 import { CatalogoStore } from '../estado/catalogo-store';
 import { PanoramaStore } from '../estado/panorama-store';
 import { AntesDePagar } from './antes-de-pagar';
@@ -35,7 +35,15 @@ const MOTIVOS = [
   { motivo: 'dificultad', frecuencia: 0.1555 },
 ];
 
-function montar(datos: object = { resenas_descargadas: 184367, motivos: MOTIVOS, resenas_clasificadas: 1344, casos_senal: 4126 }) {
+function montar(
+  datos: object = {
+    resenas_descargadas: 184367,
+    motivos: MOTIVOS,
+    resenas_clasificadas: 1344,
+    casos_senal: 4126,
+    senal_por_nivel: senalDePrueba(),
+  },
+) {
   TestBed.configureTestingModule({
     imports: [AntesDePagar],
     providers: [
@@ -64,14 +72,25 @@ describe('AntesDePagar', () => {
 
   it('abre en la señal y cambia cifra y barras al cambiar de pestaña', () => {
     const fixture = montar();
-    expect(texto(fixture, 'antes-cifra')).toBe('4.0×');
+    expect(texto(fixture, 'antes-cifra')).toBe('1.9×');
     fixture.nativeElement.querySelector('[data-testid="antes-pestana"][data-metrica="positivas"]').click();
     fixture.detectChanges();
     expect(texto(fixture, 'antes-cifra')).toBe('0%');
+    expect(fixture.nativeElement.querySelector('[data-testid="antes-notas"]')).toBeNull();
     const cifras = [...fixture.nativeElement.querySelectorAll('[data-testid="antes-barras"] .valor')].map(
       (v: Element) => v.textContent?.trim(),
     );
     expect(cifras).toEqual(['100%', '100%', '0%']);
+  });
+
+  it('la señal es la de los 40 que el modelo no vio, con su intervalo y por qué el medio sale abajo', () => {
+    const fixture = montar();
+    expect(texto(fixture, 'antes-linea')).toContain('que en bajo, en los 40 juegos que el modelo no vio');
+    const notas = texto(fixture, 'antes-notas');
+    expect(notas).toContain('de 0.87× a 3.50×');
+    expect(notas).toContain('es una tendencia, no una conclusión firme');
+    expect(notas).toContain('El riesgo medio sale un poco abajo del bajo');
+    expect(notas).toContain('En los 123 juegos son 4.2×, pero ahí cuentan los 83 con que se entrenó el modelo.');
   });
 
   it('solo dos pestañas: sin «Precio», que es una variable del modelo', () => {
