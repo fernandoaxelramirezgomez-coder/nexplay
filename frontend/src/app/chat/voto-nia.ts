@@ -39,6 +39,11 @@ export const GRACIAS_POR_EL_MOTIVO = '¡Gracias por avisarnos!';
  * seguidas, son peticiones que se pisan entre sí; con la espera, solo viaja la última. */
 const ESPERA_MOTIVO_MS = 800;
 
+/** Lo invisible al inicio del campo: saltos de línea, espacios, caracteres de ancho cero y el
+ * marcador de objeto que dejan algunos teclados. En iPhone el campo abría con uno de esos y el
+ * contador decía 1/280 con el campo vacío; no cuenta ni viaja. */
+const INVISIBLE_AL_INICIO = /^[\s\u200B-\u200D\u2060\uFFFC]+/;
+
 /** A dónde va el foco cuando el panel cambia y el botón que lo tenía desaparece. */
 type DestinoDelFoco = 'cambiar' | 'abajo' | 'marcado' | 'campo';
 
@@ -121,14 +126,14 @@ type DestinoDelFoco = 'cambiar' | 'abajo' | 'marcado' | 'campo';
               rows="2"
               [maxLength]="maximo"
               [value]="borrador()"
-              (input)="borrador.set($any($event.target).value)"
+              (input)="alEscribir($event)"
               (keydown.escape)="$event.stopPropagation(); cancelarSugerencia()"
               data-testid="voto-nia-sugerencia-texto"
             ></textarea>
             <div class="pie-libre">
               <span class="meta">Se ve sin tu nombre en el buzón de sugerencias; no pongas datos personales.</span>
               <span class="meta mono">{{ borrador().length }}/{{ maximo }}</span>
-              <span class="botones-libre">
+              <span class="botones-libre" #botonesLibre>
                 <button
                   type="button"
                   class="boton-texto"
@@ -307,6 +312,7 @@ export class VotoNia {
   private readonly botonAbajo = viewChild<ElementRef<HTMLButtonElement>>('abajo');
   private readonly chips = viewChildren<ElementRef<HTMLButtonElement>>('chip');
   private readonly campo = viewChild<ElementRef<HTMLTextAreaElement>>('campo');
+  private readonly botonesLibre = viewChild<ElementRef<HTMLElement>>('botonesLibre');
   private readonly anfitrion = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly inyector = inject(Injector);
 
@@ -358,6 +364,7 @@ export class VotoNia {
       } else {
         this.escribiendo.set(true);
         this.enfocar('campo');
+        this.mostrarElCampo();
       }
       return;
     }
@@ -378,6 +385,20 @@ export class VotoNia {
     this.escribiendo.set(this.motivo() === MOTIVO_LIBRE);
     this.abierto.set(true);
     this.enfocar('marcado');
+    if (this.escribiendo()) {
+      this.mostrarElCampo();
+    }
+  }
+
+  /** Lo que se escribe en «otro motivo», sin lo invisible del inicio: también se quita del
+   * campo, para que lo que se ve y el contador digan lo mismo. */
+  protected alEscribir(evento: Event): void {
+    const campo = evento.target as HTMLTextAreaElement;
+    const limpio = campo.value.replace(INVISIBLE_AL_INICIO, '');
+    if (limpio !== campo.value) {
+      campo.value = limpio;
+    }
+    this.borrador.set(limpio);
   }
 
   /** Cancelar, Escape o enviar vacío: se cierra sin registrar nada y queda lo de antes. */
@@ -448,6 +469,15 @@ export class VotoNia {
     );
   }
 
+  /** Al abrirse «otro motivo», el panel crece y sus botones quedaban bajo el borde del hilo: en
+   * el teléfono, «Cancelar» y «Enviar sugerencia» no se veían. El foco solo trae el campo; esto
+   * trae también los botones, después de enfocar. Con ?. porque el DOM de las pruebas no lo tiene. */
+  private mostrarElCampo(): void {
+    afterNextRender(() => this.botonesLibre()?.nativeElement.scrollIntoView?.({ block: 'nearest' }), {
+      injector: this.inyector,
+    });
+  }
+
   private guardar(valor: VotoNiaValor, motivo: string | null, sugerencia?: string): void {
     this.guardando.set(true);
     this.api
@@ -504,6 +534,9 @@ export class VotoNia {
     this.error.set('No se pudo guardar tu voto.');
     if (abajo) {
       this.enfocar(conSugerencia ? 'campo' : 'marcado');
+      if (conSugerencia) {
+        this.mostrarElCampo();
+      }
     }
   }
 }

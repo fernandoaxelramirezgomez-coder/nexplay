@@ -251,6 +251,34 @@ describe('VotoNia', () => {
     expect(boton(fixture, 'voto-nia-abajo')!.getAttribute('aria-pressed')).toBe('true');
   });
 
+  /** En iPhone el campo abría vacío a la vista pero con un carácter invisible, y el contador
+   * decía 1/280. Lo invisible del inicio no cuenta, no se queda en el campo ni viaja. */
+  it.each([
+    ['un salto de línea', '\n'],
+    ['un espacio', ' '],
+    ['un carácter de ancho cero', '\u200B'],
+    ['el marcador de objeto del dictado', '\uFFFC'],
+  ])('«otro motivo» con %s al abrir sigue en 0/280', (_, invisible) => {
+    const votar = vi.fn().mockReturnValue(of({ id_respuesta: 'r1', voto: -1, motivo: null }));
+    const fixture = montar({ votarRespuestaDeNia: votar } as Partial<NexplayApi>);
+    const contador = () =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="voto-nia-sugerencia"] .mono')?.textContent?.trim();
+
+    abajoYEsperar(fixture);
+    chip(fixture, 'otro motivo').click();
+    fixture.detectChanges();
+    expect(contador()).toBe('0/280');
+
+    escribirSugerencia(fixture, invisible);
+    expect(contador()).toBe('0/280');
+    expect(campo(fixture)!.value).toBe('');
+
+    // Lo que sí se escribe cuenta igual, sin lo invisible de delante.
+    escribirSugerencia(fixture, `${invisible}Que diga si tiene cooperativo`);
+    expect(contador()).toBe('29/280');
+    expect(campo(fixture)!.value).toBe('Que diga si tiene cooperativo');
+  });
+
   it('plegar(): sin motivo elegido el panel se cierra; con texto en «otro motivo» se queda', () => {
     const votar = vi.fn().mockReturnValue(of({ id_respuesta: 'r1', voto: -1, motivo: null }));
     const fixture = montar({ votarRespuestaDeNia: votar } as Partial<NexplayApi>);
@@ -334,6 +362,29 @@ describe('VotoNia', () => {
       fixture.detectChanges();
       await fixture.whenStable();
     }
+
+    it('al abrir «otro motivo», sus botones se desplazan a la vista: en el teléfono quedaban bajo el hilo', async () => {
+      const desplazados: Element[] = [];
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (this: Element) {
+        desplazados.push(this);
+      };
+      try {
+        const votar = vi.fn().mockReturnValue(of({ id_respuesta: 'r1', voto: -1, motivo: null }));
+        const fixture = montar({ votarRespuestaDeNia: votar } as Partial<NexplayApi>);
+        abajoYEsperar(fixture);
+        desplazados.length = 0;
+
+        chip(fixture, 'otro motivo').click();
+        await renderizar(fixture);
+        const enviar = boton(fixture, 'voto-nia-sugerencia-enviar')!;
+        const cancelar = boton(fixture, 'voto-nia-sugerencia-cancelar')!;
+        expect(desplazados.some((el) => el.contains(enviar) && el.contains(cancelar))).toBe(true);
+        expect(document.activeElement).toBe(campo(fixture));
+      } finally {
+        Element.prototype.scrollIntoView = original;
+      }
+    });
 
     it('al plegar pasa a «Cambiar»; al reabrir, al chip marcado; al cancelar «otro motivo», vuelve a «Cambiar»', async () => {
       const votar = vi
