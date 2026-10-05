@@ -21,6 +21,7 @@ un poco.
 |---|---|---|
 | 📄 Documento final | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/documento-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/entregables/documento-entregafinal.pdf) |
 | 🎤 Presentación (PDF) | [Abrir PDF](https://github.com/fernandoaxelramirezgomez-coder/nexplay/blob/master/entregables/presentacion-entregafinal.pdf) | [Descargar](https://github.com/fernandoaxelramirezgomez-coder/nexplay/raw/master/entregables/presentacion-entregafinal.pdf) |
+| 🎬 Video de la demo | [Ver en YouTube](https://youtu.be/FVu0xgtq9ZE) | — |
 | 💡 El nicho en simples palabras | [nicho.md](entregables/nicho.md) | — |
 
 > **Steam te dice si un juego es bueno. NexPlay te dice cuáles van contigo y cuáles suelen fallar en las primeras
